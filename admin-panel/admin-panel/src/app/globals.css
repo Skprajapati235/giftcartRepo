@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+html.dark {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+}
+
+html.light {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+html.dark body {
+  background: #020617;
+  color: #e2e8f0;
+}
+
+html.dark .bg-white:not([class*="dark:bg"]),
+html[data-theme='dark'] .bg-white:not([class*="dark:bg"]) {
+  background-color: #0f172a !important;
+}
+html.dark .bg-slate-50:not([class*="dark:bg"]),
+html[data-theme='dark'] .bg-slate-50:not([class*="dark:bg"]) {
+  background-color: #111827 !important;
+}
+html.dark .bg-slate-100:not([class*="dark:bg"]),
+html[data-theme='dark'] .bg-slate-100:not([class*="dark:bg"]) {
+  background-color: #111827 !important;
+}
+html.dark .bg-slate-200:not([class*="dark:bg"]),
+html[data-theme='dark'] .bg-slate-200:not([class*="dark:bg"]) {
+  background-color: #1e293b !important;
+}
+html.dark .bg-rose-50:not([class*="dark:bg"]),
+html[data-theme='dark'] .bg-rose-50:not([class*="dark:bg"]) {
+  background-color: #58151c !important;
+}
+html.dark .bg-slate-900:not([class*="dark:bg"]),
+html[data-theme='dark'] .bg-slate-900:not([class*="dark:bg"]) {
+  background-color: #0f172a !important;
+}
+html.dark .bg-slate-950:not([class*="dark:bg"]),
+html[data-theme='dark'] .bg-slate-950:not([class*="dark:bg"]) {
+  background-color: #020617 !important;
+}
+html.dark .text-slate-900:not([class*="dark:text"]),
+html[data-theme='dark'] .text-slate-900:not([class*="dark:text"]) {
+  color: #f8fafc !important;
+}
+html.dark .text-slate-700:not([class*="dark:text"]),
+html[data-theme='dark'] .text-slate-700:not([class*="dark:text"]) {
+  color: #cbd5e1 !important;
+}
+html.dark .text-slate-600:not([class*="dark:text"]),
+html[data-theme='dark'] .text-slate-600:not([class*="dark:text"]) {
+  color: #94a3b8 !important;
+}
+html.dark .text-slate-500:not([class*="dark:text"]),
+html[data-theme='dark'] .text-slate-500:not([class*="dark:text"]) {
+  color: #94a3b8 !important;
+}
+html.dark .border-slate-200:not([class*="dark:border"]),
+html[data-theme='dark'] .border-slate-200:not([class*="dark:border"]) {
+  border-color: #334155 !important;
+}
+html.dark .border-slate-100:not([class*="dark:border"]),
+html[data-theme='dark'] .border-slate-100:not([class*="dark:border"]) {
+  border-color: #334155 !important;
+}
+html.dark .shadow-sm,
+html[data-theme='dark'] .shadow-sm {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.4) !important;
+}
