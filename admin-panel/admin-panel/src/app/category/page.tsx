@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Pagination from "../components/Pagination";
 import { useAdmin } from "../context/AdminContext";
@@ -85,9 +84,7 @@ export default function CategoryPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-slate-100 text-slate-900">
-        <Sidebar />
-        <main className="flex-1 p-10">
+      <main className="flex-1 p-10">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Categories</p>
@@ -192,7 +189,6 @@ export default function CategoryPage() {
             </section>
           )}
         </main>
-      </div>
     </ProtectedRoute>
   );
 }

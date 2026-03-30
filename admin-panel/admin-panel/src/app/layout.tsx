@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import AppShell from "./components/AppShell";
 import { AuthProvider } from "./context/AuthContext";
 import { AdminProvider } from "./context/AdminContext";
 
@@ -29,9 +30,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-100 text-slate-900">
+      <body className="min-h-full bg-slate-100 text-slate-900">
         <AuthProvider>
-          <AdminProvider>{children}</AdminProvider>
+          <AdminProvider>
+            <AppShell>{children}</AppShell>
+          </AdminProvider>
         </AuthProvider>
       </body>
     </html>

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Pagination from "../components/Pagination";
 import { useAdmin } from "../context/AdminContext";
@@ -146,13 +145,11 @@ export default function ProductsPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-slate-100 text-slate-900">
-        <Sidebar />
-        <main className="flex-1 p-10 space-y-8">
+      <main className="flex-1 p-10 space-y-8">
           <div>
             <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Products</p>
-            <h1 className="mt-2 text-3xl font-semibold">Product catalog</h1>
-            <p className="mt-2 text-sm text-slate-600">Add, edit, or remove products that appear in the app.</p>
+            {/* <h1 className="mt-2 text-3xl font-semibold">Product catalog</h1>
+            <p className="mt-2 text-sm text-slate-600">Add, edit, or remove products that appear in the app.</p> */}
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -163,25 +160,7 @@ export default function ProductsPage() {
             >
               Add product
             </button>
-            {!showForm ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-500">View:</span>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("card")}
-                  className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "card" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-                >
-                  Cards
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode("list")}
-                  className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "list" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-                >
-                  List
-                </button>
-              </div>
-            ) : null}
+            
           </div>
 
           {showForm ? (
@@ -409,7 +388,6 @@ export default function ProductsPage() {
             </section>
           )}
         </main>
-      </div>
     </ProtectedRoute>
   );
 }

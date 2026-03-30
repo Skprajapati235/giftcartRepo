@@ -1,6 +1,5 @@
 "use client";
 
-import Sidebar from "../components/Sidebar";
 import Card from "../components/Card";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { useAdmin } from "../context/AdminContext";
@@ -10,9 +9,7 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-        <Sidebar />
-        <main className="flex-1 p-10">
+      <main className="flex-1 p-10">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Dashboard</p>
@@ -75,7 +72,6 @@ export default function DashboardPage() {
             </>
           )}
         </main>
-      </div>
     </ProtectedRoute>
   );
 }

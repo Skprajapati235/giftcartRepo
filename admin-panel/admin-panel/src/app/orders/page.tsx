@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "../components/Sidebar";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Pagination from "../components/Pagination";
 
@@ -46,9 +45,7 @@ export default function OrdersPage() {
 
   return (
     <ProtectedRoute>
-      <div className="flex min-h-screen bg-slate-100 text-slate-900">
-        <Sidebar />
-        <main className="flex-1 p-10">
+      <main className="flex-1 p-10">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Orders</p>
@@ -106,7 +103,6 @@ export default function OrdersPage() {
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
           </section>
         </main>
-      </div>
     </ProtectedRoute>
   );
 }
