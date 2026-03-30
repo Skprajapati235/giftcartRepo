@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,282 +8,409 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
-  ScrollView,
+  Image,
+  Dimensions,
+  Platform,
+  TextInput,
+  Modal,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
 import api from '../api/apiClient';
-import CategoryChip from '../components/CategoryChip';
-import ProductCard from '../components/ProductCard';
+import { Feather, Ionicons, FontAwesome } from '@expo/vector-icons';
+import { useRoute } from '@react-navigation/native';
+
+const { width } = Dimensions.get('window');
+
+const BANNERS = [
+  'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1513201099705-a9746e1e201f?w=800&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1518192161663-5a0230e15729?w=800&h=400&fit=crop',
+];
+
+const ADS = [
+  { id: '1', img: 'https://images.unsplash.com/photo-1549465220-1d8c9d9c4701?w=400&h=200&fit=crop', title: '50% OFF' },
+  { id: '2', img: 'https://images.unsplash.com/photo-1512909006721-3d6018887383?w=400&h=200&fit=crop', title: 'Gift Boxes' },
+  { id: '3', img: 'https://images.unsplash.com/photo-1481391319762-47dff72954d9?w=400&h=200&fit=crop', title: 'New Arrival' },
+];
 
 export default function HomeScreen({ navigation }) {
+  const route = useRoute();
   const { signOut, user } = useContext(AuthContext);
   const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [cartItems, setCartItems] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  // Auto-sliding banner logic
+  const [activeBanner, setActiveBanner] = useState(0);
+  const bannerRef = useRef(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const nextIndex = (activeBanner + 1) % BANNERS.length;
+      setActiveBanner(nextIndex);
+      bannerRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [activeBanner]);
+
+  useEffect(() => {
+    if (route.params?.categoryId) {
+      setSelectedCategory(route.params.categoryId);
+    }
+  }, [route.params?.categoryId]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [categoryRes, productRes] = await Promise.all([
-        api.get('/api/category'),
-        api.get('/api/product'),
+      const [categoryRes, productRes, cartRes] = await Promise.all([
+        api.get('/api/category').catch(() => ({ data: [] })),
+        api.get('/api/product').catch(() => ({ data: [] })),
+        AsyncStorage.getItem('@giftcart_cart'),
       ]);
       setCategories(categoryRes.data || []);
-      setProducts(productRes.data || []);
+      setAllProducts(productRes.data || []);
+      setCartCount(cartRes ? JSON.parse(cartRes).length : 0);
     } catch (error) {
-      if (error.response?.status === 401) {
-        signOut();
-        return;
-      }
-      const message = error.response?.data?.message || error.message || 'Unable to load data';
-      Alert.alert('Load failed', message);
+      if (error.response?.status === 401) signOut();
     } finally {
       setLoading(false);
     }
   }, [signOut]);
 
-  const loadCart = async () => {
-    const raw = await AsyncStorage.getItem('@giftcart_cart');
-    setCartItems(raw ? JSON.parse(raw) : []);
-  };
-
-  const saveCart = async (items) => {
-    await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(items));
-    setCartItems(items);
-  };
-
-  const addToCart = async (product) => {
-    const existing = cartItems.some((item) => item._id === product._id);
-    if (existing) {
-      Alert.alert('Cart', 'Product already in cart.');
-      return;
-    }
-    const next = [...cartItems, product];
-    await saveCart(next);
-    Alert.alert('Cart', 'Product added to your cart.');
-  };
-
-  const buyNow = (product) => {
-    Alert.alert('Buy Now', `Proceeding to buy ${product.name}.`);
-  };
-
   useEffect(() => {
-    loadData();
-    loadCart();
-  }, [loadData]);
+    const unsubscribe = navigation.addListener('focus', loadData);
+    return unsubscribe;
+  }, [navigation, loadData]);
 
   const filteredProducts = useMemo(() => {
-    if (selectedCategory === 'All') return products;
-    return products.filter((item) => item.category?._id === selectedCategory);
-  }, [products, selectedCategory]);
+    let prods = allProducts;
+    if (selectedCategory) {
+      prods = prods.filter(p => p.category?._id === selectedCategory);
+    }
+    if (searchQuery) {
+      prods = prods.filter(p => p.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    return prods;
+  }, [allProducts, selectedCategory, searchQuery]);
 
-  const handleProductPress = (product) => {
-    navigation.navigate('ProductDetail', { product });
+  const addToCart = async (product) => {
+    try {
+      const raw = await AsyncStorage.getItem('@giftcart_cart');
+      const items = raw ? JSON.parse(raw) : [];
+      if (items.some(i => i._id === product._id)) {
+        Alert.alert('Info', 'Product already in cart.');
+        return;
+      }
+      const next = [...items, product];
+      await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(next));
+      setCartCount(next.length);
+      Alert.alert('Cart', 'Product added to cart!');
+    } catch (err) {
+      Alert.alert('Error', 'Could not add to cart.');
+    }
   };
 
-  const handleCartPress = (product) => {
-    navigation.navigate('ProductDetail', { product });
-  };
+  const renderProduct = ({ item }) => (
+    <TouchableOpacity 
+      style={styles.productCardGrid} 
+      onPress={() => navigation.navigate('ProductDetail', { product: item })}
+    >
+      <View style={styles.imgWrapper}>
+        <Image 
+          source={{ uri: item.image || 'https://images.unsplash.com/photo-1513201099705-a9746e1e201f?w=400&h=400&fit=crop' }} 
+          style={styles.productImageGrid} 
+        />
+      </View>
+      <View style={styles.prodInfo}>
+        <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+        <View style={styles.priceRow}>
+          <Text style={styles.productPrice}>₹{item.price?.toFixed(0) || '0'}</Text>
+          <TouchableOpacity onPress={() => addToCart(item)}>
+            <Ionicons name="add-circle" size={26} color="#D82B76" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.topbar}>
-        <View>
-          <Text style={styles.welcome}>Welcome back,</Text>
-          <Text style={styles.username}>{user?.name || 'Shopper'}</Text>
-        </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
-          <Text style={styles.logoutText}>Logout</Text>
+      {/* Top Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.menuButton} onPress={() => setIsDrawerOpen(true)}>
+          <Feather name="menu" size={28} color="#FF6A3D" />
         </TouchableOpacity>
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Categories</Text>
-        <TouchableOpacity onPress={() => setSelectedCategory('All')}>
-          <Text style={styles.sectionAction}>View all</Text>
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chipsContainer}>
-        <CategoryChip title="All" selected={selectedCategory === 'All'} onPress={() => setSelectedCategory('All')} />
-        {categories.map((category) => (
-          <CategoryChip
-            key={category._id}
-            title={category.name}
-            selected={selectedCategory === category._id}
-            onPress={() => setSelectedCategory(category._id)}
-          />
-        ))}
-      </ScrollView>
-
-      <View style={styles.cartPreview}>
-        <View style={styles.cartHeader}>
-          <Text style={styles.sectionTitle}>My Cart</Text>
-          <Text style={styles.cartCount}>{cartItems.length} items</Text>
-        </View>
-        {cartItems.length === 0 ? (
-          <Text style={styles.cartEmpty}>Your cart is empty. Add products from below.</Text>
+        
+        {!showSearch ? (
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoTextMain}>Gift</Text>
+            <Text style={styles.logoTextSub}>Cart</Text>
+          </View>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cartScroll}>
-            {cartItems.map((item) => (
-              <TouchableOpacity key={item._id} style={styles.cartCard} onPress={() => handleCartPress(item)}>
-                <Text numberOfLines={1} style={styles.cartName}>{item.name}</Text>
-                <Text style={styles.cartPrice}>₹{item.price?.toFixed(0)}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-      </View>
-
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Products</Text>
-        <Text style={styles.sectionAction}>{filteredProducts.length} items</Text>
-      </View>
-
-      {loading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#ff5ea0" />
-        </View>
-      ) : (
-        <FlatList
-          data={filteredProducts}
-          keyExtractor={(item) => item._id}
-          numColumns={2}
-          contentContainerStyle={styles.productList}
-          renderItem={({ item }) => (
-            <ProductCard
-              product={item}
-              onPress={() => handleProductPress(item)}
-              onAddToCart={() => addToCart(item)}
-              onBuyNow={() => buyNow(item)}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search items..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoFocus
             />
-          )}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No products found.</Text>
+          </View>
+        )}
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.searchIcon} onPress={() => setShowSearch(!showSearch)}>
+            <Feather name={showSearch ? "x" : "search"} size={22} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.locationButton}>
+            <Text style={styles.locationText}>{user?.location || 'AJMER'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Main Content (One Scrollable List) */}
+      <FlatList
+        data={filteredProducts}
+        keyExtractor={item => item._id}
+        numColumns={2}
+        ListHeaderComponent={
+          <>
+            {/* Auto-sliding Banners */}
+            <View style={styles.bannerContainer}>
+              <FlatList
+                ref={bannerRef}
+                data={BANNERS}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(_, index) => index.toString()}
+                renderItem={({ item }) => (
+                  <Image source={{ uri: item }} style={styles.mainBanner} />
+                )}
+                onMomentumScrollEnd={(e) => {
+                  const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+                  setActiveBanner(idx);
+                }}
+              />
+              <View style={styles.pagination}>
+                {BANNERS.map((_, i) => (
+                  <View key={i} style={[styles.dot, activeBanner === i && styles.activeDot]} />
+                ))}
+              </View>
             </View>
-          )}
-        />
-      )}
+
+            {/* Categories */}
+            <View style={styles.categoriesContainer}>
+              <Text style={styles.sectionTitleHeader}>Explore Categories</Text>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={[{_id: 'all', name: 'All'}, ...categories]}
+                keyExtractor={item => item._id}
+                contentContainerStyle={styles.categoryScroll}
+                renderItem={({ item }) => {
+                  const isAll = item._id === 'all';
+                  const isSelected = isAll ? !selectedCategory : selectedCategory === item._id;
+                  return (
+                    <TouchableOpacity 
+                      style={styles.categoryCircleItem} 
+                      onPress={() => setSelectedCategory(isAll ? null : item._id)}
+                    >
+                      <View style={[styles.circle, isSelected && styles.circleSelected]}>
+                        {isAll ? (
+                          <Ionicons name="apps" size={24} color={isSelected ? "#D82B76" : "#555"} />
+                        ) : (
+                          <Image source={{ uri: item.image || `https://api.dicebear.com/7.x/initials/png?seed=${item.name}` }} style={styles.circleImg} />
+                        )}
+                      </View>
+                      <Text style={[styles.categoryName, isSelected && styles.categoryNameSelected]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
+
+            {/* Ads Section (Flipkart style) */}
+            <View style={styles.adsContainer}>
+              <Text style={styles.sectionTitleHeader}>Special Deals</Text>
+              <FlatList
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                data={ADS}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.adsScroll}
+                renderItem={({ item }) => (
+                  <TouchableOpacity style={styles.adCard}>
+                    <Image source={{ uri: item.img }} style={styles.adImg} />
+                    <View style={styles.adOverlay}>
+                      <Text style={styles.adTitle}>{item.title}</Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+
+            <Text style={[styles.sectionTitleHeader, { marginBottom: 10 }]}>
+              {selectedCategory ? categories.find(c => c._id === selectedCategory)?.name : 'Recommended For You'}
+            </Text>
+          </>
+        }
+        renderItem={renderProduct}
+        contentContainerStyle={styles.listContent}
+        columnWrapperStyle={styles.columnWrapper}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyBox}>
+            {loading ? <ActivityIndicator color="#D82B76" /> : <Text style={styles.emptyText}>No products found</Text>}
+          </View>
+        )}
+      />
+
+      {/* Floating WhatsApp */}
+      <TouchableOpacity style={styles.fab} onPress={() => Alert.alert('WhatsApp', 'Opening support...')}>
+        <FontAwesome name="whatsapp" size={32} color="#FFF" />
+      </TouchableOpacity>
+
+      {/* Drawer */}
+      <Modal visible={isDrawerOpen} transparent animationType="fade">
+        <View style={styles.drawerOverlay}>
+          <TouchableOpacity style={styles.drawerBackdrop} onPress={() => setIsDrawerOpen(false)} />
+          <View style={styles.drawerContent}>
+            <View style={styles.drawerHeader}>
+              <Text style={styles.logoTextMain}>GiftCart</Text>
+              <TouchableOpacity onPress={() => setIsDrawerOpen(false)}><Feather name="x" size={24} color="#000" /></TouchableOpacity>
+            </View>
+            <View style={styles.drawerProfile}>
+              <View style={styles.avatar}><Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text></View>
+              <Text style={styles.drawerName}>{user?.name || 'Hello User'}</Text>
+              <Text style={styles.drawerEmail}>{user?.email}</Text>
+            </View>
+            <TouchableOpacity style={styles.drawerItem} onPress={signOut}>
+              <Feather name="log-out" size={20} color="#D82B76" /><Text style={[styles.drawerItemText, {color: '#D82B76'}]}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Bottom Nav */}
+      <View style={styles.bottomNav}>
+        {[
+          { name: 'HOME', icon: 'home', screen: 'Home' },
+          { name: 'COLLECTIONS', icon: 'grid', screen: 'Collections' },
+          { name: 'WISHLIST', icon: 'heart', screen: 'Wishlist' },
+          { name: 'CART', icon: 'shopping-cart', screen: 'Cart', badge: cartCount },
+          { name: 'PROFILE', icon: 'user', screen: 'Profile' },
+        ].map((tab, idx) => (
+          <TouchableOpacity 
+            key={tab.name} 
+            style={styles.bottomNavItem}
+            onPress={() => navigation.navigate(tab.screen)}
+          >
+            <View>
+              <Feather name={tab.icon} size={22} color={idx === 0 ? '#D82B76' : '#555'} />
+              {tab.badge > 0 && (
+                <View style={styles.badge}><Text style={styles.badgeText}>{tab.badge}</Text></View>
+              )}
+            </View>
+            <Text style={[styles.bottomNavText, idx === 0 && {color: '#D82B76'}]}>{tab.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#111',
-    paddingHorizontal: 16,
+  container: { flex: 1, backgroundColor: '#FFF' },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 15, paddingVertical: 12, backgroundColor: '#FFF',
+    borderBottomWidth: 1, borderBottomColor: '#F0F0F0',
   },
-  topbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 18,
+  logoContainer: { flex: 1, alignItems: 'center' },
+  logoTextMain: { fontSize: 24, fontWeight: '800', color: '#D82B76', fontStyle: 'italic' },
+  logoTextSub: { fontSize: 16, fontWeight: '600', color: '#8A2761', marginTop: -8 },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
+  locationButton: { 
+    borderWidth: 1, borderColor: '#DDD', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 8 
   },
-  welcome: {
-    color: '#888',
-    fontSize: 15,
+  locationText: { fontSize: 10, fontWeight: '800' },
+  listContent: { paddingBottom: 100 },
+  columnWrapper: { justifyContent: 'space-between', paddingHorizontal: 15 },
+  bannerContainer: { height: 180, marginVertical: 15 },
+  mainBanner: { width: width - 30, height: 180, borderRadius: 15, marginHorizontal: 15, resizeMode: 'cover' },
+  pagination: { position: 'absolute', bottom: 10, alignSelf: 'center', flexDirection: 'row' },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)', marginHorizontal: 3 },
+  activeDot: { backgroundColor: '#FFF', width: 15 },
+  categoriesContainer: { paddingBottom: 15 },
+  sectionTitleHeader: { fontSize: 18, fontWeight: '800', color: '#333', marginLeft: 15, marginBottom: 15 },
+  categoryScroll: { paddingHorizontal: 15 },
+  categoryCircleItem: { alignItems: 'center', marginRight: 20, width: 65 },
+  circle: { 
+    width: 55, height: 55, borderRadius: 27.5, backgroundColor: '#FFF0F5', 
+    justifyContent: 'center', alignItems: 'center', marginBottom: 5, overflow: 'hidden' 
   },
-  username: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '900',
+  circleSelected: { borderWidth: 2, borderColor: '#D82B76' },
+  circleImg: { width: '100%', height: '100%' },
+  categoryName: { fontSize: 10, fontWeight: '700', color: '#666', textAlign: 'center' },
+  categoryNameSelected: { color: '#D82B76' },
+  adsContainer: { paddingBottom: 25 },
+  adsScroll: { paddingHorizontal: 15 },
+  adCard: { width: 220, height: 110, marginRight: 15, borderRadius: 15, overflow: 'hidden' },
+  adImg: { width: '100%', height: '100%' },
+  adOverlay: { position: 'absolute', bottom: 10, left: 10, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 5 },
+  adTitle: { color: '#FFF', fontSize: 12, fontWeight: '800' },
+  productCardGrid: { width: (width - 45) / 2, marginBottom: 20, backgroundColor: '#FFF', borderRadius: 15, elevation: 2, overflow: 'hidden' },
+  imgWrapper: { width: '100%', height: 180, backgroundColor: '#F9F9F9' },
+  productImageGrid: { width: '100%', height: '100%', resizeMode: 'cover' },
+  prodInfo: { padding: 10 },
+  productName: { fontSize: 14, fontWeight: '600', color: '#333' },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 },
+  productPrice: { fontSize: 16, fontWeight: '900', color: '#D82B76' },
+  fab: { 
+    position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366', 
+    width: 55, height: 55, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 5 
   },
-  logoutButton: {
-    backgroundColor: '#ff5ea0',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 14,
+  bottomNav: { 
+    position: 'absolute', bottom: 0, width: '100%', height: 75, backgroundColor: '#FFF', 
+    flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEE', paddingBottom: Platform.OS === 'ios' ? 15 : 0 
   },
-  logoutText: {
-    color: '#111',
-    fontWeight: '800',
+  bottomNavItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  bottomNavText: { fontSize: 9, fontWeight: '800', marginTop: 4, color: '#555' },
+  badge: { 
+    position: 'absolute', right: -8, top: -5, backgroundColor: '#D82B76', 
+    width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' 
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  sectionTitle: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  sectionAction: {
-    color: '#ff74c3',
-    fontWeight: '700',
-  },
-  chipsScroll: {
-    marginTop: 14,
-    marginBottom: 18,
-  },
-  cartPreview: {
-    backgroundColor: '#171718',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 18,
-    borderWidth: 1,
-    borderColor: '#2b2b2d',
-  },
-  cartHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  cartCount: {
-    color: '#ff9ed9',
-    fontWeight: '700',
-  },
-  cartEmpty: {
-    color: '#888',
-    fontSize: 14,
-  },
-  cartScroll: {
-    marginTop: 4,
-  },
-  cartCard: {
-    backgroundColor: '#000',
-    borderRadius: 18,
-    padding: 14,
-    marginRight: 12,
-    width: 170,
-  },
-  cartName: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  cartPrice: {
-    color: '#ff5ea0',
-    fontWeight: '800',
-  },
-  productList: {
-    paddingBottom: 24,
-  },
-  chipsContainer: {
-    paddingRight: 16,
-  },
-  loaderContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  productList: {
-    paddingBottom: 24,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    marginTop: 48,
-  },
-  emptyText: {
-    color: '#888',
-    fontSize: 16,
-  },
+  badgeText: { color: '#FFF', fontSize: 10, fontWeight: '900' },
+  drawerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', flexDirection: 'row' },
+  drawerBackdrop: { flex: 1 },
+  drawerContent: { width: width * 0.75, backgroundColor: '#FFF', padding: 20 },
+  drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 30 },
+  drawerProfile: { alignItems: 'center', marginBottom: 30 },
+  avatar: { width: 70, height: 70, borderRadius: 35, backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  avatarText: { fontSize: 30, fontWeight: '700', color: '#D82B76' },
+  drawerName: { fontSize: 18, fontWeight: '800' },
+  drawerEmail: { fontSize: 12, color: '#888' },
+  drawerItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15 },
+  drawerItemText: { fontSize: 16, fontWeight: '700', marginLeft: 15 },
+  emptyBox: { width: width - 30, height: 200, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { color: '#999', fontSize: 16 },
+  searchContainer: { flex: 1, marginHorizontal: 10 },
+  searchInput: { backgroundColor: '#F0F0F0', borderRadius: 8, paddingHorizontal: 15, paddingVertical: 8 },
+  menuButton: { padding: 5 },
+  searchIcon: { padding: 8 },
 });
+
+
+
+
