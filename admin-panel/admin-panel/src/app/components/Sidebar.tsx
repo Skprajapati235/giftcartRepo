@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ElementType } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Home, ShoppingBag, Box, ShoppingCart, Tag, Users, Settings, LogOut, ArrowLeft } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
+import { Home, ShoppingBag, Box, ShoppingCart, Tag, Users, Settings, LogOut, ArrowLeft, Moon, Sun } from "lucide-react";
 
 type NavChild = {
   key: string;
@@ -42,6 +43,7 @@ export default function Sidebar() {
   const router = useRouter();
   const [activePanel, setActivePanel] = useState<string | null>(null);
   const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const groupKey = navigation.find((item) =>
@@ -77,7 +79,7 @@ export default function Sidebar() {
 
   return (
     <div className="flex h-screen">
-      <aside className="sticky top-0 h-screen w-20 border-r border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
+      <aside className={`sticky top-0 h-screen w-20 ${theme === "dark" ? "border-r border-slate-700 bg-slate-900" : "border-r border-slate-200 bg-slate-50"}`}>
         <div className="flex h-full flex-col justify-between px-3 py-4">
           <div className="space-y-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-slate-900 text-white">
@@ -116,6 +118,14 @@ export default function Sidebar() {
           <div className="space-y-2">
             <button
               type="button"
+              onClick={toggleTheme}
+              className="flex h-12 w-full items-center justify-center rounded-3xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? <Sun className="h-6 w-6" /> : <Moon className="h-6 w-6" />}
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 setShowAdminMenu((current) => !current);
                 setActivePanel(null);
@@ -129,7 +139,7 @@ export default function Sidebar() {
       </aside>
 
       <div
-        className={`flex-shrink-0 overflow-hidden border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-700 dark:bg-slate-950 ${
+        className={`flex-shrink-0 overflow-hidden border-r ${theme === "dark" ? "border-slate-700 bg-slate-950" : "border-slate-200 bg-white"} transition-all duration-300 ${
           activeGroup ? "w-72 opacity-100 pointer-events-auto" : "w-0 opacity-0 pointer-events-none"
         }`}
       >
@@ -174,7 +184,7 @@ export default function Sidebar() {
       </div>
 
       <div
-        className={`flex-shrink-0 overflow-hidden border-r border-slate-200 bg-white transition-all duration-300 dark:border-slate-700 dark:bg-slate-950 ${
+        className={`flex-shrink-0 overflow-hidden border-r ${theme === "dark" ? "border-slate-700 bg-slate-950" : "border-slate-200 bg-white"} transition-all duration-300 ${
           showAdminMenu ? "w-64 opacity-100 pointer-events-auto" : "w-0 opacity-0 pointer-events-none"
         }`}
       >

@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
+import { ThemeProvider } from "../context/ThemeContext";
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -13,9 +14,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1">{children}</main>
-    </div>
+    <ThemeProvider>
+      <div className="flex min-h-screen">
+        <Sidebar />
+        <main className="flex-1">{children}</main>
+      </div>
+    </ThemeProvider>
   );
 }
