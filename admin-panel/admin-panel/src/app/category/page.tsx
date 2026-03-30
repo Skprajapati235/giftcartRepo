@@ -11,11 +11,22 @@ export default function CategoryPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
 
   const resetForm = () => {
     setEditingId(null);
     setName("");
     setMessage(null);
+  };
+
+  const openForm = () => {
+    setShowForm(true);
+    resetForm();
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    resetForm();
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -32,7 +43,7 @@ export default function CategoryPage() {
         await createCategory(name);
         setMessage("Category created successfully.");
       }
-      resetForm();
+      closeForm();
     } catch (err) {
       setMessage("Unable to save category.");
     } finally {
@@ -44,6 +55,7 @@ export default function CategoryPage() {
     setEditingId(category._id);
     setName(category.name);
     setMessage(null);
+    setShowForm(true);
   };
 
   return (
@@ -51,15 +63,33 @@ export default function CategoryPage() {
       <div className="flex min-h-screen bg-slate-100 text-slate-900">
         <Sidebar />
         <main className="flex-1 p-10">
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Categories</p>
               <h1 className="mt-2 text-3xl font-semibold">Manage categories</h1>
               <p className="mt-2 text-sm text-slate-600">Add, edit, or remove categories for your products.</p>
             </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={openForm}
+                className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Create category
+              </button>
+              {showForm ? (
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="rounded-2xl bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-300"
+                >
+                  Cancel
+                </button>
+              ) : null}
+            </div>
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
+          {showForm ? (
             <section className="rounded-3xl bg-white p-8 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900">{editingId ? "Edit category" : "Create new category"}</h2>
               <p className="mt-2 text-sm text-slate-600">Add a category that products can be assigned to.</p>
@@ -80,20 +110,11 @@ export default function CategoryPage() {
                   >
                     {saving ? "Saving..." : editingId ? "Update category" : "Create category"}
                   </button>
-                  {editingId ? (
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      className="rounded-2xl bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-300"
-                    >
-                      Cancel edit
-                    </button>
-                  ) : null}
                 </div>
                 {message ? <p className="text-sm text-slate-600">{message}</p> : null}
               </form>
             </section>
-
+          ) : (
             <section className="rounded-3xl bg-white p-8 shadow-sm">
               <h2 className="text-xl font-semibold text-slate-900">Category list</h2>
               <p className="mt-2 text-sm text-slate-600">Active categories available in the store.</p>
@@ -128,7 +149,7 @@ export default function CategoryPage() {
                 </ul>
               )}
             </section>
-          </div>
+          )}
         </main>
       </div>
     </ProtectedRoute>

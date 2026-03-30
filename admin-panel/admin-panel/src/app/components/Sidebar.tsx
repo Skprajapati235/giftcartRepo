@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
-import ThemeToggle from "./ThemeToggle";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard" },
@@ -23,7 +22,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="min-h-screen w-72 border-r border-slate-200 bg-slate-50 px-6 py-8 flex flex-col justify-between dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+    <div className="sticky top-0 h-screen w-72 overflow-hidden border-r border-slate-200 bg-slate-50 px-6 py-8 flex flex-col justify-between dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
       <div>
         <div className="mb-10">
           <p className="text-xs uppercase tracking-[0.3em] text-slate-500 dark:text-slate-400">Admin Panel</p>
@@ -45,7 +44,6 @@ export default function Sidebar() {
       </div>
 
       <div className="mt-10 space-y-3">
-        <ThemeToggle />
         <button
           type="button"
           onClick={handleLogout}

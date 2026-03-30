@@ -15,7 +15,7 @@ export default function ProductsPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [viewMode, setViewMode] = useState<"card" | "list">("card");
+  const [viewMode, setViewMode] = useState<"card" | "list">("list");
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -26,7 +26,22 @@ export default function ProductsPage() {
 
   const resetForm = () => {
     setEditingId(null);
+    setForm({ name: "", price: "", description: "", image: "", category: "" });
+    setMessage(null);
+    setImageError(null);
+  };
+
+  const openForm = () => {
     setShowForm(true);
+    setEditingId(null);
+    setForm({ name: "", price: "", description: "", image: "", category: "" });
+    setMessage(null);
+    setImageError(null);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
     setForm({ name: "", price: "", description: "", image: "", category: "" });
     setMessage(null);
     setImageError(null);
@@ -85,7 +100,7 @@ export default function ProductsPage() {
         setMessage("Product created successfully.");
       }
 
-      resetForm();
+      closeForm();
     } catch (err) {
       setMessage("Unable to save product.");
     } finally {
@@ -116,173 +131,148 @@ export default function ProductsPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
-              onClick={() => {
-                setShowForm(true);
-                setEditingId(null);
-                resetForm();
-              }}
+              onClick={openForm}
               className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
               Add product
             </button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-500">View:</span>
-              <button
-                type="button"
-                onClick={() => setViewMode("card")}
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "card" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-              >
-                Cards
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "list" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-              >
-                List
-              </button>
-            </div>
+            {!showForm ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500">View:</span>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("card")}
+                  className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "card" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+                >
+                  Cards
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("list")}
+                  className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "list" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+                >
+                  List
+                </button>
+              </div>
+            ) : null}
           </div>
 
-          {showForm && (
+          {showForm ? (
             <section className="rounded-3xl bg-white p-8 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900">{editingId ? "Edit product" : "Add new product"}</h2>
-            <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">Name</label>
-                <input
-                  value={form.name}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  placeholder="Product name"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Price</label>
-                <input
-                  value={form.price}
-                  onChange={(event) => setForm({ ...form, price: event.target.value })}
-                  type="number"
-                  step="0.01"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Category</label>
-                <select
-                  value={form.category}
-                  onChange={(event) => setForm({ ...form, category: event.target.value })}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  required
-                >
-                  <option value="">Select category</option>
-                  {categories.map((category) => (
-                    <option key={category._id} value={category._id}>{category.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Image URL</label>
-                <input
-                  value={form.image}
-                  onChange={(event) => setForm({ ...form, image: event.target.value })}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  placeholder="https://..."
-                  required
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">Upload image</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                />
-                {uploadingImage && <p className="mt-2 text-sm text-slate-500">Uploading image...</p>}
-                {imageError && <p className="mt-2 text-sm text-rose-600">{imageError}</p>}
-                {form.image ? (
-                  <img
-                    src={form.image}
-                    alt="Product preview"
-                    className="mt-3 h-36 w-full rounded-2xl object-cover"
+              <h2 className="text-xl font-semibold text-slate-900">{editingId ? "Edit product" : "Add new product"}</h2>
+              <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700">Name</label>
+                  <input
+                    value={form.name}
+                    onChange={(event) => setForm({ ...form, name: event.target.value })}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
+                    placeholder="Product name"
+                    required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Price</label>
+                  <input
+                    value={form.price}
+                    onChange={(event) => setForm({ ...form, price: event.target.value })}
+                    type="number"
+                    step="0.01"
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Category</label>
+                  <select
+                    value={form.category}
+                    onChange={(event) => setForm({ ...form, category: event.target.value })}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
+                    required
+                  >
+                    <option value="">Select category</option>
+                    {categories.map((category) => (
+                      <option key={category._id} value={category._id}>{category.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Image URL</label>
+                  <input
+                    value={form.image}
+                    onChange={(event) => setForm({ ...form, image: event.target.value })}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
+                    placeholder="https://..."
+                    required
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700">Upload image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
+                  />
+                  {uploadingImage && <p className="mt-2 text-sm text-slate-500">Uploading image...</p>}
+                  {imageError && <p className="mt-2 text-sm text-rose-600">{imageError}</p>}
+                  {form.image ? (
+                    <img
+                      src={form.image}
+                      alt="Product preview"
+                      className="mt-3 h-36 w-full rounded-2xl object-cover"
+                    />
+                  ) : null}
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-slate-700">Description</label>
+                  <textarea
+                    value={form.description}
+                    onChange={(event) => setForm({ ...form, description: event.target.value })}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
+                    rows={4}
+                    placeholder="Product description"
+                    required
+                  />
+                </div>
+
+                {message ? (
+                  <div className="sm:col-span-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">{message}</div>
                 ) : null}
-              </div>
 
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">Description</label>
-                <textarea
-                  value={form.description}
-                  onChange={(event) => setForm({ ...form, description: event.target.value })}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  rows={4}
-                  placeholder="Product description"
-                  required
-                />
-              </div>
-
-              {message ? (
-                <div className="sm:col-span-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">{message}</div>
-              ) : null}
-
-              <div className="sm:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
-                >
-                  {saving ? "Saving..." : editingId ? "Update product" : "Create product"}
-                </button>
-                {editingId ? (
+                <div className="sm:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+                  >
+                    {saving ? "Saving..." : editingId ? "Update product" : "Create product"}
+                  </button>
                   <button
                     type="button"
-                    onClick={resetForm}
+                    onClick={closeForm}
                     className="rounded-2xl bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-300"
                   >
-                    Cancel edit
+                    Cancel
                   </button>
-                ) : null}
-              </div>
-            </form>
-          </section>
-        )}
-
-          {loading ? (
+                </div>
+              </form>
+            </section>
+          ) : loading ? (
             <div className="rounded-3xl bg-white p-10 text-center text-slate-600 shadow-sm">Loading products...</div>
           ) : error ? (
             <div className="rounded-3xl bg-rose-50 p-8 text-rose-700 shadow-sm">{error}</div>
           ) : (
             <section className="rounded-3xl bg-white p-8 shadow-sm">
-              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-xl font-semibold text-slate-900">Product list</h2>
-                  <p className="mt-1 text-sm text-slate-600">Products visible to your front-end users.</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm text-slate-500">Display mode:</span>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("card")}
-                    className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "card" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-                  >
-                    Cards
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("list")}
-                    className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "list" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-                  >
-                    List
-                  </button>
-                </div>
+              <div className="mb-6">
+                <h2 className="text-xl font-semibold text-slate-900">Product list</h2>
+                <p className="mt-1 text-sm text-slate-600">Products visible to your front-end users.</p>
               </div>
 
               {viewMode === "list" ? (
