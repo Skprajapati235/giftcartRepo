@@ -1,8 +1,9 @@
 "use client";
 
-import React, { FormEvent, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import ProtectedRoute from "../components/ProtectedRoute";
+import Pagination from "../components/Pagination";
 import { useAdmin } from "../context/AdminContext";
 import * as service from "../services/adminService";
 
@@ -16,6 +17,8 @@ export default function ProductsPage() {
   const [imageError, setImageError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [viewMode, setViewMode] = useState<"card" | "list">("list");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -46,6 +49,30 @@ export default function ProductsPage() {
     setMessage(null);
     setImageError(null);
   };
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  const filteredProducts = useMemo(
+    () =>
+      products.filter((product) =>
+        product.name?.toLowerCase().includes(normalizedSearch) ||
+        product.category?.name?.toLowerCase().includes(normalizedSearch)
+      ),
+    [products, normalizedSearch]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / 10));
+  const currentProducts = filteredProducts.slice((currentPage - 1) * 10, currentPage * 10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [normalizedSearch]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files?.[0]) return;
@@ -270,12 +297,43 @@ export default function ProductsPage() {
             <div className="rounded-3xl bg-rose-50 p-8 text-rose-700 shadow-sm">{error}</div>
           ) : (
             <section className="rounded-3xl bg-white p-8 shadow-sm">
-              <div className="mb-6">
-                <h2 className="text-xl font-semibold text-slate-900">Product list</h2>
-                <p className="mt-1 text-sm text-slate-600">Products visible to your front-end users.</p>
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">Product list</h2>
+                  <p className="mt-1 text-sm text-slate-600">Products visible to your front-end users.</p>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <input
+                    value={searchTerm}
+                    onChange={(event) => {
+                      setSearchTerm(event.target.value);
+                      setCurrentPage(1);
+                    }}
+                    placeholder="Search products or category"
+                    className="w-full max-w-md rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("card")}
+                      className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "card" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+                    >
+                      Cards
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setViewMode("list")}
+                      className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "list" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+                    >
+                      List
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {viewMode === "list" ? (
+              {filteredProducts.length === 0 ? (
+                <div className="rounded-3xl bg-slate-50 p-10 text-center text-slate-600">No products found.</div>
+              ) : viewMode === "list" ? (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-max text-left text-sm">
                     <thead>
@@ -288,7 +346,7 @@ export default function ProductsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {products.map((product) => (
+                      {currentProducts.map((product) => (
                         <tr key={product._id} className="border-b border-slate-100">
                           <td className="px-3 py-4 font-medium text-slate-900">{product.name}</td>
                           <td className="px-3 py-4 text-slate-600">{product.category?.name || "Unassigned"}</td>
@@ -316,7 +374,7 @@ export default function ProductsPage() {
                 </div>
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {products.map((product) => (
+                  {currentProducts.map((product) => (
                     <div key={product._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
                       {product.image ? (
                         <img src={product.image} alt={product.name} className="mb-4 h-40 w-full rounded-3xl object-cover" />
@@ -347,6 +405,7 @@ export default function ProductsPage() {
                   ))}
                 </div>
               )}
+              <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             </section>
           )}
         </main>

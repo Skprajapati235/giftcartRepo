@@ -16,8 +16,8 @@ export default function DashboardPage() {
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Dashboard</p>
-              <h1 className="mt-2 text-3xl font-semibold">Store overview</h1>
-              <p className="mt-2 text-sm text-slate-600">Live data from your API and inventory.</p>
+              {/* <h1 className="mt-2 text-3xl font-semibold">Store overview</h1>
+              <p className="mt-2 text-sm text-slate-600">Live data from your API and inventory.</p> */}
             </div>
           </div>
 

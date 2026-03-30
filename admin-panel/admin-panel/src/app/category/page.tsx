@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Sidebar from "../components/Sidebar";
 import ProtectedRoute from "../components/ProtectedRoute";
+import Pagination from "../components/Pagination";
 import { useAdmin } from "../context/AdminContext";
 
 export default function CategoryPage() {
@@ -12,6 +13,8 @@ export default function CategoryPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const resetForm = () => {
     setEditingId(null);
@@ -28,6 +31,28 @@ export default function CategoryPage() {
     setShowForm(false);
     resetForm();
   };
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredCategories = useMemo(
+    () =>
+      categories.filter((category) =>
+        category.name?.toLowerCase().includes(normalizedSearch)
+      ),
+    [categories, normalizedSearch]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredCategories.length / 10));
+  const currentCategories = filteredCategories.slice((currentPage - 1) * 10, currentPage * 10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [normalizedSearch]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [currentPage, totalPages]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -66,8 +91,8 @@ export default function CategoryPage() {
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Categories</p>
-              <h1 className="mt-2 text-3xl font-semibold">Manage categories</h1>
-              <p className="mt-2 text-sm text-slate-600">Add, edit, or remove categories for your products.</p>
+              {/* <h1 className="mt-2 text-3xl font-semibold">Manage categories</h1>
+              <p className="mt-2 text-sm text-slate-600">Add, edit, or remove categories for your products.</p> */}
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <button
@@ -116,15 +141,30 @@ export default function CategoryPage() {
             </section>
           ) : (
             <section className="rounded-3xl bg-white p-8 shadow-sm">
-              <h2 className="text-xl font-semibold text-slate-900">Category list</h2>
-              <p className="mt-2 text-sm text-slate-600">Active categories available in the store.</p>
+              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">Category list</h2>
+                  <p className="mt-2 text-sm text-slate-600">Active categories available in the store.</p>
+                </div>
+                <input
+                  value={searchTerm}
+                  onChange={(event) => {
+                    setSearchTerm(event.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Search categories"
+                  className="w-full max-w-md rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
+                />
+              </div>
               {loading ? (
                 <div className="mt-6 rounded-3xl bg-slate-50 p-6 text-slate-600">Loading categories...</div>
               ) : error ? (
                 <div className="mt-6 rounded-3xl bg-rose-50 p-6 text-rose-700">{error}</div>
+              ) : currentCategories.length === 0 ? (
+                <div className="mt-6 rounded-3xl bg-slate-50 p-6 text-slate-600">No categories found.</div>
               ) : (
                 <ul className="mt-6 space-y-3">
-                  {categories.map((category) => (
+                  {currentCategories.map((category) => (
                     <li
                       key={category._id}
                       className="flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3"
@@ -148,6 +188,7 @@ export default function CategoryPage() {
                   ))}
                 </ul>
               )}
+              <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             </section>
           )}
         </main>
