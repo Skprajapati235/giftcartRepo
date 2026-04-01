@@ -16,9 +16,10 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
-import api from '../api/apiClient';
 import { Feather, Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
+import categoryService from '../services/categoryService';
+import productService from '../services/productService';
 
 const { width } = Dimensions.get('window');
 
@@ -68,13 +69,13 @@ export default function HomeScreen({ navigation }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [categoryRes, productRes, cartRes] = await Promise.all([
-        api.get('/api/category').catch(() => ({ data: [] })),
-        api.get('/api/product').catch(() => ({ data: [] })),
+      const [categoriesData, productsData, cartRes] = await Promise.all([
+        categoryService.getCategories().catch(() => []),
+        productService.getProducts().catch(() => []),
         AsyncStorage.getItem('@giftcart_cart'),
       ]);
-      setCategories(categoryRes.data || []);
-      setAllProducts(productRes.data || []);
+      setCategories(categoriesData || []);
+      setAllProducts(productsData || []);
       setCartCount(cartRes ? JSON.parse(cartRes).length : 0);
     } catch (error) {
       if (error.response?.status === 401) signOut();

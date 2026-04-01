@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native';
-import api from '../api/apiClient';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import categoryService from '../services/categoryService';
 
 export default function CollectionsScreen({ navigation }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get('/api/category')
-      .then(res => setCategories(res.data || []))
+    categoryService.getCategories()
+      .then(data => setCategories(data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

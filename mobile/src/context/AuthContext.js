@@ -1,7 +1,8 @@
 import React, { createContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api, { setAuthToken, handleApiError } from '../api/apiClient';
+import { setAuthToken, handleApiError } from '../api/apiClient';
+import authService from '../services/authService';
 
 export const AuthContext = createContext();
 
@@ -37,9 +38,9 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = async (email, password) => {
     try {
-      const response = await api.post('/api/auth/login', { email, password });
-      await saveSession(response.data.token, response.data.user);
-      return response.data;
+      const data = await authService.login(email, password);
+      await saveSession(data.token, data.user);
+      return data;
     } catch (error) {
       const err = handleApiError(error);
       Alert.alert('Login failed', err.message);
@@ -49,8 +50,8 @@ export const AuthProvider = ({ children }) => {
 
   const signUp = async (name, email, password) => {
     try {
-      const response = await api.post('/api/auth/register', { name, email, password });
-      return response.data;
+      const data = await authService.register(name, email, password);
+      return data;
     } catch (error) {
       const err = handleApiError(error);
       Alert.alert('Registration failed', err.message);

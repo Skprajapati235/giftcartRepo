@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-export const API_BASE_URL = 'http://10.227.227.187:5000';
-// If you run on an Android emulator, use 10.0.2.2 instead of a local IP.
-// For a physical device on the same Wi-Fi, use your laptop's LAN IP.
+// For local development on a physical device, use your laptop's Wi-Fi IP address.
+// Current LAN IP: 10.104.56.187 (verified)
+const baseURL = process.env.API_BASE_URL || 'http://10.104.56.187:5000';
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
+  baseURL: baseURL,
+  timeout: 15000, // Slightly increased timeout for mobile network
 });
 
 export const setAuthToken = (token) => {
