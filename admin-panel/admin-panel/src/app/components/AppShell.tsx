@@ -15,9 +15,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <ThemeProvider>
-      <div className="flex min-h-screen">
-        <Sidebar />
-        <main className="flex-1">{children}</main>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar aria-label="Sidebar for administration functions" />
+        <main className="flex-1 overflow-y-auto bg-background relative border-l border-border-theme">
+          {children}
+        </main>
       </div>
     </ThemeProvider>
   );

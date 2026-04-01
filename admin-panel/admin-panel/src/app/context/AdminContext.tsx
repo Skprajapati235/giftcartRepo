@@ -18,24 +18,34 @@ interface AdminContextState {
   loading: boolean;
   error: string;
   refreshAll: () => Promise<void>;
-  createCategory: (name: string) => Promise<void>;
-  updateCategory: (id: string, name: string) => Promise<void>;
+  createCategory: (payload: { name: string; image?: string }) => Promise<void>;
+  updateCategory: (id: string, payload: { name: string; image?: string }) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   createProduct: (payload: {
     name: string;
     price: number;
+    salePrice?: number;
     description: string;
+    summary?: string;
+    layout?: string;
     image: string;
     category: string;
+    weight?: string;
+    flowers?: number;
   }) => Promise<void>;
   updateProduct: (
     id: string,
     payload: {
       name: string;
       price: number;
+      salePrice?: number;
       description: string;
+      summary?: string;
+      layout?: string;
       image: string;
       category: string;
+      weight?: string;
+      flowers?: number;
     }
   ) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
@@ -76,8 +86,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         service.getAdmins(),
       ]);
 
-      setProducts(productData || []);
-      setCategories(categoryData || []);
+      setProducts((productData || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setCategories((categoryData || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setUsers(userData || []);
       setAdmins(adminData || []);
     } catch (err) {
@@ -96,14 +106,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     await fetchAll();
   };
 
-  const handleCreateCategory = async (name: string) => {
-    if (!name.trim()) return;
-    await service.createCategory({ name: name.trim() });
+  const handleCreateCategory = async (payload: { name: string, image?: string }) => {
+    await service.createCategory(payload);
     await refreshAll();
   };
 
-  const handleUpdateCategory = async (id: string, name: string) => {
-    await service.updateCategory(id, { name: name.trim() });
+  const handleUpdateCategory = async (id: string, payload: { name: string, image?: string }) => {
+    await service.updateCategory(id, payload);
     await refreshAll();
   };
 
@@ -115,9 +124,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const handleCreateProduct = async (payload: {
     name: string;
     price: number;
+    salePrice?: number;
     description: string;
+    summary?: string;
+    layout?: string;
     image: string;
     category: string;
+    weight?: string;
+    flowers?: number;
   }) => {
     await service.createProduct(payload);
     await refreshAll();
@@ -128,9 +142,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     payload: {
       name: string;
       price: number;
+      salePrice?: number;
       description: string;
+      summary?: string;
+      layout?: string;
       image: string;
       category: string;
+      weight?: string;
+      flowers?: number;
     }
   ) => {
     await service.updateProduct(id, payload);

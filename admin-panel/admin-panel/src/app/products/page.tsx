@@ -1,56 +1,71 @@
 "use client";
 
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Pagination from "../components/Pagination";
 import { useAdmin } from "../context/AdminContext";
 import * as service from "../services/adminService";
+import { Search, LayoutGrid, List, Plus, MoreHorizontal, Trash2, Edit3, Box, Upload, X } from "lucide-react";
 
 export default function ProductsPage() {
   const { products, categories, loading, error, createProduct, updateProduct, deleteProduct } = useAdmin();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [imageError, setImageError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [viewMode, setViewMode] = useState<"card" | "list">("list");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
   const [form, setForm] = useState({
     name: "",
     price: "",
+    salePrice: "",
     description: "",
     image: "",
     category: "",
+    weight: "",
+    flowers: "",
   });
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const resetForm = () => {
     setEditingId(null);
-    setForm({ name: "", price: "", description: "", image: "", category: "" });
-    setMessage(null);
-    setImageError(null);
+    setForm({ 
+        name: "", 
+        price: "", 
+        salePrice: "", 
+        description: "", 
+        image: "", 
+        category: "", 
+        weight: "", 
+        flowers: "" 
+    });
   };
 
   const openForm = () => {
     setShowForm(true);
-    setEditingId(null);
-    setForm({ name: "", price: "", description: "", image: "", category: "" });
-    setMessage(null);
-    setImageError(null);
+    resetForm();
   };
 
   const closeForm = () => {
     setShowForm(false);
-    setEditingId(null);
-    setForm({ name: "", price: "", description: "", image: "", category: "" });
-    setMessage(null);
-    setImageError(null);
+    resetForm();
   };
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
-
   const filteredProducts = useMemo(
     () =>
       products.filter((product) =>
@@ -67,25 +82,15 @@ export default function ProductsPage() {
     setCurrentPage(1);
   }, [normalizedSearch]);
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files?.[0]) return;
-
     setUploadingImage(true);
-    setImageError(null);
-
     try {
       const file = event.target.files[0];
       const data = await service.uploadImage(file);
       setForm((current) => ({ ...current, image: data.url }));
-      setMessage("Image uploaded successfully.");
     } catch (err: any) {
-      setImageError(err.response?.data?.message || err.message || "Image upload failed");
+      console.error("Upload failed", err);
     } finally {
       setUploadingImage(false);
     }
@@ -94,259 +99,300 @@ export default function ProductsPage() {
   const handleEdit = (product: any) => {
     setEditingId(product._id);
     setShowForm(true);
+    setOpenMenuId(null);
     setForm({
       name: product.name || "",
       price: String(product.price || ""),
+      salePrice: String(product.salePrice || ""),
       description: product.description || "",
       image: product.image || "",
       category: product.category?._id || "",
+      weight: product.weight || "",
+      flowers: String(product.flowers || ""),
     });
-    setMessage(null);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this product?")) {
+        setOpenMenuId(null);
+        await deleteProduct(id);
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);
-    setMessage(null);
-
     try {
-      const payload = {
-        name: form.name,
-        price: Number(form.price),
-        description: form.description,
-        image: form.image,
-        category: form.category,
+      const payload = { 
+        ...form, 
+        price: Number(form.price), 
+        salePrice: form.salePrice ? Number(form.salePrice) : undefined,
+        flowers: form.flowers ? Number(form.flowers) : undefined
       };
-
       if (editingId) {
         await updateProduct(editingId, payload);
-        setMessage("Product updated successfully.");
       } else {
         await createProduct(payload);
-        setMessage("Product created successfully.");
       }
-
       closeForm();
     } catch (err) {
-      setMessage("Unable to save product.");
+      console.error("Error saving product.", err);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    setDeleting(id);
-    try {
-      await deleteProduct(id);
-    } finally {
-      setDeleting(null);
-    }
-  };
-
   return (
     <ProtectedRoute>
-      <main className="flex-1 p-10 space-y-8">
-        <div>
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Products</p>
-          {/* <h1 className="mt-2 text-3xl font-semibold">Product catalog</h1>
-            <p className="mt-2 text-sm text-slate-600">Add, edit, or remove products that appear in the app.</p> */}
+      <main className="flex-1 bg-background min-h-screen p-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-slate-400 font-bold">Catalog Management</p>
+            <h1 className="text-2xl font-bold text-slate-900 mt-1">Products</h1>
+          </div>
+          {!showForm && (
+            <button
+              onClick={openForm}
+              className="flex items-center gap-2 bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-lg shadow-primary/20"
+            >
+              <Plus size={18} />
+              Add Product
+            </button>
+          )}
         </div>
 
-
-
         {showForm ? (
-          <section className="rounded-3xl bg-white p-8 shadow-sm">
-            <h2 className="text-xl font-semibold text-slate-900">{editingId ? "Edit product" : "Add new product"}</h2>
-            <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">Name</label>
-                <input
-                  value={form.name}
-                  onChange={(event) => setForm({ ...form, name: event.target.value })}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  placeholder="Product name"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Price</label>
-                <input
-                  value={form.price}
-                  onChange={(event) => setForm({ ...form, price: event.target.value })}
-                  type="number"
-                  step="0.01"
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Category</label>
-                <select
-                  value={form.category}
-                  onChange={(event) => setForm({ ...form, category: event.target.value })}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  required
-                >
-                  <option value="">Select category</option>
-                  {categories.map((category) => (
-                    <option key={category._id} value={category._id}>{category.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700">Image URL</label>
-                <input
-                  value={form.image}
-                  onChange={(event) => setForm({ ...form, image: event.target.value })}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  placeholder="https://..."
-                  required
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">Upload image</label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileUpload}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                />
-                {uploadingImage && <p className="mt-2 text-sm text-slate-500">Uploading image...</p>}
-                {imageError && <p className="mt-2 text-sm text-rose-600">{imageError}</p>}
-                {form.image ? (
-                  <img
-                    src={form.image}
-                    alt="Product preview"
-                    className="mt-3 h-36 w-full rounded-2xl object-cover"
-                  />
-                ) : null}
-              </div>
-
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-slate-700">Description</label>
-                <textarea
-                  value={form.description}
-                  onChange={(event) => setForm({ ...form, description: event.target.value })}
-                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  rows={4}
-                  placeholder="Product description"
-                  required
-                />
-              </div>
-
-              {message ? (
-                <div className="sm:col-span-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">{message}</div>
-              ) : null}
-
-              <div className="sm:col-span-2 flex flex-col gap-3 sm:flex-row sm:items-center">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
-                >
-                  {saving ? "Saving..." : editingId ? "Update product" : "Create product"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeForm}
-                  className="rounded-2xl bg-slate-200 px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </section>
-        ) : loading ? (
-          <div className="rounded-3xl bg-white p-10 text-center text-slate-600 shadow-sm">Loading products...</div>
-        ) : error ? (
-          <div className="rounded-3xl bg-rose-50 p-8 text-rose-700 shadow-sm">{error}</div>
-        ) : (
-          <section className="rounded-3xl bg-white p-8 shadow-sm">
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">Product list</h2>
-                <p className="mt-1 text-sm text-slate-600">Products visible to your front-end users.</p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <button
-                    type="button"
-                    onClick={openForm}
-                    className="rounded-2xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-                  >
-                    Add product
-                  </button>
-
+             <section className="bg-card rounded-3xl border border-border-theme shadow-sm max-w-5xl mx-auto overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+                    <h2 className="text-lg font-bold">Add New Product</h2>
+                    <button onClick={closeForm} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
                 </div>
+                
+                <form className="p-8" onSubmit={handleSubmit}>
+                    <div className="grid gap-10 lg:grid-cols-2">
+                        {/* Left Side: Inputs */}
+                        <div className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Product Name</label>
+                                <input
+                                    value={form.name}
+                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                                    placeholder="Enter product title..."
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+                                <textarea
+                                    value={form.description}
+                                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                                    placeholder="Write a brief description..."
+                                    rows={4}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-2">Category</label>
+                                <select
+                                    value={form.category}
+                                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+                                    required
+                                >
+                                    <option value="">Select Category</option>
+                                    {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+                                </select>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Number of Flowers</label>
+                                    <input
+                                        value={form.flowers}
+                                        onChange={(e) => setForm({ ...form, flowers: e.target.value })}
+                                        type="number"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+                                        placeholder="e.g. 12"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Weight of Cake</label>
+                                    <input
+                                        value={form.weight}
+                                        onChange={(e) => setForm({ ...form, weight: e.target.value })}
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+                                        placeholder="e.g. 1kg, 500gm"
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">List Price (MRP ₹)</label>
+                                    <input
+                                        value={form.price}
+                                        onChange={(e) => setForm({ ...form, price: e.target.value })}
+                                        type="number"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+                                        placeholder="e.g. 999"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Sale Price (Offer ₹)</label>
+                                    <input
+                                        value={form.salePrice}
+                                        onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
+                                        type="number"
+                                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none"
+                                        placeholder="e.g. 799"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
+                        {/* Right Side: Image Upload */}
+                        <div className="space-y-6">
+                            <label className="block text-sm font-bold text-slate-700 uppercase tracking-tighter">Product Image</label>
+                            <div className="relative aspect-square w-full rounded-3xl border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center overflow-hidden group">
+                                {form.image ? (
+                                    <>
+                                        <img src={form.image} className="h-full w-full object-cover" />
+                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                            <label className="cursor-pointer bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg text-sm">Update Image</label>
+                                            <input type="file" onChange={handleFileUpload} className="hidden" />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <label className="cursor-pointer flex flex-col items-center gap-4">
+                                        <div className="p-4 bg-blue-50 text-blue-600 rounded-2xl shadow-sm">
+                                            <Upload size={32} />
+                                        </div>
+                                        <div className="text-center">
+                                           <span className="text-blue-600 font-bold">Select Image</span>
+                                           <p className="text-xs text-slate-400 font-medium mt-1 uppercase tracking-widest">JPG, PNG allowed</p>
+                                        </div>
+                                        <input type="file" onChange={handleFileUpload} className="hidden" />
+                                    </label>
+                                )}
+                                {uploadingImage && (
+                                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+                                        <p className="text-blue-600 font-bold">Uploading...</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-12 pt-8 border-t border-slate-100 flex justify-end">
+                        <button
+                            disabled={saving || uploadingImage}
+                            className="bg-primary text-white px-16 py-4 rounded-2xl font-bold hover:opacity-90 transition shadow-xl shadow-primary/20 disabled:opacity-50"
+                        >
+                            {saving ? "Saving..." : editingId ? "Update Product" : "Save Product"}
+                        </button>
+                    </div>
+                </form>
+             </section>
+        ) : (
+          <div className="bg-card rounded-3xl border border-border-theme shadow-sm overflow-hidden min-h-[400px]">
+            {/* Table Header Filter Bar */}
+            <div className="p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
                 <input
                   value={searchTerm}
-                  onChange={(event) => {
-                    setSearchTerm(event.target.value);
-                    setCurrentPage(1);
-                  }}
-                  placeholder="Search products or category"
-                  className="w-full max-w-md rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search products..."
+                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
-                <div className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
                   <button
-                    type="button"
                     onClick={() => setViewMode("card")}
-                    className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "card" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+                    className={`p-2 rounded-lg ${viewMode === "card" ? "bg-white shadow-sm text-blue-600" : "text-slate-400 hover:text-slate-600"}`}
                   >
-                    Cards
+                    <LayoutGrid size={18} />
                   </button>
                   <button
-                    type="button"
                     onClick={() => setViewMode("list")}
-                    className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${viewMode === "list" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+                    className={`p-2 rounded-lg ${viewMode === "list" ? "bg-white shadow-sm text-blue-600" : "text-slate-400 hover:text-slate-600"}`}
                   >
-                    List
+                    <List size={18} />
                   </button>
                 </div>
               </div>
             </div>
 
-            {filteredProducts.length === 0 ? (
-              <div className="rounded-3xl bg-slate-50 p-10 text-center text-slate-600">No products found.</div>
+            {loading ? (
+              <div className="p-20 text-center text-slate-500 font-medium font-sans">Fetching your products...</div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="p-20 text-center text-slate-400 italic">No products found for your search.</div>
             ) : viewMode === "list" ? (
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-max text-left text-sm">
+              <div className="overflow-x-auto min-h-[400px]">
+                <table className="w-full text-left table-fixed">
                   <thead>
-                    <tr className="border-b border-slate-200 text-slate-500">
-                      <th className="px-3 py-3">Name</th>
-                      <th className="px-3 py-3">Category</th>
-                      <th className="px-3 py-3">Price</th>
-                      <th className="px-3 py-3">Created</th>
-                      <th className="px-3 py-3">Actions</th>
+                    <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
+                      <th className="px-6 py-4 w-[35%]">Name</th>
+                      <th className="px-6 py-4 w-[25%]">Description</th>
+                      <th className="px-6 py-4 w-[20%]">Created At</th>
+                      <th className="px-6 py-4 w-[12%]">Price</th>
+                      <th className="px-6 py-4 w-[8%] text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {currentProducts.map((product) => (
-                      <tr key={product._id} className="border-b border-slate-100">
-                        <td className="px-3 py-4 font-medium text-slate-900">{product.name}</td>
-                        <td className="px-3 py-4 text-slate-600">{product.category?.name || "Unassigned"}</td>
-                        <td className="px-3 py-4 text-slate-600">${product.price?.toFixed(2)}</td>
-                        <td className="px-3 py-4 text-slate-600">{new Date(product.createdAt).toLocaleDateString()}</td>
-                        <td className="px-3 py-4 space-x-2">
-                          <button
-                            className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-                            onClick={() => handleEdit(product)}
+                  <tbody className="divide-y divide-slate-50">
+                    {currentProducts.map((p) => (
+                      <tr key={p._id} className="hover:bg-hover-theme transition-colors group border-b border-border-theme/50">
+                        <td className="px-6 py-5 overflow-hidden">
+                          <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden shrink-0">
+                              {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="h-full w-full p-3 text-slate-300" />}
+                            </div>
+                            <span className="font-bold text-slate-900 truncate">{p.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                          <p className="text-slate-500 text-sm truncate">{p.description}</p>
+                        </td>
+                        <td className="px-6 py-5 text-slate-500 text-sm">
+                          {new Date(p.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap">
+                            ₹{p.salePrice || p.price}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-right relative">
+                          <button 
+                            onClick={() => setOpenMenuId(openMenuId === p._id ? null : p._id)}
+                            className="p-2 text-slate-400 hover:text-slate-900 transition rounded-xl"
                           >
-                            Edit
+                             <MoreHorizontal size={20} />
                           </button>
-                          <button
-                            className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50"
-                            disabled={deleting === product._id}
-                            onClick={() => handleDelete(product._id)}
-                          >
-                            {deleting === product._id ? "Deleting..." : "Delete"}
-                          </button>
+                          
+                          {openMenuId === p._id && (
+                             <div 
+                                ref={menuRef}
+                                className="absolute right-6 top-14 w-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in duration-200"
+                             >
+                                <button 
+                                    onClick={() => handleEdit(p)}
+                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
+                                >
+                                    <Edit3 size={16} className="text-blue-600" />
+                                    Edit Product
+                                </button>
+                                <button 
+                                    onClick={() => handleDelete(p._id)}
+                                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 transition"
+                                >
+                                    <Trash2 size={16} />
+                                    Delete
+                                </button>
+                             </div>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -354,40 +400,36 @@ export default function ProductsPage() {
                 </table>
               </div>
             ) : (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {currentProducts.map((product) => (
-                  <div key={product._id} className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-                    {product.image ? (
-                      <img src={product.image} alt={product.name} className="mb-4 h-40 w-full rounded-3xl object-cover" />
-                    ) : (
-                      <div className="mb-4 h-40 w-full rounded-3xl bg-slate-200" />
-                    )}
-                    <h3 className="text-lg font-semibold text-slate-900">{product.name}</h3>
-                    <p className="mt-2 text-sm text-slate-600">{product.category?.name || "Unassigned"}</p>
-                    <p className="mt-2 text-sm text-slate-900 font-semibold">${product.price?.toFixed(2)}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-                        onClick={() => handleEdit(product)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50"
-                        disabled={deleting === product._id}
-                        onClick={() => handleDelete(product._id)}
-                      >
-                        {deleting === product._id ? "Deleting..." : "Delete"}
-                      </button>
+              /* Card View Mode */
+              <div className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 bg-slate-50/50">
+                {currentProducts.map((p) => (
+                  <div key={p._id} className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm hover:shadow-md transition">
+                    <div className="h-44 w-full rounded-2xl overflow-hidden bg-slate-50 border border-slate-50 mb-4">
+                      {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="p-10 text-slate-200" />}
+                    </div>
+                    <div className="px-1">
+                      <h4 className="font-bold text-slate-900 truncate">{p.name}</h4>
+                      <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">{p.category?.name || "No Category"}</p>
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="text-blue-600 font-extrabold">₹{p.salePrice || p.price}</span>
+                        <div className="flex gap-1">
+                          <button onClick={() => handleEdit(p)} className="p-2 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"><Edit3 size={16} /></button>
+                          <button onClick={() => deleteProduct(p._id)} className="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50"><Trash2 size={16} /></button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-          </section>
+
+            <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
+                Showing {(currentPage - 1) * 10 + 1}-{Math.min(currentPage * 10, filteredProducts.length)} of {filteredProducts.length}
+              </div>
+              <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+            </div>
+          </div>
         )}
       </main>
     </ProtectedRoute>

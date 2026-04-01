@@ -22,6 +22,7 @@ app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/admin/auth", require("./routes/admin/authRoutes"));
 app.use("/api/category", require("./routes/categoryRoutes"));
 app.use("/api/product", require("./routes/productRoutes"));
+app.use("/api/order", require("./routes/orderRoutes"));
 app.use("/api/upload", adminMiddleware, require("./routes/uploadRoutes"));
 app.use("/api/admin/users", adminMiddleware, require("./routes/userRoutes"));
 

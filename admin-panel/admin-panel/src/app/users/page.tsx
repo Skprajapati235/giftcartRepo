@@ -1,15 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Pagination from "../components/Pagination";
 import { useAdmin } from "../context/AdminContext";
+import { Search, Users, MoreHorizontal, Trash2, Mail, MapPin, Calendar, X } from "lucide-react";
 
 export default function UsersPage() {
   const { users, loading, error, deleteUser } = useAdmin();
-  const [deleting, setDeleting] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredUsers = useMemo(
@@ -29,96 +41,130 @@ export default function UsersPage() {
     setCurrentPage(1);
   }, [normalizedSearch]);
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(1);
-    }
-  }, [currentPage, totalPages]);
-
   const handleDelete = async (id: string) => {
-    setDeleting(id);
-    try {
-      await deleteUser(id);
-    } finally {
-      setDeleting(null);
+    if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+        setOpenMenuId(null);
+        await deleteUser(id);
     }
   };
 
   return (
     <ProtectedRoute>
-      <main className="flex-1 p-10">
-          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Users</p>
-              {/* <h1 className="mt-2 text-3xl font-semibold">Registered users</h1>
-              <p className="mt-2 text-sm text-slate-600">Review account information and membership.</p> */}
+      <main className="flex-1 bg-background min-h-screen p-8">
+        <div className="mb-8">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground font-bold">User Management</p>
+            <h1 className="text-2xl font-bold text-foreground mt-1">Customer Accounts</h1>
+        </div>
+
+        <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden min-h-[500px]">
+            <div className="p-6 border-b border-border flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
+                <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-4 top-3.5 text-muted-foreground" size={18} />
+                    <input
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search name, email or city..."
+                        className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-3 rounded-2xl border border-slate-100">
+                        {filteredUsers.length} Users Found
+                    </div>
+                </div>
             </div>
-          </div>
 
-          <section className="rounded-3xl bg-white p-8 shadow-sm">
             {loading ? (
-              <div className="rounded-3xl bg-slate-50 p-10 text-center text-slate-600">Loading users...</div>
+                <div className="p-20 text-center text-slate-500 font-medium">Fetching user data...</div>
             ) : error ? (
-              <div className="rounded-3xl bg-rose-50 p-8 text-rose-700">{error}</div>
+                <div className="p-20 text-center text-rose-500 font-bold">{error}</div>
+            ) : filteredUsers.length === 0 ? (
+                <div className="p-20 text-center text-slate-400 italic">No users found.</div>
             ) : (
-              <div>
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-semibold text-slate-900">User accounts</h2>
-                    <p className="mt-1 text-sm text-slate-600">Total users in the store.</p>
-                  </div>
-                  <input
-                    value={searchTerm}
-                    onChange={(event) => {
-                      setSearchTerm(event.target.value);
-                      setCurrentPage(1);
-                    }}
-                    placeholder="Search users"
-                    className="w-full max-w-md rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-                  />
+                <div className="overflow-x-auto min-h-[350px]">
+                    <table className="w-full text-left table-fixed">
+                        <thead>
+                            <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
+                                <th className="px-6 py-4 w-[30%]">Customer</th>
+                                <th className="px-6 py-4 w-[30%]">Email Address</th>
+                                <th className="px-6 py-4 w-[20%]">Location</th>
+                                <th className="px-6 py-4 w-[12%]">Joined</th>
+                                <th className="px-6 py-4 w-[8%] text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border-theme">
+                            {currentUsers.map((user) => (
+                                <tr key={user._id} className="hover:bg-hover-theme transition-colors group border-b border-border-theme/50">
+                                    <td className="px-6 py-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                                                <Users size={18} />
+                                            </div>
+                                            <span className="font-bold text-slate-900">{user.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <div className="flex items-center gap-2 text-slate-500 text-sm">
+                                            <Mail size={14} className="text-slate-300" />
+                                            {user.email}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-5 text-slate-500 text-sm capitalize">
+                                        <div className="flex items-center gap-2">
+                                            <MapPin size={14} className="text-slate-300" />
+                                            {user.city || "Not specified"}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <div className="flex items-center gap-2 text-slate-400 text-xs font-bold whitespace-nowrap">
+                                            <Calendar size={14} />
+                                            {new Date(user.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-5 text-right relative">
+                                        <button 
+                                            onClick={() => setOpenMenuId(openMenuId === user._id ? null : user._id)}
+                                            className="p-2 text-slate-400 hover:text-slate-900 transition rounded-xl"
+                                        >
+                                            <MoreHorizontal size={20} />
+                                        </button>
+                                        
+                                        {openMenuId === user._id && (
+                                            <div 
+                                                ref={menuRef}
+                                                className="absolute right-6 top-14 w-44 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in duration-200"
+                                            >
+                                                <button 
+                                                    className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
+                                                    onClick={() => alert(`Name: ${user.name}\nEmail: ${user.email}\nCity: ${user.city || "N/A"}`)}
+                                                >
+                                                    View Profile
+                                                </button>
+                                                <div className="mx-2 my-1 border-t border-slate-100" />
+                                                <button 
+                                                    onClick={() => handleDelete(user._id)}
+                                                    className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 transition"
+                                                >
+                                                    <Trash2 size={16} />
+                                                    Delete Account
+                                                </button>
+                                            </div>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
+            )}
 
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="text-sm text-slate-500">{filteredUsers.length} users found</span>
-                  <span className="rounded-2xl bg-slate-100 px-4 py-2 text-sm text-slate-700">{users.length} total</span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-max text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-slate-500">
-                        <th className="px-3 py-3">Name</th>
-                        <th className="px-3 py-3">Email</th>
-                        <th className="px-3 py-3">City</th>
-                        <th className="px-3 py-3">Created</th>
-                        <th className="px-3 py-3">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {currentUsers.map((user) => (
-                        <tr key={user._id} className="border-b border-slate-100">
-                          <td className="px-3 py-4 font-medium text-slate-900">{user.name}</td>
-                          <td className="px-3 py-4 text-slate-600">{user.email}</td>
-                          <td className="px-3 py-4 text-slate-600">{user.city || "—"}</td>
-                          <td className="px-3 py-4 text-slate-600">{new Date(user.createdAt).toLocaleDateString()}</td>
-                          <td className="px-3 py-4">
-                            <button
-                              className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:opacity-50"
-                              disabled={deleting === user._id}
-                              onClick={() => handleDelete(user._id)}
-                            >
-                              {deleting === user._id ? "Deleting..." : "Delete"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                   Results {filteredUsers.length} Customers
                 </div>
                 <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-              </div>
-            )}
-          </section>
+            </div>
+        </div>
       </main>
     </ProtectedRoute>
   );

@@ -15,6 +15,7 @@ import { AuthContext } from '../context/AuthContext';
 
 export default function CartScreen({ navigation }) {
   const [cartItems, setCartItems] = useState([]);
+  const [selectedItems, setSelectedItems] = useState([]);
   const [total, setTotal] = useState(0);
 
   const loadCart = async () => {
@@ -22,11 +23,30 @@ export default function CartScreen({ navigation }) {
       const raw = await AsyncStorage.getItem('@giftcart_cart');
       const items = raw ? JSON.parse(raw) : [];
       setCartItems(items);
-      const sum = items.reduce((acc, item) => acc + (item.price || 0), 0);
-      setTotal(sum);
+      // Default select all on load
+      setSelectedItems(items.map(i => i._id));
+      calculateTotal(items, items.map(i => i._id));
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const calculateTotal = (items, selectedIds) => {
+    const sum = items
+      .filter(item => selectedIds.includes(item._id))
+      .reduce((acc, item) => acc + (item.salePrice || item.price || 0), 0);
+    setTotal(sum);
+  };
+
+  const toggleSelection = (id) => {
+    let next;
+    if (selectedItems.includes(id)) {
+      next = selectedItems.filter(i => i !== id);
+    } else {
+      next = [...selectedItems, id];
+    }
+    setSelectedItems(next);
+    calculateTotal(cartItems, next);
   };
 
   useEffect(() => {
@@ -36,28 +56,49 @@ export default function CartScreen({ navigation }) {
 
   const removeItem = async (id) => {
     try {
-      const next = cartItems.filter(item => item._id !== id);
-      await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(next));
-      setCartItems(next);
-      const sum = next.reduce((acc, item) => acc + (item.price || 0), 0);
-      setTotal(sum);
+      const nextItems = cartItems.filter(item => item._id !== id);
+      const nextSelected = selectedItems.filter(i => i !== id);
+      await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(nextItems));
+      setCartItems(nextItems);
+      setSelectedItems(nextSelected);
+      calculateTotal(nextItems, nextSelected);
     } catch (err) {
       Alert.alert('Error', 'Could not remove item from cart.');
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.image} />
-      <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
-        <Text style={styles.price}>₹{item.price?.toFixed(0)}</Text>
+  const handleCheckout = () => {
+    const itemsToOrder = cartItems.filter(item => selectedItems.includes(item._id));
+    if (itemsToOrder.length === 0) {
+      Alert.alert('Select Items', 'Please select at least one item to checkout.');
+      return;
+    }
+    navigation.navigate('Checkout', { cartItems: itemsToOrder, total });
+  };
+
+  const renderItem = ({ item }) => {
+    const isSelected = selectedItems.includes(item._id);
+    return (
+      <View style={styles.card}>
+        <TouchableOpacity onPress={() => toggleSelection(item._id)} style={styles.checkbox}>
+           <Ionicons 
+             name={isSelected ? "checkbox" : "square-outline"} 
+             size={24} 
+             color={isSelected ? "#D82B76" : "#DDD"} 
+           />
+        </TouchableOpacity>
+        <Image source={{ uri: item.image }} style={styles.image} />
+        <View style={styles.info}>
+          <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
+          <Text style={styles.price}>₹{item.salePrice || item.price}</Text>
+          {item.weight ? <Text style={styles.weightText}>{item.weight}</Text> : null}
+        </View>
+        <TouchableOpacity onPress={() => removeItem(item._id)} style={styles.removeBtn}>
+          <Feather name="trash-2" size={20} color="#FF6A3D" />
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={() => removeItem(item._id)} style={styles.removeBtn}>
-        <Feather name="trash-2" size={20} color="#FF6A3D" />
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,7 +132,10 @@ export default function CartScreen({ navigation }) {
             <Text style={styles.totalLabel}>Total Amount:</Text>
             <Text style={styles.totalVal}>₹{total.toFixed(0)}</Text>
           </View>
-          <TouchableOpacity style={styles.checkoutBtn} onPress={() => Alert.alert('Checkout', 'Proceeding to payment...')}>
+          <TouchableOpacity 
+            style={styles.checkoutBtn} 
+            onPress={handleCheckout}
+          >
             <Text style={styles.checkoutText}>Checkout Now</Text>
           </TouchableOpacity>
         </View>
@@ -105,11 +149,13 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF' },
   title: { fontSize: 20, fontWeight: '800', color: '#000' },
   list: { padding: 15 },
-  card: { flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 15, padding: 10, marginBottom: 15, elevation: 2 },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 15, padding: 10, marginBottom: 15, elevation: 2 },
+  checkbox: { paddingRight: 10 },
   image: { width: 80, height: 80, borderRadius: 10 },
   info: { flex: 1, marginLeft: 15, justifyContent: 'center' },
   name: { fontSize: 16, fontWeight: '600', color: '#333' },
-  price: { fontSize: 18, fontWeight: '800', color: '#D82B76', marginTop: 5 },
+  price: { fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginTop: 5 },
+  weightText: { fontSize: 12, color: '#888', marginTop: 2, fontWeight: '600' },
   removeBtn: { padding: 10, justifyContent: 'center' },
   footer: { padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#EEE' },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },

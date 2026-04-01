@@ -79,36 +79,39 @@ export default function Sidebar() {
 
   return (
     <div className="flex h-screen">
-      <aside className={`sticky top-0 h-screen w-20 ${theme === "dark" ? "border-r border-slate-700 bg-slate-900" : "border-r border-slate-200 bg-slate-50"}`}>
+      <aside className="sticky top-0 h-screen w-20 border-r border-border-theme bg-background transition-colors duration-300">
         <div className="flex h-full flex-col justify-between px-3 py-4">
           <div className="space-y-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-slate-900 text-white">
-              <span className="text-lg font-bold">G</span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-secondary text-white shadow-xl">
+               <span className="text-lg font-bold">G</span>
             </div>
 
-            <nav className="space-y-2">
+            <nav className="space-y-4">
               {navigation.map((item) => {
                 const active = isPathActive(item.href, item.children);
                 const Icon = item.icon;
                 return (
-                  <div key={item.key}>
+                  <div key={item.key} className="flex flex-col items-center">
                     {item.children ? (
                       <button
                         type="button"
                         onClick={() => handlePanelOpen(item)}
-                        className={`flex h-12 w-full items-center justify-center rounded-3xl transition ${active ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-800"}`}
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${active ? "bg-primary text-white shadow-lg scale-110" : "text-slate-400 hover:bg-hover-theme hover:text-foreground"}`}
                       >
-                        <Icon className="h-6 w-6" />
+                        <Icon className="h-5 w-5" />
                       </button>
                     ) : (
                       <Link
                         href={item.href!}
                         onClick={() => handlePanelOpen(item)}
-                        className={`flex h-12 w-full items-center justify-center rounded-3xl transition ${active ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-800"}`}
+                        className={`flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-300 ${active ? "bg-primary text-white shadow-lg scale-110" : "text-slate-400 hover:bg-hover-theme hover:text-foreground"}`}
                       >
-                        <Icon className="h-6 w-6" />
+                        <Icon className="h-5 w-5" />
                       </Link>
                     )}
+                    <span className={`mt-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${active ? "text-primary" : "text-slate-500"}`}>
+                      {item.label}
+                    </span>
                   </div>
                 );
               })}
@@ -139,9 +142,8 @@ export default function Sidebar() {
       </aside>
 
       <div
-        className={`flex-shrink-0 overflow-hidden border-r ${theme === "dark" ? "border-slate-700 bg-slate-950" : "border-slate-200 bg-white"} transition-all duration-300 ${
-          activeGroup ? "w-72 opacity-100 pointer-events-auto" : "w-0 opacity-0 pointer-events-none"
-        }`}
+        className={`sticky top-0 h-screen flex-shrink-0 overflow-hidden border-r border-border-theme bg-card transition-all duration-300 ${activeGroup ? "w-72 opacity-100 pointer-events-auto" : "w-0 opacity-0 pointer-events-none"
+          }`}
       >
         {activeGroup ? (
           <div className="h-full p-5">
@@ -169,7 +171,7 @@ export default function Sidebar() {
                   <Link
                     key={child.key}
                     href={child.href}
-                    className={`flex items-center gap-3 rounded-3xl border px-4 py-4 text-sm font-medium transition ${childActive ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100 dark:hover:border-slate-700 dark:hover:bg-slate-900"}`}
+                    className={`flex items-center gap-3 rounded-3xl border px-4 py-4 text-sm font-medium transition-all duration-300 ${childActive ? "border-primary bg-primary text-white shadow-lg translate-x-1" : "border-border-theme bg-background text-slate-400 hover:border-primary hover:bg-hover-theme hover:text-foreground"}`}
                   >
                     <ChildIcon className="h-5 w-5" />
                     <div>
@@ -184,9 +186,8 @@ export default function Sidebar() {
       </div>
 
       <div
-        className={`flex-shrink-0 overflow-hidden border-r ${theme === "dark" ? "border-slate-700 bg-slate-950" : "border-slate-200 bg-white"} transition-all duration-300 ${
-          showAdminMenu ? "w-64 opacity-100 pointer-events-auto" : "w-0 opacity-0 pointer-events-none"
-        }`}
+        className={`sticky top-0 h-screen flex-shrink-0 overflow-hidden border-r border-border-theme bg-card transition-all duration-300 ${showAdminMenu ? "w-64 opacity-100 pointer-events-auto" : "w-0 opacity-0 pointer-events-none"
+          }`}
       >
         {showAdminMenu ? (
           <div className="h-full p-5">
@@ -207,7 +208,7 @@ export default function Sidebar() {
               </button>
             </div>
             <div className="space-y-3">
-              <button className="w-full rounded-3xl bg-slate-100 px-4 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-slate-200 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900">
+              <button className="w-full rounded-3xl border border-border-theme bg-background px-4 py-4 text-left text-sm font-bold text-foreground transition hover:bg-hover-theme">
                 Profile settings
               </button>
               <button

@@ -10,6 +10,9 @@ import CartScreen from '../screens/CartScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import WishlistScreen from '../screens/WishlistScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
+import CheckoutScreen from '../screens/CheckoutScreen';
+import MyOrdersScreen from '../screens/MyOrdersScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -45,6 +48,8 @@ export default function AppNavigator() {
           <Stack.Screen name="Profile" component={ProfileScreen} />
           <Stack.Screen name="Wishlist" component={WishlistScreen} />
           <Stack.Screen name="Collections" component={CollectionsScreen} />
+          <Stack.Screen name="Checkout" component={CheckoutScreen} />
+          <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
         </>
       )}
     </Stack.Navigator>

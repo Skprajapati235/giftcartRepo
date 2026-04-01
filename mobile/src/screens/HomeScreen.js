@@ -118,20 +118,33 @@ export default function HomeScreen({ navigation }) {
   };
 
   const renderProduct = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.productCardGrid} 
+    <TouchableOpacity
+      style={styles.productCardGrid}
       onPress={() => navigation.navigate('ProductDetail', { product: item })}
     >
       <View style={styles.imgWrapper}>
-        <Image 
-          source={{ uri: item.image || 'https://images.unsplash.com/photo-1513201099705-a9746e1e201f?w=400&h=400&fit=crop' }} 
-          style={styles.productImageGrid} 
+        <Image
+          source={{ uri: item.image || 'https://images.unsplash.com/photo-1513201099705-a9746e1e201f?w=400&h=400&fit=crop' }}
+          style={styles.productImageGrid}
         />
+        {item.salePrice && item.price > item.salePrice && (
+          <View style={styles.discountBadge}>
+            <Text style={styles.discountText}>
+              {Math.round(((item.price - item.salePrice) / item.price) * 100)}% OFF
+            </Text>
+          </View>
+        )}
       </View>
       <View style={styles.prodInfo}>
         <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+        {item.weight ? <Text style={styles.productWeight}>{item.weight}</Text> : null}
         <View style={styles.priceRow}>
-          <Text style={styles.productPrice}>₹{item.price?.toFixed(0) || '0'}</Text>
+          <View style={styles.priceContainer}>
+            <Text style={styles.productPrice}>₹{item.salePrice || item.price}</Text>
+            {item.salePrice && item.price > item.salePrice && (
+              <Text style={styles.listPrice}>₹{item.price}</Text>
+            )}
+          </View>
           <TouchableOpacity onPress={() => addToCart(item)}>
             <Ionicons name="add-circle" size={26} color="#D82B76" />
           </TouchableOpacity>
@@ -149,7 +162,7 @@ export default function HomeScreen({ navigation }) {
         <TouchableOpacity style={styles.menuButton} onPress={() => setIsDrawerOpen(true)}>
           <Feather name="menu" size={28} color="#FF6A3D" />
         </TouchableOpacity>
-        
+
         {!showSearch ? (
           <View style={styles.logoContainer}>
             <Text style={styles.logoTextMain}>Gift</Text>
@@ -214,15 +227,15 @@ export default function HomeScreen({ navigation }) {
               <FlatList
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                data={[{_id: 'all', name: 'All'}, ...categories]}
+                data={[{ _id: 'all', name: 'All' }, ...categories]}
                 keyExtractor={item => item._id}
                 contentContainerStyle={styles.categoryScroll}
                 renderItem={({ item }) => {
                   const isAll = item._id === 'all';
                   const isSelected = isAll ? !selectedCategory : selectedCategory === item._id;
                   return (
-                    <TouchableOpacity 
-                      style={styles.categoryCircleItem} 
+                    <TouchableOpacity
+                      style={styles.categoryCircleItem}
                       onPress={() => setSelectedCategory(isAll ? null : item._id)}
                     >
                       <View style={[styles.circle, isSelected && styles.circleSelected]}>
@@ -297,7 +310,7 @@ export default function HomeScreen({ navigation }) {
               <Text style={styles.drawerEmail}>{user?.email}</Text>
             </View>
             <TouchableOpacity style={styles.drawerItem} onPress={signOut}>
-              <Feather name="log-out" size={20} color="#D82B76" /><Text style={[styles.drawerItemText, {color: '#D82B76'}]}>Logout</Text>
+              <Feather name="log-out" size={20} color="#D82B76" /><Text style={[styles.drawerItemText, { color: '#D82B76' }]}>Logout</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -312,8 +325,8 @@ export default function HomeScreen({ navigation }) {
           { name: 'CART', icon: 'shopping-cart', screen: 'Cart', badge: cartCount },
           { name: 'PROFILE', icon: 'user', screen: 'Profile' },
         ].map((tab, idx) => (
-          <TouchableOpacity 
-            key={tab.name} 
+          <TouchableOpacity
+            key={tab.name}
             style={styles.bottomNavItem}
             onPress={() => navigation.navigate(tab.screen)}
           >
@@ -323,7 +336,7 @@ export default function HomeScreen({ navigation }) {
                 <View style={styles.badge}><Text style={styles.badgeText}>{tab.badge}</Text></View>
               )}
             </View>
-            <Text style={[styles.bottomNavText, idx === 0 && {color: '#D82B76'}]}>{tab.name}</Text>
+            <Text style={[styles.bottomNavText, idx === 0 && { color: '#D82B76' }]}>{tab.name}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -342,8 +355,8 @@ const styles = StyleSheet.create({
   logoTextMain: { fontSize: 24, fontWeight: '800', color: '#D82B76', fontStyle: 'italic' },
   logoTextSub: { fontSize: 16, fontWeight: '600', color: '#8A2761', marginTop: -8 },
   headerRight: { flexDirection: 'row', alignItems: 'center' },
-  locationButton: { 
-    borderWidth: 1, borderColor: '#DDD', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 8 
+  locationButton: {
+    borderWidth: 1, borderColor: '#DDD', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 8
   },
   locationText: { fontSize: 10, fontWeight: '800' },
   listContent: { paddingBottom: 100 },
@@ -357,9 +370,9 @@ const styles = StyleSheet.create({
   sectionTitleHeader: { fontSize: 18, fontWeight: '800', color: '#333', marginLeft: 15, marginBottom: 15 },
   categoryScroll: { paddingHorizontal: 15 },
   categoryCircleItem: { alignItems: 'center', marginRight: 20, width: 65 },
-  circle: { 
-    width: 55, height: 55, borderRadius: 27.5, backgroundColor: '#FFF0F5', 
-    justifyContent: 'center', alignItems: 'center', marginBottom: 5, overflow: 'hidden' 
+  circle: {
+    width: 55, height: 55, borderRadius: 27.5, backgroundColor: '#FFF0F5',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 5, overflow: 'hidden'
   },
   circleSelected: { borderWidth: 2, borderColor: '#D82B76' },
   circleImg: { width: '100%', height: '100%' },
@@ -375,22 +388,30 @@ const styles = StyleSheet.create({
   imgWrapper: { width: '100%', height: 180, backgroundColor: '#F9F9F9' },
   productImageGrid: { width: '100%', height: '100%', resizeMode: 'cover' },
   prodInfo: { padding: 10 },
-  productName: { fontSize: 14, fontWeight: '600', color: '#333' },
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 },
-  productPrice: { fontSize: 16, fontWeight: '900', color: '#D82B76' },
-  fab: { 
-    position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366', 
-    width: 55, height: 55, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 5 
+  productName: { fontSize: 13, minHeight: 18, fontWeight: '700', color: '#1a1a1a', marginTop: 2 },
+  productWeight: { fontSize: 11, color: '#888', fontWeight: '600', marginTop: 2 },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4 },
+  priceContainer: { flex: 1 },
+  productPrice: { fontSize: 15, fontWeight: '900', color: '#1a1a1a' },
+  listPrice: { fontSize: 11, color: '#999', textDecorationLine: 'line-through', marginTop: -2 },
+  discountBadge: {
+    position: 'absolute', top: 10, left: 0, backgroundColor: '#00a65a',
+    paddingHorizontal: 8, paddingVertical: 4, borderTopRightRadius: 10, borderBottomRightRadius: 10
   },
-  bottomNav: { 
-    position: 'absolute', bottom: 0, width: '100%', height: 75, backgroundColor: '#FFF', 
-    flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEE', paddingBottom: Platform.OS === 'ios' ? 15 : 0 
+  discountText: { color: '#FFF', fontSize: 10, fontWeight: '900' },
+  fab: {
+    position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366',
+    width: 55, height: 55, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 5
+  },
+  bottomNav: {
+    position: 'absolute', bottom: 0, width: '100%', height: 75, backgroundColor: '#FFF',
+    flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEE', paddingBottom: Platform.OS === 'ios' ? 15 : 0
   },
   bottomNavItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   bottomNavText: { fontSize: 9, fontWeight: '800', marginTop: 4, color: '#555' },
-  badge: { 
-    position: 'absolute', right: -8, top: -5, backgroundColor: '#D82B76', 
-    width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center' 
+  badge: {
+    position: 'absolute', right: -8, top: -5, backgroundColor: '#D82B76',
+    width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center'
   },
   badgeText: { color: '#FFF', fontSize: 10, fontWeight: '900' },
   drawerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', flexDirection: 'row' },

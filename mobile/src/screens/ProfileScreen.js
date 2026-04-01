@@ -42,7 +42,7 @@ export default function ProfileScreen({ navigation }) {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
-          <ProfileItem icon="shopping-bag" label="My Orders" onPress={() => {}} />
+          <ProfileItem icon="shopping-bag" label="My Orders" onPress={() => navigation.navigate('MyOrders')} />
           <ProfileItem icon="heart" label="Wishlist" onPress={() => navigation.navigate('Wishlist')} />
           <ProfileItem icon="map-pin" label="Saved Addresses" onPress={() => {}} />
           <ProfileItem icon="credit-card" label="Manage Payments" onPress={() => {}} />

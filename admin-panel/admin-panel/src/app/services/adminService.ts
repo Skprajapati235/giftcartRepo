@@ -55,12 +55,12 @@ export const getAdmins = async () => {
   return response.data;
 };
 
-export const createCategory = async (payload: { name: string }) => {
+export const createCategory = async (payload: { name: string; image?: string }) => {
   const response = await authApi(getAuthToken()).post("/category", payload);
   return response.data;
 };
 
-export const updateCategory = async (id: string, payload: { name: string }) => {
+export const updateCategory = async (id: string, payload: { name: string; image?: string }) => {
   const response = await authApi(getAuthToken()).put(`/category/${id}`, payload);
   return response.data;
 };
@@ -73,9 +73,14 @@ export const deleteCategory = async (id: string) => {
 export const createProduct = async (payload: {
   name: string;
   price: number;
+  salePrice?: number;
   description: string;
+  summary?: string;
+  layout?: string;
   image: string;
   category: string;
+  weight?: string;
+  flowers?: number;
 }) => {
   const response = await authApi(getAuthToken()).post("/product", payload);
   return response.data;
@@ -86,9 +91,14 @@ export const updateProduct = async (
   payload: {
     name: string;
     price: number;
+    salePrice?: number;
     description: string;
+    summary?: string;
+    layout?: string;
     image: string;
     category: string;
+    weight?: string;
+    flowers?: number;
   }
 ) => {
   const response = await authApi(getAuthToken()).put(`/product/${id}`, payload);

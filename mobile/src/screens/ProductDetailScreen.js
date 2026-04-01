@@ -70,8 +70,28 @@ export default function ProductDetailScreen({ route, navigation }) {
             </View>
           </View>
 
-          <Text style={styles.name}>{product.name}</Text>
-          <Text style={styles.price}>₹{product.price?.toFixed(0)}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.name}>{product.name}</Text>
+            {product.weight ? (
+              <View style={styles.weightBadge}>
+                <Text style={styles.weightText}>{product.weight}</Text>
+              </View>
+            ) : null}
+          </View>
+          
+          <View style={styles.priceSection}>
+            <Text style={styles.price}>₹{product.salePrice || product.price}</Text>
+            {product.salePrice && product.price > product.salePrice && (
+              <>
+                <Text style={styles.oldPrice}>MRP ₹{product.price}</Text>
+                <View style={styles.discountTag}>
+                  <Text style={styles.discountTagText}>
+                    {Math.round(((product.price - product.salePrice) / product.price) * 100)}% OFF
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
           
           <View style={styles.divider} />
 
@@ -131,8 +151,15 @@ const styles = StyleSheet.create({
   badgeText: { fontSize: 10, fontWeight: '800', color: '#D82B76', textTransform: 'uppercase' },
   ratingBox: { flexDirection: 'row', alignItems: 'center' },
   ratingText: { fontSize: 12, color: '#666', marginLeft: 5 },
-  name: { fontSize: 26, fontWeight: '800', color: '#333', marginBottom: 8 },
-  price: { fontSize: 24, fontWeight: '900', color: '#D82B76', marginBottom: 20 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
+  name: { fontSize: 24, fontWeight: '800', color: '#1a1a1a', flex: 1 },
+  weightBadge: { backgroundColor: '#F0F0F0', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  weightText: { fontSize: 12, fontWeight: '700', color: '#666' },
+  priceSection: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' },
+  price: { fontSize: 28, fontWeight: '900', color: '#1a1a1a', marginRight: 10 },
+  oldPrice: { fontSize: 16, color: '#999', textDecorationLine: 'line-through', marginRight: 15 },
+  discountTag: { backgroundColor: '#00a65a', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  discountTagText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
   divider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 20 },
   sectionTitle: { fontSize: 18, fontWeight: '800', color: '#333', marginBottom: 10 },
   description: { fontSize: 15, color: '#666', lineHeight: 22 },
