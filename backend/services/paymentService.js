@@ -1,13 +1,21 @@
 const Razorpay = require("razorpay");
 const Order = require("../models/Order");
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Lazily create Razorpay instance only when needed
+// This prevents server crash if env vars are missing at startup
+const getRazorpay = () => {
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    throw new Error("Razorpay keys are not configured in environment variables");
+  }
+  return new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+};
 
 // Create a Razorpay order
 exports.createRazorpayOrder = async (totalAmount) => {
+  const razorpay = getRazorpay();
   const options = {
     amount: Math.round(totalAmount * 100), // paise
     currency: "INR",
