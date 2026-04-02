@@ -1,7 +1,15 @@
 const Product = require("../models/Product");
 
 exports.createProduct = async (data) => {
-  return await Product.create(data);
+  console.log("Creating Product with data:", data);
+  try {
+    const product = await Product.create(data);
+    console.log("Saved Product:", product);
+    return product;
+  } catch (error) {
+    console.error("Error creating product:", error);
+    throw error;
+  }
 };
 
 exports.getProducts = async () => {

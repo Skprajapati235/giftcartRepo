@@ -125,18 +125,23 @@ export default function ProductsPage() {
     try {
       const payload = { 
         ...form, 
-        price: Number(form.price), 
+        price: Number(form.price) || 0,
         salePrice: form.salePrice ? Number(form.salePrice) : undefined,
-        flowers: form.flowers ? Number(form.flowers) : undefined
+        flowers: form.flowers ? Number(form.flowers) : undefined,
+        weight: form.weight ? form.weight.toString() : undefined
       };
+      
+      console.log("Submitting Product Payload:", payload);
+
       if (editingId) {
         await updateProduct(editingId, payload);
       } else {
         await createProduct(payload);
       }
       closeForm();
-    } catch (err) {
-      console.error("Error saving product.", err);
+    } catch (error) {
+      console.error("Product action error:", error);
+      alert("Failed to save product. Check console.");
     } finally {
       setSaving(false);
     }
