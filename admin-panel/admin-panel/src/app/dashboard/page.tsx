@@ -7,6 +7,7 @@ import Card from "../components/Card";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { useAdmin } from "../context/AdminContext";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 interface Order {
   _id: string;
@@ -34,13 +35,14 @@ interface Payment {
 export default function DashboardPage() {
   const { products, users, loading: adminLoading } = useAdmin();
   const { theme } = useTheme();
+  const { token, authenticated } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
+    if (!authenticated || !token) return;
     try {
-      const token = localStorage.getItem("giftcartAdminToken");
       const [ordRes, payRes] = await Promise.all([
         axios.get("http://localhost:5000/api/order/admin/all", { headers: { Authorization: `Bearer ${token}` } }),
         axios.get("http://localhost:5000/api/order/admin/payments", { headers: { Authorization: `Bearer ${token}` } })
@@ -55,13 +57,15 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (authenticated && token) {
+      fetchData();
+    }
+  }, [authenticated, token]);
 
   const totalRevenue = payments.reduce((acc, curr) => acc + curr.totalAmount, 0);
 
   const pageWrapper = "bg-background text-foreground";
-  const sectionWrapper = "bg-card border border-border-theme";
+  const sectionWrapper = "bg-card shadow-lg border border-transparent dark:border-border-theme";
 
   return (
     <ProtectedRoute>
@@ -97,7 +101,7 @@ export default function DashboardPage() {
                     </thead>
                     <tbody>
                       {orders.slice(0, 5).map((order) => (
-                        <tr key={order._id} className="border-t border-slate-100 dark:border-slate-800">
+                        <tr key={order._id} className="border-t border-border-theme/50 last:border-0 hover:bg-hover-theme/30 transition-colors">
                           <td className="py-4 font-medium uppercase font-mono">{order._id.slice(-6)}</td>
                           <td className="py-4">{order.user?.name}</td>
                           <td className="py-4 font-semibold text-pink-600">₹{order.totalAmount}</td>
@@ -130,7 +134,7 @@ export default function DashboardPage() {
                     </thead>
                     <tbody>
                       {payments.slice(0, 5).map((pay) => (
-                        <tr key={pay._id} className="border-t border-slate-100 dark:border-slate-800">
+                        <tr key={pay._id} className="border-t border-border-theme/50 last:border-0 hover:bg-hover-theme/30 transition-colors">
                           <td className="py-4 font-mono text-xs">{pay.razorpayPaymentId}</td>
                           <td className="py-4 font-bold text-green-600">₹{pay.totalAmount}</td>
                           <td className="py-4 text-slate-500">{new Date(pay.createdAt).toLocaleDateString()}</td>

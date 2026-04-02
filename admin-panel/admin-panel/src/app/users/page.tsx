@@ -56,19 +56,19 @@ export default function UsersPage() {
             <h1 className="text-2xl font-bold text-foreground mt-1">Customer Accounts</h1>
         </div>
 
-        <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden min-h-[500px]">
-            <div className="p-6 border-b border-border flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
+        <div className="bg-card rounded-[2rem] border border-border-theme shadow-lg overflow-hidden min-h-[500px]">
+            <div className="p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
                 <div className="relative w-full max-w-sm">
-                    <Search className="absolute left-4 top-3.5 text-muted-foreground" size={18} />
+                    <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
                     <input
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder="Search name, email or city..."
-                        className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
+                        className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-hover-theme text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary/20"
                     />
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-4 py-3 rounded-2xl border border-slate-100">
+                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-hover-theme px-4 py-3 rounded-2xl border border-border-theme">
                         {filteredUsers.length} Users Found
                     </div>
                 </div>
@@ -97,10 +97,10 @@ export default function UsersPage() {
                                 <tr key={user._id} className="hover:bg-hover-theme transition-colors group border-b border-border-theme/50">
                                     <td className="px-6 py-5">
                                         <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                                            <div className="h-10 w-10 bg-hover-theme rounded-full flex items-center justify-center text-slate-400">
                                                 <Users size={18} />
                                             </div>
-                                            <span className="font-bold text-slate-900">{user.name}</span>
+                                            <span className="font-bold text-foreground">{user.name}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-5">
@@ -132,18 +132,18 @@ export default function UsersPage() {
                                         {openMenuId === user._id && (
                                             <div 
                                                 ref={menuRef}
-                                                className="absolute right-6 top-14 w-44 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in duration-200"
+                                                className="absolute right-6 top-14 w-44 bg-card rounded-2xl shadow-2xl border border-border-theme py-2 z-50 animate-in fade-in zoom-in duration-200"
                                             >
                                                 <button 
-                                                    className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
+                                                    className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-foreground hover:bg-hover-theme transition"
                                                     onClick={() => alert(`Name: ${user.name}\nEmail: ${user.email}\nCity: ${user.city || "N/A"}`)}
                                                 >
                                                     View Profile
                                                 </button>
-                                                <div className="mx-2 my-1 border-t border-slate-100" />
+                                                <div className="mx-2 my-1 border-t border-border-theme" />
                                                 <button 
                                                     onClick={() => handleDelete(user._id)}
-                                                    className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 transition"
+                                                    className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-500/10 transition"
                                                 >
                                                     <Trash2 size={16} />
                                                     Delete Account
@@ -158,7 +158,7 @@ export default function UsersPage() {
                 </div>
             )}
 
-            <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
+            <div className="p-6 border-t border-border-theme bg-card flex items-center justify-between">
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
                    Results {filteredUsers.length} Customers
                 </div>

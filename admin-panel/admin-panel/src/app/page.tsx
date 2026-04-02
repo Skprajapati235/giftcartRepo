@@ -30,35 +30,39 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl dark:bg-slate-900 dark:text-slate-100">
-        <div className="mb-6">
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Admin login</p>
-          <h1 className="mt-3 text-3xl font-semibold text-slate-900">Sign in to GiftCart</h1>
-          <p className="mt-2 text-sm text-slate-600">Login with your admin credentials to access the dashboard.</p>
+    <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+      <div className="w-full max-w-sm rounded-[2.5rem] bg-card p-12 shadow-2xl transition hover:shadow-primary/5 border border-transparent dark:border-border-theme">
+        <div className="mb-10 text-center">
+          <p className="text-[10px] uppercase tracking-[0.4em] text-slate-500 font-bold">Admin login</p>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-foreground">Sign in to GiftCart</h1>
+          <p className="mt-3 text-sm text-slate-500 font-medium">Access your admin dashboard</p>
         </div>
 
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-medium text-slate-700">Email</label>
-          <input
-            value={form.email}
-            onChange={(event) => setForm({ ...form, email: event.target.value })}
-            type="email"
-            placeholder="admin@example.com"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-          />
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 px-1">Email</label>
+            <input
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              type="email"
+              placeholder="admin@example.com"
+              className="w-full rounded-2xl border border-border-theme bg-hover-theme px-5 py-4 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
 
-          <label className="block text-sm font-medium text-slate-700">Password</label>
-          <input
-            value={form.password}
-            onChange={(event) => setForm({ ...form, password: event.target.value })}
-            type="password"
-            placeholder="••••••••"
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-          />
+          <div className="space-y-2">
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 px-1">Password</label>
+            <input
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              type="password"
+              placeholder="••••••••"
+              className="w-full rounded-2xl border border-border-theme bg-hover-theme px-5 py-4 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
 
           {(submitError || error) && (
-            <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            <p className="rounded-2xl bg-rose-500/10 border border-rose-500/20 px-5 py-4 text-sm text-rose-500 font-bold">
               {submitError || error}
             </p>
           )}
@@ -66,14 +70,14 @@ export default function Home() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            className="w-full rounded-2xl bg-primary px-5 py-4 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60 shadow-lg shadow-primary/20"
           >
-            {loading ? "Signing in..." : "Login"}
+            {loading ? "Signing in..." : "Login to Dashboard"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Need an account? <Link href="/register" className="font-semibold text-slate-900">Register</Link>
+        <p className="mt-10 text-center text-sm text-slate-500 font-medium">
+          Need an account? <Link href="/register" className="font-bold text-primary hover:underline underline-offset-4">Register</Link>
         </p>
       </div>
     </div>
