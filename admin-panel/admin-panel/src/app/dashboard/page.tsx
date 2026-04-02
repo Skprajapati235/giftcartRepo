@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import Card from "../components/Card";
+import { getAllOrders, getOrderPayments } from "../services/adminService";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { useAdmin } from "../context/AdminContext";
 import { useTheme } from "../context/ThemeContext";
@@ -44,11 +44,11 @@ export default function DashboardPage() {
     if (!authenticated || !token) return;
     try {
       const [ordRes, payRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/order/admin/all", { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get("http://localhost:5000/api/order/admin/payments", { headers: { Authorization: `Bearer ${token}` } })
+        getAllOrders(),
+        getOrderPayments()
       ]);
-      setOrders(ordRes.data);
-      setPayments(payRes.data);
+      setOrders(ordRes);
+      setPayments(payRes);
     } catch (err) {
       console.error("Dashboard fetch error", err);
     } finally {

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
-import axios from "axios";
+import { getAllOrders, updateOrderStatus as updateOrderStatusApi } from "../services/adminService";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Pagination from "../components/Pagination";
 import { Search, ShoppingCart, MoreHorizontal, Eye, ChevronRight, X } from "lucide-react";
@@ -33,11 +33,8 @@ export default function OrdersPage() {
 
     const fetchOrders = async () => {
         try {
-            const token = localStorage.getItem("giftcartAdminToken");
-            const response = await axios.get("http://localhost:5000/api/order/admin/all", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setOrders(response.data);
+            const response = await getAllOrders();
+            setOrders(response);
         } catch (error) {
             console.error("Fetch orders failed", error);
         } finally {
@@ -58,11 +55,7 @@ export default function OrdersPage() {
 
     const updateStatus = async (orderId: string, newStatus: string) => {
         try {
-            const token = localStorage.getItem("giftcartAdminToken");
-            await axios.put(`http://localhost:5000/api/order/admin/${orderId}/status`, 
-                { status: newStatus },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            await updateOrderStatusApi(orderId, newStatus);
             fetchOrders();
         } catch (error) {
             alert("Failed to update status");

@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-// For local development on a physical device, use your laptop's Wi-Fi IP address.
-// Current LAN IP: 10.104.56.187 (verified)
-const baseURL = process.env.API_BASE_URL || 'http://10.104.56.187:5000';
+// Production backend — Render deployment
+const baseURL = process.env.API_BASE_URL || 'https://giftcartrepo.onrender.com';
 
 const api = axios.create({
   baseURL: baseURL,

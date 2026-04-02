@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import axios from "axios";
+import { getOrderDetail } from "../../services/adminService";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -37,11 +37,8 @@ export default function OrderDetailPage() {
   useEffect(() => {
     const fetchOrderDetail = async () => {
       try {
-        const token = localStorage.getItem("giftcartAdminToken");
-        const res = await axios.get(`http://localhost:5000/api/order/admin/detail/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setOrder(res.data);
+        const res = await getOrderDetail(id as string);
+        setOrder(res);
       } catch (err) {
         console.error("Fetch order detail error", err);
       } finally {

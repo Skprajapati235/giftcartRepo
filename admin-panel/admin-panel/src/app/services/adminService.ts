@@ -135,3 +135,23 @@ export const deleteAdmin = async (id: string) => {
   const response = await authApi(getAuthToken()).delete(`/admin/users/${id}`);
   return response.data;
 };
+
+export const getAllOrders = async () => {
+  const response = await authApi(getAuthToken()).get("/order/admin/all");
+  return response.data;
+};
+
+export const getOrderPayments = async () => {
+  const response = await authApi(getAuthToken()).get("/order/admin/payments");
+  return response.data;
+};
+
+export const getOrderDetail = async (id: string) => {
+  const response = await authApi(getAuthToken()).get(`/order/admin/detail/${id}`);
+  return response.data;
+};
+
+export const updateOrderStatus = async (id: string, status: string) => {
+  const response = await authApi(getAuthToken()).put(`/order/admin/${id}/status`, { status });
+  return response.data;
+};

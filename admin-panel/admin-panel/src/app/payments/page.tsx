@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { getOrderPayments } from "../services/adminService";
 import ProtectedRoute from "../components/ProtectedRoute";
 import Pagination from "../components/Pagination";
 
@@ -22,11 +22,8 @@ export default function PaymentsPage() {
 
     const fetchPayments = async () => {
         try {
-            const token = localStorage.getItem("giftcartAdminToken");
-            const response = await axios.get("http://localhost:5000/api/order/admin/payments", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setPayments(response.data);
+            const response = await getOrderPayments();
+            setPayments(response);
         } catch (error) {
             console.error("Fetch payments failed", error);
         } finally {
