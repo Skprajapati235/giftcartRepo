@@ -26,11 +26,11 @@ const { width } = Dimensions.get('window');
 const BANNERS = [
   'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&h=400&fit=crop',
   'https://images.unsplash.com/photo-1513201099705-a9746e1e201f?w=800&h=400&fit=crop',
-  'https://images.unsplash.com/photo-1518192161663-5a0230e15729?w=800&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&h=400&fit=crop',
 ];
 
 const ADS = [
-  { id: '1', img: 'https://images.unsplash.com/photo-1549465220-1d8c9d9c4701?w=400&h=200&fit=crop', title: '50% OFF' },
+  { id: '1', img: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&h=400&fit=crop', title: '50% OFF' },
   { id: '2', img: 'https://images.unsplash.com/photo-1512909006721-3d6018887383?w=400&h=200&fit=crop', title: 'Gift Boxes' },
   { id: '3', img: 'https://images.unsplash.com/photo-1481391319762-47dff72954d9?w=400&h=200&fit=crop', title: 'New Arrival' },
 ];
