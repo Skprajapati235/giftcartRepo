@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { useAdmin } from "../context/AdminContext";
+import { TableSkeleton } from "../components/skeletonLoader/commonSkeleton";
 
 export default function AdminsPage() {
   const { admins, loading, error, deleteAdmin, updateAdmin } = useAdmin();
@@ -47,7 +48,7 @@ export default function AdminsPage() {
 
           <section className="rounded-3xl bg-white p-8 shadow-sm">
             {loading ? (
-              <div className="rounded-3xl bg-slate-50 p-10 text-center text-slate-600">Loading admins...</div>
+              <TableSkeleton rows={5} cols={5} />
             ) : error ? (
               <div className="rounded-3xl bg-rose-50 p-8 text-rose-700">{error}</div>
             ) : (

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ElementType } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
-import { Home, ShoppingBag, Box, ShoppingCart, Tag, Users, Settings, LogOut, ArrowLeft, Moon, Sun } from "lucide-react";
+import { Home, ShoppingBag, Box, ShoppingCart, Tag, Users, Settings, LogOut, ArrowLeft, Moon, Sun, CreditCard } from "lucide-react";
 
 type NavChild = {
   key: string;
@@ -31,6 +31,7 @@ const navigation: NavItem[] = [
     children: [
       { key: "products", href: "/products", label: "Products", icon: Box },
       { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
+      { key: "payments", href: "/payments", label: "Payments", icon: CreditCard },
     ],
   },
   { key: "category", href: "/category", label: "Categories", icon: Tag },
