@@ -8,6 +8,7 @@ import ProtectedRoute from "../components/ProtectedRoute";
 import { useAdmin } from "../context/AdminContext";
 import { useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
+import GlobalLoader from "../components/GlobalLoaders/GlobalLoader";
 
 interface Order {
   _id: string;
@@ -75,7 +76,7 @@ export default function DashboardPage() {
         </div>
 
         {(loading || adminLoading) ? (
-          <div className="py-20 text-center">Loading dashboard data...</div>
+          <div className="py-20 text-center"><GlobalLoader /></div>
         ) : (
           <>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -106,7 +107,7 @@ export default function DashboardPage() {
                           <td className="py-4">{order.user?.name}</td>
                           <td className="py-4 font-semibold text-pink-600">₹{order.totalAmount}</td>
                           <td className="py-4 text-right">
-                            <Link 
+                            <Link
                               href={`/orders/${order._id}`}
                               className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-bold text-indigo-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-indigo-400"
                             >
