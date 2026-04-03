@@ -10,6 +10,7 @@ import { DashboardSkeleton } from "../skeletonLoader/commonSkeleton";
 import StatsGrid from "./statsGrid";
 import RecentOrder from "./recentOrder";
 import PaymentHistory from "./paymentHistory";
+import DashboardCharts from "./dashboardCharts";
 
 interface Order {
     _id: string;
@@ -81,6 +82,8 @@ export default function DashboardView() {
                         productsCount={products.length}
                         usersCount={users.length}
                     />
+
+                    <DashboardCharts orders={orders} />
 
                     <div className="mt-10 grid gap-8 lg:grid-cols-2">
                         <RecentOrder orders={orders} sectionWrapper={sectionWrapper} />
