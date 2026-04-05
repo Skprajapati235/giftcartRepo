@@ -4,8 +4,14 @@
     "slug": "giftcart-mobile",
     "version": "1.0.0",
     "sdkVersion": "55.0.0",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "orientation": "portrait",
-    "assetBundlePatterns": ["**/*"]
+    "assetBundlePatterns": [
+      "**/*"
+    ]
   }
 }

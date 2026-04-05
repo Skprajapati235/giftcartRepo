@@ -165,8 +165,12 @@ export default function HomeScreen({ navigation }) {
 
         {!showSearch ? (
           <View style={styles.logoContainer}>
-            <Text style={styles.logoTextMain}>Gift</Text>
-            <Text style={styles.logoTextSub}>Cart</Text>
+            <Image
+              source={require('../assets/images/GiftorawithText2.png')}
+              style={styles.logoImage}
+            />
+            {/* <Text style={styles.logoTextMain}>Gift</Text>
+            <Text style={styles.logoTextSub}>Cart</Text> */}
           </View>
         ) : (
           <View style={styles.searchContainer}>
@@ -398,7 +402,7 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 10, left: 0, backgroundColor: '#00a65a',
     paddingHorizontal: 8, paddingVertical: 4, borderTopRightRadius: 10, borderBottomRightRadius: 10
   },
-  discountText: { color: '#FFF', fontSize: 10, fontWeight: '900' },
+  discountText: { color: '#fff', fontSize: 14, fontWeight: '900' },
   fab: {
     position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366',
     width: 55, height: 55, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 5
@@ -431,6 +435,11 @@ const styles = StyleSheet.create({
   searchInput: { backgroundColor: '#F0F0F0', borderRadius: 8, paddingHorizontal: 15, paddingVertical: 8 },
   menuButton: { padding: 5 },
   searchIcon: { padding: 8 },
+  logoImage: {
+    width: 100,
+    height: 50,
+    resizeMode: 'contain',
+  },
 });
 
 

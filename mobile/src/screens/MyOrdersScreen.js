@@ -17,6 +17,8 @@ export default function MyOrdersScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  console.log("orders", orders);
+
   const fetchOrders = async () => {
     try {
       const data = await orderService.getUserOrders();
@@ -56,7 +58,7 @@ export default function MyOrdersScreen({ navigation }) {
           {item.status}
         </Text>
       </View>
-      
+
       <View style={styles.orderBody}>
         <Text style={styles.orderDate}>{new Date(item.createdAt).toDateString()}</Text>
         <Text style={styles.orderItems}>{item.items.length} items</Text>
