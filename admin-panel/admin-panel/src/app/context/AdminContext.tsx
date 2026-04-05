@@ -179,6 +179,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     await refreshAll();
   };
 
+
   const value = useMemo(
     () => ({
       products,

@@ -16,8 +16,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GiftCart Admin",
-  description: "Admin dashboard for GiftCart backend",
+  title: "Giftora",
+  description: "Admin dashboard for Giftora backend",
+  icons: {
+    icon: "/images/Giftora.png",
+  },
 };
 
 export default function RootLayout({

@@ -1,25 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc; /* Slate 50 */
-  --foreground: #0f172a; /* Slate 900 */
+  --background: #f8fafc;
+  /* Slate 50 */
+  --foreground: #0f172a;
+  /* Slate 900 */
   --card: #ffffff;
-  --header-bg: #f1f5f9; /* Slate 100 */
-  --hover-bg: #f8fafc; /* Slate 50 */
+  --header-bg: #f1f5f9;
+  /* Slate 100 */
+  --hover-bg: #f8fafc;
+  /* Slate 50 */
   --border: #e2e8f0;
   --primary: #0f172a;
   --secondary: #D82B76;
 }
 
 html.dark {
-  --background: #020617; /* Deep Navy */
+  --background: #020617;
+  /* Deep Navy */
   --foreground: #f8fafc;
-  --card: #0f172a; /* Slate 900 */
-  --header-bg: #111827; /* Near black */
-  --hover-bg: #1e293b; /* Slate 800 */
-  --border: #334155; /* Slate 700 */
-  --primary: #3a85dd; /* User requested color */
-  --secondary: #d946ef; /* Fuchsia */
+  --card: #0f172a;
+  /* Slate 900 */
+  --header-bg: #111827;
+  /* Near black */
+  --hover-bg: #1e293b;
+  /* Slate 800 */
+  --border: #334155;
+  /* Slate 700 */
+  --primary: #3a85dd;
+  /* User requested color */
+  --secondary: #d946ef;
+  /* Fuchsia */
 }
 
 html.light {
@@ -66,54 +77,67 @@ html.dark .bg-white:not([class*="dark:bg"]),
 html[data-theme='dark'] .bg-white:not([class*="dark:bg"]) {
   background-color: #0f172a !important;
 }
+
 html.dark .bg-slate-50:not([class*="dark:bg"]),
 html[data-theme='dark'] .bg-slate-50:not([class*="dark:bg"]) {
   background-color: #111827 !important;
 }
+
 html.dark .bg-slate-100:not([class*="dark:bg"]),
 html[data-theme='dark'] .bg-slate-100:not([class*="dark:bg"]) {
   background-color: #111827 !important;
 }
+
 html.dark .bg-slate-200:not([class*="dark:bg"]),
 html[data-theme='dark'] .bg-slate-200:not([class*="dark:bg"]) {
   background-color: #1e293b !important;
 }
+
 html.dark .bg-rose-50:not([class*="dark:bg"]),
 html[data-theme='dark'] .bg-rose-50:not([class*="dark:bg"]) {
   background-color: #58151c !important;
 }
+
 html.dark .bg-slate-900:not([class*="dark:bg"]),
 html[data-theme='dark'] .bg-slate-900:not([class*="dark:bg"]) {
   background-color: #0f172a !important;
 }
+
 html.dark .bg-slate-950:not([class*="dark:bg"]),
 html[data-theme='dark'] .bg-slate-950:not([class*="dark:bg"]) {
   background-color: #020617 !important;
 }
+
 html.dark .text-slate-900:not([class*="dark:text"]),
 html[data-theme='dark'] .text-slate-900:not([class*="dark:text"]) {
   color: #f8fafc !important;
 }
+
 html.dark .text-slate-700:not([class*="dark:text"]),
 html[data-theme='dark'] .text-slate-700:not([class*="dark:text"]) {
   color: #cbd5e1 !important;
 }
+
 html.dark .text-slate-600:not([class*="dark:text"]),
 html[data-theme='dark'] .text-slate-600:not([class*="dark:text"]) {
   color: #94a3b8 !important;
 }
+
 html.dark .text-slate-500:not([class*="dark:text"]),
 html[data-theme='dark'] .text-slate-500:not([class*="dark:text"]) {
   color: #94a3b8 !important;
 }
+
 html.dark .border-slate-200:not([class*="dark:border"]),
 html[data-theme='dark'] .border-slate-200:not([class*="dark:border"]) {
   border-color: #334155 !important;
 }
+
 html.dark .border-slate-100:not([class*="dark:border"]),
 html[data-theme='dark'] .border-slate-100:not([class*="dark:border"]) {
   border-color: #334155 !important;
 }
+
 html.dark .shadow-sm,
 html[data-theme='dark'] .shadow-sm {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.4) !important;
@@ -124,17 +148,39 @@ html[data-theme='dark'] .shadow-sm {
   width: 4px !important;
   height: 4px !important;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent !important;
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--border) !important;
   border-radius: 10px !important;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary) !important;
 }
+
 * {
   scrollbar-width: thin !important;
   scrollbar-color: var(--border) transparent !important;
+}
+
+
+@keyframes fast-blink {
+
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.blink-fast {
+  animation: fast-blink .5s infinite;
 }
