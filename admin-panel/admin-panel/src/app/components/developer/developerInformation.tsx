@@ -10,7 +10,7 @@ export default function DeveloperInformation() {
             <nav className="fixed top-0 w-full z-[100] bg-white/70 backdrop-blur-xl border-b border-slate-200/60">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
                     <div className="text-xl font-black tracking-tighter bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">
-                        {data.name.split(' ')[0].toUpperCase()} /&gt;
+                        {data.name};
                     </div>
 
                     <ul className="hidden md:flex gap-8 text-sm font-semibold text-slate-600">

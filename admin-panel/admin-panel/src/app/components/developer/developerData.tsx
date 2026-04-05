@@ -51,10 +51,10 @@ export const developerData: DeveloperData = {
     name: "Sonu Kumar Prajapati",
     tagline: "crafting scalable web apps",
     role: "full‑stack engineer · open for opportunities",
-    bio: "I'm Sonu — full‑stack developer with 5+ years of experience in building high-performance web applications. From elegant frontends to robust backend systems, I deliver end-to-end solutions.",
+    bio: "I'm Sonu Kumar Prajapati — full‑stack developer with 2+ years of experience in building high-performance web applications. From elegant frontends to robust backend systems, I deliver end-to-end solutions.",
 
     stats: [
-        { value: "18+", label: "projects shipped" },
+        { value: "10+", label: "projects shipped" },
         { value: "10+", label: "clients worldwide" },
         { value: "100%", label: "delivery rate" }
     ],
@@ -62,9 +62,9 @@ export const developerData: DeveloperData = {
     profileImage: "/images/gallery5.jpg",
 
     skills: [
-        "TypeScript", "React / Next.js", "Node.js", "Python", "GraphQL",
-        "Tailwind CSS", "PostgreSQL", "MongoDB", "Docker / K8s", "AWS",
-        "Prisma ORM", "Redis", "Vue / Pinia"
+        "TypeScript", "React / Next.js", "React Native", "Node.js", "Git", "GitHub", "Python", "GraphQL",
+        "Tailwind CSS", "Pandas", "MongoDB", "Docker", "Matplotlib",
+        "Numpy", "Seaborn","Visual Studio Code", "Jupyter Notebook", "Antigravity", "Curasor AI"
     ],
 
     projects: [
