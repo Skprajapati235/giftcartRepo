@@ -26,7 +26,7 @@ export default function DeveloperInformation() {
             </nav>
 
             {/* --- Hero Section --- */}
-            <section className="pt-32 pb-20 lg:pt-48 lg:pb-32 px-6">
+            <section className="pb-20  lg:pb-32 px-6">
                 <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
                     <div className="order-2 lg:order-1">
                         <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-6 border border-blue-100">

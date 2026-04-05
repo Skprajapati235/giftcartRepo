@@ -20,6 +20,10 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
+  console.log('====================================');
+  console.log("products", products);
+  console.log('====================================');
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -107,6 +111,7 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
                 <th className="px-6 py-4 w-[25%]">Description</th>
                 <th className="px-6 py-4 w-[20%]">Created At</th>
                 <th className="px-6 py-4 w-[12%]">Price</th>
+                <th className="px-6 py-4 w-[12%]">Sales Price</th>
                 <th className="px-6 py-4 w-[8%] text-right">Actions</th>
               </tr>
             </thead>
@@ -129,7 +134,12 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
                   </td>
                   <td className="px-6 py-5">
                     <span className="bg-hover-theme text-foreground/80 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap">
-                      ₹{p.salePrice || p.price}
+                      ₹{p.price || 0}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className="bg-hover-theme text-foreground/80 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap">
+                      ₹{p.salePrice || 0}
                     </span>
                   </td>
                   <td className="px-6 py-5 text-right relative">
@@ -176,23 +186,67 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
           </table>
         </div>
       ) : (
-        /* Card View Mode */
+
         <div className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 bg-background/50">
           {currentProducts.map((p) => (
-            <div key={p._id} className="bg-card rounded-3xl p-4 border border-border-theme shadow-lg hover:shadow-primary/5 transition hover:-translate-y-1">
+            <div key={p._id} className="bg-card rounded-3xl p-4 border border-border-theme shadow-lg hover:shadow-primary/5 transition hover:-translate-y-1 relative">
               <div className="h-44 w-full rounded-2xl overflow-hidden bg-background border border-border-theme mb-4">
                 {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="p-10 text-slate-200" />}
               </div>
               <div className="px-1">
                 <h4 className="font-bold text-foreground truncate">{p.name}</h4>
                 <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">{p.category?.name || "No Category"}</p>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-primary font-extrabold">₹{p.salePrice || p.price}</span>
-                  <div className="flex gap-1">
-                    <button onClick={() => onView(p)} className="p-2 text-slate-400 hover:text-slate-800 rounded-lg hover:bg-hover-theme"><Eye size={16} /></button>
-                    <button onClick={() => handleEditClick(p)} className="p-2 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-500/10"><Edit3 size={16} /></button>
-                    <button onClick={() => handleDelete(p._id)} className="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-500/10"><Trash2 size={16} /></button>
-                  </div>
+
+                {/* Price Section */}
+                <div className="mt-4 flex items-center gap-2">
+                  {p.salePrice && p.salePrice < p.price ? (
+                    <>
+                      <span className="text-slate-400 line-through font-bold">₹{p.price}</span>
+                      <span className="text-primary font-extrabold">₹{p.salePrice}</span>
+                    </>
+                  ) : (
+                    <span className="text-primary font-extrabold">₹{p.price || 0}</span>
+                  )}
+                </div>
+
+                {/* Action Menu Like List */}
+                <div className="absolute top-4 right-4">
+                  <button
+                    onClick={() => setOpenMenuId(openMenuId === p._id ? null : p._id)}
+                    className="p-2 text-slate-400 hover:text-foreground transition rounded-xl"
+                  >
+                    <MoreHorizontal size={20} />
+                  </button>
+
+                  {openMenuId === p._id && (
+                    <div
+                      ref={menuRef}
+                      className="absolute right-0 top-10 w-44 bg-card rounded-2xl shadow-2xl border border-border-theme py-2 z-50 animate-in fade-in zoom-in duration-200"
+                    >
+                      <button
+                        onClick={() => { setOpenMenuId(null); onView(p); }}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
+                      >
+                        <Eye size={16} className="text-slate-500" />
+                        View Details
+                      </button>
+                      <div className="mx-2 my-1 border-t border-border-theme" />
+                      <button
+                        onClick={() => handleEditClick(p)}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
+                      >
+                        <Edit3 size={16} className="text-blue-600" />
+                        Edit Product
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p._id)}
+                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-500/10 transition"
+                      >
+                        <Trash2 size={16} />
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
