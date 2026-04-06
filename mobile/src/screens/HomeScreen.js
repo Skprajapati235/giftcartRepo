@@ -211,6 +211,12 @@ export default function HomeScreen({ navigation }) {
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={(_, index) => index.toString()}
+                getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+                onScrollToIndexFailed={(info) => {
+                  setTimeout(() => {
+                    bannerRef.current?.scrollToIndex({ index: info.index, animated: false });
+                  }, 100);
+                }}
                 renderItem={({ item }) => (
                   <Image source={{ uri: item }} style={styles.mainBanner} />
                 )}

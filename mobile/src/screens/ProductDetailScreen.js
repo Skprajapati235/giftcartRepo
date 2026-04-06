@@ -125,11 +125,10 @@ export default function ProductDetailScreen({ route, navigation }) {
           <Feather name="heart" size={24} color="#D82B76" />
         </TouchableOpacity>
         <TouchableOpacity 
-           style={[styles.cartBtn, added && styles.addedBtn]} 
-           onPress={addToCart}
-           disabled={added}
+           style={styles.cartBtn} 
+           onPress={added ? () => navigation.navigate('Cart') : addToCart}
         >
-          <Text style={styles.cartBtnText}>{added ? 'ADDED TO CART' : 'ADD TO CART'}</Text>
+          <Text style={styles.cartBtnText}>{added ? 'GO TO CART' : 'ADD TO CART'}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
