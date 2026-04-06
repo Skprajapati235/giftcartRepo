@@ -9,6 +9,7 @@ exports.createOrder = async ({ userId, items, totalAmount, shippingAddress, razo
       name: item.name,
       quantity: item.quantity || 1,
       price: item.price,
+      salePrice: item.salePrice || item.price,
     })),
     totalAmount,
     shippingAddress,
@@ -43,7 +44,9 @@ exports.markPaymentFailed = async (razorpayOrderId) => {
 
 // Get all orders for a specific user
 exports.getUserOrders = async (userId) => {
-  return await Order.find({ user: userId }).sort("-createdAt");
+  return await Order.find({ user: userId })
+    .populate("items.product", "image name salePrice price")
+    .sort("-createdAt");
 };
 
 // ─── ADMIN ──────────────────────────────────────────────
@@ -59,7 +62,7 @@ exports.getAllOrders = async () => {
 exports.getOrderById = async (id) => {
   return await Order.findById(id)
     .populate("user", "name email phone")
-    .populate("items.product", "image name");
+    .populate("items.product", "image name salePrice price");
 };
 
 // Update order status (admin)

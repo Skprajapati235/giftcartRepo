@@ -202,6 +202,7 @@ export default function HomeScreen({ navigation }) {
         ListHeaderComponent={
           <>
             {/* Auto-sliding Banners */}
+            {!selectedCategory && (
             <View style={styles.bannerContainer}>
               <FlatList
                 ref={bannerRef}
@@ -224,6 +225,7 @@ export default function HomeScreen({ navigation }) {
                 ))}
               </View>
             </View>
+            )}
 
             {/* Categories */}
             <View style={styles.categoriesContainer}>
@@ -259,6 +261,7 @@ export default function HomeScreen({ navigation }) {
             </View>
 
             {/* Ads Section (Flipkart style) */}
+            {!selectedCategory && (
             <View style={styles.adsContainer}>
               <Text style={styles.sectionTitleHeader}>Special Deals</Text>
               <FlatList
@@ -277,6 +280,7 @@ export default function HomeScreen({ navigation }) {
                 )}
               />
             </View>
+            )}
 
             <Text style={[styles.sectionTitleHeader, { marginBottom: 10 }]}>
               {selectedCategory ? categories.find(c => c._id === selectedCategory)?.name : 'Recommended For You'}
@@ -375,10 +379,11 @@ const styles = StyleSheet.create({
   categoryScroll: { paddingHorizontal: 15 },
   categoryCircleItem: { alignItems: 'center', marginRight: 20, width: 65 },
   circle: {
-    width: 55, height: 55, borderRadius: 27.5, backgroundColor: '#FFF0F5',
-    justifyContent: 'center', alignItems: 'center', marginBottom: 5, overflow: 'hidden'
+    width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFF0F5',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 5, overflow: 'hidden',
+    borderWidth: 2, borderColor: 'transparent'
   },
-  circleSelected: { borderWidth: 2, borderColor: '#D82B76' },
+  circleSelected: { borderColor: '#D82B76' },
   circleImg: { width: '100%', height: '100%' },
   categoryName: { fontSize: 10, fontWeight: '700', color: '#666', textAlign: 'center' },
   categoryNameSelected: { color: '#D82B76' },

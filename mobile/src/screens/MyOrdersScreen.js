@@ -8,6 +8,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import orderService from '../services/orderService';
@@ -50,8 +51,11 @@ export default function MyOrdersScreen({ navigation }) {
     }
   };
 
-  const renderOrder = ({ item }) => (
-    <View style={styles.orderCard}>
+  const renderOrder = ({ item }) => {
+    const firstItemImage = item.items?.[0]?.product?.image;
+    
+    return (
+    <TouchableOpacity style={styles.orderCard} onPress={() => navigation.navigate('OrderDetail', { order: item })}>
       <View style={styles.orderHeader}>
         <Text style={styles.orderId}>Order #{item._id.slice(-6).toUpperCase()}</Text>
         <Text style={[styles.orderStatus, { color: getStatusColor(item.status) }]}>
@@ -60,16 +64,26 @@ export default function MyOrdersScreen({ navigation }) {
       </View>
 
       <View style={styles.orderBody}>
-        <Text style={styles.orderDate}>{new Date(item.createdAt).toDateString()}</Text>
-        <Text style={styles.orderItems}>{item.items.length} items</Text>
+        {firstItemImage ? (
+          <Image source={{ uri: firstItemImage }} style={styles.orderImage} />
+        ) : (
+          <View style={[styles.orderImage, { justifyContent: 'center', alignItems: 'center' }]}>
+            <Feather name="package" size={24} color="#999" />
+          </View>
+        )}
+        <View style={styles.orderContentInfo}>
+          <Text style={styles.orderDate}>{new Date(item.createdAt).toDateString()}</Text>
+          <Text style={styles.orderItems}>{item.items?.length || 0} items</Text>
+        </View>
       </View>
 
       <View style={styles.orderFooter}>
         <Text style={styles.totalLabel}>Total Amount:</Text>
         <Text style={styles.totalValue}>₹{item.totalAmount}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -118,9 +132,11 @@ const styles = StyleSheet.create({
   orderHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   orderId: { fontSize: 16, fontWeight: '700', color: '#333' },
   orderStatus: { fontSize: 14, fontWeight: '700' },
-  orderBody: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  orderBody: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  orderImage: { width: 50, height: 50, borderRadius: 8, backgroundColor: '#F0F0F0' },
+  orderContentInfo: { marginLeft: 15 },
   orderDate: { fontSize: 13, color: '#999' },
-  orderItems: { fontSize: 13, color: '#666' },
+  orderItems: { fontSize: 13, color: '#666', marginTop: 4 },
   orderFooter: { borderTopWidth: 1, borderTopColor: '#F5F5F5', paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   totalLabel: { fontSize: 14, color: '#666' },
   totalValue: { fontSize: 16, fontWeight: '800', color: '#D82B76' },
