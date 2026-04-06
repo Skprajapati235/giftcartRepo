@@ -30,54 +30,62 @@ export default function RegisterScreen({ navigation }) {
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.inner}>
-        <Text style={styles.title}>Create account</Text>
-        <Text style={styles.subtitle}>Register and shop with your backend data</Text>
+        <View style={styles.box}>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Full Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="John Doe"
-            placeholderTextColor="#888"
-            value={name}
-            onChangeText={setName}
-          />
-        </View>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>Join Giftora 🌸</Text>
+          </View>
+          <View style={styles.subtitleContainer}>
+            <Text style={styles.subtitle}>Every gift tells a story of love, care & happiness 🎂</Text>
+          </View>
+          <View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Full Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="John Doe"
+                placeholderTextColor="#888"
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="you@example.com"
-            placeholderTextColor="#888"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
-          />
-        </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="you@example.com"
+                placeholderTextColor="#888"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={setEmail}
+              />
+            </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Password</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="********"
-            placeholderTextColor="#888"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-          />
-        </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="********"
+                placeholderTextColor="#888"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+            </View>
 
-        <TouchableOpacity style={styles.button} onPress={onRegister} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? 'Creating...' : 'Register'}</Text>
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={onRegister} disabled={loading}>
+              <Text style={styles.buttonText}>{loading ? 'Creating...' : 'Register'}</Text>
+            </TouchableOpacity>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.link}>Login</Text>
-          </TouchableOpacity>
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Already have an account?</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.link}>Login</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </ScrollView>
@@ -87,7 +95,7 @@ export default function RegisterScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#111',
+    backgroundColor: '#fff',
     padding: 24,
   },
   inner: {
@@ -95,32 +103,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 40,
   },
+  box: {
+    backgroundColor: '#fff',
+    padding: 24,
+    borderRadius: 16,
+    boxShadow: "0 0 10px #f13687ff"
+  },
+  titleContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   title: {
-    color: '#fff',
-    fontSize: 36,
+    color: '#ef0f87ff',
+    fontSize: 32,
     fontWeight: '900',
     marginBottom: 10,
   },
+  subtitleContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   subtitle: {
-    color: '#ff8dc3',
-    fontSize: 16,
+    color: '#f86eaeff',
+    fontSize: 15,
     marginBottom: 30,
   },
   inputGroup: {
     marginBottom: 18,
   },
   label: {
-    color: '#fff',
+    color: '#000',
     marginBottom: 8,
     fontWeight: '700',
   },
   input: {
-    backgroundColor: '#1b1b1d',
+    backgroundColor: '#fff',
     borderRadius: 14,
     padding: 14,
-    color: '#fff',
+    color: '#000',
     borderWidth: 1,
-    borderColor: '#2b2b2f',
+    borderColor: '#f13687ff',
+    boxShadow: "0 0 10px #f885b7ff"
   },
   button: {
     backgroundColor: '#ff5ea0',
@@ -130,8 +155,8 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: {
-    color: '#111',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 18,
     fontWeight: '800',
   },
   footer: {
