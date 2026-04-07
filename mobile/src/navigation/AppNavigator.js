@@ -8,6 +8,7 @@ import HomeScreen from '../screens/HomeScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import CartScreen from '../screens/CartScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import UserEditProfileScreen from '../screens/UserEditProfileScreen';
 import WishlistScreen from '../screens/WishlistScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
 import CheckoutScreen from '../screens/CheckoutScreen';
@@ -47,6 +48,7 @@ export default function AppNavigator() {
           <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
           <Stack.Screen name="Cart" component={CartScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="EditProfile" component={UserEditProfileScreen} />
           <Stack.Screen name="Wishlist" component={WishlistScreen} />
           <Stack.Screen name="Collections" component={CollectionsScreen} />
           <Stack.Screen name="Checkout" component={CheckoutScreen} />

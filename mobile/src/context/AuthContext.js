@@ -9,6 +9,7 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [locationSet, setLocationSet] = useState(false);
 
   useEffect(() => {
     const restoreSession = async () => {
@@ -16,8 +17,10 @@ export const AuthProvider = ({ children }) => {
         const token = await AsyncStorage.getItem('@giftcart_token');
         const rawUser = await AsyncStorage.getItem('@giftcart_user');
         if (token && rawUser) {
+          const userData = JSON.parse(rawUser);
           setAuthToken(token);
-          setUser(JSON.parse(rawUser));
+          setUser(userData);
+          setLocationSet(!!(userData?.state && userData?.city));
         }
       } catch (err) {
         console.warn('Restore auth failed', err);
@@ -34,6 +37,13 @@ export const AuthProvider = ({ children }) => {
     await AsyncStorage.setItem('@giftcart_user', JSON.stringify(userData));
     setAuthToken(token);
     setUser(userData);
+    setLocationSet(!!(userData?.state && userData?.city));
+  };
+
+  const updateUser = async (userData) => {
+    await AsyncStorage.setItem('@giftcart_user', JSON.stringify(userData));
+    setUser(userData);
+    setLocationSet(!!(userData?.state && userData?.city));
   };
 
   const signIn = async (email, password) => {
@@ -63,10 +73,11 @@ export const AuthProvider = ({ children }) => {
     await AsyncStorage.multiRemove(['@giftcart_token', '@giftcart_user']);
     setAuthToken(null);
     setUser(null);
+    setLocationSet(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, loading, locationSet, signIn, signUp, signOut, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

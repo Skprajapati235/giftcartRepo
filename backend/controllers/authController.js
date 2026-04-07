@@ -19,3 +19,13 @@ exports.login = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+exports.updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await authService.updateUserProfile(userId, req.body);
+    res.json(user);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};

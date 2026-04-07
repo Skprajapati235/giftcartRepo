@@ -23,20 +23,25 @@ export default function ProfileScreen({ navigation }) {
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>Account Profile</Text>
-        <TouchableOpacity onPress={() => Alert.alert('Edit', 'Edit profile functionality...')}>
+        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
           <Feather name="edit-3" size={20} color="#D82B76" />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
-          </View>
+          {user?.profilePic ? (
+            <Image source={{ uri: user.profilePic }} style={styles.profileImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text>
+            </View>
+          )}
           <Text style={styles.name}>{user?.name || 'Shopper'}</Text>
           <Text style={styles.email}>{user?.email}</Text>
-          <TouchableOpacity style={styles.editBtn}>
-            <Text style={styles.editBtnText}>Manage Account</Text>
+          {user?.mobileNumber && <Text style={styles.mobile}>{user.mobileNumber}</Text>}
+          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile')}>
+            <Text style={styles.editBtnText}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
 
@@ -72,10 +77,12 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '800', color: '#000' },
   scroll: { padding: 20 },
   profileHeader: { alignItems: 'center', backgroundColor: '#FFF', borderRadius: 20, padding: 30, marginBottom: 25, elevation: 3 },
+  profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 15 },
   avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#FFE0EB', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
   avatarText: { fontSize: 40, fontWeight: '800', color: '#D82B76' },
   name: { fontSize: 22, fontWeight: '800', color: '#000' },
   email: { fontSize: 14, color: '#888', marginTop: 5 },
+  mobile: { fontSize: 14, color: '#888', marginTop: 3 },
   editBtn: { backgroundColor: '#F0F0F0', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, marginTop: 15 },
   editBtnText: { fontSize: 13, fontWeight: '700', color: '#555' },
   section: { backgroundColor: '#FFF', borderRadius: 20, padding: 15, marginBottom: 20, elevation: 1 },

@@ -20,6 +20,8 @@ import { Feather, Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useRoute } from '@react-navigation/native';
 import categoryService from '../services/categoryService';
 import productService from '../services/productService';
+import LocationSelectionModal from '../components/LocationSelectionModal';
+import userService from '../services/userService';
 
 const { width } = Dimensions.get('window');
 
@@ -37,7 +39,7 @@ const ADS = [
 
 export default function HomeScreen({ navigation }) {
   const route = useRoute();
-  const { signOut, user } = useContext(AuthContext);
+  const { signOut, user, updateUser } = useContext(AuthContext);
   const [categories, setCategories] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +48,8 @@ export default function HomeScreen({ navigation }) {
   const [showSearch, setShowSearch] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [showLocationModal, setShowLocationModal] = useState(!user?.state || !user?.city);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   // Auto-sliding banner logic
   const [activeBanner, setActiveBanner] = useState(0);
@@ -117,6 +121,23 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+  const handleLocationSelect = async (state, city) => {
+    setLocationLoading(true);
+    try {
+      const updatedUser = await userService.updateProfile({
+        state,
+        city,
+      });
+      await updateUser(updatedUser);
+      setShowLocationModal(false);
+    } catch (error) {
+      console.log('Location selection error:', error);
+      Alert.alert('Error', 'Failed to save location. Please try again.');
+    } finally {
+      setLocationLoading(false);
+    }
+  };
+
   const renderProduct = ({ item }) => (
     <TouchableOpacity
       style={styles.productCardGrid}
@@ -156,7 +177,8 @@ export default function HomeScreen({ navigation }) {
 
 
   return (
-    <SafeAreaView style={styles.container}>
+    <>
+      <SafeAreaView style={styles.container}>
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.menuButton} onPress={() => setIsDrawerOpen(true)}>
@@ -355,6 +377,13 @@ export default function HomeScreen({ navigation }) {
         ))}
       </View>
     </SafeAreaView>
+
+    <LocationSelectionModal
+      visible={showLocationModal}
+      onLocationSelect={handleLocationSelect}
+      loading={locationLoading}
+    />
+    </>
   );
 }
 

@@ -25,6 +25,22 @@ exports.loginUser = async (data) => {
   return user;
 };
 
+exports.updateUserProfile = async (userId, data) => {
+  const { name, mobileNumber, profilePic, state, city } = data;
+  
+  const updateData = {};
+  if (name !== undefined) updateData.name = name;
+  if (mobileNumber !== undefined) updateData.mobileNumber = mobileNumber;
+  if (profilePic !== undefined) updateData.profilePic = profilePic;
+  if (state !== undefined) updateData.state = state;
+  if (city !== undefined) updateData.city = city;
+
+  const user = await User.findByIdAndUpdate(userId, updateData, { new: true });
+  if (!user) throw new Error("User not found");
+
+  return user;
+};
+
 exports.registerAdmin = async (data) => {
   const { name, email, password } = data;
 
