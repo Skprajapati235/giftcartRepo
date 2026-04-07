@@ -107,12 +107,13 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
           <table className="w-full text-left table-fixed">
             <thead>
               <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-                <th className="px-6 py-4 w-[35%]">Name</th>
-                <th className="px-6 py-4 w-[25%]">Description</th>
-                <th className="px-6 py-4 w-[20%]">Created At</th>
-                <th className="px-6 py-4 w-[12%]">Price</th>
-                <th className="px-6 py-4 w-[12%]">Sales Price</th>
-                <th className="px-6 py-4 w-[8%] text-right">Actions</th>
+                <th className="px-6 py-4 w-[30%]">Name</th>
+                <th className="px-6 py-4 w-[20%]">Description</th>
+                <th className="px-6 py-4 w-[15%]">Created At</th>
+                <th className="px-6 py-4 w-[10%]">Price</th>
+                <th className="px-6 py-4 w-[10%]">Sales Price</th>
+                <th className="px-6 py-4 w-[10%]">COD</th>
+                <th className="px-6 py-4 w-[5%] text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
@@ -140,6 +141,15 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
                   <td className="px-6 py-5">
                     <span className="bg-hover-theme text-foreground/80 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap">
                       ₹{p.salePrice || 0}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className={`px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap ${
+                      p.isCodAvailable 
+                        ? 'bg-green-500/10 text-green-600 border border-green-500/20' 
+                        : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                    }`}>
+                      {p.isCodAvailable ? 'Available' : 'Not Available'}
                     </span>
                   </td>
                   <td className="px-6 py-5 text-right relative">

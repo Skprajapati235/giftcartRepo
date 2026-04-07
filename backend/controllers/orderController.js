@@ -5,19 +5,31 @@ const paymentService = require("../services/paymentService");
 // POST /api/order/create
 exports.createOrder = async (req, res) => {
   try {
-    const { items, totalAmount, shippingAddress } = req.body;
+    const { items, shippingAddress, paymentMethod = 'Online' } = req.body;
     const userId = req.user.id;
 
-    // 1. Create Razorpay order
-    const razorpayOrder = await paymentService.createRazorpayOrder(totalAmount);
+    const sampleTotal = items.reduce((sum, item) => {
+      const quantity = Number(item.quantity || 1);
+      const salePrice = item.salePrice !== undefined && item.salePrice !== null ? Number(item.salePrice) : Number(item.price || 0);
+      const discount = Number(item.discount || 0);
+      const tax = Number(item.tax || 0);
+      const shippingCost = Number(item.shippingCost || 0);
+      const discountedPrice = salePrice * (1 - discount / 100);
+      const taxedPrice = discountedPrice * (1 + tax / 100);
+      return sum + (taxedPrice + shippingCost) * quantity;
+    }, 0);
 
-    // 2. Save order in DB via service
+    let razorpayOrder = null;
+    if (paymentMethod === 'Online') {
+      razorpayOrder = await paymentService.createRazorpayOrder(sampleTotal);
+    }
+
     const newOrder = await orderService.createOrder({
       userId,
       items,
-      totalAmount,
       shippingAddress,
-      razorpayOrderId: razorpayOrder.id,
+      razorpayOrderId: razorpayOrder?.id,
+      paymentMethod,
     });
 
     res.status(201).json({
@@ -27,7 +39,7 @@ exports.createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error("Create Order Error:", error);
-    res.status(500).json({ success: false, message: "Error creating order" });
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || "Error creating order" });
   }
 };
 

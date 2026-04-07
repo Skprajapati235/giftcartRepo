@@ -79,8 +79,12 @@ export default function PaymentList({ payments, loading }: PaymentListProps) {
                     {new Date(payment.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td className="px-6 py-5">
-                    <span className="rounded-lg bg-green-500/10 px-3 py-1.5 text-xs font-bold text-green-600 uppercase tracking-widest">
-                      Captured
+                    <span className={`rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-widest ${
+                      payment.paymentStatus === 'Success' ? 'bg-green-500/10 text-green-600' :
+                      payment.paymentStatus === 'Pending' ? 'bg-amber-500/10 text-amber-600' :
+                      'bg-red-500/10 text-red-600'
+                    }`}>
+                      {payment.paymentStatus || 'Success'}
                     </span>
                   </td>
                 </tr>

@@ -159,7 +159,10 @@ export default function HomeScreen({ navigation }) {
       </View>
       <View style={styles.prodInfo}>
         <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-        {item.weight ? <Text style={styles.productWeight}>{item.weight}</Text> : null}
+        <View style={styles.productMetaRow}>
+          {item.weight ? <Text style={styles.productMeta}>{item.weight}</Text> : null}
+          {item.flowers ? <Text style={styles.productMeta}>{item.flowers} flowers</Text> : null}
+        </View>
         <View style={styles.priceRow}>
           <View style={styles.priceContainer}>
             <Text style={styles.productPrice}>₹{item.salePrice || item.price}</Text>
@@ -463,8 +466,10 @@ const styles = StyleSheet.create({
   productImageGrid: { width: '100%', height: '100%', resizeMode: 'cover' },
   prodInfo: { padding: 10 },
   productName: { fontSize: 13, minHeight: 18, fontWeight: '700', color: '#1a1a1a', marginTop: 2 },
+  productMetaRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
+  productMeta: { fontSize: 10, color: '#888', fontWeight: '600', marginRight: 8, marginBottom: 4 },
   productWeight: { fontSize: 11, color: '#888', fontWeight: '600', marginTop: 2 },
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 4 },
+  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 },
   priceContainer: { flex: 1 },
   productPrice: { fontSize: 15, fontWeight: '900', color: '#1a1a1a' },
   listPrice: { fontSize: 11, color: '#999', textDecorationLine: 'line-through', marginTop: -2 },

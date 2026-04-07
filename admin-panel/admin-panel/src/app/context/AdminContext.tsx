@@ -36,6 +36,7 @@ interface AdminContextState {
     category: string;
     weight?: string;
     flowers?: number;
+    isCodAvailable?: boolean;
   }) => Promise<void>;
   updateProduct: (
     id: string,
@@ -50,6 +51,7 @@ interface AdminContextState {
       category: string;
       weight?: string;
       flowers?: number;
+      isCodAvailable?: boolean;
     }
   ) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
@@ -139,6 +141,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     category: string;
     weight?: string;
     flowers?: number;
+    isCodAvailable?: boolean;
   }) => {
     await service.createProduct(payload);
     await refreshAll();
@@ -157,6 +160,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       category: string;
       weight?: string;
       flowers?: number;
+      isCodAvailable?: boolean;
     }
   ) => {
     await service.updateProduct(id, payload);

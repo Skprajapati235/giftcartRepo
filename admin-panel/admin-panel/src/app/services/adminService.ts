@@ -101,6 +101,10 @@ export const createProduct = async (payload: {
   category: string;
   weight?: string;
   flowers?: number;
+  shippingCost?: number;
+  discount?: number;
+  tax?: number;
+  isCodAvailable?: boolean;
 }) => {
   const response = await authApi(getAuthToken()).post("/product", payload);
   return response.data;
@@ -119,6 +123,10 @@ export const updateProduct = async (
     category: string;
     weight?: string;
     flowers?: number;
+    shippingCost?: number;
+    discount?: number;
+    tax?: number;
+    isCodAvailable?: boolean;
   }
 ) => {
   const response = await authApi(getAuthToken()).put(`/product/${id}`, payload);

@@ -24,6 +24,10 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     category: product?.category?._id || product?.category || "",
     weight: product?.weight || "",
     flowers: product?.flowers ? String(product.flowers) : "",
+    shippingCost: product?.shippingCost !== undefined ? String(product.shippingCost) : "0",
+    discount: product?.discount !== undefined ? String(product.discount) : "0",
+    tax: product?.tax !== undefined ? String(product.tax) : "0",
+    isCodAvailable: product?.isCodAvailable !== undefined ? product.isCodAvailable : true,
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,7 +53,11 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
         price: Number(form.price) || 0,
         salePrice: form.salePrice ? Number(form.salePrice) : undefined,
         flowers: form.flowers ? Number(form.flowers) : undefined,
-        weight: form.weight ? form.weight.toString() : undefined
+        weight: form.weight ? form.weight.toString() : undefined,
+        shippingCost: form.shippingCost ? Number(form.shippingCost) : 0,
+        discount: form.discount ? Number(form.discount) : 0,
+        tax: form.tax ? Number(form.tax) : 0,
+        isCodAvailable: form.isCodAvailable,
       };
 
       if (product?._id) {
@@ -158,6 +166,48 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                   required
                 />
               </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Shipping Cost (₹)</label>
+                <input
+                  value={form.shippingCost}
+                  onChange={(e) => setForm({ ...form, shippingCost: e.target.value })}
+                  type="number"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Discount (%)</label>
+                <input
+                  value={form.discount}
+                  onChange={(e) => setForm({ ...form, discount: e.target.value })}
+                  type="number"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 10"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Tax (%)</label>
+                <input
+                  value={form.tax}
+                  onChange={(e) => setForm({ ...form, tax: e.target.value })}
+                  type="number"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 18"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="isCodAvailable"
+                checked={form.isCodAvailable}
+                onChange={(e) => setForm({ ...form, isCodAvailable: e.target.checked })}
+                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
+              />
+              <label htmlFor="isCodAvailable" className="text-sm font-bold text-slate-700">Cash on Delivery Available</label>
             </div>
           </div>
 

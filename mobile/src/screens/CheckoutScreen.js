@@ -22,6 +22,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
   const [showWebView, setShowWebView] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('Online');
   
   // Shipping Address Form State
   const [shippingInfo, setShippingInfo] = useState({
@@ -30,6 +31,38 @@ export default function CheckoutScreen({ navigation, route }) {
     address: '',
     pinCode: '',
   });
+
+  const allItemsCodAvailable = cartItems.every(item => item.isCodAvailable !== false);
+
+  React.useEffect(() => {
+    if (!allItemsCodAvailable && paymentMethod === 'COD') {
+      setPaymentMethod('Online');
+    }
+  }, [allItemsCodAvailable, paymentMethod]);
+
+  const orderSummary = cartItems.reduce(
+    (summary, item) => {
+      const quantity = Number(item.quantity || 1);
+      const basePrice = item.salePrice !== undefined && item.salePrice !== null ? Number(item.salePrice) : Number(item.price || 0);
+      const discount = Number(item.discount || 0);
+      const tax = Number(item.tax || 0);
+      const shippingCost = Number(item.shippingCost || 0);
+      const discountedPrice = basePrice * (1 - discount / 100);
+      const taxAmount = discountedPrice * (tax / 100);
+      const itemTotal = (discountedPrice + taxAmount + shippingCost) * quantity;
+
+      return {
+        subtotal: summary.subtotal + basePrice * quantity,
+        discountTotal: summary.discountTotal + (basePrice - discountedPrice) * quantity,
+        taxTotal: summary.taxTotal + taxAmount * quantity,
+        shippingTotal: summary.shippingTotal + shippingCost * quantity,
+        grandTotal: summary.grandTotal + itemTotal,
+      };
+    },
+    { subtotal: 0, discountTotal: 0, taxTotal: 0, shippingTotal: 0, grandTotal: 0 }
+  );
+
+  const displayTotal = Number(orderSummary.grandTotal.toFixed(2));
 
   const handleCheckout = async () => {
     // Validate Form
@@ -44,23 +77,39 @@ export default function CheckoutScreen({ navigation, route }) {
         items: cartItems,
         totalAmount: total,
         shippingAddress: shippingInfo,
+        paymentMethod,
       };
       
       const res = await orderService.createOrder(orderData);
-      setPaymentData({
+      
+      if (paymentMethod === 'COD') {
+        // For COD, directly mark as success
+        const raw = await AsyncStorage.getItem('@giftcart_cart');
+        const cart = raw ? JSON.parse(raw) : [];
+        const orderedIds = cartItems.map(i => i._id);
+        const nextCart = cart.filter(i => !orderedIds.includes(i._id));
+        await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(nextCart));
+
+        Alert.alert('Success', 'Order placed successfully with Cash on Delivery!', [
+          { text: 'OK', onPress: () => navigation.navigate('Home') }
+        ]);
+      } else {
+        // Online payment
+        setPaymentData({
           orderId: res.razorpayOrder.id,
           amount: res.razorpayOrder.amount,
           key: 'rzp_test_SYHDfSdbJm7SOc',
           name: 'GiftCart',
           description: 'Payment for your order',
           user: {
-              name: user.name,
-              email: user.email,
+            name: user.name,
+            email: user.email,
           }
-      });
-      setShowWebView(true);
+        });
+        setShowWebView(true);
+      }
     } catch (error) {
-      Alert.alert('Error', 'Could not initiate payment.');
+      Alert.alert('Error', 'Could not place order.');
     } finally {
       setLoading(false);
     }
@@ -207,18 +256,80 @@ export default function CheckoutScreen({ navigation, route }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary ({cartItems.length} items)</Text>
           <View style={styles.summaryCard}>
-            {cartItems.map((item, idx) => (
-              <View key={item._id + idx} style={styles.orderItem}>
-                <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                <Text style={styles.itemPrice}>₹{item.salePrice || item.price}</Text>
-              </View>
-            ))}
+            {cartItems.map((item, idx) => {
+              const quantity = Number(item.quantity || 1);
+              const basePrice = item.salePrice !== undefined && item.salePrice !== null ? Number(item.salePrice) : Number(item.price || 0);
+              const discount = Number(item.discount || 0);
+              const tax = Number(item.tax || 0);
+              const shippingCost = Number(item.shippingCost || 0);
+              const discountedPrice = basePrice * (1 - discount / 100);
+              const taxAmount = Number((discountedPrice * (tax / 100)).toFixed(2));
+              const itemTotal = Number(((discountedPrice + taxAmount + shippingCost) * quantity).toFixed(2));
+
+              return (
+                <View key={item._id + idx} style={styles.orderItem}>
+                  <View style={styles.orderItemLeft}>
+                    <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+                    <Text style={styles.itemMeta}>Qty {quantity} · ₹{basePrice} each</Text>
+                    {discount > 0 && <Text style={styles.itemMeta}>Discount {discount}%</Text>}
+                    {tax > 0 && <Text style={styles.itemMeta}>Tax {tax}%</Text>}
+                    {shippingCost > 0 && <Text style={styles.itemMeta}>Shipping ₹{shippingCost}</Text>}
+                  </View>
+                  <Text style={styles.itemPrice}>₹{itemTotal}</Text>
+                </View>
+              );
+            })}
+            <View style={styles.divider} />
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Subtotal</Text>
+              <Text style={styles.summaryValue}>₹{orderSummary.subtotal.toFixed(2)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Discount</Text>
+              <Text style={styles.summaryValue}>-₹{orderSummary.discountTotal.toFixed(2)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Tax</Text>
+              <Text style={styles.summaryValue}>₹{orderSummary.taxTotal.toFixed(2)}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Shipping</Text>
+              <Text style={styles.summaryValue}>₹{orderSummary.shippingTotal.toFixed(2)}</Text>
+            </View>
             <View style={styles.divider} />
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Grand Total</Text>
-              <Text style={styles.totalPrice}>₹{total}</Text>
+              <Text style={styles.totalPrice}>₹{displayTotal}</Text>
             </View>
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Payment Method</Text>
+          <View style={styles.paymentOptions}>
+            <TouchableOpacity
+              style={[styles.paymentOption, paymentMethod === 'Online' && styles.selectedOption]}
+              onPress={() => setPaymentMethod('Online')}
+            >
+              <Ionicons name="card-outline" size={20} color={paymentMethod === 'Online' ? '#D82B76' : '#666'} />
+              <Text style={[styles.paymentText, paymentMethod === 'Online' && styles.selectedText]}>Online Payment</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.paymentOption,
+                paymentMethod === 'COD' && styles.selectedOption,
+                !allItemsCodAvailable && styles.disabledPaymentOption,
+              ]}
+              onPress={() => allItemsCodAvailable && setPaymentMethod('COD')}
+              disabled={!allItemsCodAvailable}
+            >
+              <Ionicons name="cash-outline" size={20} color={paymentMethod === 'COD' ? '#D82B76' : '#666'} />
+              <Text style={[styles.paymentText, paymentMethod === 'COD' && styles.selectedText, !allItemsCodAvailable && styles.disabledText]}>Cash on Delivery</Text>
+            </TouchableOpacity>
+          </View>
+          {!allItemsCodAvailable && (
+            <Text style={styles.codNote}>COD not available for some items in your cart.</Text>
+          )}
         </View>
 
         <TouchableOpacity 
@@ -229,7 +340,9 @@ export default function CheckoutScreen({ navigation, route }) {
           {loading ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.payBtnText}>Proceed to Pay ₹{total}</Text>
+            <Text style={styles.payBtnText}>
+              {paymentMethod === 'COD' ? 'Place Order (Cash on Delivery)' : 'Pay Now ₹' + displayTotal}
+            </Text>
           )}
         </TouchableOpacity>
         <View style={{ height: 40 }} />
@@ -257,12 +370,25 @@ const styles = StyleSheet.create({
   },
   summaryCard: { backgroundColor: '#FFF', borderRadius: 15, padding: 20, elevation: 2 },
   orderItem: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  itemName: { flex: 1, fontSize: 14, color: '#666', marginRight: 10 },
+  orderItemLeft: { flex: 1, paddingRight: 10 },
+  itemName: { fontSize: 14, color: '#666', marginBottom: 4, fontWeight: '700' },
+  itemMeta: { fontSize: 12, color: '#888', marginBottom: 2 },
   itemPrice: { fontSize: 14, fontWeight: '700', color: '#333' },
   divider: { height: 1, backgroundColor: '#EEE', marginVertical: 15 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  summaryLabel: { fontSize: 14, color: '#555' },
+  summaryValue: { fontSize: 14, fontWeight: '700', color: '#111' },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
   totalLabel: { fontSize: 18, fontWeight: '800', color: '#000' },
   totalPrice: { fontSize: 18, fontWeight: '800', color: '#D82B76' },
+  paymentOptions: { flexDirection: 'row', gap: 15 },
+  paymentOption: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 15, borderWidth: 1, borderColor: '#DDD', borderRadius: 10, backgroundColor: '#FFF' },
+  selectedOption: { borderColor: '#D82B76', backgroundColor: '#FFF5F8' },
+  disabledPaymentOption: { opacity: 0.5, backgroundColor: '#F9F9F9' },
+  paymentText: { fontSize: 14, fontWeight: '600', color: '#666', marginLeft: 8 },
+  disabledText: { color: '#AAA' },
+  selectedText: { color: '#D82B76' },
+  codNote: { fontSize: 12, color: '#888', marginTop: 5, fontStyle: 'italic' },
   payBtn: { backgroundColor: '#D82B76', borderRadius: 12, paddingVertical: 18, alignItems: 'center', marginTop: 10, elevation: 3 },
   payBtnText: { color: '#FFF', fontSize: 18, fontWeight: '800' },
 });

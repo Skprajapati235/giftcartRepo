@@ -63,7 +63,7 @@ export default function OrderList({ orders, loading, onUpdateStatus }: OrderList
       </div>
 
       {loading ? (
-        <TableSkeleton rows={8} cols={5} />
+        <TableSkeleton rows={8} cols={6} />
       ) : filteredOrders.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No orders found.</div>
       ) : (
@@ -71,9 +71,10 @@ export default function OrderList({ orders, loading, onUpdateStatus }: OrderList
           <table className="w-full text-left table-fixed">
             <thead>
               <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-                <th className="px-6 py-4 w-[25%] font-sans">Order ID</th>
-                <th className="px-6 py-4 w-[25%] font-sans">Customer</th>
-                <th className="px-6 py-4 w-[20%] font-sans">Total Amount</th>
+                <th className="px-6 py-4 w-[20%] font-sans">Order ID</th>
+                <th className="px-6 py-4 w-[20%] font-sans">Customer</th>
+                <th className="px-6 py-4 w-[15%] font-sans">Total Amount</th>
+                <th className="px-6 py-4 w-[15%] font-sans">Payment</th>
                 <th className="px-6 py-4 w-[20%] font-sans">Status</th>
                 <th className="px-6 py-4 w-[10%] text-right font-sans">Actions</th>
               </tr>
@@ -81,7 +82,7 @@ export default function OrderList({ orders, loading, onUpdateStatus }: OrderList
             <tbody className="divide-y divide-border-theme">
               {pageOrders.map((order) => (
                 <tr key={order._id} className="hover:bg-hover-theme transition-all duration-300 group border-b border-border-theme/50">
-                  <td className="px-6 py-5">
+                  <td className="px-6 py-5 w-[20%]">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">
                         <ShoppingCart size={16} />
@@ -89,13 +90,20 @@ export default function OrderList({ orders, loading, onUpdateStatus }: OrderList
                       <span className="font-mono text-xs text-slate-400 uppercase font-bold tracking-widest">#{order._id.slice(-6)}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-5 overflow-hidden">
+                  <td className="px-6 py-5 w-[20%] overflow-hidden">
                     <div className="font-bold text-slate-900 truncate">{order.user?.name}</div>
                     <div className="text-xs text-slate-400 truncate">{order.user?.email}</div>
                   </td>
-                  <td className="px-6 py-5">
+                  <td className="px-6 py-5 w-[15%]">
                     <span className="bg-pink-50 text-pink-600 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap">
                       ₹{order.totalAmount}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 w-[15%]">
+                    <span className={`px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap ${
+                      order.paymentMethod === 'COD' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'
+                    }`}>
+                      {order.paymentMethod || 'Online'}
                     </span>
                   </td>
                   <td className="px-6 py-5">

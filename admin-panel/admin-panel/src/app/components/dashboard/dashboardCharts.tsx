@@ -19,35 +19,40 @@ interface DashboardChartsProps {
   orders: any[];
 }
 
-// Dummy data for the monthly user orders graph as requested
-const dummyMonthlyData = [
-  { month: "Jan", orders: 120 },
-  { month: "Feb", orders: 210 },
-  { month: "Mar", orders: 150 },
-  { month: "Apr", orders: 310 },
-  { month: "May", orders: 280 },
-  { month: "Jun", orders: 420 },
-  { month: "Jul", orders: 380 },
-];
+const COLORS = ["#0f766e", "#f59e0b", "#3b82f6", "#16a34a", "#ef4444", "#64748b"];
 
-const COLORS = ["#10b981", "#f59e0b", "#f43f5e"];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default function DashboardCharts({ orders }: DashboardChartsProps) {
-  // Real data for payment status distribution based on actual orders
-  const capturedCount = orders.filter((o) => o.paymentStatus === "Captured" || o.paymentStatus === "Paid" || o.paymentStatus === "Success").length;
-  const pendingCount = orders.filter((o) => o.paymentStatus === "Pending").length;
-  const failedCount = orders.filter((o) => o.paymentStatus === "Failed" || o.status === "Cancelled").length;
-
-  // Make sure to show something even if 0 orders so pie chart doesn't break
-  const pieData = (capturedCount === 0 && pendingCount === 0 && failedCount === 0) ? [
-    { name: "Captured", value: 1 },
-    { name: "Pending", value: 0 },
-    { name: "Failed", value: 0 },
-  ] : [
-    { name: "Captured", value: capturedCount },
-    { name: "Pending", value: pendingCount },
-    { name: "Failed", value: failedCount },
+  const statusData = [
+    { name: "Pending", value: orders.filter((o) => o.status === "Pending").length },
+    { name: "Processing", value: orders.filter((o) => o.status === "Processing").length },
+    { name: "Shipped", value: orders.filter((o) => o.status === "Shipped").length },
+    { name: "Delivered", value: orders.filter((o) => o.status === "Delivered").length },
+    { name: "Cancelled", value: orders.filter((o) => o.status === "Cancelled").length },
   ];
+
+  const pieData = statusData.filter((slice) => slice.value > 0);
+  const displayedPieData = pieData.length > 0 ? pieData : [{ name: "No orders", value: 1 }];
+
+  const monthMap = Array.from({ length: 6 }).reduce<Record<string, number>>((acc, _, index) => {
+    const date = new Date();
+    date.setMonth(date.getMonth() - (5 - index));
+    const monthName = MONTHS[date.getMonth()];
+    return { ...acc, [monthName]: 0 };
+  }, {});
+
+  const monthlyData = orders.reduce((acc, order) => {
+    const created = new Date(order.createdAt);
+    const monthName = MONTHS[created.getMonth()];
+
+    if (acc[monthName] !== undefined) {
+      acc[monthName] += 1;
+    }
+    return acc;
+  }, monthMap);
+
+  const formattedMonthlyData = Object.entries(monthlyData).map(([month, value]) => ({ month, orders: value }));
 
   return (
     <div className="mt-10 grid gap-8 lg:grid-cols-2">
@@ -59,7 +64,7 @@ export default function DashboardCharts({ orders }: DashboardChartsProps) {
         </div>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dummyMonthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <BarChart data={formattedMonthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
               <XAxis
                 dataKey="month"
@@ -69,6 +74,7 @@ export default function DashboardCharts({ orders }: DashboardChartsProps) {
                 dy={10}
               />
               <YAxis
+                allowDecimals={false}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fill: "#94a3b8", fontSize: 12 }}
@@ -98,7 +104,7 @@ export default function DashboardCharts({ orders }: DashboardChartsProps) {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={pieData}
+                data={displayedPieData}
                 cx="50%"
                 cy="45%"
                 innerRadius={65}
@@ -107,7 +113,7 @@ export default function DashboardCharts({ orders }: DashboardChartsProps) {
                 dataKey="value"
                 stroke="none"
               >
-                {pieData.map((entry, index) => (
+                {displayedPieData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>

@@ -1,22 +1,53 @@
 const Order = require("../models/Order");
 
 // Create a new order record in DB
-exports.createOrder = async ({ userId, items, totalAmount, shippingAddress, razorpayOrderId }) => {
-  const order = new Order({
-    user: userId,
-    items: items.map((item) => ({
+exports.createOrder = async ({ userId, items, totalAmount, shippingAddress, razorpayOrderId, paymentMethod = 'Online' }) => {
+  const processedItems = items.map((item) => {
+    const quantity = Number(item.quantity || 1);
+    const price = Number(item.price || 0);
+    const salePrice = item.salePrice !== undefined && item.salePrice !== null ? Number(item.salePrice) : price;
+    const discount = Number(item.discount || 0);
+    const tax = Number(item.tax || 0);
+    const shippingCost = Number(item.shippingCost || 0);
+    const discountedPrice = salePrice * (1 - discount / 100);
+    const taxedPrice = discountedPrice * (1 + tax / 100);
+    const itemTotal = Number(((taxedPrice + shippingCost) * quantity).toFixed(2));
+
+    return {
       product: item._id,
       name: item.name,
-      quantity: item.quantity || 1,
-      price: item.price,
-      salePrice: item.salePrice || item.price,
-    })),
-    totalAmount,
+      quantity,
+      price,
+      salePrice,
+      shippingCost,
+      discount,
+      tax,
+      itemTotal,
+    };
+  });
+
+  if (paymentMethod === 'COD') {
+    const nonCodItem = items.find((item) => item.isCodAvailable === false || item.isCodAvailable === 'false');
+    if (nonCodItem) {
+      const error = new Error('COD is not available for one or more items in your cart.');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  const calculatedTotal = processedItems.reduce((sum, item) => sum + item.itemTotal, 0);
+
+  const order = new Order({
+    user: userId,
+    items: processedItems,
+    totalAmount: calculatedTotal,
     shippingAddress,
     razorpayOrderId,
-    status: "Pending",
-    paymentStatus: "Pending",
+    paymentMethod,
+    status: 'Pending',
+    paymentStatus: 'Pending',
   });
+
   return await order.save();
 };
 
