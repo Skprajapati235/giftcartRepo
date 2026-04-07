@@ -18,6 +18,7 @@ import {
   Moon,
   Sun,
   CreditCard,
+  MapPin,
 } from "lucide-react";
 
 type NavChild = {
@@ -44,6 +45,7 @@ const navigation: NavItem[] = [
     icon: ShoppingBag,
     children: [
       { key: "products", href: "/products", label: "Products", icon: Box },
+      { key: "cities", href: "/cities", label: "Cities", icon: MapPin },
       { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
       { key: "payments", href: "/payments", label: "Payments", icon: CreditCard },
     ],

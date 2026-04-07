@@ -15,12 +15,16 @@ interface AdminContextState {
   categories: any[];
   users: any[];
   admins: any[];
+  cities: any[];
   loading: boolean;
   error: string;
   refreshAll: () => Promise<void>;
   createCategory: (payload: { name: string; image?: string }) => Promise<void>;
   updateCategory: (id: string, payload: { name: string; image?: string }) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  createCity: (payload: { state: string; cities: string[]; image?: string }) => Promise<void>;
+  updateCity: (id: string, payload: { state: string; cities: string[]; image?: string }) => Promise<void>;
+  deleteCity: (id: string) => Promise<void>;
   createProduct: (payload: {
     name: string;
     price: number;
@@ -60,6 +64,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const { authenticated, loading: authLoading } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -79,15 +84,17 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setError("");
 
     try {
-      const [productData, categoryData, userData, adminData] = await Promise.all([
+      const [productData, categoryData, cityData, userData, adminData] = await Promise.all([
         service.getProducts(),
         service.getCategories(),
+        service.getCities(),
         service.getUsers(),
         service.getAdmins(),
       ]);
 
       setProducts((productData || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setCategories((categoryData || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setCities((cityData || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       setUsers(userData || []);
       setAdmins(adminData || []);
     } catch (err) {
@@ -161,6 +168,21 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     await refreshAll();
   };
 
+  const handleCreateCity = async (payload: { state: string; cities: string[]; image?: string }) => {
+    await service.createCity(payload);
+    await refreshAll();
+  };
+
+  const handleUpdateCity = async (id: string, payload: { state: string; cities: string[]; image?: string }) => {
+    await service.updateCity(id, payload);
+    await refreshAll();
+  };
+
+  const handleDeleteCity = async (id: string) => {
+    await service.deleteCity(id);
+    await refreshAll();
+  };
+
   const handleDeleteUser = async (id: string) => {
     await service.deleteUser(id);
     await refreshAll();
@@ -184,6 +206,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     () => ({
       products,
       categories,
+      cities,
       users,
       admins,
       loading,
@@ -195,11 +218,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       createProduct: handleCreateProduct,
       updateProduct: handleUpdateProduct,
       deleteProduct: handleDeleteProduct,
+      createCity: handleCreateCity,
+      updateCity: handleUpdateCity,
+      deleteCity: handleDeleteCity,
       deleteUser: handleDeleteUser,
       updateAdmin: handleUpdateAdmin,
       deleteAdmin: handleDeleteAdmin,
     }),
-    [products, categories, users, admins, loading, error]
+    [products, categories, cities, users, admins, loading, error]
   );
 
   return (

@@ -70,6 +70,26 @@ export const deleteCategory = async (id: string) => {
   return response.data;
 };
 
+export const getCities = async () => {
+  const response = await authApi(getAuthToken()).get("/city");
+  return response.data;
+};
+
+export const createCity = async (payload: { state: string; cities: string[]; image?: string }) => {
+  const response = await authApi(getAuthToken()).post("/city", payload);
+  return response.data;
+};
+
+export const updateCity = async (id: string, payload: { state: string; cities: string[]; image?: string }) => {
+  const response = await authApi(getAuthToken()).put(`/city/${id}`, payload);
+  return response.data;
+};
+
+export const deleteCity = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/city/${id}`);
+  return response.data;
+};
+
 export const createProduct = async (payload: {
   name: string;
   price: number;

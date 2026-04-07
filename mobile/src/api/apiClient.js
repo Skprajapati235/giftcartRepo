@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Production backend — Render deployment
-const baseURL = process.env.API_BASE_URL || 'https://giftcartrepo.onrender.com';
+const baseURL = process.env.API_BASE_URL || 'https://giftcartrepo.onrender.com/api';
 
 const api = axios.create({
   baseURL: baseURL,
