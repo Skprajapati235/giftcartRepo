@@ -1,4 +1,5 @@
 const service = require("../services/productService");
+const reviewService = require("../services/reviewService");
 
 exports.create = async (req, res) => {
   const data = await service.createProduct(req.body);
@@ -12,6 +13,11 @@ exports.getAll = async (req, res) => {
 
 exports.getOne = async (req, res) => {
   const data = await service.getProductById(req.params.id);
+  res.json(data);
+};
+
+exports.getProductReviews = async (req, res) => {
+  const data = await reviewService.getProductReviews(req.params.id);
   res.json(data);
 };
 

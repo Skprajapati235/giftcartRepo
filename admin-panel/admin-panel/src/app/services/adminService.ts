@@ -183,3 +183,28 @@ export const updateOrderStatus = async (id: string, status: string) => {
   const response = await authApi(getAuthToken()).put(`/order/admin/${id}/status`, { status });
   return response.data;
 };
+
+export const getAllReviews = async () => {
+  const response = await authApi(getAuthToken()).get("/review/admin/all");
+  return response.data;
+};
+
+export const getReviewDetail = async (id: string) => {
+  const response = await authApi(getAuthToken()).get(`/review/admin/${id}`);
+  return response.data;
+};
+
+export const replyReview = async (id: string, message: string) => {
+  const response = await authApi(getAuthToken()).put(`/review/admin/${id}/reply`, { message });
+  return response.data;
+};
+
+export const updateReview = async (id: string, payload: { rating?: number; comment?: string; images?: string[] }) => {
+  const response = await authApi(getAuthToken()).put(`/review/admin/${id}`, payload);
+  return response.data;
+};
+
+export const deleteReview = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/review/admin/${id}`);
+  return response.data;
+};
