@@ -2,11 +2,11 @@ const User = require("../models/User");
 const Admin = require("../models/Admin");
 
 exports.getUsers = async () => {
-  return await User.find().select("name email city profilePic createdAt");
+  return await User.find().select("name email city state mobileNumber profilePic createdAt");
 };
 
 exports.getAdmins = async () => {
-  return await Admin.find().select("name email city profilePic role createdAt");
+  return await Admin.find().select("name email city state mobileNumber profilePic role createdAt");
 };
 
 exports.updateUser = async (id, data) => {

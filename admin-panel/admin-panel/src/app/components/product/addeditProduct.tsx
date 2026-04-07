@@ -194,10 +194,17 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border-theme flex justify-end">
+        <div className="mt-12 pt-8 border-t border-border-theme flex flex-col sm:flex-row justify-end gap-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto border border-border-theme text-slate-700 rounded-2xl px-6 py-4 font-bold hover:bg-hover-theme transition"
+          >
+            Cancel
+          </button>
           <button
             disabled={saving || uploadingImage}
-            className="bg-primary text-white px-16 py-4 rounded-2xl font-bold hover:opacity-90 transition shadow-xl shadow-primary/20 disabled:opacity-50"
+            className="w-full sm:w-auto bg-primary text-white px-16 py-4 rounded-2xl font-bold hover:opacity-90 transition shadow-xl shadow-primary/20 disabled:opacity-50"
           >
             {saving ? "Saving..." : product?._id ? "Update Product" : "Save Product"}
           </button>

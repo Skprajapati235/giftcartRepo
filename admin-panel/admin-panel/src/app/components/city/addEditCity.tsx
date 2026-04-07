@@ -144,10 +144,17 @@ export default function AddEditCity({ city, onClose }: AddEditCityProps) {
           </div>
         </div>
 
-        <div className="pt-4">
+        <div className="pt-4 flex flex-col sm:flex-row items-center gap-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto border border-border-theme text-slate-700 rounded-2xl px-6 py-4 font-bold hover:bg-hover-theme transition"
+          >
+            Cancel
+          </button>
           <button
             disabled={saving || uploadingImage}
-            className="w-full bg-primary text-white rounded-2xl py-4 font-bold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50"
+            className="w-full sm:flex-1 bg-primary text-white rounded-2xl py-4 font-bold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50"
           >
             {saving ? "Processing..." : city?._id ? "Update City Group" : "Create City Group"}
           </button>

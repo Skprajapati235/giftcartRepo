@@ -13,6 +13,7 @@ import {
   Platform,
   TextInput,
   Modal,
+  StatusBar,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
@@ -45,11 +46,11 @@ export default function HomeScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [showLocationModal, setShowLocationModal] = useState(!user?.state || !user?.city);
   const [locationLoading, setLocationLoading] = useState(false);
+  const userLocation = user?.state && user?.city ? `${user.state}, ${user.city}` : 'Set your location';
 
   // Auto-sliding banner logic
   const [activeBanner, setActiveBanner] = useState(0);
@@ -178,211 +179,231 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <SafeAreaView style={styles.container}>
-      {/* Top Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton} onPress={() => setIsDrawerOpen(true)}>
-          <Feather name="menu" size={28} color="#FF6A3D" />
-        </TouchableOpacity>
+        {/* Top Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.menuButton} onPress={() => setIsDrawerOpen(true)}>
+            <Feather name="menu" size={28} color="#FF6A3D" />
+          </TouchableOpacity>
 
-        {!showSearch ? (
           <View style={styles.logoContainer}>
             <Image
               source={require('../assets/images/GiftorawithText2.png')}
               style={styles.logoImage}
             />
-            {/* <Text style={styles.logoTextMain}>Gift</Text>
-            <Text style={styles.logoTextSub}>Cart</Text> */}
           </View>
-        ) : (
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search items..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              autoFocus
-            />
-          </View>
-        )}
 
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.searchIcon} onPress={() => setShowSearch(!showSearch)}>
-            <Feather name={showSearch ? "x" : "search"} size={22} color="#000" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.locationButton}>
-            <Text style={styles.locationText}>{user?.location || 'AJMER'}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Main Content (One Scrollable List) */}
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={item => item._id}
-        numColumns={2}
-        ListHeaderComponent={
-          <>
-            {/* Auto-sliding Banners */}
-            {!selectedCategory && (
-            <View style={styles.bannerContainer}>
-              <FlatList
-                ref={bannerRef}
-                data={BANNERS}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(_, index) => index.toString()}
-                getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-                onScrollToIndexFailed={(info) => {
-                  setTimeout(() => {
-                    bannerRef.current?.scrollToIndex({ index: info.index, animated: false });
-                  }, 100);
-                }}
-                renderItem={({ item }) => (
-                  <Image source={{ uri: item }} style={styles.mainBanner} />
-                )}
-                onMomentumScrollEnd={(e) => {
-                  const idx = Math.round(e.nativeEvent.contentOffset.x / width);
-                  setActiveBanner(idx);
-                }}
-              />
-              <View style={styles.pagination}>
-                {BANNERS.map((_, i) => (
-                  <View key={i} style={[styles.dot, activeBanner === i && styles.activeDot]} />
-                ))}
+          <View style={styles.headerRight}>
+            <View style={styles.headerUser}>
+              <View style={styles.userInfo}>
+                <Text style={styles.userHi}>Hi, {user?.name?.split(' ')[0] || 'Guest'}</Text>
+                <Text style={styles.locationText}>{userLocation}</Text>
               </View>
-            </View>
-            )}
-
-            {/* Categories */}
-            <View style={styles.categoriesContainer}>
-              <Text style={styles.sectionTitleHeader}>Explore Categories</Text>
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={[{ _id: 'all', name: 'All' }, ...categories]}
-                keyExtractor={item => item._id}
-                contentContainerStyle={styles.categoryScroll}
-                renderItem={({ item }) => {
-                  const isAll = item._id === 'all';
-                  const isSelected = isAll ? !selectedCategory : selectedCategory === item._id;
-                  return (
-                    <TouchableOpacity
-                      style={styles.categoryCircleItem}
-                      onPress={() => setSelectedCategory(isAll ? null : item._id)}
-                    >
-                      <View style={[styles.circle, isSelected && styles.circleSelected]}>
-                        {isAll ? (
-                          <Ionicons name="apps" size={24} color={isSelected ? "#D82B76" : "#555"} />
-                        ) : (
-                          <Image source={{ uri: item.image || `https://api.dicebear.com/7.x/initials/png?seed=${item.name}` }} style={styles.circleImg} />
-                        )}
-                      </View>
-                      <Text style={[styles.categoryName, isSelected && styles.categoryNameSelected]} numberOfLines={1}>
-                        {item.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            </View>
-
-            {/* Ads Section (Flipkart style) */}
-            {!selectedCategory && (
-            <View style={styles.adsContainer}>
-              <Text style={styles.sectionTitleHeader}>Special Deals</Text>
-              <FlatList
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                data={ADS}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.adsScroll}
-                renderItem={({ item }) => (
-                  <TouchableOpacity style={styles.adCard}>
-                    <Image source={{ uri: item.img }} style={styles.adImg} />
-                    <View style={styles.adOverlay}>
-                      <Text style={styles.adTitle}>{item.title}</Text>
-                    </View>
-                  </TouchableOpacity>
+              <TouchableOpacity style={styles.userAvatar} onPress={() => navigation.navigate('Profile')}>
+                {user?.profilePic ? (
+                  <Image source={{ uri: user.profilePic }} style={styles.userAvatarImage} />
+                ) : (
+                  <Text style={styles.userAvatarText}>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
                 )}
-              />
+              </TouchableOpacity>
             </View>
-            )}
-
-            <Text style={[styles.sectionTitleHeader, { marginBottom: 10 }]}>
-              {selectedCategory ? categories.find(c => c._id === selectedCategory)?.name : 'Recommended For You'}
-            </Text>
-          </>
-        }
-        renderItem={renderProduct}
-        contentContainerStyle={styles.listContent}
-        columnWrapperStyle={styles.columnWrapper}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyBox}>
-            {loading ? <ActivityIndicator color="#D82B76" /> : <Text style={styles.emptyText}>No products found</Text>}
-          </View>
-        )}
-      />
-
-      {/* Floating WhatsApp */}
-      <TouchableOpacity style={styles.fab} onPress={() => Alert.alert('WhatsApp', 'Opening support...')}>
-        <FontAwesome name="whatsapp" size={32} color="#FFF" />
-      </TouchableOpacity>
-
-      {/* Drawer */}
-      <Modal visible={isDrawerOpen} transparent animationType="fade">
-        <View style={styles.drawerOverlay}>
-          <TouchableOpacity style={styles.drawerBackdrop} onPress={() => setIsDrawerOpen(false)} />
-          <View style={styles.drawerContent}>
-            <View style={styles.drawerHeader}>
-              <Text style={styles.logoTextMain}>GiftCart</Text>
-              <TouchableOpacity onPress={() => setIsDrawerOpen(false)}><Feather name="x" size={24} color="#000" /></TouchableOpacity>
-            </View>
-            <View style={styles.drawerProfile}>
-              <View style={styles.avatar}><Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text></View>
-              <Text style={styles.drawerName}>{user?.name || 'Hello User'}</Text>
-              <Text style={styles.drawerEmail}>{user?.email}</Text>
-            </View>
-            <TouchableOpacity style={styles.drawerItem} onPress={signOut}>
-              <Feather name="log-out" size={20} color="#D82B76" /><Text style={[styles.drawerItemText, { color: '#D82B76' }]}>Logout</Text>
-            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        {[
-          { name: 'HOME', icon: 'home', screen: 'Home' },
-          { name: 'COLLECTIONS', icon: 'grid', screen: 'Collections' },
-          { name: 'WISHLIST', icon: 'heart', screen: 'Wishlist' },
-          { name: 'CART', icon: 'shopping-cart', screen: 'Cart', badge: cartCount },
-          { name: 'PROFILE', icon: 'user', screen: 'Profile' },
-        ].map((tab, idx) => (
-          <TouchableOpacity
-            key={tab.name}
-            style={styles.bottomNavItem}
-            onPress={() => navigation.navigate(tab.screen)}
-          >
-            <View>
-              <Feather name={tab.icon} size={22} color={idx === 0 ? '#D82B76' : '#555'} />
-              {tab.badge > 0 && (
-                <View style={styles.badge}><Text style={styles.badgeText}>{tab.badge}</Text></View>
+        {/* Main Content (One Scrollable List) */}
+        <FlatList
+          data={filteredProducts}
+          keyExtractor={item => item._id}
+          numColumns={2}
+          ListHeaderComponent={
+            <>
+              <View style={styles.searchSection}>
+                <Feather name="search" size={18} color="#999" />
+                <TextInput
+                  style={styles.bodySearchInput}
+                  placeholder="Search gifts, products or categories"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  returnKeyType="search"
+                />
+              </View>
+              {/* Auto-sliding Banners */}
+              {!selectedCategory && (
+                <View style={styles.bannerContainer}>
+                  <FlatList
+                    ref={bannerRef}
+                    data={BANNERS}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(_, index) => index.toString()}
+                    getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+                    onScrollToIndexFailed={(info) => {
+                      setTimeout(() => {
+                        bannerRef.current?.scrollToIndex({ index: info.index, animated: false });
+                      }, 100);
+                    }}
+                    renderItem={({ item }) => (
+                      <Image source={{ uri: item }} style={styles.mainBanner} />
+                    )}
+                    onMomentumScrollEnd={(e) => {
+                      const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+                      setActiveBanner(idx);
+                    }}
+                  />
+                  <View style={styles.pagination}>
+                    {BANNERS.map((_, i) => (
+                      <View key={i} style={[styles.dot, activeBanner === i && styles.activeDot]} />
+                    ))}
+                  </View>
+                </View>
               )}
-            </View>
-            <Text style={[styles.bottomNavText, idx === 0 && { color: '#D82B76' }]}>{tab.name}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </SafeAreaView>
 
-    <LocationSelectionModal
-      visible={showLocationModal}
-      onLocationSelect={handleLocationSelect}
-      loading={locationLoading}
-    />
+              {/* Categories */}
+              <View style={styles.categoriesContainer}>
+                <Text style={styles.sectionTitleHeader}>Explore Categories</Text>
+                <FlatList
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  data={[{ _id: 'all', name: 'All' }, ...categories]}
+                  keyExtractor={item => item._id}
+                  contentContainerStyle={styles.categoryScroll}
+                  renderItem={({ item }) => {
+                    const isAll = item._id === 'all';
+                    const isSelected = isAll ? !selectedCategory : selectedCategory === item._id;
+                    return (
+                      <TouchableOpacity
+                        style={styles.categoryCircleItem}
+                        onPress={() => setSelectedCategory(isAll ? null : item._id)}
+                      >
+                        <View style={[styles.circle, isSelected && styles.circleSelected]}>
+                          {isAll ? (
+                            <Ionicons name="apps" size={24} color={isSelected ? "#D82B76" : "#555"} />
+                          ) : (
+                            <Image source={{ uri: item.image || `https://api.dicebear.com/7.x/initials/png?seed=${item.name}` }} style={styles.circleImg} />
+                          )}
+                        </View>
+                        <Text style={[styles.categoryName, isSelected && styles.categoryNameSelected]} numberOfLines={1}>
+                          {item.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              </View>
+
+              {/* Ads Section (Flipkart style) */}
+              {!selectedCategory && (
+                <View style={styles.adsContainer}>
+                  <Text style={styles.sectionTitleHeader}>Special Deals</Text>
+                  <FlatList
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    data={ADS}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={styles.adsScroll}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity style={styles.adCard}>
+                        <Image source={{ uri: item.img }} style={styles.adImg} />
+                        <View style={styles.adOverlay}>
+                          <Text style={styles.adTitle}>{item.title}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
+
+              <Text style={[styles.sectionTitleHeader, { marginBottom: 10 }]}>
+                {selectedCategory ? categories.find(c => c._id === selectedCategory)?.name : 'Recommended For You'}
+              </Text>
+            </>
+          }
+          renderItem={renderProduct}
+          contentContainerStyle={styles.listContent}
+          columnWrapperStyle={styles.columnWrapper}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyBox}>
+              {loading ? <ActivityIndicator color="#D82B76" /> : <Text style={styles.emptyText}>No products found</Text>}
+            </View>
+          )}
+        />
+
+        {/* Floating WhatsApp */}
+        <TouchableOpacity style={styles.fab} onPress={() => Alert.alert('WhatsApp', 'Opening support...')}>
+          <FontAwesome name="whatsapp" size={32} color="#FFF" />
+        </TouchableOpacity>
+
+        {/* Drawer */}
+        <Modal visible={isDrawerOpen} transparent animationType="fade">
+          <View style={styles.drawerOverlay}>
+            <TouchableOpacity style={styles.drawerBackdrop} onPress={() => setIsDrawerOpen(false)} />
+            <View style={styles.drawerContent}>
+              <View style={styles.drawerHeader}>
+                <Text style={styles.logoTextMain}>GiftCart</Text>
+                <TouchableOpacity onPress={() => setIsDrawerOpen(false)}><Feather name="x" size={24} color="#000" /></TouchableOpacity>
+              </View>
+              <View style={styles.drawerProfile}>
+                <TouchableOpacity style={styles.drawerAvatar} onPress={() => { setIsDrawerOpen(false); navigation.navigate('Profile'); }}>
+                  {user?.profilePic ? (
+                    <Image source={{ uri: user.profilePic }} style={styles.drawerAvatarImage} />
+                  ) : (
+                    <View style={styles.avatar}><Text style={styles.avatarText}>{user?.name?.charAt(0) || 'U'}</Text></View>
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.drawerName}>{user?.name || 'Hello User'}</Text>
+                <Text style={styles.drawerEmail}>{user?.email}</Text>
+                <Text style={styles.drawerLocation}>{userLocation}</Text>
+              </View>
+              <TouchableOpacity style={styles.drawerItem} onPress={() => { setIsDrawerOpen(false); navigation.navigate('Profile'); }}>
+                <Feather name="user" size={20} color="#111" /><Text style={styles.drawerItemText}>Profile</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.drawerItem} onPress={() => { setIsDrawerOpen(false); navigation.navigate('MyOrders'); }}>
+                <Feather name="shopping-bag" size={20} color="#111" /><Text style={styles.drawerItemText}>My Orders</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.drawerItem} onPress={() => { setIsDrawerOpen(false); navigation.navigate('Wishlist'); }}>
+                <Feather name="heart" size={20} color="#111" /><Text style={styles.drawerItemText}>Wishlist</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.drawerItem} onPress={signOut}>
+                <Feather name="log-out" size={20} color="#D82B76" /><Text style={[styles.drawerItemText, { color: '#D82B76' }]}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Bottom Nav */}
+        <View style={styles.bottomNav}>
+          {[
+            { name: 'HOME', icon: 'home', screen: 'Home' },
+            { name: 'COLLECTIONS', icon: 'grid', screen: 'Collections' },
+            { name: 'WISHLIST', icon: 'heart', screen: 'Wishlist' },
+            { name: 'CART', icon: 'shopping-cart', screen: 'Cart', badge: cartCount },
+            { name: 'PROFILE', icon: 'user', screen: 'Profile' },
+          ].map((tab, idx) => (
+            <TouchableOpacity
+              key={tab.name}
+              style={styles.bottomNavItem}
+              onPress={() => navigation.navigate(tab.screen)}
+            >
+              <View>
+                <Feather name={tab.icon} size={22} color={idx === 0 ? '#D82B76' : '#555'} />
+                {tab.badge > 0 && (
+                  <View style={styles.badge}><Text style={styles.badgeText}>{tab.badge}</Text></View>
+                )}
+              </View>
+              <Text style={[styles.bottomNavText, idx === 0 && { color: '#D82B76' }]}>{tab.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </SafeAreaView>
+
+      <LocationSelectionModal
+        visible={showLocationModal}
+        onLocationSelect={handleLocationSelect}
+        loading={locationLoading}
+      />
     </>
   );
 }
@@ -391,7 +412,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 15, paddingVertical: 12, backgroundColor: '#ffffffff',
+    paddingHorizontal: 15, paddingVertical: 8, backgroundColor: '#ffffffff',
     borderBottomWidth: 1, borderBottomColor: '#F0F0F0',
   },
   logoContainer: { flex: 1, alignItems: 'center' },
@@ -401,7 +422,16 @@ const styles = StyleSheet.create({
   locationButton: {
     borderWidth: 1, borderColor: '#DDD', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, marginLeft: 8
   },
-  locationText: { fontSize: 10, fontWeight: '800' },
+  locationText: { fontSize: 10, fontWeight: '800', color: '#444' },
+  headerUser: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
+  userInfo: { marginRight: 10, alignItems: 'flex-end' },
+  userHi: { fontSize: 12, fontWeight: '800', color: '#111' },
+  userAvatar: { width: 42, height: 42, borderRadius: 22, overflow: 'hidden', backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center' },
+  userAvatarImage: { width: '100%', height: '100%' },
+  userAvatarText: { fontSize: 16, fontWeight: '900', color: '#D82B76' },
+  drawerAvatar: { width: 80, height: 80, borderRadius: 40, overflow: 'hidden', marginBottom: 12, justifyContent: 'center', alignItems: 'center' },
+  drawerAvatarImage: { width: '100%', height: '100%' },
+  drawerLocation: { color: '#777', fontSize: 12, marginTop: 4, textAlign: 'center' },
   listContent: { paddingBottom: 100 },
   columnWrapper: { justifyContent: 'space-between', paddingHorizontal: 15 },
   bannerContainer: { height: 120, marginVertical: 15 },
@@ -471,8 +501,32 @@ const styles = StyleSheet.create({
   drawerItemText: { fontSize: 16, fontWeight: '700', marginLeft: 15 },
   emptyBox: { width: width - 30, height: 200, justifyContent: 'center', alignItems: 'center' },
   emptyText: { color: '#999', fontSize: 16 },
-  searchContainer: { flex: 1, marginHorizontal: 10 },
-  searchInput: { backgroundColor: '#F0F0F0', borderRadius: 8, paddingHorizontal: 15, paddingVertical: 8 },
+  searchSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginTop: 8,
+    marginHorizontal: 15,
+    marginBottom: 12,
+    borderRadius: 18,
+    gap: 10,
+    elevation: 2,
+    width: width - 30,
+    alignSelf: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#f25656ff',
+
+  },
+  bodySearchInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 6,
+    color: '#111',
+  },
+  searchIcon: { padding: 8 },
   menuButton: { padding: 5 },
   searchIcon: { padding: 8 },
   logoImage: {

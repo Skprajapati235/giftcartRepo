@@ -5,6 +5,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useContext(AuthContext);
+  const userLocation = user?.state && user?.city ? `${user.state}, ${user.city}` : null;
 
   const ProfileItem = ({ icon, label, onPress, color = '#555' }) => (
     <TouchableOpacity style={styles.item} onPress={onPress}>
@@ -39,6 +40,7 @@ export default function ProfileScreen({ navigation }) {
           )}
           <Text style={styles.name}>{user?.name || 'Shopper'}</Text>
           <Text style={styles.email}>{user?.email}</Text>
+          {userLocation ? <Text style={styles.location}>{userLocation}</Text> : null}
           {user?.mobileNumber && <Text style={styles.mobile}>{user.mobileNumber}</Text>}
           <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile')}>
             <Text style={styles.editBtnText}>Edit Profile</Text>
@@ -82,6 +84,7 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 40, fontWeight: '800', color: '#D82B76' },
   name: { fontSize: 22, fontWeight: '800', color: '#000' },
   email: { fontSize: 14, color: '#888', marginTop: 5 },
+  location: { fontSize: 13, color: '#555', marginTop: 5, fontWeight: '600' },
   mobile: { fontSize: 14, color: '#888', marginTop: 3 },
   editBtn: { backgroundColor: '#F0F0F0', paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, marginTop: 15 },
   editBtnText: { fontSize: 13, fontWeight: '700', color: '#555' },

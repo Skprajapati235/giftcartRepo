@@ -96,8 +96,17 @@ export default function UserList({ users, loading, error, onView, onDelete }: Us
                 <tr key={user._id} className="hover:bg-hover-theme transition-colors group border-b border-border-theme/50">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 bg-hover-theme rounded-full flex items-center justify-center text-slate-400">
-                        <Users size={18} />
+                      <div className="h-10 w-10 rounded-full overflow-hidden bg-hover-theme flex items-center justify-center">
+                        {(() => {
+                          const profileImage = user.profilePic || user.image || user.avatar;
+                          return profileImage ? (
+                            <img src={profileImage} alt={user.name} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-slate-400">
+                              <Users size={18} />
+                            </div>
+                          );
+                        })()}
                       </div>
                       <span className="font-bold text-foreground">{user.name}</span>
                     </div>

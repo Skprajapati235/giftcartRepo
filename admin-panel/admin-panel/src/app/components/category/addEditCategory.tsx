@@ -70,14 +70,6 @@ export default function AddEditCategory({ category, onClose }: AddEditCategoryPr
               required
             />
           </div>
-          <div className="pt-4">
-            <button
-              disabled={saving || uploadingImage}
-              className="w-full bg-primary text-white rounded-2xl py-4 font-bold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50"
-            >
-              {saving ? "Processing..." : category?._id ? "Update Category" : "Create Category"}
-            </button>
-          </div>
         </div>
 
         <div>
@@ -104,6 +96,22 @@ export default function AddEditCategory({ category, onClose }: AddEditCategoryPr
               </div>
             )}
           </div>
+        </div>
+
+        <div className="pt-4 flex flex-col sm:flex-row items-center gap-4 md:col-span-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full sm:w-auto border border-border-theme text-slate-700 rounded-2xl px-6 py-4 font-bold hover:bg-hover-theme transition"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={saving || uploadingImage}
+            className="w-full sm:flex-1 bg-primary text-white rounded-2xl py-4 font-bold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50"
+          >
+            {saving ? "Processing..." : category?._id ? "Update Category" : "Create Category"}
+          </button>
         </div>
       </form>
     </section>

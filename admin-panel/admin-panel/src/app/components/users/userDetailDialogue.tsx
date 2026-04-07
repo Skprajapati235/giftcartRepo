@@ -52,9 +52,16 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
             <div className="relative mb-4">
               <div className="h-24 w-24 rounded-full bg-gradient-to-tr from-green-400 to-emerald-600 p-1">
                 <div className="h-full w-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                  <div className="bg-amber-100 h-full w-full flex items-center justify-center text-amber-500">
-                    <User size={40} />
-                  </div>
+                  {(() => {
+                    const profileImage = user.profilePic || user.image || user.avatar;
+                    return profileImage ? (
+                      <img src={profileImage} alt={user.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="bg-amber-100 h-full w-full flex items-center justify-center text-amber-500">
+                        <User size={40} />
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
@@ -85,7 +92,7 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
               <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 flex items-center gap-1 mb-1">
                 <Phone size={12} className="text-blue-500" /> PHONE NO
               </p>
-              <p className="font-bold text-sm text-foreground truncate">{user.phone || "Not provided"}</p>
+              <p className="font-bold text-sm text-foreground truncate">{user.mobileNumber || user.phone || "Not provided"}</p>
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 flex items-center gap-1 mb-1">
