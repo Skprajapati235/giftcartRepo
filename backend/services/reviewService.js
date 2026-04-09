@@ -1,0 +1,124 @@
+const Review = require("../models/Review");
+const Product = require("../models/Product");
+
+exports.createReview = async (userId, productId, data) => {
+  const { rating, comment, images } = data;
+  
+  const review = await Review.create({
+    user: userId,
+    product: productId,
+    rating,
+    comment,
+    images: images || [],
+  });
+
+  // Update Product stats
+  const product = await Product.findById(productId);
+  if (product) {
+    const reviews = await Review.find({ product: productId });
+    product.numReviews = reviews.length;
+    product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+    await product.save();
+  }
+
+  return review;
+};
+
+exports.getProductReviews = async (productId) => {
+  return await Review.find({ product: productId })
+    .populate("user", "name email")
+    .sort({ createdAt: -1 });
+};
+
+exports.updateReview = async (reviewId, userId, data) => {
+  const { rating, comment, images } = data;
+  const review = await Review.findOne({ _id: reviewId, user: userId });
+  
+  if (!review) throw new Error("Review not found or not authorized");
+
+  review.rating = rating || review.rating;
+  review.comment = comment || review.comment;
+  if (images) review.images = images;
+  
+  await review.save();
+
+  // Update Product stats
+  const product = await Product.findById(review.product);
+  if (product) {
+    const reviews = await Review.find({ product: review.product });
+    product.numReviews = reviews.length;
+    product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+    await product.save();
+  }
+
+  return review;
+};
+
+exports.deleteReview = async (reviewId, userId) => {
+  const review = await Review.findOne({ _id: reviewId, user: userId });
+  if (!review) throw new Error("Review not found or not authorized");
+
+  const productId = review.product;
+  await Review.findByIdAndDelete(reviewId);
+
+  // Update Product stats
+  const product = await Product.findById(productId);
+  if (product) {
+    const reviews = await Review.find({ product: productId });
+    if (reviews.length > 0) {
+      product.numReviews = reviews.length;
+      product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+    } else {
+      product.numReviews = 0;
+      product.ratings = 0;
+    }
+    await product.save();
+  }
+
+  return { message: "Review deleted" };
+};
+
+// Admin Services
+exports.getAllReviews = async () => {
+  return await Review.find()
+    .populate("user", "name email")
+    .populate("product", "name image price")
+    .sort({ createdAt: -1 });
+};
+
+exports.getReviewById = async (reviewId) => {
+  return await Review.findById(reviewId)
+    .populate("user", "name email")
+    .populate("product", "name image price");
+};
+
+exports.adminReplyReview = async (reviewId, reply) => {
+  return await Review.findByIdAndUpdate(
+    reviewId, 
+    { reply, replyAt: Date.now() }, 
+    { new: true }
+  );
+};
+
+exports.adminDeleteReview = async (reviewId) => {
+  const review = await Review.findById(reviewId);
+  if (!review) throw new Error("Review not found");
+
+  const productId = review.product;
+  await Review.findByIdAndDelete(reviewId);
+
+  // Update Product stats
+  const product = await Product.findById(productId);
+  if (product) {
+    const reviews = await Review.find({ product: productId });
+    if (reviews.length > 0) {
+      product.numReviews = reviews.length;
+      product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+    } else {
+      product.numReviews = 0;
+      product.ratings = 0;
+    }
+    await product.save();
+  }
+  return { message: "Review deleted by admin" };
+};

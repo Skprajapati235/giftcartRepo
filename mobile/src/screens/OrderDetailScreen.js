@@ -106,6 +106,15 @@ export default function OrderDetailScreen({ route, navigation }) {
                       <Text style={styles.itemListPrice}>₹{originalPrice}</Text>
                     )}
                   </View>
+                  {order.status === 'Delivered' && (
+                    <TouchableOpacity 
+                      style={styles.reviewBtn}
+                      onPress={() => navigation.navigate('AddReview', { product, orderId: order._id })}
+                    >
+                      <Text style={styles.reviewBtnText}>Rate & Review product</Text>
+                      <Ionicons name="chevron-forward" size={14} color="#D82B76" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             );
@@ -173,5 +182,7 @@ const styles = StyleSheet.create({
   summaryCard: { backgroundColor: '#FFF', padding: 15, borderRadius: 12, marginBottom: 30, elevation: 1 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 5 },
   summaryLabel: { fontSize: 15, color: '#666', fontWeight: '500' },
-  summaryValue: { fontSize: 18, fontWeight: '800', color: '#000' }
+  summaryValue: { fontSize: 18, fontWeight: '800', color: '#000' },
+  reviewBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 10, alignSelf: 'flex-start' },
+  reviewBtnText: { color: '#D82B76', fontWeight: '700', fontSize: 13, marginRight: 2 }
 });

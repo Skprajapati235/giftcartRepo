@@ -18,7 +18,9 @@ const productSchema = new mongoose.Schema({
     ref: "Category",
     required: true
   },
-  isCodAvailable: { type: Boolean, default: true }
+  isCodAvailable: { type: Boolean, default: true },
+  ratings: { type: Number, default: 0 },
+  numReviews: { type: Number, default: 0 }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Product", productSchema);

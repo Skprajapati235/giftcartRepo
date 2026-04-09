@@ -1,14 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Dimensions, Platform } from 'react-native';
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Dimensions, Platform, Modal, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { AuthContext } from '../context/AuthContext';
+import { getProductReviews, deleteReview } from '../services/reviewService';
 
 const { width } = Dimensions.get('window');
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
+  const { user } = useContext(AuthContext);
   const [added, setAdded] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const [reviews, setReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(true);
 
   const quantityNum = Number(quantity || 1);
   const mrp = Number(product.price || 0);
@@ -39,7 +44,37 @@ export default function ProductDetailScreen({ route, navigation }) {
     };
 
     checkCart();
+    fetchReviews();
   }, [product]);
+
+  const fetchReviews = async () => {
+    try {
+      const data = await getProductReviews(product._id);
+      setReviews(data);
+    } catch (err) {
+      console.warn('Reviews fetch error', err);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    Alert.alert('Delete Review', 'Are you sure you want to delete your review?', [
+      { text: 'Cancel', style: 'cancel' },
+      { 
+        text: 'Delete', 
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteReview(reviewId);
+            fetchReviews();
+          } catch (error) {
+            Alert.alert('Error', 'Failed to delete review');
+          }
+        }
+      }
+    ]);
+  };
 
   const addToCart = async () => {
     try {
@@ -82,7 +117,9 @@ export default function ProductDetailScreen({ route, navigation }) {
             </View>
             <View style={styles.ratingBox}>
               <Ionicons name="star" size={14} color="#FFD700" />
-              <Text style={styles.ratingText}>4.8 (120 reviews)</Text>
+              <Text style={styles.ratingText}>
+                {product.ratings ? product.ratings.toFixed(1) : '0.0'} ({product.numReviews || 0} reviews)
+              </Text>
             </View>
           </View>
 
@@ -166,6 +203,82 @@ export default function ProductDetailScreen({ route, navigation }) {
                </TouchableOpacity>
              </View>
           </View>
+
+          <View style={styles.divider} />
+
+          {/* Reviews Section */}
+          <View style={styles.reviewsHeader}>
+            <Text style={styles.sectionTitle}>Ratings & Reviews</Text>
+            {product.numReviews > 0 && (
+              <View style={styles.overallRating}>
+                <Text style={styles.overallRatingText}>{product.ratings.toFixed(1)}</Text>
+                <Ionicons name="star" size={16} color="#FFF" />
+              </View>
+            )}
+          </View>
+
+          {loadingReviews ? (
+            <ActivityIndicator size="small" color="#D82B76" />
+          ) : reviews.length === 0 ? (
+            <Text style={styles.noReviews}>No reviews yet. Be the first to review!</Text>
+          ) : (
+            reviews.map((rev) => (
+              <View key={rev._id} style={styles.reviewCard}>
+                <View style={styles.reviewUserRow}>
+                  <View style={styles.userAvatar}>
+                    <Text style={styles.avatarText}>{rev.user?.name?.charAt(0) || 'U'}</Text>
+                  </View>
+                  <View style={styles.reviewUserInfo}>
+                    <Text style={styles.userName}>{rev.user?.name || 'Anonymous'}</Text>
+                    <View style={styles.reviewRatingRow}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Ionicons 
+                          key={s} 
+                          name={s <= rev.rating ? "star" : "star-outline"} 
+                          size={12} 
+                          color={s <= rev.rating ? "#FFD700" : "#E0E0E0"} 
+                        />
+                      ))}
+                      <Text style={styles.reviewDate}>{new Date(rev.createdAt).toLocaleDateString()}</Text>
+                    </View>
+                  </View>
+                  {user && rev.user?._id === user.id && (
+                    <View style={styles.myReviewActions}>
+                      <TouchableOpacity 
+                        onPress={() => navigation.navigate('AddReview', { product, existingReview: rev })}
+                        style={{ marginRight: 15 }}
+                      >
+                        <Feather name="edit-3" size={18} color="#999" />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDeleteReview(rev._id)}>
+                        <Feather name="trash-2" size={18} color="#999" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+                
+                <Text style={styles.reviewComment}>{rev.comment}</Text>
+
+                {rev.images && rev.images.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reviewImages}>
+                    {rev.images.map((img, i) => (
+                      <Image key={i} source={{ uri: img }} style={styles.reviewImage} />
+                    ))}
+                  </ScrollView>
+                )}
+
+                {rev.reply && (
+                  <View style={styles.adminReplyContainer}>
+                    <View style={styles.replyConnector} />
+                    <View style={styles.adminReplyBox}>
+                      <Text style={styles.replyTitle}>Admin Reply</Text>
+                      <Text style={styles.replyText}>{rev.reply}</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            ))
+          )}
         </View>
         
         <View style={{ height: 100 }} />
@@ -249,5 +362,26 @@ const styles = StyleSheet.create({
   cartBtn: { flex: 1, height: 55, backgroundColor: '#D82B76', borderRadius: 15, justifyContent: 'center', alignItems: 'center', elevation: 3 },
   addedBtn: { backgroundColor: '#444' },
   cartBtnText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
+  reviewsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  overallRating: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#16A34A', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  overallRatingText: { color: '#FFF', fontWeight: '800', marginRight: 4 },
+  noReviews: { fontSize: 14, color: '#999', textAlign: 'center', marginVertical: 20 },
+  reviewCard: { marginBottom: 25, backgroundColor: '#FFF' },
+  reviewUserRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  userAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center' },
+  avatarText: { fontSize: 14, fontWeight: '700', color: '#D82B76' },
+  reviewUserInfo: { marginLeft: 12, flex: 1 },
+  userName: { fontSize: 14, fontWeight: '700', color: '#333' },
+  reviewRatingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  reviewDate: { fontSize: 12, color: '#999', marginLeft: 8 },
+  reviewComment: { fontSize: 14, color: '#444', lineHeight: 20, marginBottom: 10 },
+  reviewImages: { flexDirection: 'row', marginBottom: 10 },
+  reviewImage: { width: 80, height: 80, borderRadius: 8, marginRight: 8 },
+  adminReplyContainer: { marginTop: 10, paddingLeft: 20 },
+  replyConnector: { position: 'absolute', left: 0, top: 0, bottom: 20, width: 2, backgroundColor: '#F0F0F0' },
+  adminReplyBox: { backgroundColor: '#F9F9F9', padding: 12, borderRadius: 8 },
+  replyTitle: { fontSize: 12, fontWeight: '800', color: '#D82B76', marginBottom: 4 },
+  replyText: { fontSize: 13, color: '#555', lineHeight: 18 },
+  myReviewActions: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 }
 });
 
