@@ -50,8 +50,12 @@ export default function CouponList({ coupons, loading, onEdit, onDelete }: Coupo
                 <tr key={coupon._id} className="hover:bg-hover-theme transition-all duration-300 group border-b border-border-theme/50">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase shrink-0">
-                        {coupon.code.substring(0, 2)}
+                      <div className="w-12 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase overflow-hidden shrink-0 border border-border-theme">
+                        {coupon.image ? (
+                          <img src={coupon.image} className="w-full h-full object-cover" />
+                        ) : (
+                          coupon.code.substring(0, 2)
+                        )}
                       </div>
                       <span className="font-bold text-slate-900 tracking-tight trancate">{coupon.code}</span>
                     </div>

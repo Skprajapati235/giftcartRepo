@@ -329,23 +329,29 @@ export default function HomeScreen({ navigation }) {
                     contentContainerStyle={styles.adsScroll}
                     renderItem={({ item, index }) => (
                       <TouchableOpacity 
-                        style={[styles.couponCard, { backgroundColor: index % 2 === 0 ? '#1E293B' : '#D82B76' }]}
-                        activeOpacity={0.8}
+                        style={styles.couponCardAd}
+                        activeOpacity={0.9}
                         onPress={() => {
                           showToast(`Code ${item.code} copied! Use at checkout.`, 'success');
                         }}
                       >
-                        <View style={styles.couponDeco} />
-                        <View style={styles.couponBody}>
-                           <Text style={styles.couponCardTitle}>
-                             {item.discountType === 'percentage' ? `${item.discountValue}% OFF` : `₹${item.discountValue} OFF`}
-                           </Text>
-                           <View style={styles.codePill}>
-                             <Text style={styles.codePillText}>{item.code}</Text>
-                           </View>
-                           <Text style={styles.couponMinOrder}>Min Order: ₹{item.minOrderAmount}</Text>
-                        </View>
-                        <View style={styles.couponDecoRight} />
+                        {item.image ? (
+                          <Image source={{ uri: item.image }} style={styles.couponAdImg} />
+                        ) : (
+                          <View style={[styles.couponCardFallback, { backgroundColor: index % 2 === 0 ? '#1E293B' : '#D82B76' }]}>
+                             <View style={styles.couponDeco} />
+                             <View style={styles.couponBody}>
+                                <Text style={styles.couponCardTitle}>
+                                  {item.discountType === 'percentage' ? `${item.discountValue}% OFF` : `₹${item.discountValue} OFF`}
+                                </Text>
+                                <View style={styles.codePill}>
+                                  <Text style={styles.codePillText}>{item.code}</Text>
+                                </View>
+                                <Text style={styles.couponMinOrder}>Min Order: ₹{item.minOrderAmount}</Text>
+                             </View>
+                             <View style={styles.couponDecoRight} />
+                          </View>
+                        )}
                       </TouchableOpacity>
                     )}
                   />
@@ -496,22 +502,26 @@ const styles = StyleSheet.create({
   adsContainer: { paddingBottom: 25 },
   adsScroll: { paddingHorizontal: 15 },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5 },
-  couponCard: { 
-    width: 200, height: 100, marginRight: 15, borderRadius: 12, 
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10,
-    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2, shadowRadius: 3, position: 'relative', overflow: 'hidden'
+  couponCardAd: { 
+    width: width * 0.75, height: 110, marginRight: 15, borderRadius: 18, 
+    overflow: 'hidden', elevation: 5, shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5
   },
-  couponDeco: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFF', position: 'absolute', left: -12, top: 40 },
-  couponDecoRight: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFF', position: 'absolute', right: -12, top: 40 },
+  couponAdImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  couponCardFallback: { 
+    flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15,
+    position: 'relative'
+  },
+  couponDeco: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', position: 'absolute', left: -14, top: 43 },
+  couponDecoRight: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', position: 'absolute', right: -14, top: 43 },
   couponBody: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  couponCardTitle: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: 0.5 },
+  couponCardTitle: { color: '#FFF', fontSize: 20, fontWeight: '900', letterSpacing: 0.5 },
   codePill: { 
-    backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 4, 
-    borderRadius: 8, marginVertical: 6, borderStyle: 'dashed', borderWidth: 1, borderColor: '#FFF' 
+    backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 5, 
+    borderRadius: 10, marginVertical: 8, borderStyle: 'dashed', borderWidth: 1, borderColor: '#FFF' 
   },
-  codePillText: { color: '#FFF', fontSize: 13, fontWeight: '800', letterSpacing: 1 },
-  couponMinOrder: { color: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: '700' },
+  codePillText: { color: '#FFF', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
+  couponMinOrder: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '700' },
   productCardGrid: {
     backgroundColor: '#FFF',
     width: (width - 45) / 2,

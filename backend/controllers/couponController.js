@@ -93,7 +93,7 @@ exports.getActive = async (req, res) => {
     const coupons = await Coupon.find({ 
       isActive: true, 
       expiryDate: { $gt: new Date() } 
-    }).select("code discountType discountValue minOrderAmount maxDiscount expiryDate");
+    }).select("code discountType discountValue minOrderAmount maxDiscount expiryDate image");
     res.json(coupons);
   } catch (err) {
     res.status(500).json({ message: err.message });

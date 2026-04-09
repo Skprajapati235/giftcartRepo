@@ -372,34 +372,32 @@ export default function CheckoutScreen({ navigation, route }) {
               
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 {activeCoupons.length > 0 ? activeCoupons.map((item) => (
-                  <TouchableOpacity 
-                    key={item._id} 
-                    style={styles.couponItem}
-                    onPress={() => {
-                      setCouponCode(item.code);
-                      setShowCouponModal(false);
-                    }}
-                  >
-                    <View style={styles.couponItemHeader}>
-                      <View style={styles.couponTag}>
-                         <Ionicons name="pricetag" size={14} color="#D82B76" />
-                         <Text style={styles.couponTagText}>{item.code}</Text>
+                  <View key={item._id} style={styles.couponItemNew}>
+                    {item.image && (
+                      <Image source={{ uri: item.image }} style={styles.modalCouponImg} />
+                    )}
+                    <View style={styles.couponDetailBox}>
+                      <View style={styles.couponItemHeader}>
+                        <View style={styles.couponTag}>
+                          <Ionicons name="pricetag" size={14} color="#D82B76" />
+                          <Text style={styles.couponTagText}>{item.code}</Text>
+                        </View>
+                        <Text style={styles.couponValue}>
+                          Save {item.discountType === 'percentage' ? `${item.discountValue}%` : `₹${item.discountValue}`}
+                        </Text>
                       </View>
-                      <Text style={styles.couponValue}>
-                        Save {item.discountType === 'percentage' ? `${item.discountValue}%` : `₹${item.discountValue}`}
-                      </Text>
+                      <Text style={styles.couponMinOrderModal}>Valid on orders above ₹{item.minOrderAmount}</Text>
+                      <TouchableOpacity 
+                        style={styles.modalApplyBtn}
+                        onPress={() => {
+                          setCouponCode(item.code);
+                          setShowCouponModal(false);
+                        }}
+                      >
+                        <Text style={styles.modalApplyBtnText}>APPLY CODE</Text>
+                      </TouchableOpacity>
                     </View>
-                    <Text style={styles.couponMinOrderModal}>Valid on orders above ₹{item.minOrderAmount}</Text>
-                    <TouchableOpacity 
-                      style={styles.modalApplyBtn}
-                      onPress={() => {
-                        setCouponCode(item.code);
-                        setShowCouponModal(false);
-                      }}
-                    >
-                      <Text style={styles.modalApplyBtnText}>APPLY CODE</Text>
-                    </TouchableOpacity>
-                  </TouchableOpacity>
+                  </View>
                 )) : (
                   <View style={{ padding: 40, alignItems: 'center' }}>
                     <Text style={{ color: '#999' }}>No coupons available right now.</Text>
@@ -568,7 +566,13 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '900', color: '#111' },
-  couponItem: { padding: 20, borderRadius: 20, borderStyle: 'dashed', borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9', marginBottom: 15 },
+  couponItemNew: { 
+    borderRadius: 20, overflow: 'hidden', borderStyle: 'solid', 
+    borderWidth: 1, borderColor: '#EEE', backgroundColor: '#FFF', marginBottom: 15,
+    elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4
+  },
+  modalCouponImg: { width: '100%', height: 120, resizeMode: 'cover' },
+  couponDetailBox: { padding: 15 },
   couponItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   couponTag: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFF0F5', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   couponTagText: { color: '#D82B76', fontWeight: '800', fontSize: 12, letterSpacing: 0.5 },

@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Calendar, Percent, IndianRupee, Tag, ShieldCheck, ShieldAlert, Zap } from "lucide-react";
+import { X, Calendar, Percent, IndianRupee, ShieldCheck, ShieldAlert, Zap, Upload } from "lucide-react";
 import * as service from "../../services/couponService";
+import * as adminService from "../../services/adminService";
 import { useToast } from "../../../context/ToastContext";
 
 interface AddEditCouponProps {
@@ -21,8 +22,25 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
     expiryDate: coupon?.expiryDate ? new Date(coupon.expiryDate).toISOString().split("T")[0] : "",
     usageLimit: coupon?.usageLimit || 100,
     isActive: coupon?.isActive !== undefined ? coupon.isActive : true,
+    image: coupon?.image || "",
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files?.[0]) return;
+    setUploadingImage(true);
+    try {
+      const file = event.target.files[0];
+      const data = await adminService.uploadImage(file);
+      setFormData({ ...formData, image: data.url });
+      showToast("Coupon ad image uploaded!", "success");
+    } catch (err: any) {
+      showToast("Upload failed", "error");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,8 +88,37 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-        {/* Left Side: Basic Info */}
+        {/* Left Side: Basic Info & Image */}
         <div className="space-y-8">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Coupon Background/Ad Image</label>
+            <div className="relative aspect-[21/9] w-full rounded-2xl border-2 border-dashed border-border-theme bg-background flex flex-col items-center justify-center overflow-hidden group">
+              {formData.image ? (
+                <>
+                  <img src={formData.image} className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                    <label className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-lg">Change Image</label>
+                    <input type="file" onChange={handleFileUpload} className="hidden" />
+                  </div>
+                </>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center gap-2">
+                  <Upload size={24} className="text-slate-300" />
+                  <span className="text-xs font-bold text-blue-600">Upload Ad Banner</span>
+                  <input type="file" onChange={handleFileUpload} className="hidden" />
+                </label>
+              )}
+              {uploadingImage && (
+                <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    <p className="text-[10px] font-black uppercase text-primary">Uploading...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Coupon Code</label>
             <div className="relative">
@@ -92,7 +139,10 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
               </button>
             </div>
           </div>
+        </div>
 
+        {/* Right Side: Constraints & Logic */}
+        <div className="space-y-8">
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Discount Type</label>
@@ -122,62 +172,32 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Expiry Date</label>
-            <div className="relative">
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Min Order (₹)</label>
+              <input
+                type="number"
+                value={formData.minOrderAmount}
+                onChange={(e) => setFormData({ ...formData, minOrderAmount: e.target.value })}
+                placeholder="0"
+                className="w-full bg-background border border-border-theme rounded-2xl px-5 py-4 font-bold text-foreground outline-none focus:ring-4 focus:ring-primary/10 transition-all"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Expiry Date</label>
               <input
                 type="date"
                 value={formData.expiryDate}
                 onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                className="w-full bg-background border border-border-theme rounded-2xl pl-12 pr-5 py-4 font-bold text-foreground outline-none focus:ring-4 focus:ring-primary/10 transition-all [color-scheme:dark]"
+                className="w-full bg-background border border-border-theme rounded-2xl px-5 py-4 font-bold text-foreground outline-none focus:ring-4 focus:ring-primary/10 transition-all [color-scheme:dark]"
               />
-              <Calendar className="absolute left-4 top-4 text-slate-400" size={18} />
             </div>
           </div>
-        </div>
 
-        {/* Right Side: Constraints */}
-        <div className="space-y-8">
-           <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Min Order (₹)</label>
-                <input
-                  type="number"
-                  value={formData.minOrderAmount}
-                  onChange={(e) => setFormData({ ...formData, minOrderAmount: e.target.value })}
-                  placeholder="0"
-                  className="w-full bg-background border border-border-theme rounded-2xl px-5 py-4 font-bold text-foreground outline-none focus:ring-4 focus:ring-primary/10 transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Usage Limit</label>
-                <input
-                  type="number"
-                  value={formData.usageLimit}
-                  onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
-                  placeholder="100"
-                  className="w-full bg-background border border-border-theme rounded-2xl px-5 py-4 font-bold text-foreground outline-none focus:ring-4 focus:ring-primary/10 transition-all"
-                />
-              </div>
-           </div>
-
-           {formData.discountType === "percentage" && (
-             <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Max Discount Amount (₹)</label>
-                <input
-                  type="number"
-                  value={formData.maxDiscount}
-                  onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })}
-                  placeholder="0 (No limit)"
-                  className="w-full bg-background border border-border-theme rounded-2xl px-5 py-4 font-bold text-foreground outline-none focus:ring-4 focus:ring-primary/10 transition-all"
-                />
-             </div>
-           )}
-
-           <div className="bg-hover-theme/30 p-6 rounded-3xl border border-border-theme">
+          <div className="bg-hover-theme/30 p-6 rounded-3xl border border-border-theme">
               <div className="flex items-center justify-between">
                 <div>
-                   <p className="text-sm font-black">Active Status</p>
+                   <p className="text-sm font-black text-foreground">Active Status</p>
                    <p className="text-[11px] text-slate-500 font-medium font-sans">Allow users to use this coupon</p>
                 </div>
                 <button
@@ -201,7 +221,7 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
           </button>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || uploadingImage}
             className="flex-[2] px-8 py-5 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
           >
             {saving ? "Processing..." : coupon?._id ? "Save Changes" : "Create Coupon Now"}
