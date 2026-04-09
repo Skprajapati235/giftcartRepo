@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Review } from "./index";
 import Link from "next/link";
-import { Star, MessageCircle, Trash2, X, ChevronLeft, ChevronRight, CornerDownRight, Edit2 } from "lucide-react";
+import { Star, MessageCircle, Trash2, X, ChevronLeft, ChevronRight, CornerDownRight, Edit2, Search, MoreHorizontal, User, Box, ArrowRight, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from "lucide-react";
+import Pagination from "../Pagination";
 
 interface ReviewListProps {
   reviews: Review[];
@@ -12,155 +13,304 @@ interface ReviewListProps {
 }
 
 export default function ReviewList({ reviews, loading, onDelete }: ReviewListProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const [selectedGallery, setSelectedGallery] = useState<{ images: string[]; index: number } | null>(null);
+  
+  // Track collapsed state (true means hidden)
+  const [collapsedReplies, setCollapsedReplies] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const toggleReply = (id: string) => {
+    setCollapsedReplies(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredReviews = useMemo(
+    () =>
+      reviews.filter((rev) =>
+        rev.product.name.toLowerCase().includes(normalizedSearch) ||
+        rev.user?.name.toLowerCase().includes(normalizedSearch) ||
+        rev.comment.toLowerCase().includes(normalizedSearch)
+      ),
+    [reviews, normalizedSearch]
+  );
+
+  const totalPages = Math.max(1, Math.ceil(filteredReviews.length / 10));
+  const currentReviews = filteredReviews.slice((currentPage - 1) * 10, currentPage * 10);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
+      <div className="flex justify-center items-center h-64 bg-card rounded-3xl border border-border-theme">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded-3xl border border-border-theme overflow-hidden shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
+    <div className="bg-card rounded-3xl border border-border-theme shadow-sm overflow-hidden min-h-[500px]">
+      {/* Header Filter Bar */}
+      <div className="p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-30">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search reviews, products, users..."
+            className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-hover-theme text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest px-4 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-border-theme">
+          Total Reviews: {filteredReviews.length}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto min-h-[400px]">
+        <table className="w-full text-left table-fixed border-collapse">
           <thead>
-            <tr className="border-b border-border-theme bg-slate-50/50 dark:bg-slate-900/50">
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Product</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">User</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Rating</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Review</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Images</th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Actions</th>
+            <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
+              <th className="px-6 py-4 w-[25%]">Product</th>
+              <th className="px-6 py-4 w-[20%]">Customer</th>
+              <th className="px-6 py-4 w-[12%]">Rating</th>
+              <th className="px-6 py-4 w-[25%]">Engagement</th>
+              <th className="px-6 py-4 w-[10%]">Media</th>
+              <th className="px-6 py-4 w-[8%] text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-theme">
-            {reviews.map((review) => (
+            {currentReviews.map((review) => {
+              const itemIsCollapsed = collapsedReplies[review._id] || false;
+              
+              return (
               <React.Fragment key={review._id}>
-                <tr className="hover:bg-hover-theme transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img src={review.product.image} className="h-12 w-12 rounded-xl object-cover border border-border-theme" alt="" />
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 truncate max-w-[150px]">{review.product.name}</p>
-                        <p className="text-xs text-slate-500">₹{review.product.price}</p>
+                <tr className="hover:bg-hover-theme transition-colors group">
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-2xl border border-border-theme bg-hover-theme overflow-hidden shrink-0 shadow-sm transition-transform group-hover:scale-105">
+                        <img src={review.product.image} className="h-full w-full object-cover" alt="" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-foreground truncate">{review.product.name}</p>
+                        <p className="text-xs font-black text-primary mt-0.5">₹{review.product.price}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-bold text-slate-900">{review.user?.name || "Anonymous"}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-bold">{review.rating}</span>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full border-2 border-primary/20 bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden shrink-0">
+                        {review.user?.profilePic ? (
+                          <img src={review.user.profilePic} className="h-full w-full object-cover" alt="" />
+                        ) : (
+                          <User size={18} className="text-primary" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-foreground truncate">{review.user?.name || "Anonymous"}</p>
+                        <p className="text-[10px] text-slate-500 font-medium truncate">{review.user?.email}</p>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm text-slate-600 max-w-xs line-clamp-2">{review.comment}</p>
+                  <td className="px-6 py-5">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star key={s} size={12} className={s <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-slate-200 dark:text-slate-800"} />
+                        ))}
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                        {review.rating === 5 ? 'Excellent' : review.rating >= 4 ? 'Very Good' : 'Average'}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {review.images && review.images.length > 0 && (
-                        <div className="relative cursor-pointer" onClick={() => setSelectedGallery({ images: review.images, index: 0 })}>
-                          <img src={review.images[0]} className="h-10 w-10 rounded-lg object-cover border border-border-theme" alt="" />
-                          {review.images.length > 1 && (
-                            <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">+{review.images.length - 1}</span>
-                            </div>
-                          )}
+                  <td className="px-6 py-5">
+                    <div className="space-y-3">
+                      <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 italic leading-relaxed font-medium">
+                        "{review.comment}"
+                      </p>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                           <ThumbsUp size={14} className="text-green-500" />
+                           <span className="text-xs font-bold text-foreground/70">{(review.likes || []).length}</span>
                         </div>
-                      )}
+                        <div className="flex items-center gap-1.5 text-slate-400">
+                           <ThumbsDown size={14} className="text-rose-400" />
+                           <span className="text-xs font-bold text-foreground/70">{(review.dislikes || []).length}</span>
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-bold ml-auto border-l border-border-theme pl-3">
+                          {new Date(review.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Link 
-                        href={`/reviews/${review._id}/reply`}
-                        className="p-2 text-slate-400 hover:text-primary transition-colors hover:bg-primary/10 rounded-xl"
+                  <td className="px-6 py-5">
+                    {review.images && review.images.length > 0 ? (
+                      <div 
+                        className="relative cursor-pointer group/img inline-block" 
+                        onClick={() => setSelectedGallery({ images: review.images, index: 0 })}
                       >
-                        <MessageCircle className="h-5 w-5" />
-                      </Link>
-                      <Link 
-                        href={`/reviews/${review._id}/edit`}
-                        className="p-2 text-slate-400 hover:text-amber-500 transition-colors hover:bg-amber-50 rounded-xl"
-                      >
-                        <Edit2 className="h-5 w-5" />
-                      </Link>
-                      <button 
-                        onClick={() => onDelete(review._id)}
-                        className="p-2 text-slate-400 hover:text-rose-500 transition-colors hover:bg-rose-50 rounded-xl"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
+                        <img src={review.images[0]} className="h-12 w-12 rounded-xl object-cover border border-border-theme shadow-sm transition group-hover/img:scale-110" alt="" />
+                        {review.images.length > 1 && (
+                          <div className="absolute -top-2 -right-2 bg-primary text-white text-[10px] font-black h-5 w-5 rounded-full flex items-center justify-center border-2 border-card shadow-lg">
+                            {review.images.length}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-bold text-slate-300 uppercase italic">No images</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-5 text-right relative">
+                    <div className="flex items-center justify-end gap-2">
+                       {review.reply && (
+                        <button 
+                          onClick={() => toggleReply(review._id)}
+                          className={`p-2 rounded-xl border border-border-theme transition-all ${itemIsCollapsed ? 'text-slate-400 hover:bg-hover-theme' : 'text-primary bg-primary/10 border-primary/20'}`}
+                        >
+                          <CornerDownRight size={18} className={itemIsCollapsed ? "" : "rotate-90"} />
+                        </button>
+                       )}
+                       <button
+                        onClick={() => setOpenMenuId(openMenuId === review._id ? null : review._id)}
+                        className="p-2 text-slate-400 hover:text-foreground transition rounded-xl bg-hover-theme/50"
+                       >
+                        <MoreHorizontal size={20} />
+                       </button>
                     </div>
+
+                    {openMenuId === review._id && (
+                      <div
+                        ref={menuRef}
+                        className="absolute right-6 top-14 w-44 bg-card rounded-2xl shadow-2xl border border-border-theme py-2 z-50 animate-in fade-in zoom-in duration-200"
+                      >
+                        <Link
+                          href={`/reviews/${review._id}/reply`}
+                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
+                        >
+                          <MessageCircle size={16} className="text-primary" />
+                          Reply Back
+                        </Link>
+                        <Link
+                          href={`/reviews/${review._id}/edit`}
+                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
+                        >
+                          <Edit2 size={16} className="text-amber-500" />
+                          Edit Content
+                        </Link>
+                        <div className="mx-2 my-1 border-t border-border-theme" />
+                        <button
+                          onClick={() => { setOpenMenuId(null); onDelete(review._id); }}
+                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-500/10 transition"
+                        >
+                          <Trash2 size={16} />
+                          Delete Review
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
-                {/* Admin Reply Sub-row */}
-                {review.reply && (
-                  <tr className="bg-slate-50/30 dark:bg-slate-900/10">
-                    <td colSpan={6} className="px-14 py-3">
-                       <div className="flex items-start gap-2">
-                          <CornerDownRight className="h-4 w-4 text-slate-400 mt-1" />
-                          <div className="flex-1 bg-white dark:bg-slate-800 p-3 rounded-2xl border border-border-theme shadow-sm">
-                             <div className="flex justify-between items-center mb-1">
-                               <p className="text-[10px] uppercase tracking-wider font-bold text-primary">Admin Reply</p>
-                               <span className="text-[10px] text-slate-400">{review.replyAt ? new Date(review.replyAt).toLocaleDateString() : ""}</span>
+                {/* Descriptive Reply Row */}
+                {review.reply && !itemIsCollapsed && (
+                  <tr className="bg-slate-50/20 dark:bg-slate-900/10 border-b border-border-theme animate-in slide-in-from-top-1 duration-300">
+                    <td colSpan={6} className="px-14 py-4">
+                       <div className="flex items-start gap-4">
+                          <div className="mt-1 p-2 rounded-lg bg-primary/5 border border-primary/10 shrink-0">
+                             <CornerDownRight className="h-4 w-4 text-primary" />
+                          </div>
+                          <div className="flex-1 bg-white dark:bg-slate-800/50 p-6 rounded-[2rem] border border-border-theme shadow-xl relative overflow-hidden group/reply">
+                             <div className="absolute top-0 right-0 p-1 opacity-[0.03] group-hover/reply:opacity-10 transition-opacity">
+                                <Box className="h-32 w-32 text-primary rotate-12" />
                              </div>
-                             <p className="text-sm text-slate-700">{review.reply}</p>
+                             <div className="flex justify-between items-center mb-4 relative z-10">
+                               <div className="flex items-center gap-2">
+                                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                  <p className="text-[11px] uppercase tracking-[0.2em] font-black text-primary">Official Response</p>
+                               </div>
+                               <span className="text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-full uppercase tracking-widest border border-border-theme">
+                                  {new Date(review.replyAt!).toLocaleDateString("en-US", { month: 'long', day: 'numeric', year: 'numeric' })}
+                               </span>
+                             </div>
+                             <p className="text-[15px] text-slate-700 dark:text-slate-200 leading-relaxed font-bold relative z-10 italic">
+                               "{review.reply}"
+                             </p>
                           </div>
                        </div>
                     </td>
                   </tr>
                 )}
               </React.Fragment>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
+      <div className="p-6 border-t border-border-theme bg-card flex items-center justify-between">
+        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
+          Showing {(currentPage - 1) * 10 + Math.min(1, filteredReviews.length)}-{Math.min(currentPage * 10, filteredReviews.length)} of {filteredReviews.length}
+        </div>
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+      </div>
+
       {/* Gallery Modal */}
       {selectedGallery && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 animate-in fade-in duration-300">
-           <button onClick={() => setSelectedGallery(null)} className="absolute top-8 right-8 text-white p-2 hover:bg-white/10 rounded-full transition-colors z-10">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-xl animate-in fade-in duration-300 overflow-hidden">
+           <button onClick={() => setSelectedGallery(null)} className="absolute top-8 right-8 text-white p-3 hover:bg-white/10 rounded-full transition-colors z-[110] bg-black/20">
               <X className="h-8 w-8" />
            </button>
            
-           <div className="relative w-full max-w-4xl flex items-center justify-center">
+           <div className="relative w-full max-w-5xl flex items-center justify-center px-20">
               {selectedGallery.images.length > 1 && (
                 <button 
                   onClick={() => setSelectedGallery({...selectedGallery, index: (selectedGallery.index - 1 + selectedGallery.images.length) % selectedGallery.images.length})}
-                  className="absolute left-4 p-4 text-white hover:bg-white/10 rounded-full transition-colors"
+                  className="absolute left-4 p-5 text-white hover:bg-white/10 rounded-full transition-all hover:scale-110 active:scale-90"
                 >
-                  <ChevronLeft className="h-8 w-8" />
+                  <ChevronLeft className="h-10 w-10" />
                 </button>
               )}
 
-              <img 
-                src={selectedGallery.images[selectedGallery.index]} 
-                className="max-h-[80vh] max-w-full rounded-2xl shadow-2xl object-contain"
-                alt="Product review"
-              />
+              <div className="relative group">
+                <img 
+                  src={selectedGallery.images[selectedGallery.index]} 
+                  className="max-h-[75vh] max-w-full rounded-3xl shadow-[0_0_100px_rgba(0,0,0,0.5)] object-contain border border-white/10"
+                  alt="Product review"
+                />
+                <div className="absolute inset-x-0 -bottom-12 flex justify-center">
+                   <div className="bg-black/50 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/10">
+                      <p className="text-white text-xs font-black uppercase tracking-widest">{selectedGallery.index + 1} / {selectedGallery.images.length}</p>
+                   </div>
+                </div>
+              </div>
 
               {selectedGallery.images.length > 1 && (
                 <button 
                   onClick={() => setSelectedGallery({...selectedGallery, index: (selectedGallery.index + 1) % selectedGallery.images.length})}
-                  className="absolute right-4 p-4 text-white hover:bg-white/10 rounded-full transition-colors"
+                  className="absolute right-4 p-5 text-white hover:bg-white/10 rounded-full transition-all hover:scale-110 active:scale-90"
                 >
-                  <ChevronRight className="h-8 w-8" />
+                  <ChevronRight className="h-10 w-10" />
                 </button>
               )}
            </div>
 
-           <div className="absolute bottom-10 flex gap-2 overflow-x-auto p-4 max-w-full">
+           <div className="absolute bottom-8 flex gap-3 overflow-x-auto p-6 max-w-[90%] scrollbar-hide">
               {selectedGallery.images.map((img, i) => (
-                <img 
+                <div 
                   key={i} 
-                  src={img} 
                   onClick={() => setSelectedGallery({...selectedGallery, index: i})}
-                  className={`h-16 w-16 rounded-lg object-cover cursor-pointer border-2 transition-all ${i === selectedGallery.index ? 'border-primary ring-2 ring-primary/30' : 'border-transparent opacity-50'}`}
-                  alt=""
-                />
+                  className={`h-20 w-20 rounded-2xl overflow-hidden cursor-pointer border-2 transition-all p-0.5 shrink-0 ${i === selectedGallery.index ? 'border-primary ring-4 ring-primary/20 scale-110' : 'border-transparent opacity-40 hover:opacity-100'}`}
+                >
+                  <img src={img} className="h-full w-full object-cover rounded-[0.8rem]" alt="" />
+                </div>
               ))}
            </div>
         </div>

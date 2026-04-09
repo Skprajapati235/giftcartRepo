@@ -25,6 +25,7 @@ app.use("/api/city", require("./routes/cityRoutes"));
 app.use("/api/product", require("./routes/productRoutes"));
 app.use("/api/order", require("./routes/orderRoutes"));
 app.use("/api/review", require("./routes/reviewRoutes"));
+app.use("/api/wishlist", require("./routes/wishlistRoutes"));
 app.use("/api/upload", authMiddleware, require("./routes/uploadRoutes"));
 app.use("/api/admin/users", adminMiddleware, require("./routes/userRoutes"));
 

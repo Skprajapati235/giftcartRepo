@@ -26,13 +26,19 @@ exports.createReview = async (userId, productId, data) => {
 
 exports.getProductReviews = async (productId) => {
   return await Review.find({ product: productId })
-    .populate("user", "name email")
+    .populate("user", "name email profilePic")
     .sort({ createdAt: -1 });
 };
 
-exports.updateReview = async (reviewId, userId, data) => {
+exports.updateReview = async (reviewId, userId, data, isAdmin = false) => {
   const { rating, comment, images } = data;
-  const review = await Review.findOne({ _id: reviewId, user: userId });
+  
+  let review;
+  if (isAdmin) {
+    review = await Review.findById(reviewId);
+  } else {
+    review = await Review.findOne({ _id: reviewId, user: userId });
+  }
   
   if (!review) throw new Error("Review not found or not authorized");
 
@@ -81,15 +87,19 @@ exports.deleteReview = async (reviewId, userId) => {
 // Admin Services
 exports.getAllReviews = async () => {
   return await Review.find()
-    .populate("user", "name email")
+    .populate("user", "name email profilePic")
     .populate("product", "name image price")
     .sort({ createdAt: -1 });
 };
 
 exports.getReviewById = async (reviewId) => {
   return await Review.findById(reviewId)
-    .populate("user", "name email")
+    .populate("user", "name email profilePic")
     .populate("product", "name image price");
+};
+
+exports.adminUpdateReview = async (reviewId, data) => {
+  return await exports.updateReview(reviewId, null, data, true);
 };
 
 exports.adminReplyReview = async (reviewId, reply) => {
@@ -121,4 +131,42 @@ exports.adminDeleteReview = async (reviewId) => {
     await product.save();
   }
   return { message: "Review deleted by admin" };
+};
+
+exports.toggleLike = async (reviewId, userId) => {
+  const review = await Review.findById(reviewId);
+  if (!review) throw new Error("Review not found");
+
+  const hasLiked = review.likes.includes(userId);
+  const hasDisliked = review.dislikes.includes(userId);
+
+  if (hasLiked) {
+    review.likes = review.likes.filter((id) => id.toString() !== userId);
+  } else {
+    review.likes.push(userId);
+    // Remove from dislikes if present
+    review.dislikes = review.dislikes.filter((id) => id.toString() !== userId);
+  }
+
+  await review.save();
+  return review;
+};
+
+exports.toggleDislike = async (reviewId, userId) => {
+  const review = await Review.findById(reviewId);
+  if (!review) throw new Error("Review not found");
+
+  const hasLiked = review.likes.includes(userId);
+  const hasDisliked = review.dislikes.includes(userId);
+
+  if (hasDisliked) {
+    review.dislikes = review.dislikes.filter((id) => id.toString() !== userId);
+  } else {
+    review.dislikes.push(userId);
+    // Remove from likes if present
+    review.likes = review.likes.filter((id) => id.toString() !== userId);
+  }
+
+  await review.save();
+  return review;
 };

@@ -19,3 +19,13 @@ export const deleteReview = async (reviewId) => {
   const response = await apiClient.delete(`/review/${reviewId}`);
   return response.data;
 };
+
+export const likeReview = async (reviewId) => {
+  const response = await apiClient.post(`/review/${reviewId}/like`);
+  return response.data;
+};
+
+export const dislikeReview = async (reviewId) => {
+  const response = await apiClient.post(`/review/${reviewId}/dislike`);
+  return response.data;
+};

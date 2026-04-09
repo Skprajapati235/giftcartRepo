@@ -32,6 +32,20 @@ const reviewSchema = new mongoose.Schema({
   replyAt: {
     type: Date,
   },
+  likes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: [],
+    },
+  ],
+  dislikes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: [],
+    },
+  ],
 }, { timestamps: true });
 
 module.exports = mongoose.model("Review", reviewSchema);

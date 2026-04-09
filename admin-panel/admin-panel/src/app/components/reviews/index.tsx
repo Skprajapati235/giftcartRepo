@@ -7,10 +7,12 @@ import ReviewList from "./reviewList";
 export interface Review {
   _id: string;
   product: { name: string; image: string; price: number };
-  user: { name: string; email: string };
+  user: { name: string; email: string; profilePic?: string };
   rating: number;
   comment: string;
   images: string[];
+  likes: string[];
+  dislikes: string[];
   reply?: string;
   replyAt?: string;
   createdAt: string;

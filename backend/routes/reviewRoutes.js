@@ -17,4 +17,8 @@ router.get("/admin/:id", adminMiddleware, controller.getReviewById);
 router.post("/admin/reply/:id", adminMiddleware, controller.adminReplyReview);
 router.delete("/admin/:id", adminMiddleware, controller.adminDeleteReview);
 
+// Social routes
+router.post("/:id/like", authMiddleware, controller.toggleLike);
+router.post("/:id/dislike", authMiddleware, controller.toggleDislike);
+
 module.exports = router;

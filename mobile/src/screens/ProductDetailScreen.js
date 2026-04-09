@@ -3,7 +3,8 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, ScrollVi
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
-import { getProductReviews, deleteReview } from '../services/reviewService';
+import { getProductReviews, deleteReview, likeReview, dislikeReview } from '../services/reviewService';
+import { toggleWishlist, getWishlist } from '../services/wishlistService';
 
 const { width } = Dimensions.get('window');
 
@@ -14,6 +15,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
+  const [inWishlist, setInWishlist] = useState(false);
 
   const quantityNum = Number(quantity || 1);
   const mrp = Number(product.price || 0);
@@ -45,7 +47,31 @@ export default function ProductDetailScreen({ route, navigation }) {
 
     checkCart();
     fetchReviews();
-  }, [product]);
+    if (user) checkWishlistStatus();
+  }, [product, user]);
+
+  const checkWishlistStatus = async () => {
+    try {
+      const wishlist = await getWishlist();
+      const exists = wishlist.some((item) => item._id === product._id);
+      setInWishlist(exists);
+    } catch (err) {
+      console.warn('Wishlist check error', err);
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!user) {
+      Alert.alert('Login Required', 'Please login to add items to wishlist');
+      return;
+    }
+    try {
+      const response = await toggleWishlist(product._id);
+      setInWishlist(response.includes(product._id));
+    } catch (err) {
+      Alert.alert('Error', 'Could not update wishlist');
+    }
+  };
 
   const fetchReviews = async () => {
     try {
@@ -74,6 +100,32 @@ export default function ProductDetailScreen({ route, navigation }) {
         }
       }
     ]);
+  };
+
+  const handleLike = async (reviewId) => {
+    if (!user) {
+      Alert.alert('Login Required', 'Please login to like reviews');
+      return;
+    }
+    try {
+      await likeReview(reviewId);
+      fetchReviews();
+    } catch (error) {
+      console.warn('Like failed', error);
+    }
+  };
+
+  const handleDislike = async (reviewId) => {
+    if (!user) {
+      Alert.alert('Login Required', 'Please login to dislike reviews');
+      return;
+    }
+    try {
+      await dislikeReview(reviewId);
+      fetchReviews();
+    } catch (error) {
+      console.warn('Dislike failed', error);
+    }
   };
 
   const addToCart = async () => {
@@ -218,7 +270,9 @@ export default function ProductDetailScreen({ route, navigation }) {
           </View>
 
           {loadingReviews ? (
-            <ActivityIndicator size="small" color="#D82B76" />
+            <View style={{ padding: 20 }}>
+               <ActivityIndicator size="small" color="#D82B76" />
+            </View>
           ) : reviews.length === 0 ? (
             <Text style={styles.noReviews}>No reviews yet. Be the first to review!</Text>
           ) : (
@@ -226,7 +280,11 @@ export default function ProductDetailScreen({ route, navigation }) {
               <View key={rev._id} style={styles.reviewCard}>
                 <View style={styles.reviewUserRow}>
                   <View style={styles.userAvatar}>
-                    <Text style={styles.avatarText}>{rev.user?.name?.charAt(0) || 'U'}</Text>
+                    {rev.user?.profilePic ? (
+                      <Image source={{ uri: rev.user.profilePic }} style={styles.avatarImg} />
+                    ) : (
+                      <Text style={styles.avatarText}>{rev.user?.name?.charAt(0) || 'U'}</Text>
+                    )}
                   </View>
                   <View style={styles.reviewUserInfo}>
                     <Text style={styles.userName}>{rev.user?.name || 'Anonymous'}</Text>
@@ -259,6 +317,29 @@ export default function ProductDetailScreen({ route, navigation }) {
                 
                 <Text style={styles.reviewComment}>{rev.comment}</Text>
 
+                <View style={styles.engagementRow}>
+                  <TouchableOpacity style={styles.likeBtn} onPress={() => handleLike(rev._id)}>
+                    <Ionicons 
+                      name={user && (rev.likes || []).includes(user.id) ? "thumbs-up" : "thumbs-up-outline"} 
+                      size={14} 
+                      color={user && (rev.likes || []).includes(user.id) ? "#D82B76" : "#666"} 
+                    />
+                    <Text style={[styles.engagementText, user && (rev.likes || []).includes(user.id) && { color: '#D82B76' }]}>
+                       {(rev.likes || []).length}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.likeBtn} onPress={() => handleDislike(rev._id)}>
+                    <Ionicons 
+                      name={user && (rev.dislikes || []).includes(user.id) ? "thumbs-down" : "thumbs-down-outline"} 
+                      size={14} 
+                      color={user && (rev.dislikes || []).includes(user.id) ? "#444" : "#666"} 
+                    />
+                    <Text style={[styles.engagementText, user && (rev.dislikes || []).includes(user.id) && { color: '#444' }]}>
+                       {(rev.dislikes || []).length}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
                 {rev.images && rev.images.length > 0 && (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reviewImages}>
                     {rev.images.map((img, i) => (
@@ -271,11 +352,15 @@ export default function ProductDetailScreen({ route, navigation }) {
                   <View style={styles.adminReplyContainer}>
                     <View style={styles.replyConnector} />
                     <View style={styles.adminReplyBox}>
-                      <Text style={styles.replyTitle}>Admin Reply</Text>
+                      <View style={styles.replyHeader}>
+                         <View style={styles.storeDot} />
+                         <Text style={styles.replyTitle}>Store Response</Text>
+                      </View>
                       <Text style={styles.replyText}>{rev.reply}</Text>
                     </View>
                   </View>
                 )}
+                <View style={styles.reviewDivider} />
               </View>
             ))
           )}
@@ -286,8 +371,8 @@ export default function ProductDetailScreen({ route, navigation }) {
 
       {/* Footer Actions */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.wishlistBtn}>
-          <Feather name="heart" size={24} color="#D82B76" />
+        <TouchableOpacity style={styles.wishlistBtn} onPress={handleToggleWishlist}>
+          <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={24} color="#D82B76" />
         </TouchableOpacity>
         <TouchableOpacity 
            style={styles.cartBtn} 
@@ -367,21 +452,28 @@ const styles = StyleSheet.create({
   overallRatingText: { color: '#FFF', fontWeight: '800', marginRight: 4 },
   noReviews: { fontSize: 14, color: '#999', textAlign: 'center', marginVertical: 20 },
   reviewCard: { marginBottom: 25, backgroundColor: '#FFF' },
-  reviewUserRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  userAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center' },
-  avatarText: { fontSize: 14, fontWeight: '700', color: '#D82B76' },
+  reviewUserRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  userAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF5F8', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFE0EB', overflow: 'hidden' },
+  avatarText: { fontSize: 18, fontWeight: '800', color: '#D82B76' },
+  avatarImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   reviewUserInfo: { marginLeft: 12, flex: 1 },
-  userName: { fontSize: 14, fontWeight: '700', color: '#333' },
+  userName: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
   reviewRatingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   reviewDate: { fontSize: 12, color: '#999', marginLeft: 8 },
-  reviewComment: { fontSize: 14, color: '#444', lineHeight: 20, marginBottom: 10 },
-  reviewImages: { flexDirection: 'row', marginBottom: 10 },
-  reviewImage: { width: 80, height: 80, borderRadius: 8, marginRight: 8 },
-  adminReplyContainer: { marginTop: 10, paddingLeft: 20 },
-  replyConnector: { position: 'absolute', left: 0, top: 0, bottom: 20, width: 2, backgroundColor: '#F0F0F0' },
-  adminReplyBox: { backgroundColor: '#F9F9F9', padding: 12, borderRadius: 8 },
-  replyTitle: { fontSize: 12, fontWeight: '800', color: '#D82B76', marginBottom: 4 },
-  replyText: { fontSize: 13, color: '#555', lineHeight: 18 },
-  myReviewActions: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 }
+  reviewComment: { fontSize: 14, color: '#444', lineHeight: 22, marginBottom: 12, fontStyle: 'italic' },
+  reviewImages: { flexDirection: 'row', marginBottom: 15 },
+  reviewImage: { width: 90, height: 90, borderRadius: 12, marginRight: 10, borderWIdth: 1, borderColor: '#F0F0F0' },
+  adminReplyContainer: { marginTop: 5, paddingLeft: 20, marginBottom: 20 },
+  replyConnector: { position: 'absolute', left: 0, top: 0, bottom: 20, width: 2, backgroundColor: '#FFE0EB', borderRadius: 1 },
+  adminReplyBox: { backgroundColor: '#FDF2F7', padding: 15, borderRadius: 20, borderTopLeftRadius: 5 },
+  replyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  storeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D82B76', marginRight: 8 },
+  replyTitle: { fontSize: 11, fontWeight: '900', color: '#D82B76', textTransform: 'uppercase', letterSpacing: 1 },
+  replyText: { fontSize: 13, color: '#333', lineHeight: 20, fontWeight: '500' },
+  reviewDivider: { height: 1, backgroundColor: '#F8F8F8', marginTop: 10 },
+  myReviewActions: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
+  engagementRow: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 12 },
+  likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 5, backgroundColor: '#F8F8F8', borderRadius: 8 },
+  engagementText: { fontSize: 12, fontWeight: '700', color: '#666' }
 });
 

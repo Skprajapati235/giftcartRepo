@@ -20,7 +20,8 @@ exports.getProductReviews = async (req, res) => {
 
 exports.updateReview = async (req, res) => {
   try {
-    const data = await service.updateReview(req.params.id, req.user.id, req.body);
+    const isAdmin = req.user.role === "admin";
+    const data = await service.updateReview(req.params.id, req.user.id, req.body, isAdmin);
     res.json(data);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -68,6 +69,24 @@ exports.adminDeleteReview = async (req, res) => {
   try {
     await service.adminDeleteReview(req.params.id);
     res.json({ message: "Deleted by admin" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.toggleLike = async (req, res) => {
+  try {
+    const data = await service.toggleLike(req.params.id, req.user.id);
+    res.json(data);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.toggleDislike = async (req, res) => {
+  try {
+    const data = await service.toggleDislike(req.params.id, req.user.id);
+    res.json(data);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
