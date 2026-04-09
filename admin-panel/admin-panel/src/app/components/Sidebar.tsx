@@ -20,6 +20,8 @@ import {
   CreditCard,
   MapPin,
   Star,
+  Gift,
+  Ticket,
 } from "lucide-react";
 
 type NavChild = {
@@ -53,6 +55,14 @@ const navigation: NavItem[] = [
     ],
   },
   { key: "category", href: "/category", label: "Categories", icon: Tag },
+  {
+    key: "offers",
+    label: "Offers",
+    icon: Gift,
+    children: [
+      { key: "coupons", href: "/coupons", label: "Coupons", icon: Ticket },
+    ],
+  },
   { key: "users", href: "/users", label: "Users", icon: Users },
   {
     key: "admin",

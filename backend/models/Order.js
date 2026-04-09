@@ -47,6 +47,8 @@ const orderSchema = new mongoose.Schema({
     enum: ["Pending", "Success", "Failed"],
     default: "Pending",
   },
+  couponCode: { type: String },
+  discountAmount: { type: Number, default: 0 },
 }, { timestamps: true });
 
 module.exports = mongoose.model("Order", orderSchema);

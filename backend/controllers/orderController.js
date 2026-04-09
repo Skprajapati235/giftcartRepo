@@ -1,11 +1,12 @@
 const crypto = require("crypto");
+const Coupon = require("../models/Coupon");
 const orderService = require("../services/orderService");
 const paymentService = require("../services/paymentService");
 
 // POST /api/order/create
 exports.createOrder = async (req, res) => {
   try {
-    const { items, shippingAddress, paymentMethod = 'Online' } = req.body;
+    const { items, shippingAddress, paymentMethod = 'Online', couponCode } = req.body;
     const userId = req.user.id;
 
     const sampleTotal = items.reduce((sum, item) => {
@@ -19,9 +20,31 @@ exports.createOrder = async (req, res) => {
       return sum + (taxedPrice + shippingCost) * quantity;
     }, 0);
 
+    let totalAfterCoupon = sampleTotal;
+    let finalDiscount = 0;
+
+    if (couponCode) {
+      const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
+      if (coupon) {
+        // Re-validate on server
+        const isExpiried = new Date() > new Date(coupon.expiryDate);
+        if (!isExpiried && coupon.usedCount < coupon.usageLimit && sampleTotal >= coupon.minOrderAmount) {
+          if (coupon.discountType === "percentage") {
+            finalDiscount = (sampleTotal * coupon.discountValue) / 100;
+            if (coupon.maxDiscount > 0 && finalDiscount > coupon.maxDiscount) {
+              finalDiscount = coupon.maxDiscount;
+            }
+          } else {
+            finalDiscount = coupon.discountValue;
+          }
+          totalAfterCoupon = Math.max(0, sampleTotal - finalDiscount);
+        }
+      }
+    }
+
     let razorpayOrder = null;
     if (paymentMethod === 'Online') {
-      razorpayOrder = await paymentService.createRazorpayOrder(sampleTotal);
+      razorpayOrder = await paymentService.createRazorpayOrder(totalAfterCoupon);
     }
 
     const newOrder = await orderService.createOrder({
@@ -30,6 +53,8 @@ exports.createOrder = async (req, res) => {
       shippingAddress,
       razorpayOrderId: razorpayOrder?.id,
       paymentMethod,
+      couponCode: finalDiscount > 0 ? couponCode.toUpperCase() : null,
+      discountAmount: finalDiscount
     });
 
     res.status(201).json({

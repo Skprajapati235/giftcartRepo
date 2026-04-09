@@ -1,7 +1,8 @@
 const Order = require("../models/Order");
+const Coupon = require("../models/Coupon");
 
 // Create a new order record in DB
-exports.createOrder = async ({ userId, items, totalAmount, shippingAddress, razorpayOrderId, paymentMethod = 'Online' }) => {
+exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, paymentMethod = 'Online', couponCode, discountAmount = 0 }) => {
   const processedItems = items.map((item) => {
     const quantity = Number(item.quantity || 1);
     const price = Number(item.price || 0);
@@ -36,19 +37,28 @@ exports.createOrder = async ({ userId, items, totalAmount, shippingAddress, razo
   }
 
   const calculatedTotal = processedItems.reduce((sum, item) => sum + item.itemTotal, 0);
+  const finalTotal = Number((calculatedTotal - discountAmount).toFixed(2));
 
   const order = new Order({
     user: userId,
     items: processedItems,
-    totalAmount: calculatedTotal,
+    totalAmount: finalTotal,
     shippingAddress,
     razorpayOrderId,
     paymentMethod,
     status: 'Pending',
     paymentStatus: 'Pending',
+    couponCode,
+    discountAmount
   });
 
-  return await order.save();
+  const savedOrder = await order.save();
+  
+  if (couponCode) {
+    await Coupon.findOneAndUpdate({ code: couponCode }, { $inc: { usedCount: 1 } });
+  }
+
+  return savedOrder;
 };
 
 // Update order after payment verification

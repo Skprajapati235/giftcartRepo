@@ -95,9 +95,19 @@ export default function OrderList({ orders, loading, onUpdateStatus }: OrderList
                     <div className="text-xs text-slate-400 truncate">{order.user?.email}</div>
                   </td>
                   <td className="px-6 py-5 w-[15%]">
-                    <span className="bg-pink-50 text-pink-600 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap">
-                      ₹{order.totalAmount}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="bg-pink-50 text-pink-600 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap w-fit">
+                        ₹{order.totalAmount}
+                      </span>
+                      {order.couponCode && (
+                        <div className="flex items-center gap-1">
+                           <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 italic">
+                             {order.couponCode}
+                           </span>
+                           <span className="text-[10px] font-bold text-slate-400">(-₹{order.discountAmount})</span>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-5 w-[15%]">
                     <span className={`px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap ${

@@ -14,6 +14,7 @@ import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import orderService from '../services/orderService';
+import couponService from '../services/couponService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../context/ToastContext';
 
@@ -25,6 +26,12 @@ export default function CheckoutScreen({ navigation, route }) {
   const [paymentData, setPaymentData] = useState(null);
   const [showWebView, setShowWebView] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Online');
+
+  // Coupon State
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
   
   // Shipping Address Form State
   const [shippingInfo, setShippingInfo] = useState({
@@ -65,6 +72,31 @@ export default function CheckoutScreen({ navigation, route }) {
   );
 
   const displayTotal = Number(orderSummary.grandTotal.toFixed(2));
+  const finalTotal = Number((displayTotal - couponDiscount).toFixed(2));
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode) {
+      showToast('Please enter a coupon code', 'warning');
+      return;
+    }
+    setValidatingCoupon(true);
+    try {
+      const res = await couponService.validateCoupon({
+        code: couponCode,
+        amount: displayTotal
+      });
+      setCouponDiscount(res.discountAmount);
+      setAppliedCoupon(res.coupon);
+      showToast('Coupon applied successfully!', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Invalid coupon code';
+      showToast(msg, 'error');
+      setCouponDiscount(0);
+      setAppliedCoupon(null);
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
 
   const handleCheckout = async () => {
     // Validate Form
@@ -77,9 +109,11 @@ export default function CheckoutScreen({ navigation, route }) {
     try {
       const orderData = {
         items: cartItems,
-        totalAmount: total,
+        totalAmount: finalTotal,
         shippingAddress: shippingInfo,
         paymentMethod,
+        couponCode: appliedCoupon,
+        discountAmount: couponDiscount,
       };
       
       const res = await orderService.createOrder(orderData);
@@ -254,6 +288,53 @@ export default function CheckoutScreen({ navigation, route }) {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Offers & Coupons</Text>
+          <View style={styles.couponContainer}>
+            <View style={styles.couponInputWrapper}>
+              <Ionicons name="pricetag-outline" size={20} color="#666" style={{ marginLeft: 15 }} />
+              <TextInput
+                style={styles.couponInput}
+                placeholder="Enter Promo Code"
+                placeholderTextColor="#999"
+                autoCapitalize="characters"
+                value={couponCode}
+                onChangeText={setCouponCode}
+                editable={!appliedCoupon}
+              />
+              {appliedCoupon ? (
+                <TouchableOpacity 
+                   onPress={() => {
+                     setAppliedCoupon(null);
+                     setCouponDiscount(0);
+                     setCouponCode('');
+                   }}
+                   style={styles.removeCoupon}
+                >
+                  <Ionicons name="close-circle" size={24} color="#D82B76" />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity 
+                   onPress={handleApplyCoupon} 
+                   style={styles.applyBtn}
+                   disabled={validatingCoupon}
+                >
+                  {validatingCoupon ? (
+                    <ActivityIndicator size="small" color="#D82B76" />
+                  ) : (
+                    <Text style={styles.applyBtnText}>APPLY</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+            {appliedCoupon && (
+              <Text style={styles.appliedMsg}>
+                Yayy! You saved ₹{couponDiscount} with {appliedCoupon}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary ({cartItems.length} items)</Text>
           <View style={styles.summaryCard}>
             {cartItems.map((item, idx) => {
@@ -296,10 +377,16 @@ export default function CheckoutScreen({ navigation, route }) {
               <Text style={styles.summaryLabel}>Shipping</Text>
               <Text style={styles.summaryValue}>₹{orderSummary.shippingTotal.toFixed(2)}</Text>
             </View>
+            {couponDiscount > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: '#D82B76', fontWeight: 'bold' }]}>Coupon Discount</Text>
+                <Text style={[styles.summaryValue, { color: '#D82B76' }]}>-₹{couponDiscount.toFixed(2)}</Text>
+              </View>
+            )}
             <View style={styles.divider} />
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Grand Total</Text>
-              <Text style={styles.totalPrice}>₹{displayTotal}</Text>
+              <Text style={styles.totalPrice}>₹{finalTotal}</Text>
             </View>
           </View>
         </View>
@@ -341,7 +428,7 @@ export default function CheckoutScreen({ navigation, route }) {
             <ActivityIndicator color="#FFF" />
           ) : (
             <Text style={styles.payBtnText}>
-              {paymentMethod === 'COD' ? 'Place Order (Cash on Delivery)' : 'Pay Now ₹' + displayTotal}
+              {paymentMethod === 'COD' ? 'Place Order (Cash on Delivery)' : 'Pay Now ₹' + finalTotal}
             </Text>
           )}
         </TouchableOpacity>
@@ -391,4 +478,12 @@ const styles = StyleSheet.create({
   codNote: { fontSize: 12, color: '#888', marginTop: 5, fontStyle: 'italic' },
   payBtn: { backgroundColor: '#D82B76', borderRadius: 12, paddingVertical: 18, alignItems: 'center', marginTop: 10, elevation: 3 },
   payBtnText: { color: '#FFF', fontSize: 18, fontWeight: '800' },
+  // Coupon Styles
+  couponContainer: { backgroundColor: '#FFF', borderRadius: 15, padding: 15, borderStyle: 'dashed', borderWidth: 1, borderColor: '#DDD' },
+  couponInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9F9F9', borderRadius: 12, height: 55 },
+  couponInput: { flex: 1, paddingHorizontal: 12, fontSize: 14, fontWeight: '700', color: '#000' },
+  applyBtn: { paddingHorizontal: 20, height: '100%', justifyContent: 'center' },
+  applyBtnText: { color: '#D82B76', fontWeight: '800', fontSize: 13 },
+  removeCoupon: { paddingHorizontal: 15 },
+  appliedMsg: { marginTop: 10, color: '#16a34a', fontSize: 12, fontWeight: '700', marginLeft: 5 },
 });
