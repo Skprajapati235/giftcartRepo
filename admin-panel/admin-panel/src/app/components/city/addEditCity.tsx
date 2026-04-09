@@ -22,6 +22,10 @@ export default function AddEditCity({ city, onClose }: AddEditCityProps) {
     if (!event.target.files?.[0]) return;
     setUploadingImage(true);
     try {
+      // Delete old image if exists
+      if (image) {
+        await service.deleteImage(image).catch(() => {});
+      }
       const file = event.target.files[0];
       const data = await service.uploadImage(file);
       setImage(data.url);
@@ -92,8 +96,10 @@ export default function AddEditCity({ city, onClose }: AddEditCityProps) {
                 <>
                   <img src={image} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <label className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold">Change</label>
-                    <input type="file" onChange={handleFileUpload} className="hidden" />
+                    <label className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold">
+                      Change
+                      <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
+                    </label>
                   </div>
                 </>
               ) : (

@@ -149,6 +149,11 @@ export const uploadImage = async (file: File) => {
   return response.data;
 };
 
+export const deleteImage = async (url: string) => {
+  const response = await authApi(getAuthToken()).delete("/upload", { data: { url } });
+  return response.data;
+};
+
 export const deleteUser = async (id: string) => {
   const response = await authApi(getAuthToken()).delete(`/admin/users/${id}`);
   return response.data;

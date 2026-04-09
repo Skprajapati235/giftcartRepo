@@ -36,6 +36,10 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     if (!event.target.files?.[0]) return;
     setUploadingImage(true);
     try {
+      // Delete old image if exists
+      if (form.image) {
+        await service.deleteImage(form.image).catch(() => {});
+      }
       const file = event.target.files[0];
       const data = await service.uploadImage(file);
       setForm((current) => ({ ...current, image: data.url }));
@@ -223,8 +227,10 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 <>
                   <img src={form.image} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <label className="cursor-pointer bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg text-sm">Update Image</label>
-                    <input type="file" onChange={handleFileUpload} className="hidden" />
+                    <label className="cursor-pointer bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg text-sm">
+                      Update Image
+                      <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
+                    </label>
                   </div>
                 </>
               ) : (

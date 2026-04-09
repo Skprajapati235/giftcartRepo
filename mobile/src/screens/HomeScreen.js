@@ -54,6 +54,10 @@ export default function HomeScreen({ navigation }) {
   const [activeBanner, setActiveBanner] = useState(0);
   const bannerRef = useRef(null);
 
+  // Auto-sliding coupons logic
+  const [activeCouponIdx, setActiveCouponIdx] = useState(0);
+  const couponRef = useRef(null);
+
   useEffect(() => {
     const timer = setInterval(() => {
       const nextIndex = (activeBanner + 1) % BANNERS.length;
@@ -62,6 +66,17 @@ export default function HomeScreen({ navigation }) {
     }, 3000);
     return () => clearInterval(timer);
   }, [activeBanner]);
+
+  useEffect(() => {
+    if (activeCoupons.length > 0) {
+      const timer = setInterval(() => {
+        const nextIndex = (activeCouponIdx + 1) % activeCoupons.length;
+        setActiveCouponIdx(nextIndex);
+        couponRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      }, 4000);
+      return () => clearInterval(timer);
+    }
+  }, [activeCouponIdx, activeCoupons]);
 
   useEffect(() => {
     if (route.params?.categoryId) {
@@ -322,21 +337,51 @@ export default function HomeScreen({ navigation }) {
                     <Ionicons name="flame" size={20} color="#FF6A3D" />
                   </View>
                   <FlatList
+                    ref={couponRef}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     data={activeCoupons}
+                    pagingEnabled
+                    snapToInterval={width - 15}
+                    decelerationRate="fast"
                     keyExtractor={item => item._id}
                     contentContainerStyle={styles.adsScroll}
+                    getItemLayout={(_, index) => ({
+                      length: width - 15,
+                      offset: (width - 15) * index,
+                      index,
+                    })}
+                    onScrollToIndexFailed={(info) => {
+                      setTimeout(() => {
+                        couponRef.current?.scrollToIndex({ index: info.index, animated: false });
+                      }, 100);
+                    }}
                     renderItem={({ item, index }) => (
                       <TouchableOpacity 
                         style={styles.couponCardAd}
                         activeOpacity={0.9}
-                        onPress={() => {
-                          showToast(`Code ${item.code} copied! Use at checkout.`, 'success');
-                        }}
+                        onPress={() => navigation.navigate('Offers')}
                       >
                         {item.image ? (
-                          <Image source={{ uri: item.image }} style={styles.couponAdImg} />
+                          <View style={{ flex: 1 }}>
+                            <Image source={{ uri: item.image }} style={styles.couponAdImg} />
+                            <View style={styles.couponOverlay}>
+                              <View style={styles.couponOverlayTop}>
+                                <View style={styles.discountOverlayBadge}>
+                                  <Text style={styles.discountOverlayText}>
+                                    {item.discountType === 'percentage' ? `${item.discountValue}% OFF` : `FLAT ₹${item.discountValue} OFF`}
+                                  </Text>
+                                </View>
+                                <View style={styles.liveBadge}>
+                                  <View style={styles.liveDot} />
+                                  <Text style={styles.liveText}>LIVE</Text>
+                                </View>
+                              </View>
+                              <View style={styles.couponOverlayBottom}>
+                                <Text style={styles.overlayMinOrder}>Min. ₹{item.minOrderAmount}</Text>
+                              </View>
+                            </View>
+                          </View>
                         ) : (
                           <View style={[styles.couponCardFallback, { backgroundColor: index % 2 === 0 ? '#1E293B' : '#D82B76' }]}>
                              <View style={styles.couponDeco} />
@@ -347,13 +392,16 @@ export default function HomeScreen({ navigation }) {
                                 <View style={styles.codePill}>
                                   <Text style={styles.codePillText}>{item.code}</Text>
                                 </View>
-                                <Text style={styles.couponMinOrder}>Min Order: ₹{item.minOrderAmount}</Text>
                              </View>
                              <View style={styles.couponDecoRight} />
                           </View>
                         )}
                       </TouchableOpacity>
                     )}
+                    onMomentumScrollEnd={(e) => {
+                      const idx = Math.round(e.nativeEvent.contentOffset.x / (width - 15));
+                      setActiveCouponIdx(idx);
+                    }}
                   />
                 </View>
               )}
@@ -455,7 +503,6 @@ const styles = StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: '#FFF',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
   },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -499,29 +546,48 @@ const styles = StyleSheet.create({
   circleImg: { width: '100%', height: '100%' },
   categoryName: { fontSize: 10, fontWeight: '700', color: '#666', textAlign: 'center' },
   categoryNameSelected: { color: '#D82B76' },
-  adsContainer: { paddingBottom: 25 },
-  adsScroll: { paddingHorizontal: 15 },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5 },
+  adsContainer: { paddingBottom: 10, marginBottom: 10 },
+  adsScroll: { paddingHorizontal: 15, paddingVertical: 10 },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5, paddingHorizontal: 15 },
   couponCardAd: { 
-    width: width * 0.75, height: 110, marginRight: 15, borderRadius: 18, 
-    overflow: 'hidden', elevation: 5, shadowColor: '#000', 
-    shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.2, shadowRadius: 5
+    width: width - 30, height: 100, marginRight: 15, borderRadius: 18, 
+    overflow: 'hidden', backgroundColor: '#FFF',
   },
-  couponAdImg: { width: '100%', height: '100%', resizeMode: 'cover' },
+  couponAdImg: { width: '100%', height: '100%', resizeMode: 'cover', borderRadius: 18 },
+  couponOverlay: { 
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+    justifyContent: 'space-between', padding: 12, borderRadius: 18
+  },
+  couponOverlayTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  discountOverlayBadge: { 
+    backgroundColor: '#D82B76', paddingHorizontal: 12, paddingVertical: 6, 
+    borderRadius: 10, elevation: 3 
+  },
+  discountOverlayText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 0.5 },
+  liveBadge: { 
+    flexDirection: 'row', alignItems: 'center', gap: 5, 
+    backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 
+  },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#22C55E' },
+  liveText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  couponOverlayBottom: { flexDirection: 'row', justifyContent: 'flex-start' },
+  overlayMinOrder: { 
+    color: '#FFF', fontSize: 11, fontWeight: '800', 
+    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 
+  },
   couponCardFallback: { 
     flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15,
     position: 'relative'
   },
-  couponDeco: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', position: 'absolute', left: -14, top: 43 },
-  couponDecoRight: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', position: 'absolute', right: -14, top: 43 },
+  couponDeco: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', position: 'absolute', left: -14, top: 38 },
+  couponDecoRight: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', position: 'absolute', right: -14, top: 38 },
   couponBody: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  couponCardTitle: { color: '#FFF', fontSize: 20, fontWeight: '900', letterSpacing: 0.5 },
+  couponCardTitle: { color: '#FFF', fontSize: 22, fontWeight: '900', letterSpacing: 0.5 },
   codePill: { 
     backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 5, 
     borderRadius: 10, marginVertical: 8, borderStyle: 'dashed', borderWidth: 1, borderColor: '#FFF' 
   },
   codePillText: { color: '#FFF', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
-  couponMinOrder: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '700' },
   productCardGrid: {
     backgroundColor: '#FFF',
     width: (width - 45) / 2,

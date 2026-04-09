@@ -31,6 +31,10 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
     if (!event.target.files?.[0]) return;
     setUploadingImage(true);
     try {
+      // Delete old image if exists
+      if (formData.image) {
+        await adminService.deleteImage(formData.image).catch(() => {});
+      }
       const file = event.target.files[0];
       const data = await adminService.uploadImage(file);
       setFormData({ ...formData, image: data.url });
@@ -97,8 +101,10 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
                 <>
                   <img src={formData.image} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <label className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-lg">Change Image</label>
-                    <input type="file" onChange={handleFileUpload} className="hidden" />
+                    <label className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-lg">
+                      Change Image
+                      <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
+                    </label>
                   </div>
                 </>
               ) : (

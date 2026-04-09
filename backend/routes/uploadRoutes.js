@@ -28,4 +28,23 @@ router.post("/", upload.single("file"), async (req, res) => {
   }
 });
 
+// Delete image from Cloudinary
+router.delete("/", async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ message: "No URL provided" });
+    
+    // Extract public_id from Cloudinary URL
+    // URL format: https://res.cloudinary.com/.../upload/v123/giftcart/filename.ext
+    const parts = url.split("/");
+    const folderAndFile = parts.slice(parts.indexOf("giftcart")).join("/");
+    const public_id = folderAndFile.replace(/\.[^.]+$/, ""); // remove extension
+    
+    await cloudinary.uploader.destroy(public_id);
+    res.json({ message: "Image deleted" });
+  } catch (err) {
+    res.status(500).json({ message: err.message || "Delete failed" });
+  }
+});
+
 module.exports = router;
