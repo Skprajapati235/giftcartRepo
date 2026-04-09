@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Dimensions, Platform, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Dimensions, Platform, Modal, ActivityIndicator, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { getProductReviews, deleteReview, likeReview, dislikeReview } from '../services/reviewService';
 import { toggleWishlist, getWishlist } from '../services/wishlistService';
+import orderService from '../services/orderService';
 
 const { width } = Dimensions.get('window');
+const ITEM_HEIGHT = 450;
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
@@ -16,61 +18,49 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(true);
   const [inWishlist, setInWishlist] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const quantityNum = Number(quantity || 1);
+  // Pricing Calculations
   const mrp = Number(product.price || 0);
   const salePrice = product.salePrice !== undefined && product.salePrice !== null ? Number(product.salePrice) : mrp;
-  const discount = Number(product.discount || 0);
+  const unitPrice = salePrice;
+  const discountAmount = mrp > salePrice ? mrp - salePrice : 0;
+  const discountPercent = mrp > 0 ? Math.round((discountAmount / mrp) * 100) : 0;
+  
   const tax = Number(product.tax || 0);
   const shippingCost = Number(product.shippingCost || 0);
-  const discountAmount = mrp > salePrice ? Number((mrp - salePrice).toFixed(2)) : 0;
-  const appliedDiscountText = discount > 0 ? discount : discountAmount > 0 ? Math.round((discountAmount / mrp) * 100) : 0;
-  const unitPrice = salePrice;
-  const taxAmountPerUnit = Number((unitPrice * (tax / 100)).toFixed(2));
-  const unitTotal = Number((unitPrice + taxAmountPerUnit + shippingCost).toFixed(2));
-  const itemTotal = Number((unitTotal * quantityNum).toFixed(2));
-  const totalDiscount = Number((discountAmount * quantityNum).toFixed(2));
-  const totalTax = Number((taxAmountPerUnit * quantityNum).toFixed(2));
-  const totalShipping = Number((shippingCost * quantityNum).toFixed(2));
+  const quantityNum = Number(quantity || 1);
+  const totalPayable = (unitPrice * quantityNum) + (unitPrice * (tax / 100) * quantityNum) + (shippingCost * quantityNum);
 
   useEffect(() => {
     const checkCart = async () => {
       try {
         const raw = await AsyncStorage.getItem('@giftcart_cart');
         const cart = raw ? JSON.parse(raw) : [];
-        const exists = cart.some((item) => item._id === product._id);
-        setAdded(exists);
-      } catch (err) {
-        console.warn('Cart load error', err);
-      }
+        setAdded(cart.some((item) => item._id === product._id));
+      } catch (err) {}
     };
-
     checkCart();
     fetchReviews();
-    if (user) checkWishlistStatus();
+    if (user) {
+      checkWishlistStatus();
+    }
   }, [product, user]);
 
   const checkWishlistStatus = async () => {
     try {
       const wishlist = await getWishlist();
-      const exists = wishlist.some((item) => item._id === product._id);
-      setInWishlist(exists);
-    } catch (err) {
-      console.warn('Wishlist check error', err);
-    }
+      setInWishlist(wishlist.some((item) => item._id === product._id));
+    } catch (err) {}
   };
 
   const handleToggleWishlist = async () => {
-    if (!user) {
-      Alert.alert('Login Required', 'Please login to add items to wishlist');
-      return;
-    }
+    if (!user) { Alert.alert('Login Required', 'Please login to add items to wishlist'); return; }
     try {
       const response = await toggleWishlist(product._id);
       setInWishlist(response.includes(product._id));
-    } catch (err) {
-      Alert.alert('Error', 'Could not update wishlist');
-    }
+    } catch (err) { Alert.alert('Error', 'Could not update wishlist'); }
   };
 
   const fetchReviews = async () => {
@@ -78,402 +68,395 @@ export default function ProductDetailScreen({ route, navigation }) {
       const data = await getProductReviews(product._id);
       setReviews(data);
     } catch (err) {
-      console.warn('Reviews fetch error', err);
     } finally {
       setLoadingReviews(false);
     }
   };
 
-  const handleDeleteReview = async (reviewId) => {
-    Alert.alert('Delete Review', 'Are you sure you want to delete your review?', [
-      { text: 'Cancel', style: 'cancel' },
-      { 
-        text: 'Delete', 
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteReview(reviewId);
-            fetchReviews();
-          } catch (error) {
-            Alert.alert('Error', 'Failed to delete review');
-          }
-        }
-      }
-    ]);
+  const handleLike = async (id) => {
+    if (!user) return Alert.alert('Login Required', 'Please login to engage');
+    try { await likeReview(id); fetchReviews(); } catch (e) {}
   };
 
-  const handleLike = async (reviewId) => {
-    if (!user) {
-      Alert.alert('Login Required', 'Please login to like reviews');
-      return;
-    }
-    try {
-      await likeReview(reviewId);
-      fetchReviews();
-    } catch (error) {
-      console.warn('Like failed', error);
-    }
-  };
-
-  const handleDislike = async (reviewId) => {
-    if (!user) {
-      Alert.alert('Login Required', 'Please login to dislike reviews');
-      return;
-    }
-    try {
-      await dislikeReview(reviewId);
-      fetchReviews();
-    } catch (error) {
-      console.warn('Dislike failed', error);
-    }
+  const handleDislike = async (id) => {
+    if (!user) return Alert.alert('Login Required', 'Please login to engage');
+    try { await dislikeReview(id); fetchReviews(); } catch (e) {}
   };
 
   const addToCart = async () => {
     try {
       const raw = await AsyncStorage.getItem('@giftcart_cart');
       const cart = raw ? JSON.parse(raw) : [];
-      if (cart.some((item) => item._id === product._id)) {
-        Alert.alert('Cart', 'Item already in cart!');
+      if (cart.some(i => i._id === product._id)) {
+        navigation.navigate('Cart');
         return;
       }
       cart.push({ ...product, quantity });
       await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(cart));
       setAdded(true);
-      Alert.alert('Success', 'Product added to cart.');
-    } catch (err) {
-      Alert.alert('Error', 'Could not add to cart.');
-    }
+      Alert.alert('Success', 'Added to cart');
+    } catch (err) { Alert.alert('Error', 'Could not add to cart.'); }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Custom Header */}
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+      
+      {/* Floating Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerCircle}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
+           <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerCircle}>
-          <Feather name="share-2" size={20} color="#333" />
+        <TouchableOpacity style={styles.headerBtn} onPress={handleToggleWishlist}>
+           <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={22} color={inWishlist ? "#FF3D00" : "#FFF"} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: product.image || 'https://images.unsplash.com/photo-1513201099705-a9746e1e201f' }} style={styles.image} />
-        </View>
-
-        <View style={styles.detailsContainer}>
-          <View style={styles.badgeRow}>
-            <View style={styles.categoryBadge}>
-              <Text style={styles.badgeText}>{product.category?.name || 'Exclusive'}</Text>
-            </View>
-            <View style={styles.ratingBox}>
-              <Ionicons name="star" size={14} color="#FFD700" />
-              <Text style={styles.ratingText}>
-                {product.ratings ? product.ratings.toFixed(1) : '0.0'} ({product.numReviews || 0} reviews)
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.titleRow}>
-            <Text style={styles.name}>{product.name}</Text>
-          </View>
-
-          <View style={styles.metaRow}>
-            {product.flowers ? <Text style={styles.metaText}>{product.flowers} flowers</Text> : null}
-            {product.weight ? <Text style={styles.metaText}>{product.weight}</Text> : null}
-          </View>
-
-          <View style={styles.priceSection}>
-            <View>
-              <Text style={styles.saleLabel}>Price</Text>
-              <View style={styles.priceRowTop}>
-                <Text style={styles.price}>₹{unitPrice.toFixed(2)}</Text>
-                {(appliedDiscountText > 0) && <View style={styles.discountBadge}><Text style={styles.discountBadgeText}>{appliedDiscountText}% OFF</Text></View>}
-              </View>
-            </View>
-            <View style={styles.priceMetaRow}>
-              <Text style={styles.priceMeta}>MRP ₹{mrp.toFixed(2)}</Text>
-              {salePrice !== mrp && <Text style={styles.saleMeta}>Sale ₹{salePrice.toFixed(2)}</Text>}
-            </View>
-          </View>
-
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryHeading}>Price Breakdown</Text>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Item price</Text>
-              <Text style={styles.summaryValue}>₹{unitPrice.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Discount</Text>
-              <Text style={styles.summaryValue}>-₹{totalDiscount.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Tax</Text>
-              <Text style={styles.summaryValue}>₹{totalTax.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Shipping</Text>
-              <Text style={styles.summaryValue}>₹{totalShipping.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Quantity</Text>
-              <Text style={styles.summaryValue}>{quantityNum}</Text>
-            </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryTotalLabel}>Total payable</Text>
-              <Text style={styles.summaryTotalValue}>₹{itemTotal.toFixed(2)}</Text>
-            </View>
-          </View>
-
-          {product.isCodAvailable && (
-            <View style={styles.codBadge}>
-              <Ionicons name="cash-outline" size={16} color="#FFF" />
-              <Text style={styles.codText}>Cash on Delivery Available</Text>
-            </View>
-          )}
-          
-          <View style={styles.divider} />
-
-          <Text style={styles.sectionTitle}>Product Description</Text>
-          <Text style={styles.description}>
-            {product.description || 'This beautiful product is carefully crafted to bring joy to your special occasions. Perfect for giting to your loved ones.'}
-          </Text>
-
-          <View style={styles.divider} />
-          
-          <View style={styles.quantityRow}>
-             <Text style={styles.sectionTitle}>Quantity</Text>
-             <View style={styles.quantityControls}>
-               <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity(Math.max(1, quantity - 1))}>
-                 <Feather name="minus" size={18} color="#D82B76" />
-               </TouchableOpacity>
-               <Text style={styles.qtyText}>{quantity}</Text>
-               <TouchableOpacity style={styles.qtyBtn} onPress={() => setQuantity(quantity + 1)}>
-                 <Feather name="plus" size={18} color="#D82B76" />
-               </TouchableOpacity>
+      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+        {/* Main Image Banner */}
+        <View style={styles.imageWrapper}>
+           <Image source={{ uri: product.image }} style={styles.mainImage} />
+           {discountPercent > 0 && (
+             <View style={styles.offBadge}>
+               <Text style={styles.offText}>{discountPercent}% OFF</Text>
              </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* Reviews Section */}
-          <View style={styles.reviewsHeader}>
-            <Text style={styles.sectionTitle}>Ratings & Reviews</Text>
-            {product.numReviews > 0 && (
-              <View style={styles.overallRating}>
-                <Text style={styles.overallRatingText}>{product.ratings.toFixed(1)}</Text>
-                <Ionicons name="star" size={16} color="#FFF" />
-              </View>
-            )}
-          </View>
-
-          {loadingReviews ? (
-            <View style={{ padding: 20 }}>
-               <ActivityIndicator size="small" color="#D82B76" />
-            </View>
-          ) : reviews.length === 0 ? (
-            <Text style={styles.noReviews}>No reviews yet. Be the first to review!</Text>
-          ) : (
-            reviews.map((rev) => (
-              <View key={rev._id} style={styles.reviewCard}>
-                <View style={styles.reviewUserRow}>
-                  <View style={styles.userAvatar}>
-                    {rev.user?.profilePic ? (
-                      <Image source={{ uri: rev.user.profilePic }} style={styles.avatarImg} />
-                    ) : (
-                      <Text style={styles.avatarText}>{rev.user?.name?.charAt(0) || 'U'}</Text>
-                    )}
-                  </View>
-                  <View style={styles.reviewUserInfo}>
-                    <Text style={styles.userName}>{rev.user?.name || 'Anonymous'}</Text>
-                    <View style={styles.reviewRatingRow}>
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <Ionicons 
-                          key={s} 
-                          name={s <= rev.rating ? "star" : "star-outline"} 
-                          size={12} 
-                          color={s <= rev.rating ? "#FFD700" : "#E0E0E0"} 
-                        />
-                      ))}
-                      <Text style={styles.reviewDate}>{new Date(rev.createdAt).toLocaleDateString()}</Text>
-                    </View>
-                  </View>
-                  {user && rev.user?._id === user.id && (
-                    <View style={styles.myReviewActions}>
-                      <TouchableOpacity 
-                        onPress={() => navigation.navigate('AddReview', { product, existingReview: rev })}
-                        style={{ marginRight: 15 }}
-                      >
-                        <Feather name="edit-3" size={18} color="#999" />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDeleteReview(rev._id)}>
-                        <Feather name="trash-2" size={18} color="#999" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-                
-                <Text style={styles.reviewComment}>{rev.comment}</Text>
-
-                <View style={styles.engagementRow}>
-                  <TouchableOpacity style={styles.likeBtn} onPress={() => handleLike(rev._id)}>
-                    <Ionicons 
-                      name={user && (rev.likes || []).includes(user.id) ? "thumbs-up" : "thumbs-up-outline"} 
-                      size={14} 
-                      color={user && (rev.likes || []).includes(user.id) ? "#D82B76" : "#666"} 
-                    />
-                    <Text style={[styles.engagementText, user && (rev.likes || []).includes(user.id) && { color: '#D82B76' }]}>
-                       {(rev.likes || []).length}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.likeBtn} onPress={() => handleDislike(rev._id)}>
-                    <Ionicons 
-                      name={user && (rev.dislikes || []).includes(user.id) ? "thumbs-down" : "thumbs-down-outline"} 
-                      size={14} 
-                      color={user && (rev.dislikes || []).includes(user.id) ? "#444" : "#666"} 
-                    />
-                    <Text style={[styles.engagementText, user && (rev.dislikes || []).includes(user.id) && { color: '#444' }]}>
-                       {(rev.dislikes || []).length}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-
-                {rev.images && rev.images.length > 0 && (
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.reviewImages}>
-                    {rev.images.map((img, i) => (
-                      <Image key={i} source={{ uri: img }} style={styles.reviewImage} />
-                    ))}
-                  </ScrollView>
-                )}
-
-                {rev.reply && (
-                  <View style={styles.adminReplyContainer}>
-                    <View style={styles.replyConnector} />
-                    <View style={styles.adminReplyBox}>
-                      <View style={styles.replyHeader}>
-                         <View style={styles.storeDot} />
-                         <Text style={styles.replyTitle}>Store Response</Text>
-                      </View>
-                      <Text style={styles.replyText}>{rev.reply}</Text>
-                    </View>
-                  </View>
-                )}
-                <View style={styles.reviewDivider} />
-              </View>
-            ))
-          )}
+           )}
         </View>
-        
-        <View style={{ height: 100 }} />
+
+        {/* Content Details */}
+        <View style={styles.contentBox}>
+           <View style={styles.dragHandle} />
+           
+           <View style={styles.topInfo}>
+              <View style={styles.categoryInfo}>
+                 <Text style={styles.categoryName}>{product.category?.name || 'EXCLUSIVE GIFT'}</Text>
+                 <View style={styles.ratingBadge}>
+                    <Ionicons name="star" size={12} color="#FFD700" />
+                    <Text style={styles.ratingValue}>{product.ratings?.toFixed(1) || '4.5'}</Text>
+                 </View>
+              </View>
+              <Text style={styles.productTitle}>{product.name}</Text>
+           </View>
+
+           {/* Quick Specification Grid */}
+           <View style={styles.specGrid}>
+              {product.weight && (
+                <View style={styles.specItem}>
+                   <MaterialCommunityIcons name="weight" size={20} color="#D82B76" />
+                   <Text style={styles.specLabel}>{product.weight}</Text>
+                </View>
+              )}
+              {product.flowers && (
+                <View style={styles.specItem}>
+                   <MaterialCommunityIcons name="flower" size={20} color="#D82B76" />
+                   <Text style={styles.specLabel}>{product.flowers} Flores</Text>
+                </View>
+              )}
+              <View style={[styles.specItem, { borderRightWidth: 0 }]}>
+                 <MaterialCommunityIcons name="truck-fast" size={20} color="#D82B76" />
+                 <Text style={styles.specLabel}>Fast Export</Text>
+              </View>
+           </View>
+
+           {/* Pricing Section */}
+           <View style={styles.priceContainer}>
+              <View>
+                 <Text style={styles.label}>Total Price</Text>
+                 <View style={styles.mainPriceRow}>
+                    <Text style={styles.currency}>₹</Text>
+                    <Text style={styles.currentPrice}>{salePrice.toLocaleString()}</Text>
+                    {mrp > salePrice && (
+                       <Text style={styles.oldPriceText}>₹{mrp.toLocaleString()}</Text>
+                    )}
+                 </View>
+              </View>
+              <View style={styles.quantityWidget}>
+                 <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))} style={styles.qBtn}>
+                    <Feather name="minus" size={16} color="#1A1A1A" />
+                 </TouchableOpacity>
+                 <Text style={styles.qVal}>{quantity}</Text>
+                 <TouchableOpacity onPress={() => setQuantity(quantity + 1)} style={styles.qBtn}>
+                    <Feather name="plus" size={16} color="#1A1A1A" />
+                 </TouchableOpacity>
+              </View>
+           </View>
+
+           {/* Summary breakdown mini card */}
+           <View style={styles.summaryCard}>
+              <View style={styles.summaryRow}>
+                 <Text style={styles.sumLabel}>Price per unit</Text>
+                 <Text style={styles.sumVal}>₹{unitPrice.toFixed(2)}</Text>
+              </View>
+              {discountPercent > 0 && (
+                <View style={styles.summaryRow}>
+                   <Text style={styles.sumLabel}>Discount</Text>
+                   <Text style={[styles.sumVal, { color: '#16A34A' }]}>-₹{(discountAmount * quantity).toFixed(2)}</Text>
+                </View>
+              )}
+              <View style={styles.summaryRow}>
+                 <Text style={styles.sumLabel}>Tax ({tax}%)</Text>
+                 <Text style={styles.sumVal}>+₹{(unitPrice * (tax / 100) * quantity).toFixed(2)}</Text>
+              </View>
+              <View style={styles.summaryRow}>
+                 <Text style={styles.sumLabel}>Shipping Cost</Text>
+                 <Text style={styles.sumVal}>+₹{(shippingCost * quantity).toFixed(2)}</Text>
+              </View>
+              <View style={styles.sumDivider} />
+              <View style={styles.summaryRow}>
+                 <Text style={styles.finalLabel}>Total Payable Amount</Text>
+                 <Text style={styles.finalPrice}>₹{totalPayable.toFixed(2)}</Text>
+              </View>
+           </View>
+
+           {/* COD & Trust Section */}
+           <View style={styles.trustRow}>
+              {product.isCodAvailable && (
+                <View style={styles.trustBadge}>
+                   <MaterialCommunityIcons name="cash-multiple" size={16} color="#16A34A" />
+                   <Text style={styles.trustText}>Cash on Delivery Available</Text>
+                </View>
+              )}
+              <View style={styles.trustBadge}>
+                 <MaterialCommunityIcons name="shield-check" size={16} color="#2979FF" />
+                 <Text style={styles.trustText}>Genuine Product</Text>
+              </View>
+           </View>
+
+           {/* Description */}
+           <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Product Description</Text>
+              <Text style={styles.descriptionText}>
+                 {product.description || 'Elegant and sophisticated, this curated selection is designed to make every moment memorable.'}
+              </Text>
+           </View>
+
+           {/* Reviews Section */}
+           <View style={styles.section}>
+              <View style={styles.rowBetween}>
+                 <Text style={styles.sectionTitle}>Reviews ({reviews.length})</Text>
+              </View>
+              
+              {loadingReviews ? (
+                <ActivityIndicator color="#D82B76" style={{ margin: 20 }} />
+              ) : reviews.length === 0 ? (
+                <View style={styles.emptyReviews}>
+                   <MaterialCommunityIcons name="star-outline" size={40} color="#DDD" />
+                   <Text style={styles.emptyText}>No reviews yet. Share your feedback!</Text>
+                </View>
+              ) : (
+                reviews.map((rev) => (
+                  <View key={rev._id} style={styles.reviewCard}>
+                     <View style={styles.revHeader}>
+                        <View style={styles.revProfile}>
+                           {rev.user?.profilePic ? (
+                             <Image source={{ uri: rev.user.profilePic }} style={styles.revImg} />
+                           ) : (
+                             <Text style={styles.revInitial}>{rev.user?.name?.charAt(0)}</Text>
+                           )}
+                        </View>
+                        <View style={styles.revNameSet}>
+                           <Text style={styles.revName}>{rev.user?.name || 'Anonymous'}</Text>
+                           <View style={styles.revStars}>
+                              {[1,2,3,4,5].map(s => (
+                                <Ionicons key={s} name="star" size={10} color={s <= rev.rating ? "#FFD700" : "#EEE"} />
+                              ))}
+                              <Text style={styles.revDate}>{new Date(rev.createdAt).toLocaleDateString()}</Text>
+                           </View>
+                        </View>
+                        {user && rev.user?._id === user.id && (
+                           <TouchableOpacity onPress={() => navigation.navigate('AddReview', { product, existingReview: rev })}>
+                              <Feather name="edit-2" size={16} color="#D82B76" />
+                           </TouchableOpacity>
+                        )}
+                     </View>
+                     <Text style={styles.revComment}>{rev.comment}</Text>
+
+                     {rev.images && rev.images.length > 0 && (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.revImagesList}>
+                           {rev.images.map((img, idx) => (
+                              <TouchableOpacity 
+                                 key={idx} 
+                                 activeOpacity={0.9}
+                                 onPress={() => {
+                                    setSelectedImage(img);
+                                    setIsModalVisible(true);
+                                 }}
+                              >
+                                 <Image source={{ uri: img }} style={styles.revImageItem} />
+                              </TouchableOpacity>
+                           ))}
+                        </ScrollView>
+                     )}
+                     
+                     <View style={styles.revActions}>
+                        <TouchableOpacity style={styles.engBtn} onPress={() => handleLike(rev._id)}>
+                           <Ionicons 
+                             name={user && (rev.likes || []).includes(user.id) ? "thumbs-up" : "thumbs-up-outline"} 
+                             size={14} 
+                             color={user && (rev.likes || []).includes(user.id) ? "#D82B76" : "#666"} 
+                           />
+                           <Text style={styles.engText}>{(rev.likes || []).length}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.engBtn} onPress={() => handleDislike(rev._id)}>
+                           <Ionicons 
+                             name={user && (rev.dislikes || []).includes(user.id) ? "thumbs-down" : "thumbs-down-outline"} 
+                             size={14} 
+                             color={user && (rev.dislikes || []).includes(user.id) ? "#333" : "#666"} 
+                           />
+                           <Text style={styles.engText}>{(rev.dislikes || []).length}</Text>
+                        </TouchableOpacity>
+                     </View>
+
+                     {rev.reply && (
+                        <View style={styles.replyBox}>
+                           <Text style={styles.replyBrand}>GIFT CART RESPONSE</Text>
+                           <Text style={styles.replyMsg}>{rev.reply}</Text>
+                        </View>
+                     )}
+                  </View>
+                ))
+              )}
+           </View>
+        </View>
       </ScrollView>
 
-      {/* Footer Actions */}
+      {/* Modern Sticky Footer Action */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.wishlistBtn} onPress={handleToggleWishlist}>
-          <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={24} color="#D82B76" />
-        </TouchableOpacity>
-        <TouchableOpacity 
-           style={styles.cartBtn} 
-           onPress={added ? () => navigation.navigate('Cart') : addToCart}
-        >
-          <Text style={styles.cartBtnText}>{added ? 'GO TO CART' : 'ADD TO CART'}</Text>
-        </TouchableOpacity>
+         <TouchableOpacity 
+            style={[styles.mainBtn, added && styles.addedBtn]} 
+            activeOpacity={0.8}
+            onPress={addToCart}
+         >
+            <View style={styles.btnRow}>
+               <Feather name={added ? "shopping-bag" : "shopping-cart"} size={20} color="#FFF" />
+               <Text style={styles.btnText}>{added ? 'IN YOUR CART' : 'ADD TO BAG'}</Text>
+            </View>
+            <Text style={styles.btnSubTotal}>Total: ₹{totalPayable.toFixed(0)}</Text>
+         </TouchableOpacity>
       </View>
+
+      {/* Full Screen Image Viewer Modal */}
+      <Modal
+        visible={isModalVisible}
+        transparent={true}
+        onRequestClose={() => setIsModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity 
+            style={styles.modalCloseBtn} 
+            onPress={() => setIsModalVisible(false)}
+          >
+            <Ionicons name="close" size={30} color="#FFF" />
+          </TouchableOpacity>
+          <Image 
+            source={{ uri: selectedImage }} 
+            style={styles.fullImage} 
+            resizeMode="contain" 
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF' },
+  container: { flex: 1, backgroundColor: '#000' },
   header: { 
-    position: 'absolute', top: Platform.OS === 'ios' ? 50 : 20, left: 15, right: 15, 
-    flexDirection: 'row', justifyContent: 'space-between', zIndex: 10 
+    position: 'absolute', top: Platform.OS === 'ios' ? 50 : 30, left: 15, right: 15, 
+    flexDirection: 'row', justifyContent: 'space-between', zIndex: 100 
   },
-  headerCircle: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.9)', justifyContent: 'center', alignItems: 'center', elevation: 3 },
-  imageContainer: { width: width, height: 380, backgroundColor: '#F8F8F8' },
-  image: { width: '100%', height: '100%', resizeMode: 'cover' },
-  detailsContainer: { padding: 20, backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, marginTop: -30, elevation: 5 },
-  badgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  categoryBadge: { backgroundColor: '#FFE0EB', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15 },
-  badgeText: { fontSize: 10, fontWeight: '800', color: '#D82B76', textTransform: 'uppercase' },
-  ratingBox: { flexDirection: 'row', alignItems: 'center' },
-  ratingText: { fontSize: 12, color: '#666', marginLeft: 5 },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
-  name: { fontSize: 24, fontWeight: '800', color: '#1a1a1a', flex: 1 },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
-  metaText: { fontSize: 12, fontWeight: '700', color: '#666', backgroundColor: '#F4F4F5', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, marginRight: 8, marginBottom: 8 },
-  weightBadge: { backgroundColor: '#F0F0F0', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  weightText: { fontSize: 12, fontWeight: '700', color: '#666' },
-  priceSection: { marginBottom: 20 },
-  priceRowTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  price: { fontSize: 32, fontWeight: '900', color: '#1a1a1a' },
-  saleLabel: { fontSize: 12, fontWeight: '700', color: '#888', marginBottom: 8, textTransform: 'uppercase' },
-  priceMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 10 },
-  priceMeta: { fontSize: 12, color: '#999', textDecorationLine: 'line-through' },
-  saleMeta: { fontSize: 12, color: '#16A34A', fontWeight: '700' },
-  discountBadge: { backgroundColor: '#FEE2E2', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999 },
-  discountBadgeText: { fontSize: 12, fontWeight: '800', color: '#B91C1C' },
-  summaryCard: { backgroundColor: '#F8FAFC', borderRadius: 20, padding: 18, marginBottom: 20, borderWidth: 1, borderColor: '#E2E8F0' },
-  summaryHeading: { fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 14 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  summaryLabel: { fontSize: 14, color: '#6B7280' },
-  summaryValue: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  summaryDivider: { height: 1, backgroundColor: '#E2E8F0', marginVertical: 10 },
-  summaryTotalLabel: { fontSize: 16, fontWeight: '800', color: '#111827' },
-  summaryTotalValue: { fontSize: 18, fontWeight: '900', color: '#D94660' },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  detailLabel: { fontSize: 13, color: '#666' },
-  detailValue: { fontSize: 13, fontWeight: '700', color: '#111' },
-  oldPrice: { fontSize: 16, color: '#999', textDecorationLine: 'line-through', marginRight: 15 },
-  discountTag: { backgroundColor: '#00a65a', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  discountTagText: { color: '#FFF', fontSize: 12, fontWeight: '900' },
-  codBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#28a745', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 15, marginBottom: 20, alignSelf: 'flex-start' },
-  codText: { color: '#FFF', fontSize: 12, fontWeight: '700', marginLeft: 5 },
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginVertical: 20 },
-  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#333', marginBottom: 10 },
-  description: { fontSize: 15, color: '#666', lineHeight: 22 },
-  quantityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  quantityControls: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8F8F8', borderRadius: 12, padding: 5 },
-  qtyBtn: { width: 35, height: 35, borderRadius: 10, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', elevation: 1 },
-  qtyText: { marginHorizontal: 15, fontSize: 18, fontWeight: '700' },
-  footer: { 
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: 90, 
-    backgroundColor: '#FFF', flexDirection: 'row', paddingHorizontal: 20, 
-    alignItems: 'center', borderTopWidth: 1, borderTopColor: '#F0F0F0' 
-  },
-  wishlistBtn: { width: 55, height: 55, borderRadius: 15, borderWidth: 1, borderColor: '#F0F0F0', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
-  cartBtn: { flex: 1, height: 55, backgroundColor: '#D82B76', borderRadius: 15, justifyContent: 'center', alignItems: 'center', elevation: 3 },
-  addedBtn: { backgroundColor: '#444' },
-  cartBtnText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
-  reviewsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  overallRating: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#16A34A', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  overallRatingText: { color: '#FFF', fontWeight: '800', marginRight: 4 },
-  noReviews: { fontSize: 14, color: '#999', textAlign: 'center', marginVertical: 20 },
-  reviewCard: { marginBottom: 25, backgroundColor: '#FFF' },
-  reviewUserRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  userAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF5F8', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#FFE0EB', overflow: 'hidden' },
-  avatarText: { fontSize: 18, fontWeight: '800', color: '#D82B76' },
-  avatarImg: { width: '100%', height: '100%', resizeMode: 'cover' },
-  reviewUserInfo: { marginLeft: 12, flex: 1 },
-  userName: { fontSize: 16, fontWeight: '800', color: '#1a1a1a' },
-  reviewRatingRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
-  reviewDate: { fontSize: 12, color: '#999', marginLeft: 8 },
-  reviewComment: { fontSize: 14, color: '#444', lineHeight: 22, marginBottom: 12, fontStyle: 'italic' },
-  reviewImages: { flexDirection: 'row', marginBottom: 15 },
-  reviewImage: { width: 90, height: 90, borderRadius: 12, marginRight: 10, borderWIdth: 1, borderColor: '#F0F0F0' },
-  adminReplyContainer: { marginTop: 5, paddingLeft: 20, marginBottom: 20 },
-  replyConnector: { position: 'absolute', left: 0, top: 0, bottom: 20, width: 2, backgroundColor: '#FFE0EB', borderRadius: 1 },
-  adminReplyBox: { backgroundColor: '#FDF2F7', padding: 15, borderRadius: 20, borderTopLeftRadius: 5 },
-  replyHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  storeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D82B76', marginRight: 8 },
-  replyTitle: { fontSize: 11, fontWeight: '900', color: '#D82B76', textTransform: 'uppercase', letterSpacing: 1 },
-  replyText: { fontSize: 13, color: '#333', lineHeight: 20, fontWeight: '500' },
-  reviewDivider: { height: 1, backgroundColor: '#F8F8F8', marginTop: 10 },
-  myReviewActions: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
-  engagementRow: { flexDirection: 'row', alignItems: 'center', gap: 15, marginBottom: 12 },
-  likeBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, padding: 5, backgroundColor: '#F8F8F8', borderRadius: 8 },
-  engagementText: { fontSize: 12, fontWeight: '700', color: '#666' }
-});
+  headerBtn: { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  
+  imageWrapper: { width: width, height: ITEM_HEIGHT, position: 'relative' },
+  mainImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  offBadge: { position: 'absolute', bottom: 60, right: 0, backgroundColor: '#D82B76', paddingHorizontal: 15, paddingVertical: 8, borderTopLeftRadius: 20 },
+  offText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
 
+  contentBox: { 
+    marginTop: -40, backgroundColor: '#FFF', borderTopLeftRadius: 40, borderTopRightRadius: 40,
+    minHeight: 600, paddingHorizontal: 25, paddingBottom: 120
+  },
+  dragHandle: { width: 40, height: 5, backgroundColor: '#E0E0E0', borderRadius: 3, alignSelf: 'center', marginTop: 15, marginBottom: 20 },
+  
+  topInfo: { marginBottom: 20 },
+  categoryInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 },
+  categoryName: { fontSize: 11, fontWeight: '900', color: '#D82B76', letterSpacing: 1.5, textTransform: 'uppercase' },
+  ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF9C4', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5 },
+  ratingValue: { fontSize: 12, fontWeight: '800', color: '#FBC02D' },
+  productTitle: { fontSize: 28, fontWeight: '900', color: '#1A1A1A', lineHeight: 34 },
+
+  specGrid: { flexDirection: 'row', backgroundColor: '#F8FAFC', borderRadius: 20, padding: 15, marginBottom: 25, borderWidth: 1, borderColor: '#F1F5F9' },
+  specItem: { flex: 1, alignItems: 'center', borderRightWidth: 1, borderRightColor: '#E2E8F0', paddingVertical: 5 },
+  specLabel: { fontSize: 12, fontWeight: '700', color: '#64748B', marginTop: 6 },
+
+  priceContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+  label: { fontSize: 12, color: '#94A3B8', fontWeight: '800', marginBottom: 4, textTransform: 'uppercase' },
+  mainPriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
+  currency: { fontSize: 18, fontWeight: '900', color: '#D82B76' },
+  currentPrice: { fontSize: 32, fontWeight: '900', color: '#1A1A1A' },
+  oldPriceText: { fontSize: 14, color: '#CBD5E1', textDecorationLine: 'line-through', marginLeft: 10, fontWeight: '600' },
+
+  quantityWidget: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 15, padding: 4 },
+  qBtn: { width: 38, height: 38, backgroundColor: '#FFF', borderRadius: 12, justifyContent: 'center', alignItems: 'center', elevation: 2 },
+  qVal: { fontSize: 18, fontWeight: '900', color: '#1A1A1A', marginHorizontal: 15 },
+
+  summaryCard: { backgroundColor: '#FBFCFE', padding: 20, borderRadius: 24, marginBottom: 20, borderWidth: 1, borderColor: '#F1F5F9' },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  sumLabel: { fontSize: 13, color: '#64748B', fontWeight: '600' },
+  sumVal: { fontSize: 13, color: '#1E293B', fontWeight: '800' },
+  sumDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 8 },
+  finalLabel: { fontSize: 15, fontWeight: '900', color: '#1A1A1A' },
+  finalPrice: { fontSize: 18, fontWeight: '900', color: '#D82B76' },
+
+  trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 30 },
+  trustBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F8FAFC', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9' },
+  trustText: { fontSize: 11, fontWeight: '700', color: '#475569' },
+
+  section: { marginBottom: 35 },
+  sectionTitle: { fontSize: 18, fontWeight: '900', color: '#1A1A1A', marginBottom: 15 },
+  descriptionText: { fontSize: 15, color: '#475569', lineHeight: 24, fontWeight: '500' },
+  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  addReviewText: { color: '#D82B76', fontWeight: '800', fontSize: 14 },
+
+  emptyReviews: { alignItems: 'center', padding: 40, backgroundColor: '#F8FAFC', borderRadius: 20 },
+  emptyText: { marginTop: 10, fontSize: 14, color: '#94A3B8', fontWeight: '600', textAlign: 'center' },
+
+  reviewCard: { marginBottom: 25, backgroundColor: '#FFF', padding: 2 },
+  revHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  revProfile: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#FDF2F5', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  revImg: { width: '100%', height: '100%' },
+  revInitial: { fontSize: 20, fontWeight: '800', color: '#D82B76' },
+  revNameSet: { flex: 1, marginLeft: 15 },
+  revName: { fontSize: 16, fontWeight: '800', color: '#1A1A1A' },
+  revStars: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  revDate: { fontSize: 10, color: '#94A3B8', marginLeft: 5, fontWeight: '700' },
+  revComment: { fontSize: 15, color: '#334155', lineHeight: 22, fontWeight: '500', marginBottom: 12, backgroundColor: '#F8F9FA', padding: 12, borderRadius: 12 },
+  revImagesList: { flexDirection: 'row', marginBottom: 15, paddingLeft: 5 },
+  revImageItem: { width: 100, height: 100, borderRadius: 12, marginRight: 10, borderWidth: 1, borderColor: '#F1F5F9' },
+  revActions: { flexDirection: 'row', gap: 20, marginBottom: 15, paddingLeft: 5 },
+  engBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  engText: { fontSize: 13, fontWeight: '800', color: '#64748B' },
+
+  replyBox: { backgroundColor: '#F8FAFC', padding: 15, borderRadius: 18, borderTopLeftRadius: 4, marginLeft: 20 },
+  replyBrand: { fontSize: 10, fontWeight: '900', color: '#D82B76', letterSpacing: 1, marginBottom: 5 },
+  replyMsg: { fontSize: 13, color: '#1E293B', fontWeight: '600', lineHeight: 20 },
+
+  footer: { 
+    position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 25, paddingBottom: Platform.OS === 'ios' ? 35 : 20, paddingTop: 15,
+    backgroundColor: 'rgba(255,255,255,0.95)', borderTopWidth: 1, borderTopColor: '#F1F5F9'
+  },
+  mainBtn: { 
+    backgroundColor: '#D82B76', height: 65, borderRadius: 22, flexDirection: 'row', 
+    alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 25,
+    shadowColor: '#D82B76', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 5
+  },
+  addedBtn: { backgroundColor: '#1A1A1A' },
+  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  btnText: { color: '#FFF', fontSize: 16, fontWeight: '900' },
+  btnSubTotal: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '800' },
+
+  // Modal Styles
+  modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
+  modalCloseBtn: { position: 'absolute', top: 50, right: 25, zIndex: 10 },
+  fullImage: { width: width, height: width * 1.5 }
+});

@@ -142,6 +142,7 @@ export default function HomeScreen({ navigation }) {
   const renderProduct = ({ item }) => (
     <TouchableOpacity
       style={styles.productCardGrid}
+      activeOpacity={0.9}
       onPress={() => navigation.navigate('ProductDetail', { product: item })}
     >
       <View style={styles.imgWrapper}>
@@ -149,29 +150,45 @@ export default function HomeScreen({ navigation }) {
           source={{ uri: item.image || 'https://images.unsplash.com/photo-1513201099705-a9746e1e201f?w=400&h=400&fit=crop' }}
           style={styles.productImageGrid}
         />
-        {item.salePrice && item.price > item.salePrice && (
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>
-              {Math.round(((item.price - item.salePrice) / item.price) * 100)}% OFF
-            </Text>
-          </View>
-        )}
+        <View style={styles.cardHeaderActions}>
+           {item.salePrice && item.price > item.salePrice && (
+             <View style={styles.discountBadgeSmall}>
+               <Text style={styles.discountTextSmall}>
+                 {Math.round(((item.price - item.salePrice) / item.price) * 100)}% OFF
+               </Text>
+             </View>
+           )}
+           <View style={styles.ratingBadgeSmall}>
+              <Ionicons name="star" size={10} color="#FBC02D" />
+              <Text style={styles.ratingTextSmall}>{item.ratings?.toFixed(1) || '4.2'}</Text>
+           </View>
+        </View>
       </View>
+      
       <View style={styles.prodInfo}>
         <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-        <View style={styles.productMetaRow}>
-          {item.weight ? <Text style={styles.productMeta}>{item.weight}</Text> : null}
-          {item.flowers ? <Text style={styles.productMeta}>{item.flowers} flowers</Text> : null}
-        </View>
-        <View style={styles.priceRow}>
-          <View style={styles.priceContainer}>
-            <Text style={styles.productPrice}>₹{item.salePrice || item.price}</Text>
-            {item.salePrice && item.price > item.salePrice && (
-              <Text style={styles.listPrice}>₹{item.price}</Text>
-            )}
+        
+        <View style={styles.priceRowMain}>
+          <View>
+             <View style={styles.priceContainerHome}>
+                <Text style={styles.productPriceHome}>₹{item.salePrice || item.price}</Text>
+                {item.salePrice && item.price > item.salePrice && (
+                  <Text style={styles.listPriceHome}>₹{item.price}</Text>
+                )}
+             </View>
+             {item.weight || item.flowers ? (
+                <Text style={styles.productSubHome} numberOfLines={1}>
+                   {item.weight || item.flowers + ' flowers'}
+                </Text>
+             ) : (
+                <Text style={styles.productSubHome}>Special Gift Case</Text>
+             )}
           </View>
-          <TouchableOpacity onPress={() => addToCart(item)}>
-            <Ionicons name="add-circle" size={26} color="#D82B76" />
+          <TouchableOpacity 
+             style={styles.addBtnGrid}
+             onPress={() => addToCart(item)}
+          >
+             <Ionicons name="cart-outline" size={18} color="#FFF" />
           </TouchableOpacity>
         </View>
       </View>
@@ -383,7 +400,7 @@ export default function HomeScreen({ navigation }) {
             { name: 'COLLECTIONS', icon: 'grid', screen: 'Collections' },
             { name: 'WISHLIST', icon: 'heart', screen: 'Wishlist' },
             { name: 'CART', icon: 'shopping-cart', screen: 'Cart', badge: cartCount },
-            { name: 'PROFILE', icon: 'user', screen: 'Profile' },
+            { name: 'MY ORDERS', icon: 'shopping-bag', screen: 'MyOrders' },
           ].map((tab, idx) => (
             <TouchableOpacity
               key={tab.name}
@@ -412,11 +429,15 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#FFF',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0
+  },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 15, paddingVertical: 8, backgroundColor: '#ffffffff',
-    borderBottomWidth: 1, borderBottomColor: '#F0F0F0',
+    paddingHorizontal: 15, paddingVertical: 10, backgroundColor: '#FFF',
+    borderBottomWidth: 1, borderBottomColor: '#F5F5F5',
   },
   logoContainer: { flex: 1, alignItems: 'center' },
   logoTextMain: { fontSize: 24, fontWeight: '800', color: '#D82B76', fontStyle: 'italic' },
@@ -461,23 +482,43 @@ const styles = StyleSheet.create({
   adImg: { width: '100%', height: '100%' },
   adOverlay: { position: 'absolute', bottom: 10, left: 10, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 5 },
   adTitle: { color: '#FFF', fontSize: 12, fontWeight: '800' },
-  productCardGrid: { width: (width - 45) / 2, marginBottom: 20, backgroundColor: '#FFF', borderRadius: 15, elevation: 2, overflow: 'hidden' },
-  imgWrapper: { width: '100%', height: 180, backgroundColor: '#F9F9F9' },
-  productImageGrid: { width: '100%', height: '100%', resizeMode: 'cover' },
-  prodInfo: { padding: 10 },
-  productName: { fontSize: 13, minHeight: 18, fontWeight: '700', color: '#1a1a1a', marginTop: 2 },
-  productMetaRow: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 },
-  productMeta: { fontSize: 10, color: '#888', fontWeight: '600', marginRight: 8, marginBottom: 4 },
-  productWeight: { fontSize: 11, color: '#888', fontWeight: '600', marginTop: 2 },
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 },
-  priceContainer: { flex: 1 },
-  productPrice: { fontSize: 15, fontWeight: '900', color: '#1a1a1a' },
-  listPrice: { fontSize: 11, color: '#999', textDecorationLine: 'line-through', marginTop: -2 },
-  discountBadge: {
-    position: 'absolute', top: 10, left: 0, backgroundColor: '#00a65a',
-    paddingHorizontal: 8, paddingVertical: 4, borderTopRightRadius: 10, borderBottomRightRadius: 10
+  productCardGrid: {
+    backgroundColor: '#FFF',
+    width: (width - 45) / 2,
+    marginBottom: 15,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5
   },
-  discountText: { color: '#fff', fontSize: 14, fontWeight: '900' },
+  imgWrapper: { width: '100%', height: 140, backgroundColor: '#F9F9F9', position: 'relative' },
+  productImageGrid: { width: '100%', height: '100%', resizeMode: 'cover' },
+  cardHeaderActions: { 
+    position: 'absolute', top: 8, left: 8, right: 8, 
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' 
+  },
+  discountBadgeSmall: { backgroundColor: '#D82B76', paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 5 },
+  discountTextSmall: { color: '#FFF', fontSize: 9, fontWeight: '900' },
+  ratingBadgeSmall: { 
+    backgroundColor: 'rgba(255,255,255,0.92)', flexDirection: 'row', alignItems: 'center', 
+    gap: 2, paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 5 
+  },
+  ratingTextSmall: { fontSize: 9, fontWeight: '800', color: '#1A1A1A' },
+
+  prodInfo: { padding: 9 },
+  productName: { fontSize: 12, fontWeight: '700', color: '#1E293B', marginBottom: 6, height: 16 },
+  priceRowMain: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  priceContainerHome: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
+  productPriceHome: { fontSize: 14, fontWeight: '900', color: '#111827' },
+  listPriceHome: { fontSize: 9, color: '#94A3B8', textDecorationLine: 'line-through' },
+  productSubHome: { fontSize: 9, color: '#64748B', marginTop: 1, fontWeight: '600' },
+  
+  addBtnGrid: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#D82B76', justifyContent: 'center', alignItems: 'center' },
   fab: {
     position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366',
     width: 55, height: 55, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 5

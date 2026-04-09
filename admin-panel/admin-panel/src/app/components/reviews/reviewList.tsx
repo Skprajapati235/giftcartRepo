@@ -219,30 +219,35 @@ export default function ReviewList({ reviews, loading, onDelete }: ReviewListPro
                     )}
                   </td>
                 </tr>
-                {/* Descriptive Reply Row */}
+                {/* Premium Sleek Reply Row */}
                 {review.reply && !itemIsCollapsed && (
-                  <tr className="bg-slate-50/20 dark:bg-slate-900/10 border-b border-border-theme animate-in slide-in-from-top-1 duration-300">
-                    <td colSpan={6} className="px-14 py-4">
-                       <div className="flex items-start gap-4">
-                          <div className="mt-1 p-2 rounded-lg bg-primary/5 border border-primary/10 shrink-0">
-                             <CornerDownRight className="h-4 w-4 text-primary" />
+                  <tr className="bg-slate-100/20 dark:bg-white/[0.02] animate-in fade-in slide-in-from-top-2 duration-500">
+                    <td colSpan={6} className="px-14 py-4 pb-6">
+                       <div className="flex items-start gap-5">
+                          <div className="shrink-0 mt-1">
+                             <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 shadow-sm shadow-primary/5">
+                                <CornerDownRight className="h-4 w-4 text-primary" />
+                             </div>
                           </div>
-                          <div className="flex-1 bg-white dark:bg-slate-800/50 p-6 rounded-[2rem] border border-border-theme shadow-xl relative overflow-hidden group/reply">
-                             <div className="absolute top-0 right-0 p-1 opacity-[0.03] group-hover/reply:opacity-10 transition-opacity">
-                                <Box className="h-32 w-32 text-primary rotate-12" />
+                          
+                          <div className="flex-1 space-y-3">
+                             <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                                   <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                                   <span className="text-[10px] font-black uppercase tracking-[0.15em] text-primary">Store Response</span>
+                                </div>
+                                <div className="h-px flex-1 bg-gradient-to-r from-border-theme to-transparent" />
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                   {new Date(review.replyAt!).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
                              </div>
-                             <div className="flex justify-between items-center mb-4 relative z-10">
-                               <div className="flex items-center gap-2">
-                                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                  <p className="text-[11px] uppercase tracking-[0.2em] font-black text-primary">Official Response</p>
-                               </div>
-                               <span className="text-[10px] font-bold text-slate-400 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-full uppercase tracking-widest border border-border-theme">
-                                  {new Date(review.replyAt!).toLocaleDateString("en-US", { month: 'long', day: 'numeric', year: 'numeric' })}
-                               </span>
+                             
+                             <div className="relative pl-6 py-1">
+                                <div className="absolute left-0 top-0 bottom-0 w-1 rounded-full bg-gradient-to-b from-primary/40 to-primary/0" />
+                                <p className="text-[15px] font-bold text-slate-900 dark:text-slate-100 leading-relaxed italic opacity-95">
+                                   "{review.reply}"
+                                </p>
                              </div>
-                             <p className="text-[15px] text-slate-700 dark:text-slate-200 leading-relaxed font-bold relative z-10 italic">
-                               "{review.reply}"
-                             </p>
                           </div>
                        </div>
                     </td>
