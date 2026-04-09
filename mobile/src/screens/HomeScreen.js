@@ -23,6 +23,7 @@ import categoryService from '../services/categoryService';
 import productService from '../services/productService';
 import LocationSelectionModal from '../components/LocationSelectionModal';
 import userService from '../services/userService';
+import couponService from '../services/couponService';
 import { useToast } from '../context/ToastContext';
 
 const { width } = Dimensions.get('window');
@@ -33,18 +34,13 @@ const BANNERS = [
   'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&h=400&fit=crop',
 ];
 
-const ADS = [
-  { id: '1', img: 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&h=400&fit=crop', title: '50% OFF' },
-  { id: '2', img: 'https://images.unsplash.com/photo-1512909006721-3d6018887383?w=400&h=200&fit=crop', title: 'Gift Boxes' },
-  { id: '3', img: 'https://images.unsplash.com/photo-1481391319762-47dff72954d9?w=400&h=200&fit=crop', title: 'New Arrival' },
-];
-
 export default function HomeScreen({ navigation }) {
   const route = useRoute();
   const { signOut, user, updateUser } = useContext(AuthContext);
   const { showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
+  const [activeCoupons, setActiveCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,13 +72,15 @@ export default function HomeScreen({ navigation }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [categoriesData, productsData, cartRes] = await Promise.all([
+      const [categoriesData, productsData, couponsData, cartRes] = await Promise.all([
         categoryService.getCategories().catch(() => []),
         productService.getProducts().catch(() => []),
+        couponService.getActiveCoupons().catch(() => []),
         AsyncStorage.getItem('@giftcart_cart'),
       ]);
       setCategories(categoriesData || []);
       setAllProducts(productsData || []);
+      setActiveCoupons(couponsData || []);
       setCartCount(cartRes ? JSON.parse(cartRes).length : 0);
     } catch (error) {
       if (error.response?.status === 401) signOut();
@@ -316,22 +314,38 @@ export default function HomeScreen({ navigation }) {
                 />
               </View>
 
-              {/* Ads Section (Flipkart style) */}
-              {!selectedCategory && (
+              {/* Coupons Section (Replaces Ads) */}
+              {activeCoupons.length > 0 && !selectedCategory && (
                 <View style={styles.adsContainer}>
-                  <Text style={styles.sectionTitleHeader}>Special Deals</Text>
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitleHeader}>Hot Offers & Coupons</Text>
+                    <Ionicons name="flame" size={20} color="#FF6A3D" />
+                  </View>
                   <FlatList
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    data={ADS}
-                    keyExtractor={item => item.id}
+                    data={activeCoupons}
+                    keyExtractor={item => item._id}
                     contentContainerStyle={styles.adsScroll}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity style={styles.adCard}>
-                        <Image source={{ uri: item.img }} style={styles.adImg} />
-                        <View style={styles.adOverlay}>
-                          <Text style={styles.adTitle}>{item.title}</Text>
+                    renderItem={({ item, index }) => (
+                      <TouchableOpacity 
+                        style={[styles.couponCard, { backgroundColor: index % 2 === 0 ? '#1E293B' : '#D82B76' }]}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          showToast(`Code ${item.code} copied! Use at checkout.`, 'success');
+                        }}
+                      >
+                        <View style={styles.couponDeco} />
+                        <View style={styles.couponBody}>
+                           <Text style={styles.couponCardTitle}>
+                             {item.discountType === 'percentage' ? `${item.discountValue}% OFF` : `₹${item.discountValue} OFF`}
+                           </Text>
+                           <View style={styles.codePill}>
+                             <Text style={styles.codePillText}>{item.code}</Text>
+                           </View>
+                           <Text style={styles.couponMinOrder}>Min Order: ₹{item.minOrderAmount}</Text>
                         </View>
+                        <View style={styles.couponDecoRight} />
                       </TouchableOpacity>
                     )}
                   />
@@ -481,10 +495,23 @@ const styles = StyleSheet.create({
   categoryNameSelected: { color: '#D82B76' },
   adsContainer: { paddingBottom: 25 },
   adsScroll: { paddingHorizontal: 15 },
-  adCard: { width: 220, height: 80, marginRight: 15, borderRadius: 15, overflow: 'hidden' },
-  adImg: { width: '100%', height: '100%' },
-  adOverlay: { position: 'absolute', bottom: 10, left: 10, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 5 },
-  adTitle: { color: '#FFF', fontSize: 12, fontWeight: '800' },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5 },
+  couponCard: { 
+    width: 200, height: 100, marginRight: 15, borderRadius: 12, 
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10,
+    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, shadowRadius: 3, position: 'relative', overflow: 'hidden'
+  },
+  couponDeco: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFF', position: 'absolute', left: -12, top: 40 },
+  couponDecoRight: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#FFF', position: 'absolute', right: -12, top: 40 },
+  couponBody: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  couponCardTitle: { color: '#FFF', fontSize: 18, fontWeight: '900', letterSpacing: 0.5 },
+  codePill: { 
+    backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, paddingVertical: 4, 
+    borderRadius: 8, marginVertical: 6, borderStyle: 'dashed', borderWidth: 1, borderColor: '#FFF' 
+  },
+  codePillText: { color: '#FFF', fontSize: 13, fontWeight: '800', letterSpacing: 1 },
+  couponMinOrder: { color: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: '700' },
   productCardGrid: {
     backgroundColor: '#FFF',
     width: (width - 45) / 2,

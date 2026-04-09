@@ -86,3 +86,16 @@ exports.validate = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// User: Get active coupons for display
+exports.getActive = async (req, res) => {
+  try {
+    const coupons = await Coupon.find({ 
+      isActive: true, 
+      expiryDate: { $gt: new Date() } 
+    }).select("code discountType discountValue minOrderAmount maxDiscount expiryDate");
+    res.json(coupons);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

@@ -9,6 +9,7 @@ import {
   Alert,
   ScrollView,
   TextInput,
+  Modal,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +33,8 @@ export default function CheckoutScreen({ navigation, route }) {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [activeCoupons, setActiveCoupons] = useState([]);
+  const [showCouponModal, setShowCouponModal] = useState(false);
   
   // Shipping Address Form State
   const [shippingInfo, setShippingInfo] = useState({
@@ -40,6 +43,19 @@ export default function CheckoutScreen({ navigation, route }) {
     address: '',
     pinCode: '',
   });
+
+  React.useEffect(() => {
+    fetchActiveCoupons();
+  }, []);
+
+  const fetchActiveCoupons = async () => {
+    try {
+      const data = await couponService.getActiveCoupons();
+      setActiveCoupons(data || []);
+    } catch (err) {
+      console.log('Error fetching active coupons:', err);
+    }
+  };
 
   const allItemsCodAvailable = cartItems.every(item => item.isCodAvailable !== false);
 
@@ -326,13 +342,73 @@ export default function CheckoutScreen({ navigation, route }) {
                 </TouchableOpacity>
               )}
             </View>
-            {appliedCoupon && (
+            {appliedCoupon ? (
               <Text style={styles.appliedMsg}>
                 Yayy! You saved ₹{couponDiscount} with {appliedCoupon}
               </Text>
+            ) : (
+              <TouchableOpacity onPress={() => setShowCouponModal(true)}>
+                <Text style={styles.viewAllCoupons}>View All Coupons</Text>
+              </TouchableOpacity>
             )}
           </View>
         </View>
+
+        {/* Coupons Modal */}
+        <Modal
+          visible={showCouponModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowCouponModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Available Offers</Text>
+                <TouchableOpacity onPress={() => setShowCouponModal(false)}>
+                  <Ionicons name="close" size={24} color="#333" />
+                </TouchableOpacity>
+              </View>
+              
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+                {activeCoupons.length > 0 ? activeCoupons.map((item) => (
+                  <TouchableOpacity 
+                    key={item._id} 
+                    style={styles.couponItem}
+                    onPress={() => {
+                      setCouponCode(item.code);
+                      setShowCouponModal(false);
+                    }}
+                  >
+                    <View style={styles.couponItemHeader}>
+                      <View style={styles.couponTag}>
+                         <Ionicons name="pricetag" size={14} color="#D82B76" />
+                         <Text style={styles.couponTagText}>{item.code}</Text>
+                      </View>
+                      <Text style={styles.couponValue}>
+                        Save {item.discountType === 'percentage' ? `${item.discountValue}%` : `₹${item.discountValue}`}
+                      </Text>
+                    </View>
+                    <Text style={styles.couponMinOrderModal}>Valid on orders above ₹{item.minOrderAmount}</Text>
+                    <TouchableOpacity 
+                      style={styles.modalApplyBtn}
+                      onPress={() => {
+                        setCouponCode(item.code);
+                        setShowCouponModal(false);
+                      }}
+                    >
+                      <Text style={styles.modalApplyBtnText}>APPLY CODE</Text>
+                    </TouchableOpacity>
+                  </TouchableOpacity>
+                )) : (
+                  <View style={{ padding: 40, alignItems: 'center' }}>
+                    <Text style={{ color: '#999' }}>No coupons available right now.</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary ({cartItems.length} items)</Text>
@@ -486,4 +562,18 @@ const styles = StyleSheet.create({
   applyBtnText: { color: '#D82B76', fontWeight: '800', fontSize: 13 },
   removeCoupon: { paddingHorizontal: 15 },
   appliedMsg: { marginTop: 10, color: '#16a34a', fontSize: 12, fontWeight: '700', marginLeft: 5 },
-});
+  viewAllCoupons: { marginTop: 10, color: '#D82B76', fontSize: 12, fontWeight: '800', textDecorationLine: 'underline', marginLeft: 5 },
+  // Modal Styles
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 20, fontWeight: '900', color: '#111' },
+  couponItem: { padding: 20, borderRadius: 20, borderStyle: 'dashed', borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9', marginBottom: 15 },
+  couponItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  couponTag: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFF0F5', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  couponTagText: { color: '#D82B76', fontWeight: '800', fontSize: 12, letterSpacing: 0.5 },
+  couponValue: { fontSize: 16, fontWeight: '900', color: '#111' },
+  couponMinOrderModal: { fontSize: 11, color: '#666', fontWeight: '600', marginBottom: 15 },
+  modalApplyBtn: { backgroundColor: '#D82B76', paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  modalApplyBtnText: { color: '#FFF', fontWeight: '800', fontSize: 13 },
+ });

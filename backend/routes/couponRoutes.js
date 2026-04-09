@@ -4,6 +4,7 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 
 // Public/User routes
 router.post("/validate", controller.validate);
+router.get("/active", controller.getActive);
 
 // Admin routes
 router.post("/", adminMiddleware, controller.create);
