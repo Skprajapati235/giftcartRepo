@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ToastProvider } from "../context/ToastContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,11 +36,13 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-slate-100 text-slate-900">
-        <AuthProvider>
-          <AdminProvider>
-            <AppShell>{children}</AppShell>
-          </AdminProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <AdminProvider>
+              <AppShell>{children}</AppShell>
+            </AdminProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );

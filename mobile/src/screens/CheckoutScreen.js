@@ -15,10 +15,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import orderService from '../services/orderService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useToast } from '../context/ToastContext';
 
 export default function CheckoutScreen({ navigation, route }) {
   const { cartItems, total } = route.params;
   const { user } = useContext(AuthContext);
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
   const [showWebView, setShowWebView] = useState(false);
@@ -67,7 +69,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const handleCheckout = async () => {
     // Validate Form
     if (!shippingInfo.fullName || !shippingInfo.phone || !shippingInfo.address || !shippingInfo.pinCode) {
-      Alert.alert('Incomplete Info', 'Please fill all shipping details.');
+      showToast('Please fill all shipping details', 'warning');
       return;
     }
 
@@ -90,9 +92,8 @@ export default function CheckoutScreen({ navigation, route }) {
         const nextCart = cart.filter(i => !orderedIds.includes(i._id));
         await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(nextCart));
 
-        Alert.alert('Success', 'Order placed successfully with Cash on Delivery!', [
-          { text: 'OK', onPress: () => navigation.navigate('Home') }
-        ]);
+        showToast('Order placed successfully with COD!', 'success');
+        setTimeout(() => navigation.navigate('Home'), 1500);
       } else {
         // Online payment
         setPaymentData({
@@ -109,7 +110,7 @@ export default function CheckoutScreen({ navigation, route }) {
         setShowWebView(true);
       }
     } catch (error) {
-      Alert.alert('Error', 'Could not place order.');
+      showToast('Could not place order', 'error');
     } finally {
       setLoading(false);
     }
@@ -135,16 +136,15 @@ export default function CheckoutScreen({ navigation, route }) {
         const nextCart = cart.filter(i => !orderedIds.includes(i._id));
         await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(nextCart));
 
-        Alert.alert('Success', 'Order placed successfully!', [
-          { text: 'OK', onPress: () => navigation.navigate('Home') }
-        ]);
+        showToast('Order placed successfully!', 'success');
+        setTimeout(() => navigation.navigate('Home'), 1500);
       } catch (err) {
-        Alert.alert('Error', 'Payment verification failed.');
+        showToast('Payment verification failed', 'error');
       } finally {
         setLoading(false);
       }
     } else {
-      Alert.alert('Cancelled', 'Payment was cancelled or failed.');
+      showToast('Payment cancelled or failed', 'error');
     }
   };
 

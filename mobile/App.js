@@ -5,6 +5,8 @@ import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import Loader from './src/components/loaders/Loader';
 
+import { ToastProvider } from './src/context/ToastContext';
+
 export default function App() {
 
   const [globalLoading, setGlobalLoading] = useState(true);
@@ -18,11 +20,13 @@ export default function App() {
   if (globalLoading) return <Loader />;
 
   return (
-    <AuthProvider>
-      <NavigationContainer>
-        <AppNavigator />
-        <StatusBar style="light" />
-      </NavigationContainer>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <NavigationContainer>
+          <AppNavigator />
+          <StatusBar style="light" />
+        </NavigationContainer>
+      </AuthProvider>
+    </ToastProvider>
   );
 }

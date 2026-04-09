@@ -23,6 +23,7 @@ import categoryService from '../services/categoryService';
 import productService from '../services/productService';
 import LocationSelectionModal from '../components/LocationSelectionModal';
 import userService from '../services/userService';
+import { useToast } from '../context/ToastContext';
 
 const { width } = Dimensions.get('window');
 
@@ -41,6 +42,7 @@ const ADS = [
 export default function HomeScreen({ navigation }) {
   const route = useRoute();
   const { signOut, user, updateUser } = useContext(AuthContext);
+  const { showToast } = useToast();
   const [categories, setCategories] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -110,15 +112,15 @@ export default function HomeScreen({ navigation }) {
       const raw = await AsyncStorage.getItem('@giftcart_cart');
       const items = raw ? JSON.parse(raw) : [];
       if (items.some(i => i._id === product._id)) {
-        Alert.alert('Info', 'Product already in cart.');
+        showToast('Product already in cart.', 'info');
         return;
       }
       const next = [...items, product];
       await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(next));
       setCartCount(next.length);
-      Alert.alert('Cart', 'Product added to cart!');
+      showToast('Product added to cart!', 'success');
     } catch (err) {
-      Alert.alert('Error', 'Could not add to cart.');
+      showToast('Could not add to cart.', 'error');
     }
   };
 
@@ -131,9 +133,10 @@ export default function HomeScreen({ navigation }) {
       });
       await updateUser(updatedUser);
       setShowLocationModal(false);
+      showToast('Location saved successfully!', 'success');
     } catch (error) {
       console.log('Location selection error:', error);
-      Alert.alert('Error', 'Failed to save location. Please try again.');
+      showToast('Failed to save location.', 'error');
     } finally {
       setLocationLoading(false);
     }

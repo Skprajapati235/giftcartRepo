@@ -1,16 +1,18 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function LoginScreen({ navigation }) {
   const { signIn } = useContext(AuthContext);
+  const { showToast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const onLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Required', 'Enter email and password.');
+      showToast('Enter email and password.', 'warning');
       return;
     }
 

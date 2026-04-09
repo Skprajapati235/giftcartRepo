@@ -3,10 +3,12 @@ import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAuthToken, handleApiError } from '../api/apiClient';
 import authService from '../services/authService';
+import { useToast } from './ToastContext';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const { showToast } = useToast();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [locationSet, setLocationSet] = useState(false);
@@ -53,7 +55,7 @@ export const AuthProvider = ({ children }) => {
       return data;
     } catch (error) {
       const err = handleApiError(error);
-      Alert.alert('Login failed', err.message);
+      showToast(err.message, 'error');
       throw err;
     }
   };
@@ -64,7 +66,7 @@ export const AuthProvider = ({ children }) => {
       return data;
     } catch (error) {
       const err = handleApiError(error);
-      Alert.alert('Registration failed', err.message);
+      showToast(err.message, 'error');
       throw err;
     }
   };

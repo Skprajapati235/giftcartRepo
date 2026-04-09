@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import * as service from "../services/adminService";
+import { useToast } from "../../context/ToastContext";
 
 interface AuthState {
   user: any | null;
@@ -50,6 +51,7 @@ function isValidToken(token: string | null) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { showToast } = useToast();
   const [user, setUser] = useState<any | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,8 +83,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await service.loginAdmin(payload);
       const user = data.user || data.admin;
       setSession(data.token, user);
+      showToast("Signed in successfully", "success");
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Login failed");
+      const msg = err.response?.data?.message || err.message || "Login failed";
+      setError(msg);
+      showToast(msg, "error");
       throw err;
     } finally {
       setLoading(false);
@@ -99,8 +104,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       await service.registerAdmin(payload);
+      showToast("Account created! Please sign in.", "success");
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Registration failed");
+      const msg = err.response?.data?.message || err.message || "Registration failed";
+      setError(msg);
+      showToast(msg, "error");
       throw err;
     } finally {
       setLoading(false);

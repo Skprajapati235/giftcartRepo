@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import { getProductReviews, deleteReview, likeReview, dislikeReview } from '../services/reviewService';
 import { toggleWishlist, getWishlist } from '../services/wishlistService';
 import orderService from '../services/orderService';
+import { useToast } from '../context/ToastContext';
 
 const { width } = Dimensions.get('window');
 const ITEM_HEIGHT = 450;
@@ -13,6 +14,7 @@ const ITEM_HEIGHT = 450;
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
   const { user } = useContext(AuthContext);
+  const { showToast } = useToast();
   const [added, setAdded] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState([]);
@@ -56,11 +58,11 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   const handleToggleWishlist = async () => {
-    if (!user) { Alert.alert('Login Required', 'Please login to add items to wishlist'); return; }
+    if (!user) { showToast('Please login to add items to wishlist', 'warning'); return; }
     try {
       const response = await toggleWishlist(product._id);
       setInWishlist(response.includes(product._id));
-    } catch (err) { Alert.alert('Error', 'Could not update wishlist'); }
+    } catch (err) { showToast('Could not update wishlist', 'error'); }
   };
 
   const fetchReviews = async () => {
@@ -74,12 +76,12 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   const handleLike = async (id) => {
-    if (!user) return Alert.alert('Login Required', 'Please login to engage');
+    if (!user) return showToast('Please login to engage', 'warning');
     try { await likeReview(id); fetchReviews(); } catch (e) {}
   };
 
   const handleDislike = async (id) => {
-    if (!user) return Alert.alert('Login Required', 'Please login to engage');
+    if (!user) return showToast('Please login to engage', 'warning');
     try { await dislikeReview(id); fetchReviews(); } catch (e) {}
   };
 
@@ -94,8 +96,8 @@ export default function ProductDetailScreen({ route, navigation }) {
       cart.push({ ...product, quantity });
       await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(cart));
       setAdded(true);
-      Alert.alert('Success', 'Added to cart');
-    } catch (err) { Alert.alert('Error', 'Could not add to cart.'); }
+      showToast('Added to cart', 'success');
+    } catch (err) { showToast('Could not add to cart.', 'error'); }
   };
 
   return (

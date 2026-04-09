@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Upload, X } from "lucide-react";
 import * as service from "../../services/adminService";
 import { useAdmin } from "../../context/AdminContext";
+import { useToast } from "../../../context/ToastContext";
 
 interface AddEditCategoryProps {
   category: any;
@@ -12,6 +13,7 @@ interface AddEditCategoryProps {
 
 export default function AddEditCategory({ category, onClose }: AddEditCategoryProps) {
   const { createCategory, updateCategory } = useAdmin();
+  const { showToast } = useToast();
   const [name, setName] = useState(category?.name || "");
   const [image, setImage] = useState(category?.image || "");
   const [saving, setSaving] = useState(false);
@@ -24,8 +26,9 @@ export default function AddEditCategory({ category, onClose }: AddEditCategoryPr
       const file = event.target.files[0];
       const data = await service.uploadImage(file);
       setImage(data.url);
+      showToast("Image uploaded!", "success");
     } catch (err: any) {
-      console.error("Upload failed", err);
+      showToast("Upload failed", "error");
     } finally {
       setUploadingImage(false);
     }
@@ -39,12 +42,14 @@ export default function AddEditCategory({ category, onClose }: AddEditCategoryPr
       const payload = { name, image };
       if (category?._id) {
         await updateCategory(category._id, payload);
+        showToast("Category updated!", "success");
       } else {
         await createCategory(payload);
+        showToast("Category created!", "success");
       }
       onClose();
     } catch (err) {
-      console.error("Error saving category.", err);
+      showToast("Failed to save category", "error");
     } finally {
       setSaving(false);
     }

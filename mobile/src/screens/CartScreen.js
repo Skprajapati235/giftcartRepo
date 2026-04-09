@@ -11,9 +11,10 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function CartScreen({ navigation }) {
+  const { showToast } = useToast();
   const [cartItems, setCartItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [total, setTotal] = useState(0);
@@ -62,15 +63,16 @@ export default function CartScreen({ navigation }) {
       setCartItems(nextItems);
       setSelectedItems(nextSelected);
       calculateTotal(nextItems, nextSelected);
+      showToast('Item removed from cart', 'success');
     } catch (err) {
-      Alert.alert('Error', 'Could not remove item from cart.');
+      showToast('Could not remove item', 'error');
     }
   };
 
   const handleCheckout = () => {
     const itemsToOrder = cartItems.filter(item => selectedItems.includes(item._id));
     if (itemsToOrder.length === 0) {
-      Alert.alert('Select Items', 'Please select at least one item to checkout.');
+      showToast('Please select items to checkout', 'warning');
       return;
     }
     navigation.navigate('Checkout', { cartItems: itemsToOrder, total });

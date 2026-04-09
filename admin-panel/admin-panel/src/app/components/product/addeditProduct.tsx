@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { X, Upload } from "lucide-react";
 import * as service from "../../services/adminService";
 import { useAdmin } from "../../context/AdminContext";
+import { useToast } from "../../../context/ToastContext";
 
 interface AddEditProductProps {
   product: any; // null if adding
@@ -12,6 +13,7 @@ interface AddEditProductProps {
 
 export default function AddEditProduct({ product, onClose }: AddEditProductProps) {
   const { categories, createProduct, updateProduct } = useAdmin();
+  const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -37,8 +39,9 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
       const file = event.target.files[0];
       const data = await service.uploadImage(file);
       setForm((current) => ({ ...current, image: data.url }));
+      showToast("Image uploaded successfully!", "success");
     } catch (err: any) {
-      console.error("Upload failed", err);
+      showToast("Image upload failed", "error");
     } finally {
       setUploadingImage(false);
     }
@@ -62,13 +65,14 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
 
       if (product?._id) {
         await updateProduct(product._id, payload);
+        showToast("Product updated successfully!", "success");
       } else {
         await createProduct(payload);
+        showToast("Product created successfully!", "success");
       }
       onClose();
     } catch (error) {
-      console.error("Product action error:", error);
-      alert("Failed to save product. Check console.");
+      showToast("Failed to save product", "error");
     } finally {
       setSaving(false);
     }

@@ -1,9 +1,11 @@
 import React, { useContext, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 
 export default function RegisterScreen({ navigation }) {
   const { signUp } = useContext(AuthContext);
+  const { showToast } = useToast();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -11,14 +13,14 @@ export default function RegisterScreen({ navigation }) {
 
   const onRegister = async () => {
     if (!name || !email || !password) {
-      Alert.alert('Required', 'Enter name, email and password.');
+      showToast('Enter name, email and password.', 'warning');
       return;
     }
 
     setLoading(true);
     try {
       await signUp(name.trim(), email.trim(), password);
-      Alert.alert('Success', 'Registration completed. Please login to continue.');
+      showToast('Registration successful! Please login.', 'success');
       navigation.replace('Login');
     } catch {
       // error displayed by AuthContext
