@@ -35,62 +35,81 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-6 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-      <div className="w-full max-w-md rounded-3xl bg-white p-10 shadow-xl dark:bg-slate-900 dark:text-slate-100">
-        <h1 className="text-2xl font-semibold text-slate-900">Register as admin</h1>
-        <p className="mt-2 text-sm text-slate-600">Create your admin account to access the dashboard.</p>
+    <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+      <div className="w-full max-w-md rounded-[2.5rem] bg-card p-12 shadow-2xl transition hover:shadow-primary/5 border border-transparent dark:border-border-theme">
+        <div className="mb-10 text-center">
+          <div className="flex justify-center mb-6">
+             <img src="/images/Giftora.png" alt="Logo" className="h-16 w-16 rounded-[2rem] shadow-xl shadow-primary/10 border-2 border-primary/10" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-foreground tracking-tight">Register as admin</h1>
+          <p className="mt-2 text-sm text-slate-500 font-medium">Create your admin account to access the dashboard.</p>
+        </div>
 
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-          <label className="block text-sm font-medium text-slate-700">Name</label>
-          <input
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-            placeholder="Your name"
-          />
+        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 px-1">Name</label>
+            <input
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+              className="w-full rounded-2xl border border-border-theme bg-hover-theme px-5 py-4 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary/20"
+              placeholder="Your name"
+              required
+            />
+          </div>
 
-          <label className="block text-sm font-medium text-slate-700">Email</label>
-          <input
-            value={form.email}
-            onChange={(event) => setForm({ ...form, email: event.target.value })}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-            placeholder="you@example.com"
-            type="email"
-          />
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 px-1">Email</label>
+            <input
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+              className="w-full rounded-2xl border border-border-theme bg-hover-theme px-5 py-4 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary/20"
+              placeholder="you@example.com"
+              type="email"
+              required
+            />
+          </div>
 
-          <label className="block text-sm font-medium text-slate-700">Password</label>
-          <input
-            value={form.password}
-            onChange={(event) => setForm({ ...form, password: event.target.value })}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-            placeholder="Password"
-            type="password"
-          />
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 px-1">Password</label>
+            <input
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              className="w-full rounded-2xl border border-border-theme bg-hover-theme px-5 py-4 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary/20"
+              placeholder="Password"
+              type="password"
+              required
+            />
+          </div>
 
-          <label className="block text-sm font-medium text-slate-700">Confirm Password</label>
-          <input
-            value={form.confirmPassword}
-            onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })}
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none"
-            placeholder="Confirm password"
-            type="password"
-          />
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 px-1">Confirm Password</label>
+            <input
+              value={form.confirmPassword}
+              onChange={(event) => setForm({ ...form, confirmPassword: event.target.value })}
+              className="w-full rounded-2xl border border-border-theme bg-hover-theme px-5 py-4 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary/20"
+              placeholder="Confirm password"
+              type="password"
+              required
+            />
+          </div>
 
           {(submitError || error) && (
-            <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{submitError || error}</p>
+            <p className="rounded-2xl bg-rose-500/10 border border-rose-500/20 px-5 py-4 text-sm text-rose-500 font-bold leading-relaxed transition-all animate-in fade-in zoom-in-95">
+              {submitError || error}
+            </p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60"
+            className="w-full rounded-2xl bg-primary px-5 py-4 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-60 shadow-lg shadow-primary/20"
           >
-            {loading ? "Registering..." : "Register"}
+            {loading ? "Registering..." : "Create Admin Account"}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-600">
-          Already have an admin account? <Link href="/" className="text-slate-900 font-semibold">Login</Link>
+        <p className="mt-8 text-center text-sm text-slate-500 font-medium tracking-tight">
+          Already have an admin account? <Link href="/" className="font-bold text-primary hover:underline underline-offset-4 decoration-2">Login</Link>
         </p>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { Review } from "./index";
 import Link from "next/link";
 import { Star, MessageCircle, Trash2, X, ChevronLeft, ChevronRight, CornerDownRight, Edit2, Search, MoreHorizontal, User, Box, ArrowRight, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from "lucide-react";
 import Pagination from "../Pagination";
+import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 
 interface ReviewListProps {
   reviews: Review[];
@@ -52,8 +53,8 @@ export default function ReviewList({ reviews, loading, onDelete }: ReviewListPro
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64 bg-card rounded-3xl border border-border-theme">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="bg-card rounded-3xl border border-border-theme p-4">
+        <TableSkeleton rows={8} cols={6} />
       </div>
     );
   }

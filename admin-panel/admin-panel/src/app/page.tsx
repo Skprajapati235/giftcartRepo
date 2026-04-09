@@ -33,6 +33,9 @@ export default function Home() {
     <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
       <div className="w-full max-w-sm rounded-[2.5rem] bg-card p-12 shadow-2xl transition hover:shadow-primary/5 border border-transparent dark:border-border-theme">
         <div className="mb-10 text-center">
+          <div className="flex justify-center mb-6">
+             <img src="/images/Giftora.png" alt="Logo" className="h-16 w-16 rounded-[2rem] shadow-xl shadow-primary/10 border-2 border-primary/10" />
+          </div>
           <p className="text-[10px] uppercase tracking-[0.4em] text-slate-500 font-bold">Admin login</p>
           <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-foreground">Sign in to GiftCart</h1>
           <p className="mt-3 text-sm text-slate-500 font-medium">Access your admin dashboard</p>

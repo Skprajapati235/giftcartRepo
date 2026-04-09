@@ -149,13 +149,60 @@ export const CardGridSkeleton: React.FC<CardGridSkeletonProps> = ({
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 4. DASHBOARD SECTION SKELETON  — stat cards + two mini-tables
+// 4. CHART SKELETON — replaces dashboard bar/pie charts
+// ═══════════════════════════════════════════════════════════════════════════════
+export const ChartSkeleton: React.FC = () => (
+  <div className="grid gap-8 lg:grid-cols-2">
+    {[0, 1].map((s) => (
+      <div
+        key={s}
+        className="bg-card rounded-3xl p-6 border border-border-theme shadow-sm space-y-6"
+      >
+        <div className="space-y-2">
+          <SkeletonBox className="h-5 w-40 rounded-full" />
+          <SkeletonBox className="h-3 w-64 rounded-full opacity-60" />
+        </div>
+        <div className="h-[280px] w-full flex items-end gap-3 px-2">
+          {s === 0 ? (
+            // Bar Chart fake
+            Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonBox
+                key={i}
+                className="flex-1 rounded-t-xl"
+                style={{ height: `${30 + Math.random() * 60}%` }}
+              />
+            ))
+          ) : (
+            // Pie Chart fake
+            <div className="w-full flex items-center justify-center">
+               <div className="relative h-48 w-48 rounded-full border-[16px] border-slate-200 dark:border-slate-800 animate-pulse">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-24 w-24 rounded-full border-[12px] border-slate-100 dark:border-slate-700 opacity-50" />
+                  </div>
+               </div>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-center gap-4">
+           <SkeletonBox className="h-2 w-16 rounded-full" />
+           <SkeletonBox className="h-2 w-16 rounded-full" />
+           <SkeletonBox className="h-2 w-16 rounded-full" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5. DASHBOARD SECTION SKELETON  — stat cards + Charts + two mini-tables
 // ═══════════════════════════════════════════════════════════════════════════════
 export const DashboardSkeleton: React.FC = () => (
   <>
     <ShimmerStyle />
-    <div className="space-y-10 w-full">
+    <div className="space-y-10 w-full animate-in fade-in duration-500">
       <StatCardSkeleton count={4} />
+
+      <ChartSkeleton />
 
       <div className="grid gap-8 lg:grid-cols-2">
         {[0, 1].map((s) => (
@@ -203,5 +250,6 @@ export default {
   StatCardSkeleton,
   CardGridSkeleton,
   DashboardSkeleton,
+  ChartSkeleton,
   RowSkeleton,
 };
