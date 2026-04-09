@@ -19,7 +19,7 @@ export default function AddReviewScreen({ route, navigation }) {
     }
 
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -170,6 +170,18 @@ export default function AddReviewScreen({ route, navigation }) {
             ))}
           </ScrollView>
         </View>
+
+        <TouchableOpacity 
+          style={[styles.mainSubmitBtn, loading && styles.disabledBtn]} 
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.mainSubmitBtnText}>{existingReview ? 'Update Review' : 'Submit Review'}</Text>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -201,5 +213,8 @@ const styles = StyleSheet.create({
   addImgText: { fontSize: 12, color: '#666', marginTop: 4 },
   imageWrapper: { position: 'relative', marginRight: 10 },
   pickedImage: { width: 80, height: 80, borderRadius: 12 },
-  removeBtn: { position: 'absolute', top: -5, right: -5, backgroundColor: '#FFF', borderRadius: 10 }
+  removeBtn: { position: 'absolute', top: -5, right: -5, backgroundColor: '#FFF', borderRadius: 10 },
+  mainSubmitBtn: { backgroundColor: '#D82B76', paddingVertical: 18, borderRadius: 15, alignItems: 'center', marginTop: 20, marginBottom: 20, shadowColor: '#D82B76', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
+  mainSubmitBtnText: { color: '#FFF', fontSize: 18, fontWeight: '800' },
+  disabledBtn: { backgroundColor: '#E0E0E0', shadowOpacity: 0, elevation: 0 }
 });
