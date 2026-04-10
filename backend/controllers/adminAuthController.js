@@ -19,3 +19,19 @@ exports.login = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+
+exports.googleLogin = async (req, res) => {
+  try {
+    const { email, name } = req.body;
+
+    const admin = await authService.googleLogin({ email, name });
+
+    res.json({
+      admin,
+      token: generateToken(admin._id, admin.role),
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};

@@ -25,6 +25,25 @@ exports.loginUser = async (data) => {
   return user;
 };
 
+exports.googleLogin = async (data) => {
+  const { email, name } = data;
+
+  let admin = await Admin.findOne({ email });
+
+  if (!admin) {
+    admin = await Admin.create({
+      name,
+      email,
+      password: "google-login",
+      role: "admin",
+    });
+  }
+
+  return admin;
+};
+
+export default authService;
+
 exports.updateUserProfile = async (userId, data) => {
   const { name, mobileNumber, profilePic, state, city } = data;
   

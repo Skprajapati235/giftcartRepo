@@ -38,6 +38,41 @@ export default function Home() {
     signIn("google");
   };
 
+  useEffect(() => {
+  const handleGoogleLogin = async () => {
+    if (session?.user?.email) {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/admin/auth/google-login`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: session.user.email,
+              name: session.user.name,
+            }),
+          }
+        );
+
+        const data = await res.json();
+
+        // 🔥 IMPORTANT
+        localStorage.setItem("giftcartAdminToken", data.token);
+
+        router.replace("/dashboard");
+      } catch (err) {
+        console.log(err);
+      }
+    }
+  };
+
+  if (session) {
+    handleGoogleLogin();
+  }
+}, [session]);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
       <div className="w-full max-w-sm rounded-[2.5rem] bg-card p-12 shadow-2xl transition hover:shadow-primary/5 border border-transparent dark:border-border-theme">
