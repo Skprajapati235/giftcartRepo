@@ -42,7 +42,7 @@ exports.googleLogin = async (data) => {
   return admin;
 };
 
-export default authService;
+// export default authService;
 
 exports.updateUserProfile = async (userId, data) => {
   const { name, mobileNumber, profilePic, state, city } = data;
