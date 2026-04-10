@@ -12,6 +12,9 @@
     "orientation": "portrait",
     "assetBundlePatterns": [
       "**/*"
+    ],
+    "plugins": [
+      "expo-web-browser"
     ]
   }
 }
