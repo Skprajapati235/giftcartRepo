@@ -28,6 +28,7 @@ app.use("/api/review", require("./routes/reviewRoutes"));
 app.use("/api/wishlist", require("./routes/wishlistRoutes"));
 app.use("/api/upload", authMiddleware, require("./routes/uploadRoutes"));
 app.use("/api/admin/users", adminMiddleware, require("./routes/userRoutes"));
+app.use("/api/admin/notifications", adminMiddleware, require("./routes/admin/notificationRoutes"));
 app.use("/api/coupons", require("./routes/couponRoutes"));
 
 

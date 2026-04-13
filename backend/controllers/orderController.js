@@ -2,6 +2,8 @@ const crypto = require("crypto");
 const Coupon = require("../models/Coupon");
 const orderService = require("../services/orderService");
 const paymentService = require("../services/paymentService");
+const sendEmail = require("../utils/sendEmail");
+const notificationService = require("../services/notificationService");
 
 // POST /api/order/create
 exports.createOrder = async (req, res) => {
@@ -56,6 +58,25 @@ exports.createOrder = async (req, res) => {
       couponCode: finalDiscount > 0 ? couponCode.toUpperCase() : null,
       discountAmount: finalDiscount
     });
+
+    // Create Notification for admin
+    await notificationService.createNotification({
+      type: "order",
+      message: `New Order Received! Amount: ₹${totalAfterCoupon}`,
+      link: `/orders`,
+    });
+
+    // Send Email to Admin async
+    if (process.env.ADMIN_EMAIL) {
+      sendEmail({
+        email: process.env.ADMIN_EMAIL,
+        subject: "New Customer Order Received!",
+        html: `<h1>New Order Received!</h1>
+              <p>A new order was placed for <strong>₹${totalAfterCoupon}</strong>.</p>
+              <p>Payment Method: ${paymentMethod}</p>
+              <p>Log in to the admin dashboard to view the details.</p>`
+      }).catch(err => console.error("Admin Email Alert Failed:", err));
+    }
 
     res.status(201).json({
       success: true,

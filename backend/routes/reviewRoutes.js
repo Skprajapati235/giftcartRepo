@@ -15,6 +15,7 @@ router.delete("/:id", authMiddleware, controller.deleteReview);
 router.get("/admin/all", adminMiddleware, controller.getAllReviews);
 router.get("/admin/:id", adminMiddleware, controller.getReviewById);
 router.post("/admin/reply/:id", adminMiddleware, controller.adminReplyReview);
+router.put("/admin/status/:id", adminMiddleware, controller.adminUpdateReviewStatus);
 router.delete("/admin/:id", adminMiddleware, controller.adminDeleteReview);
 
 // Social routes

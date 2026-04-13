@@ -65,6 +65,15 @@ exports.adminReplyReview = async (req, res) => {
   }
 };
 
+exports.adminUpdateReviewStatus = async (req, res) => {
+  try {
+    const data = await service.adminUpdateReviewStatus(req.params.id, req.body.status);
+    res.json(data);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 exports.adminDeleteReview = async (req, res) => {
   try {
     await service.adminDeleteReview(req.params.id);

@@ -1,5 +1,6 @@
 const Review = require("../models/Review");
 const Product = require("../models/Product");
+const notificationService = require("./notificationService");
 
 exports.createReview = async (userId, productId, data) => {
   const { rating, comment, images } = data;
@@ -12,20 +13,36 @@ exports.createReview = async (userId, productId, data) => {
     images: images || [],
   });
 
-  // Update Product stats
-  const product = await Product.findById(productId);
-  if (product) {
-    const reviews = await Review.find({ product: productId });
-    product.numReviews = reviews.length;
-    product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
-    await product.save();
-  }
+  // Create Notification for admin
+  await notificationService.createNotification({
+    type: "review",
+    message: "A new review is pending approval",
+    link: "/reviews",
+  });
+
+  // Update Product stats explicitly only checking approved
+  await updateProductReviewStats(productId);
 
   return review;
 };
 
+async function updateProductReviewStats(productId) {
+  const product = await Product.findById(productId);
+  if (product) {
+    const reviews = await Review.find({ product: productId, status: "approved" });
+    if (reviews.length > 0) {
+      product.numReviews = reviews.length;
+      product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+    } else {
+      product.numReviews = 0;
+      product.ratings = 0;
+    }
+    await product.save();
+  }
+}
+
 exports.getProductReviews = async (productId) => {
-  return await Review.find({ product: productId })
+  return await Review.find({ product: productId, status: "approved" })
     .populate("user", "name email profilePic")
     .sort({ createdAt: -1 });
 };
@@ -49,13 +66,7 @@ exports.updateReview = async (reviewId, userId, data, isAdmin = false) => {
   await review.save();
 
   // Update Product stats
-  const product = await Product.findById(review.product);
-  if (product) {
-    const reviews = await Review.find({ product: review.product });
-    product.numReviews = reviews.length;
-    product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
-    await product.save();
-  }
+  await updateProductReviewStats(review.product);
 
   return review;
 };
@@ -68,18 +79,7 @@ exports.deleteReview = async (reviewId, userId) => {
   await Review.findByIdAndDelete(reviewId);
 
   // Update Product stats
-  const product = await Product.findById(productId);
-  if (product) {
-    const reviews = await Review.find({ product: productId });
-    if (reviews.length > 0) {
-      product.numReviews = reviews.length;
-      product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
-    } else {
-      product.numReviews = 0;
-      product.ratings = 0;
-    }
-    await product.save();
-  }
+  await updateProductReviewStats(productId);
 
   return { message: "Review deleted" };
 };
@@ -118,19 +118,19 @@ exports.adminDeleteReview = async (reviewId) => {
   await Review.findByIdAndDelete(reviewId);
 
   // Update Product stats
-  const product = await Product.findById(productId);
-  if (product) {
-    const reviews = await Review.find({ product: productId });
-    if (reviews.length > 0) {
-      product.numReviews = reviews.length;
-      product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
-    } else {
-      product.numReviews = 0;
-      product.ratings = 0;
-    }
-    await product.save();
-  }
+  await updateProductReviewStats(productId);
   return { message: "Review deleted by admin" };
+};
+
+exports.adminUpdateReviewStatus = async (reviewId, status) => {
+  const review = await Review.findById(reviewId);
+  if (!review) throw new Error("Review not found");
+  
+  review.status = status;
+  await review.save();
+  
+  await updateProductReviewStats(review.product);
+  return review;
 };
 
 exports.toggleLike = async (reviewId, userId) => {
