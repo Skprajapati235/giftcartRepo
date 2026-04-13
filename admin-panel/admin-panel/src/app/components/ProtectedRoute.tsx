@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
-import { useSession } from "next-auth/react";
 import GlobalLoader from "./GlobalLoaders/GlobalLoader";
 
 export default function ProtectedRoute({
@@ -12,18 +11,15 @@ export default function ProtectedRoute({
   children: React.ReactNode;
 }) {
   const { authenticated, loading } = useAuth();
-  const { data: session, status } = useSession();
   const router = useRouter();
 
-  const isAuthenticated = authenticated || (status === "authenticated" && session);
-
   useEffect(() => {
-    if (status !== "loading" && !loading && !isAuthenticated) {
+    if (!loading && !authenticated) {
       router.replace("/");
     }
-  }, [isAuthenticated, loading, router, status]);
+  }, [authenticated, loading, router]);
 
-  if (loading || status === "loading" || !isAuthenticated) {
+  if (loading || !authenticated) {
     return (
       <GlobalLoader />
     );

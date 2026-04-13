@@ -93,7 +93,6 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     logout();
-    router.replace("/");
   };
 
   const isPathActive = (href?: string, children?: NavChild[]) => {

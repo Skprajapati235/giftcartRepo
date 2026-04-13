@@ -21,9 +21,20 @@ exports.login = async (req, res) => {
 };
 
 
+const { OAuth2Client } = require("google-auth-library");
+const client = new OAuth2Client("77642027655-ika7ain9hl6ah04g5ocv4qdccoc75a7q.apps.googleusercontent.com");
+
 exports.googleLogin = async (req, res) => {
   try {
-    const { email, name } = req.body;
+    const { idToken } = req.body;
+
+    const ticket = await client.verifyIdToken({
+      idToken: idToken,
+      audience: "77642027655-ika7ain9hl6ah04g5ocv4qdccoc75a7q.apps.googleusercontent.com",
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name } = payload;
 
     const admin = await authService.googleLogin({ email, name });
 
@@ -32,6 +43,6 @@ exports.googleLogin = async (req, res) => {
       token: generateToken(admin._id, admin.role),
     });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ message: "Invalid Google Token or Server Error" });
   }
 };

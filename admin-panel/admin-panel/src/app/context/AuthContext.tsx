@@ -9,7 +9,6 @@ import React, {
 } from "react";
 import * as service from "../services/adminService";
 import { useToast } from "../../context/ToastContext";
-
 interface AuthState {
   user: any | null;
   token: string | null;
@@ -23,6 +22,7 @@ interface AuthState {
     password: string;
   }) => Promise<void>;
   logout: () => void;
+  setSession: (tokenValue: string, userValue: any) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -57,15 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const clearSession = () => {
+  const clearSession = async () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("giftcartAdminToken");
       localStorage.removeItem("giftcartAdminUser");
     }
-    setToken(null);
-    setUser(null);
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   };
-
   const setSession = (tokenValue: string, userValue: any) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("giftcartAdminToken", tokenValue);
@@ -129,7 +129,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(storedToken);
       setUser(parsedUser);
     } else {
-      clearSession();
+      if (storedToken || storedUser) {
+        clearSession();
+      } else {
+        setToken(null);
+        setUser(null);
+      }
     }
 
     setLoading(false);
@@ -164,6 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       logout: clearSession,
+      setSession,
     }),
     [user, token, loading, error]
   );
