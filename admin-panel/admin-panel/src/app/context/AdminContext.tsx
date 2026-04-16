@@ -18,6 +18,9 @@ interface AdminContextState {
   cities: any[];
   loading: boolean;
   error: string;
+  totalProducts: number;
+  totalUsers: number;
+  totalCategories: number;
   refreshAll: () => Promise<void>;
   createCategory: (payload: { name: string; image?: string }) => Promise<void>;
   updateCategory: (id: string, payload: { name: string; image?: string }) => Promise<void>;
@@ -71,6 +74,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [admins, setAdmins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [totalCategories, setTotalCategories] = useState(0);
 
   const fetchAll = async () => {
     if (!authenticated) {
@@ -87,18 +93,28 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const [productData, categoryData, cityData, userData, adminData] = await Promise.all([
-        service.getProducts(),
-        service.getCategories(),
-        service.getCities(),
-        service.getUsers(),
-        service.getAdmins(),
+        service.getProducts({ limit: 1000 }), // Get large batch for context
+        service.getCategories({ limit: 1000 }),
+        service.getCities({ limit: 1000 }),
+        service.getUsers({ limit: 1000 }),
+        service.getAdmins({ limit: 1000 }),
       ]);
 
-      setProducts((productData || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setCategories((categoryData || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setCities((cityData || []).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setUsers(userData || []);
-      setAdmins(adminData || []);
+      const pArr = productData.data || productData || [];
+      const cArr = categoryData.data || categoryData || [];
+      const cityArr = cityData.data || cityData || [];
+      const uArr = userData.data || userData || [];
+      const aArr = adminData.data || adminData || [];
+
+      setProducts([...pArr].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setCategories([...cArr].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setCities([...cityArr].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setUsers(uArr);
+      setAdmins(aArr);
+
+      setTotalProducts(productData.total || pArr.length);
+      setTotalCategories(categoryData.total || cArr.length);
+      setTotalUsers(userData.total || uArr.length);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load admin data");
     } finally {
@@ -215,6 +231,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       admins,
       loading,
       error,
+      totalProducts,
+      totalUsers,
+      totalCategories,
       refreshAll,
       createCategory: handleCreateCategory,
       updateCategory: handleUpdateCategory,
@@ -229,7 +248,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       updateAdmin: handleUpdateAdmin,
       deleteAdmin: handleDeleteAdmin,
     }),
-    [products, categories, cities, users, admins, loading, error]
+    [products, categories, cities, users, admins, loading, error, totalProducts, totalUsers, totalCategories]
   );
 
   return (

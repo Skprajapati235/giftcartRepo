@@ -36,7 +36,7 @@ interface Payment {
 }
 
 export default function DashboardView() {
-    const { products, users, loading: adminLoading } = useAdmin();
+    const { totalProducts, totalUsers, loading: adminLoading } = useAdmin();
     const { theme } = useTheme();
     const { token, authenticated } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
@@ -82,8 +82,8 @@ export default function DashboardView() {
                     <StatsGrid
                         totalRevenue={totalRevenue}
                         ordersCount={totalOrders}
-                        productsCount={products.length}
-                        usersCount={users.length}
+                        productsCount={totalProducts}
+                        usersCount={totalUsers}
                     />
 
                     <DashboardCharts orders={orders} />
