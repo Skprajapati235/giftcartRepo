@@ -16,6 +16,7 @@ export interface Review {
   dislikes: string[];
   reply?: string;
   replyAt?: string;
+  status: "pending" | "approved" | "rejected";
   createdAt: string;
 }
 
@@ -51,6 +52,17 @@ export default function ReviewsView() {
     }
   };
 
+  const handleStatusUpdate = async (reviewId: string, status: string) => {
+    try {
+      const { updateReviewStatus } = await import("../../services/reviewService");
+      await updateReviewStatus(reviewId, status);
+      showToast(`Review ${status} successfully!`, "success");
+      fetchReviews();
+    } catch (error) {
+      showToast("Failed to update status", "error");
+    }
+  };
+
   return (
     <>
       <div className="mb-8 items-end justify-between">
@@ -60,6 +72,7 @@ export default function ReviewsView() {
         reviews={reviews}
         loading={loading}
         onDelete={handleDelete}
+        onStatusUpdate={handleStatusUpdate}
       />
     </>
   );

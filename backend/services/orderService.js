@@ -1,5 +1,7 @@
 const Order = require("../models/Order");
 const Coupon = require("../models/Coupon");
+const emailService = require("../utils/emailService");
+const User = require("../models/User");
 
 // Create a new order record in DB
 exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, paymentMethod = 'Online', couponCode, discountAmount = 0 }) => {
@@ -58,12 +60,20 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
     await Coupon.findOneAndUpdate({ code: couponCode }, { $inc: { usedCount: 1 } });
   }
 
+  // If COD, send email notification immediately
+  if (paymentMethod === 'COD') {
+    const user = await User.findById(userId);
+    if (user) {
+      emailService.sendOrderNotification(savedOrder, user);
+    }
+  }
+
   return savedOrder;
 };
 
 // Update order after payment verification
 exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
-  return await Order.findOneAndUpdate(
+  const updatedOrder = await Order.findOneAndUpdate(
     { razorpayOrderId },
     {
       razorpayPaymentId,
@@ -71,7 +81,13 @@ exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
       status: "Processing",
     },
     { new: true }
-  );
+  ).populate("user");
+
+  if (updatedOrder) {
+    emailService.sendOrderNotification(updatedOrder, updatedOrder.user);
+  }
+
+  return updatedOrder;
 };
 
 // Mark payment as failed
@@ -109,4 +125,15 @@ exports.getOrderById = async (id) => {
 // Update order status (admin)
 exports.updateOrderStatus = async (id, status) => {
   return await Order.findByIdAndUpdate(id, { status }, { new: true });
+};
+
+// Mark order as viewed by admin
+exports.markOrderAsViewed = async (id) => {
+  return await Order.findByIdAndUpdate(id, { isAdminViewed: true }, { new: true });
+};
+
+// Get unviewed orders (for alerts)
+exports.getUnviewedOrders = async () => {
+    return await Order.find({ isAdminViewed: false, $or: [{ paymentMethod: 'COD' }, { paymentStatus: 'Success' }] })
+      .populate("user", "name email");
 };

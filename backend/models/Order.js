@@ -49,6 +49,7 @@ const orderSchema = new mongoose.Schema({
   },
   couponCode: { type: String },
   discountAmount: { type: Number, default: 0 },
+  isAdminViewed: { type: Boolean, default: false },
 }, { timestamps: true });
 
 module.exports = mongoose.model("Order", orderSchema);

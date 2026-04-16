@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Review } from "./index";
 import Link from "next/link";
-import { Star, MessageCircle, Trash2, X, ChevronLeft, ChevronRight, CornerDownRight, Edit2, Search, MoreHorizontal, User, Box, ArrowRight, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp } from "lucide-react";
+import { Star, MessageCircle, Trash2, X, ChevronLeft, ChevronRight, CornerDownRight, Edit2, Search, MoreHorizontal, User, Box, ArrowRight, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Check, Ban } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 
@@ -11,9 +11,10 @@ interface ReviewListProps {
   reviews: Review[];
   loading: boolean;
   onDelete: (id: string) => void;
+  onStatusUpdate: (id: string, status: string) => void;
 }
 
-export default function ReviewList({ reviews, loading, onDelete }: ReviewListProps) {
+export default function ReviewList({ reviews, loading, onDelete, onStatusUpdate }: ReviewListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -84,9 +85,9 @@ export default function ReviewList({ reviews, loading, onDelete }: ReviewListPro
               <th className="px-6 py-4 w-[25%]">Product</th>
               <th className="px-6 py-4 w-[20%]">Customer</th>
               <th className="px-6 py-4 w-[12%]">Rating</th>
-              <th className="px-6 py-4 w-[25%]">Engagement</th>
+              <th className="px-6 py-4 w-[25%] text-center">Engagement & Status</th>
               <th className="px-6 py-4 w-[10%]">Media</th>
-              <th className="px-6 py-4 w-[8%] text-right">Actions</th>
+              <th className="px-6 py-4 w-[12%] text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-theme">
@@ -148,6 +149,16 @@ export default function ReviewList({ reviews, loading, onDelete }: ReviewListPro
                            <ThumbsDown size={14} className="text-rose-400" />
                            <span className="text-xs font-bold text-foreground/70">{(review.dislikes || []).length}</span>
                         </div>
+
+                        {/* Status Badge */}
+                        <div className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          review.status === 'approved' ? 'bg-green-100 text-green-600 border border-green-200' :
+                          review.status === 'rejected' ? 'bg-rose-100 text-rose-600 border border-rose-200' :
+                          'bg-amber-100 text-amber-600 border border-amber-200'
+                        }`}>
+                          {review.status}
+                        </div>
+
                         <p className="text-[10px] text-slate-400 font-bold ml-auto border-l border-border-theme pl-3">
                           {new Date(review.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
@@ -173,6 +184,24 @@ export default function ReviewList({ reviews, loading, onDelete }: ReviewListPro
                   </td>
                   <td className="px-6 py-5 text-right relative">
                     <div className="flex items-center justify-end gap-2">
+                       {review.status === 'pending' && (
+                         <>
+                           <button 
+                             onClick={() => onStatusUpdate(review._id, 'approved')}
+                             className="p-2 rounded-xl border border-green-200 text-green-600 hover:bg-green-50 transition-all shadow-sm"
+                             title="Approve Review"
+                           >
+                             <Check size={18} />
+                           </button>
+                           <button 
+                             onClick={() => onStatusUpdate(review._id, 'rejected')}
+                             className="p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition-all shadow-sm"
+                             title="Reject Review"
+                           >
+                             <Ban size={18} />
+                           </button>
+                         </>
+                       )}
                        {review.reply && (
                         <button 
                           onClick={() => toggleReply(review._id)}

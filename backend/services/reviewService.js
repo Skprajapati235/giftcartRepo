@@ -10,22 +10,17 @@ exports.createReview = async (userId, productId, data) => {
     rating,
     comment,
     images: images || [],
+    status: 'pending' // Default is pending anyway, but being explicit
   });
 
-  // Update Product stats
-  const product = await Product.findById(productId);
-  if (product) {
-    const reviews = await Review.find({ product: productId });
-    product.numReviews = reviews.length;
-    product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
-    await product.save();
-  }
+  // Since it's pending, we don't update product ratings yet
+  // If the admin wants to approve it, the status change will trigger rating update
 
   return review;
 };
 
 exports.getProductReviews = async (productId) => {
-  return await Review.find({ product: productId })
+  return await Review.find({ product: productId, status: "approved" })
     .populate("user", "name email profilePic")
     .sort({ createdAt: -1 });
 };
@@ -48,17 +43,38 @@ exports.updateReview = async (reviewId, userId, data, isAdmin = false) => {
   
   await review.save();
 
-  // Update Product stats
+  // Recalculate Product stats (only approved)
   const product = await Product.findById(review.product);
   if (product) {
-    const reviews = await Review.find({ product: review.product });
-    product.numReviews = reviews.length;
-    product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
-    await product.save();
+      const approvedReviews = await Review.find({ product: review.product, status: "approved" });
+      product.numReviews = approvedReviews.length;
+      product.ratings = approvedReviews.length > 0 
+        ? approvedReviews.reduce((acc, item) => item.rating + acc, 0) / approvedReviews.length 
+        : 0;
+      await product.save();
   }
 
   return review;
 };
+
+exports.updateReviewStatus = async (reviewId, status) => {
+    const review = await Review.findByIdAndUpdate(reviewId, { status }, { new: true });
+    if (!review) throw new Error("Review not found");
+    
+    // Recalculate product ratings (only approved reviews)
+    const productId = review.product;
+    const product = await Product.findById(productId);
+    if (product) {
+      const approvedReviews = await Review.find({ product: productId, status: "approved" });
+      product.numReviews = approvedReviews.length;
+      product.ratings = approvedReviews.length > 0 
+        ? approvedReviews.reduce((acc, item) => item.rating + acc, 0) / approvedReviews.length 
+        : 0;
+      await product.save();
+    }
+    
+    return review;
+  };
 
 exports.deleteReview = async (reviewId, userId) => {
   const review = await Review.findOne({ _id: reviewId, user: userId });
@@ -67,10 +83,10 @@ exports.deleteReview = async (reviewId, userId) => {
   const productId = review.product;
   await Review.findByIdAndDelete(reviewId);
 
-  // Update Product stats
+  // Update Product stats (only approved)
   const product = await Product.findById(productId);
   if (product) {
-    const reviews = await Review.find({ product: productId });
+    const reviews = await Review.find({ product: productId, status: "approved" });
     if (reviews.length > 0) {
       product.numReviews = reviews.length;
       product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
@@ -117,10 +133,10 @@ exports.adminDeleteReview = async (reviewId) => {
   const productId = review.product;
   await Review.findByIdAndDelete(reviewId);
 
-  // Update Product stats
+  // Update Product stats (only approved)
   const product = await Product.findById(productId);
   if (product) {
-    const reviews = await Review.find({ product: productId });
+    const reviews = await Review.find({ product: productId, status: "approved" });
     if (reviews.length > 0) {
       product.numReviews = reviews.length;
       product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;

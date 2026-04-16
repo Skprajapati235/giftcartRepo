@@ -188,3 +188,13 @@ export const updateOrderStatus = async (id: string, status: string) => {
   const response = await authApi(getAuthToken()).put(`/order/admin/${id}/status`, { status });
   return response.data;
 };
+
+export const getUnviewedOrders = async () => {
+  const response = await authApi(getAuthToken()).get("/order/admin/unviewed");
+  return response.data;
+};
+
+export const markOrderAsViewed = async (id: string) => {
+  const response = await authApi(getAuthToken()).put(`/order/admin/${id}/viewed`);
+  return response.data;
+};

@@ -140,6 +140,28 @@ exports.updateOrderStatus = async (req, res) => {
   }
 };
 
+// PUT /api/order/admin/:id/viewed
+exports.markOrderAsViewed = async (req, res) => {
+  try {
+    await orderService.markOrderAsViewed(req.params.id);
+    res.json({ success: true, message: "Order marked as viewed" });
+  } catch (error) {
+    console.error("Mark Order Viewed Error:", error);
+    res.status(500).json({ success: false, message: "Error marking order as viewed" });
+  }
+};
+
+// GET /api/order/admin/unviewed
+exports.getUnviewedOrders = async (req, res) => {
+  try {
+    const orders = await orderService.getUnviewedOrders();
+    res.json(orders);
+  } catch (error) {
+    console.error("Get Unviewed Orders Error:", error);
+    res.status(500).json({ success: false, message: "Error fetching unviewed orders" });
+  }
+};
+
 // GET /api/order/admin/payments
 exports.getPaymentHistory = async (req, res) => {
   try {

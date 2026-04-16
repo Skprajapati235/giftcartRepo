@@ -41,3 +41,9 @@ export const adminUpdateReview = async (reviewId: string, payload: any) => {
   const response = await authApi(getAuthToken()).put(`/review/${reviewId}`, payload);
   return response.data;
 };
+
+export const updateReviewStatus = async (reviewId: string, status: string) => {
+  const response = await authApi(getAuthToken()).put(`/review/admin/status/${reviewId}`, { status });
+  return response.data;
+};
+
