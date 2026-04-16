@@ -71,7 +71,7 @@ export default function ProductDetailDialogue({ product, onClose }: ProductDetai
              </div>
              <div className="flex items-center justify-between border border-border-theme rounded-xl px-5 py-4 bg-card">
                 <span className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Delivery Time</span>
-                <span className="font-bold text-foreground text-sm">{product.deliveryTime || "3-5"} days</span>
+                <span className="font-bold text-foreground text-sm">{product.deliveryTime || "24"} Hours</span>
              </div>
              <div className="flex items-center justify-between border border-border-theme rounded-xl px-5 py-4 bg-card">
                 <span className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Expected Delivery</span>

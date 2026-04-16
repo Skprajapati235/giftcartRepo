@@ -81,6 +81,7 @@ exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
       razorpayPaymentId,
       paymentStatus: "Success",
       status: "Processing",
+      processingAt: Date.now(),
     },
     { new: true }
   ).populate("user");
@@ -161,7 +162,14 @@ exports.getOrderById = async (id) => {
 
 // Update order status (admin)
 exports.updateOrderStatus = async (id, status) => {
-  return await Order.findByIdAndUpdate(id, { status }, { new: true });
+  const updateData = { status };
+  
+  if (status === "Processing") updateData.processingAt = Date.now();
+  if (status === "Shipped") updateData.shippedAt = Date.now();
+  if (status === "Delivered") updateData.deliveredAt = Date.now();
+  if (status === "Cancelled") updateData.cancelledAt = Date.now();
+
+  return await Order.findByIdAndUpdate(id, updateData, { new: true });
 };
 
 // Mark order as viewed by admin

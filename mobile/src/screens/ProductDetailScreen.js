@@ -158,17 +158,17 @@ export default function ProductDetailScreen({ route, navigation }) {
                    <Text style={styles.specLabel}>{product.flowers} Flores</Text>
                 </View>
               )}
-              <View style={[styles.specItem, { borderRightWidth: 0 }]}>
-                 <MaterialCommunityIcons name="clock-outline" size={20} color="#D82B76" />
-                 <Text style={styles.specLabel}>{product.deliveryTime ? `${product.deliveryTime} Days` : '3-5 Days'}</Text>
-              </View>
+               <View style={[styles.specItem, { borderRightWidth: 0 }]}>
+                  <MaterialCommunityIcons name="clock-outline" size={20} color="#D82B76" />
+                  <Text style={styles.specLabel}>{product.deliveryTime ? `${product.deliveryTime} Hours` : '24-48 Hours'}</Text>
+               </View>
             </View>
 
             <View style={styles.deliveryInfoRow}>
                <Feather name="truck" size={18} color="#D82B76" />
                <View style={{ marginLeft: 12 }}>
-                  <Text style={styles.deliveryMainText}>Get it by {product.expectedDeliveryDate || 'N/A'}</Text>
-                  <Text style={styles.deliverySubText}>Standard Delivery Available</Text>
+                  <Text style={styles.deliveryMainText}>Get it in {product.expectedDeliveryDate || 'N/A'}</Text>
+                  <Text style={styles.deliverySubText}>Approx. Delivery Time: {product.deliveryTime || '24'} Hrs</Text>
                </View>
             </View>
 

@@ -216,7 +216,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={[styles.productName, { flex: 1 }]} numberOfLines={1}>{item.name}</Text>
           {item.expectedDeliveryDate && (
             <View style={styles.deliveryBadgeHome}>
-              <Feather name="truck" size={8} color="#D82B76" />
+              <Feather name="truck" size={8} color="#2E7D32" />
               <Text style={styles.deliveryDateTextHome}>{item.expectedDeliveryDate}</Text>
             </View>
           )}
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: '#FFF0F5',
+    backgroundColor: '#E8F5E9',
     paddingHorizontal: 4,
     paddingVertical: 2,
     borderRadius: 4,
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
   deliveryDateTextHome: {
     fontSize: 7,
     fontWeight: '800',
-    color: '#D82B76',
+    color: '#2E7D32',
   },
   fab: {
     position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366',

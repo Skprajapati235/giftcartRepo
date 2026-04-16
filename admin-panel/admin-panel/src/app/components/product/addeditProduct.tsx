@@ -179,21 +179,21 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Delivery Time (Days)</label>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Delivery Time (Hours)</label>
                 <input
                   value={form.deliveryTime}
                   onChange={(e) => setForm({ ...form, deliveryTime: e.target.value })}
                   className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 2-4"
+                  placeholder="e.g. 24-48"
                 />
               </div>
               <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Expected Delivery (Text)</label>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Expected Delivery (Hours)</label>
                 <input
                   value={form.expectedDeliveryDate}
                   onChange={(e) => setForm({ ...form, expectedDeliveryDate: e.target.value })}
                   className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. Monday, 20 Oct"
+                  placeholder="e.g. 2 Hours"
                 />
               </div>
             </div>

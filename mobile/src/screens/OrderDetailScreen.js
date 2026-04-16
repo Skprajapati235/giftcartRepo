@@ -59,6 +59,18 @@ export default function OrderDetailScreen({ route, navigation }) {
 
               if (isCancelled && index > 0) return null;
 
+              const getStepDate = (step) => {
+                if (isCancelled && step === 'Processing') return order.cancelledAt;
+                const date = step === 'Processing' ? order.processingAt :
+                             step === 'Shipped' ? order.shippedAt :
+                             step === 'Delivered' ? order.deliveredAt : null;
+                if (!date) return null;
+                const d = new Date(date);
+                return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              };
+
+              const stepDate = getStepDate(step);
+
               return (
                 <View key={step} style={styles.timelineItem}>
                   <View style={styles.timelineLeft}>
@@ -72,9 +84,12 @@ export default function OrderDetailScreen({ route, navigation }) {
                     {!isLast && <View style={[styles.timelineLine, isCompleted && styles.lineActive]} />}
                   </View>
                   <View style={styles.timelineRight}>
-                    <Text style={[styles.timelineStepTitle, isCompleted && styles.textActive]}>
-                      {isCancelled ? 'Order Cancelled' : step}
-                    </Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={[styles.timelineStepTitle, isCompleted && styles.textActive]}>
+                        {isCancelled ? 'Order Cancelled' : step}
+                      </Text>
+                      {stepDate && <Text style={styles.timelineTime}>{stepDate}</Text>}
+                    </View>
                     <Text style={styles.timelineStepDesc}>
                       {isCompleted ? 'Item has been ' + step.toLowerCase() : 'Pending'}
                     </Text>
@@ -112,12 +127,19 @@ export default function OrderDetailScreen({ route, navigation }) {
                    <Text style={styles.productSub}>Qty: {item.quantity}  •  Status: {order.status}</Text>
                    <Text style={styles.productPrice}>₹{salePrice}</Text>
                    
-                   {(item.expectedDeliveryDate || product.expectedDeliveryDate) && (
-                     <View style={styles.deliveryBadgeOrder}>
-                        <Feather name="truck" size={10} color="#D82B76" />
-                        <Text style={styles.deliveryTextOrder}>
-                           Delivery by: {item.expectedDeliveryDate || product.expectedDeliveryDate}
-                        </Text>
+                   {(item.expectedDeliveryDate || product.expectedDeliveryDate || item.deliveryTime) && (
+                     <View style={{ gap: 4 }}>
+                       <View style={styles.deliveryBadgeOrder}>
+                          <Feather name="truck" size={10} color="#D82B76" />
+                          <Text style={styles.deliveryTextOrder}>
+                             Expected: {item.expectedDeliveryDate || item.deliveryTime || 'N/A'}
+                          </Text>
+                       </View>
+                       {item.deliveryTime && (
+                         <Text style={{ fontSize: 9, color: '#94A3B8', marginLeft: 2 }}>
+                           Delivery Window: {item.deliveryTime} Hrs
+                         </Text>
+                       )}
                      </View>
                    )}
                    
@@ -213,6 +235,7 @@ const styles = StyleSheet.create({
   timelineRight: { marginLeft: 15, flex: 1 },
   timelineStepTitle: { fontSize: 15, fontWeight: '700', color: '#94A3B8' },
   textActive: { color: '#1A1A1A' },
+  timelineTime: { fontSize: 10, color: '#2E7D32', fontWeight: '800' },
   timelineStepDesc: { fontSize: 12, color: '#94A3B8', marginTop: 2 },
 
   itemRow: { flexDirection: 'row', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },

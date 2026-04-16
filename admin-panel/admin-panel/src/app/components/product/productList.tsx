@@ -140,7 +140,7 @@ export default function ProductList({
                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.category?.name || 'No Category'}</span>
                            {p.deliveryTime && (
                              <span className="text-[8px] font-black text-primary bg-primary/5 px-1 rounded border border-primary/10">
-                               {p.deliveryTime} Days
+                               {p.deliveryTime} Hours
                              </span>
                            )}
                         </div>
