@@ -41,16 +41,19 @@ export default function DashboardView() {
     const { token, authenticated } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
     const [payments, setPayments] = useState<Payment[]>([]);
+    const [totalOrders, setTotalOrders] = useState(0);
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
         if (!authenticated || !token) return;
         try {
             const [ordRes, payRes] = await Promise.all([
-                getAllOrders(),
+                getAllOrders({ limit: 50 }), // Get more for the charts
                 getOrderPayments()
             ]);
-            setOrders(ordRes);
+            const ordersArray = ordRes.data || ordRes;
+            setOrders(ordersArray);
+            setTotalOrders(ordRes.total || (Array.isArray(ordRes) ? ordRes.length : 0));
             setPayments(payRes);
         } catch (err) {
             console.error("Dashboard fetch error", err);
@@ -78,7 +81,7 @@ export default function DashboardView() {
                 <>
                     <StatsGrid
                         totalRevenue={totalRevenue}
-                        ordersCount={orders.length}
+                        ordersCount={totalOrders}
                         productsCount={products.length}
                         usersCount={users.length}
                     />
