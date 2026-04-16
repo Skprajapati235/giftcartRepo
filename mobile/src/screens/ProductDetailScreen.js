@@ -67,9 +67,13 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   const fetchReviews = async () => {
     try {
-      const data = await getProductReviews(product._id);
-      setReviews(data);
+      const res = await getProductReviews(product._id);
+      // Handle both paginated object and direct array response
+      const reviewsArray = res.data || (Array.isArray(res) ? res : []);
+      setReviews(reviewsArray);
     } catch (err) {
+      console.log('Error fetching reviews:', err);
+      setReviews([]);
     } finally {
       setLoadingReviews(false);
     }
@@ -155,10 +159,18 @@ export default function ProductDetailScreen({ route, navigation }) {
                 </View>
               )}
               <View style={[styles.specItem, { borderRightWidth: 0 }]}>
-                 <MaterialCommunityIcons name="truck-fast" size={20} color="#D82B76" />
-                 <Text style={styles.specLabel}>Fast Export</Text>
+                 <MaterialCommunityIcons name="clock-outline" size={20} color="#D82B76" />
+                 <Text style={styles.specLabel}>{product.deliveryTime ? `${product.deliveryTime} Days` : '3-5 Days'}</Text>
               </View>
-           </View>
+            </View>
+
+            <View style={styles.deliveryInfoRow}>
+               <Feather name="truck" size={18} color="#D82B76" />
+               <View style={{ marginLeft: 12 }}>
+                  <Text style={styles.deliveryMainText}>Get it by {product.expectedDeliveryDate || 'N/A'}</Text>
+                  <Text style={styles.deliverySubText}>Standard Delivery Available</Text>
+               </View>
+            </View>
 
            {/* Pricing Section */}
            <View style={styles.priceContainer}>
@@ -413,6 +425,27 @@ const styles = StyleSheet.create({
   trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 30 },
   trustBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F8FAFC', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9' },
   trustText: { fontSize: 11, fontWeight: '700', color: '#475569' },
+  deliveryInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF0F5',
+    padding: 15,
+    borderRadius: 18,
+    marginBottom: 25,
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+  },
+  deliveryMainText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#1A1A1A',
+  },
+  deliverySubText: {
+    fontSize: 12,
+    color: '#D82B76',
+    fontWeight: '700',
+    marginTop: 2,
+  },
 
   section: { marginBottom: 35 },
   sectionTitle: { fontSize: 18, fontWeight: '900', color: '#1A1A1A', marginBottom: 15 },

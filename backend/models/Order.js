@@ -21,6 +21,8 @@ const orderSchema = new mongoose.Schema({
       discount: { type: Number, default: 0 },
       tax: { type: Number, default: 0 },
       itemTotal: { type: Number, required: true },
+      deliveryTime: { type: String },
+      expectedDeliveryDate: { type: String },
     },
   ],
   totalAmount: { type: Number, required: true },

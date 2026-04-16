@@ -134,7 +134,17 @@ export default function ProductList({
                       <div className="h-12 w-12 rounded-2xl border border-border-theme bg-hover-theme overflow-hidden shrink-0">
                         {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="h-full w-full p-3 text-slate-300" />}
                       </div>
-                      <span className="font-bold text-foreground truncate">{p.name}</span>
+                      <div className="truncate">
+                        <div className="font-bold text-foreground truncate">{p.name}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.category?.name || 'No Category'}</span>
+                           {p.deliveryTime && (
+                             <span className="text-[8px] font-black text-primary bg-primary/5 px-1 rounded border border-primary/10">
+                               {p.deliveryTime} Days
+                             </span>
+                           )}
+                        </div>
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-5">

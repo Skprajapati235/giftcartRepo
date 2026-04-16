@@ -89,7 +89,14 @@ export default function OrderList({
                   </td>
                   <td className="px-6 py-5 w-[20%] overflow-hidden">
                     <div className="font-bold text-slate-900 truncate">{order.user?.name}</div>
-                    <div className="text-xs text-slate-400 truncate">{order.user?.email}</div>
+                    <div className="flex items-center gap-2 mt-1">
+                       <div className="text-xs text-slate-400 truncate flex-1">{order.user?.email}</div>
+                       {order.items?.[0]?.expectedDeliveryDate && (
+                         <span className="text-[8px] whitespace-nowrap bg-primary/5 text-primary px-1.5 py-0.5 rounded font-black border border-primary/10">
+                           {order.items[0].expectedDeliveryDate}
+                         </span>
+                       )}
+                    </div>
                   </td>
                   <td className="px-6 py-5 w-[15%]">
                     <div className="flex flex-col gap-1">

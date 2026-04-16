@@ -30,6 +30,8 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     discount: product?.discount !== undefined ? String(product.discount) : "0",
     tax: product?.tax !== undefined ? String(product.tax) : "0",
     isCodAvailable: product?.isCodAvailable !== undefined ? product.isCodAvailable : true,
+    deliveryTime: product?.deliveryTime || "3-5",
+    expectedDeliveryDate: product?.expectedDeliveryDate || "Monday, 20 Oct",
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,6 +174,26 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                   className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
                   placeholder="e.g. 799"
                   required
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Delivery Time (Days)</label>
+                <input
+                  value={form.deliveryTime}
+                  onChange={(e) => setForm({ ...form, deliveryTime: e.target.value })}
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 2-4"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Expected Delivery (Text)</label>
+                <input
+                  value={form.expectedDeliveryDate}
+                  onChange={(e) => setForm({ ...form, expectedDeliveryDate: e.target.value })}
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. Monday, 20 Oct"
                 />
               </div>
             </div>

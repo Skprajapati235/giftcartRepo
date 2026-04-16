@@ -20,7 +20,9 @@ const productSchema = new mongoose.Schema({
   },
   isCodAvailable: { type: Boolean, default: true },
   ratings: { type: Number, default: 0 },
-  numReviews: { type: Number, default: 0 }
+  numReviews: { type: Number, default: 0 },
+  deliveryTime: { type: String, default: "3-5" }, // e.g., "2-4 days"
+  expectedDeliveryDate: { type: String, default: "Monday, 20 Oct" } // e.g., "Tomorrow"
 }, { timestamps: true });
 
 module.exports = mongoose.model("Product", productSchema);

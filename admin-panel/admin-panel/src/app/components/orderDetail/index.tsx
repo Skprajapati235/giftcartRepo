@@ -22,7 +22,9 @@ interface OrderDetailData {
     product: { image: string, name: string },
     name: string, 
     quantity: number, 
-    price: number 
+    price: number,
+    deliveryTime?: string,
+    expectedDeliveryDate?: string
   }>;
   createdAt: string;
 }
@@ -127,10 +129,25 @@ export default function OrderDetailView() {
                     </div>
                     <div>
                       <h4 className="font-bold">{item.name}</h4>
-                      <p className="text-xs text-slate-400 font-mono">{order._id}</p>
+                      <div className="mt-1 flex gap-4 text-[10px] items-center">
+                         <span className="text-slate-400 font-mono">ID: {order._id.slice(-6)}</span>
+                         {item.expectedDeliveryDate && (
+                           <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                             Delivers by: {item.expectedDeliveryDate}
+                           </span>
+                         )}
+                         {item.deliveryTime && (
+                           <span className="text-slate-500 font-bold">
+                             Time: {item.deliveryTime} days
+                           </span>
+                         )}
+                      </div>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-400">Total Item : {item.quantity}</p>
+                  <div className="text-right">
+                    <p className="font-bold">₹ {item.price}</p>
+                    <p className="text-xs text-slate-400">Qty : {item.quantity}</p>
+                  </div>
                 </div>
               ))}
             </div>

@@ -112,6 +112,15 @@ export default function OrderDetailScreen({ route, navigation }) {
                    <Text style={styles.productSub}>Qty: {item.quantity}  •  Status: {order.status}</Text>
                    <Text style={styles.productPrice}>₹{salePrice}</Text>
                    
+                   {(item.expectedDeliveryDate || product.expectedDeliveryDate) && (
+                     <View style={styles.deliveryBadgeOrder}>
+                        <Feather name="truck" size={10} color="#D82B76" />
+                        <Text style={styles.deliveryTextOrder}>
+                           Delivery by: {item.expectedDeliveryDate || product.expectedDeliveryDate}
+                        </Text>
+                     </View>
+                   )}
+                   
                    {order.status === 'Delivered' && (
                      <TouchableOpacity 
                         style={styles.reviewBtn}
@@ -222,5 +231,17 @@ const styles = StyleSheet.create({
   miniTitle: { fontSize: 12, fontWeight: '800', color: '#94A3B8', marginBottom: 10, textTransform: 'uppercase' },
   miniText: { fontSize: 14, fontWeight: '700', color: '#1A1A1A' },
   miniSubText: { fontSize: 12, color: '#64748B', marginTop: 2 },
+  deliveryBadgeOrder: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 5, 
+    backgroundColor: '#FFF0F5', 
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: 6, 
+    marginTop: 8,
+    alignSelf: 'flex-start'
+  },
+  deliveryTextOrder: { fontSize: 10, fontWeight: '800', color: '#D82B76' },
   totalPrice: { fontSize: 22, fontWeight: '900', color: '#1A1A1A', marginTop: 5 }
 });

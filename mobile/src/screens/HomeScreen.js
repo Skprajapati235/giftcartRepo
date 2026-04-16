@@ -212,7 +212,15 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <View style={styles.prodInfo}>
-        <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text style={[styles.productName, { flex: 1 }]} numberOfLines={1}>{item.name}</Text>
+          {item.expectedDeliveryDate && (
+            <View style={styles.deliveryBadgeHome}>
+              <Feather name="truck" size={8} color="#D82B76" />
+              <Text style={styles.deliveryDateTextHome}>{item.expectedDeliveryDate}</Text>
+            </View>
+          )}
+        </View>
 
         <View style={styles.priceRowMain}>
           <View>
@@ -678,6 +686,21 @@ const styles = StyleSheet.create({
   productSubHome: { fontSize: 9, color: '#64748B', marginTop: 1, fontWeight: '600' },
 
   addBtnGrid: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#D82B76', justifyContent: 'center', alignItems: 'center' },
+  deliveryBadgeHome: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FFF0F5',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 5,
+  },
+  deliveryDateTextHome: {
+    fontSize: 7,
+    fontWeight: '800',
+    color: '#D82B76',
+  },
   fab: {
     position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366',
     width: 55, height: 55, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 5

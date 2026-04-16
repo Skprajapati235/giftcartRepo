@@ -26,6 +26,8 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
       discount,
       tax,
       itemTotal,
+      deliveryTime: item.deliveryTime,
+      expectedDeliveryDate: item.expectedDeliveryDate,
     };
   });
 
