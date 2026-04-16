@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import orderService from '../services/orderService';
+import { OrderSkeleton } from '../components/Skeleton';
 
 export default function MyOrdersScreen({ navigation }) {
   const [orders, setOrders] = useState([]);
@@ -95,30 +96,24 @@ export default function MyOrdersScreen({ navigation }) {
         <View style={{ width: 24 }} />
       </View>
 
-      {loading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#D82B76" />
-        </View>
-      ) : (
-        <FlatList
-          data={orders}
-          keyExtractor={(item) => item._id}
-          renderItem={renderOrder}
-          contentContainerStyle={styles.list}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          ListEmptyComponent={() => (
-            <View style={styles.empty}>
-              <Feather name="package" size={60} color="#DDD" />
-              <Text style={styles.emptyText}>No orders yet</Text>
-              <TouchableOpacity style={styles.shopBtn} onPress={() => navigation.navigate('Home')}>
-                <Text style={styles.shopText}>Start Shopping</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        />
-      )}
+      <FlatList
+        data={loading ? [1, 2, 3, 4] : orders}
+        keyExtractor={(item, index) => loading ? `sk-${index}` : item._id}
+        renderItem={loading ? () => <OrderSkeleton /> : renderOrder}
+        contentContainerStyle={styles.list}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={!loading ? () => (
+          <View style={styles.empty}>
+            <Feather name="package" size={60} color="#DDD" />
+            <Text style={styles.emptyText}>No orders yet</Text>
+            <TouchableOpacity style={styles.shopBtn} onPress={() => navigation.navigate('Home')}>
+              <Text style={styles.shopText}>Start Shopping</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+      />
     </SafeAreaView>
   );
 }

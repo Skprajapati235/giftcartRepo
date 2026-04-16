@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import categoryService from '../services/categoryService';
+import Skeleton from '../components/Skeleton';
 
 export default function CollectionsScreen({ navigation }) {
   const [categories, setCategories] = useState([]);
@@ -37,17 +38,17 @@ export default function CollectionsScreen({ navigation }) {
         <View style={{ width: 24 }} />
       </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#D82B76" style={{ marginTop: 50 }} />
-      ) : (
-        <FlatList
-          data={categories}
-          keyExtractor={item => item._id}
-          renderItem={renderCollection}
-          numColumns={2}
-          contentContainerStyle={styles.list}
-        />
-      )}
+      <FlatList
+        data={loading ? [1, 2, 3, 4, 5, 6] : categories}
+        keyExtractor={(item, index) => loading ? `sk-${index}` : item._id}
+        renderItem={loading ? () => (
+          <View style={styles.card}>
+            <Skeleton width="100%" height={200} borderRadius={20} />
+          </View>
+        ) : renderCollection}
+        numColumns={2}
+        contentContainerStyle={styles.list}
+      />
     </SafeAreaView>
   );
 }

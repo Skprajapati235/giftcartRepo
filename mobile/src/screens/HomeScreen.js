@@ -25,6 +25,7 @@ import LocationSelectionModal from '../components/LocationSelectionModal';
 import userService from '../services/userService';
 import couponService from '../services/couponService';
 import { useToast } from '../context/ToastContext';
+import { ProductCardSkeleton, CategorySkeleton, BannerSkeleton, SearchBarSkeleton } from '../components/Skeleton';
 
 const { width } = Dimensions.get('window');
 
@@ -38,7 +39,7 @@ export default function HomeScreen({ navigation }) {
   const route = useRoute();
   const { signOut, user, updateUser } = useContext(AuthContext);
   const { showToast } = useToast();
-  
+
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [activeCoupons, setActiveCoupons] = useState([]);
@@ -99,14 +100,14 @@ export default function HomeScreen({ navigation }) {
 
     try {
       const currentPage = isInitial ? 1 : page;
-      
+
       const [categoriesData, prodResp, couponsData, cartRes] = await Promise.all([
         categoryService.getCategories({ limit: 50 }).catch(() => ({ data: [] })),
-        productService.getProducts({ 
-          page: currentPage, 
-          limit: 10, 
+        productService.getProducts({
+          page: currentPage,
+          limit: 10,
           search: searchQuery,
-          category: selectedCategory === 'all' ? null : selectedCategory 
+          category: selectedCategory === 'all' ? null : selectedCategory
         }),
         couponService.getActiveCoupons({ limit: 20 }).catch(() => ({ data: [] })),
         AsyncStorage.getItem('@giftcart_cart'),
@@ -196,44 +197,44 @@ export default function HomeScreen({ navigation }) {
           style={styles.productImageGrid}
         />
         <View style={styles.cardHeaderActions}>
-           {item.salePrice && item.price > item.salePrice && (
-             <View style={styles.discountBadgeSmall}>
-               <Text style={styles.discountTextSmall}>
-                 {Math.round(((item.price - item.salePrice) / item.price) * 100)}% OFF
-               </Text>
-             </View>
-           )}
-           <View style={styles.ratingBadgeSmall}>
-              <Ionicons name="star" size={10} color="#FBC02D" />
-              <Text style={styles.ratingTextSmall}>{item.ratings?.toFixed(1) || '4.2'}</Text>
-           </View>
+          {item.salePrice && item.price > item.salePrice && (
+            <View style={styles.discountBadgeSmall}>
+              <Text style={styles.discountTextSmall}>
+                {Math.round(((item.price - item.salePrice) / item.price) * 100)}% OFF
+              </Text>
+            </View>
+          )}
+          <View style={styles.ratingBadgeSmall}>
+            <Ionicons name="star" size={10} color="#FBC02D" />
+            <Text style={styles.ratingTextSmall}>{item.ratings?.toFixed(1) || '4.2'}</Text>
+          </View>
         </View>
       </View>
-      
+
       <View style={styles.prodInfo}>
         <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-        
+
         <View style={styles.priceRowMain}>
           <View>
-             <View style={styles.priceContainerHome}>
-                <Text style={styles.productPriceHome}>₹{item.salePrice || item.price}</Text>
-                {item.salePrice && item.price > item.salePrice && (
-                  <Text style={styles.listPriceHome}>₹{item.price}</Text>
-                )}
-             </View>
-             {item.weight || item.flowers ? (
-                <Text style={styles.productSubHome} numberOfLines={1}>
-                   {item.weight || item.flowers + ' flowers'}
-                </Text>
-             ) : (
-                <Text style={styles.productSubHome}>Special Gift Case</Text>
-             )}
+            <View style={styles.priceContainerHome}>
+              <Text style={styles.productPriceHome}>₹{item.salePrice || item.price}</Text>
+              {item.salePrice && item.price > item.salePrice && (
+                <Text style={styles.listPriceHome}>₹{item.price}</Text>
+              )}
+            </View>
+            {item.weight || item.flowers ? (
+              <Text style={styles.productSubHome} numberOfLines={1}>
+                {item.weight || item.flowers + ' flowers'}
+              </Text>
+            ) : (
+              <Text style={styles.productSubHome}>Special Gift Case</Text>
+            )}
           </View>
-          <TouchableOpacity 
-             style={styles.addBtnGrid}
-             onPress={() => addToCart(item)}
+          <TouchableOpacity
+            style={styles.addBtnGrid}
+            onPress={() => addToCart(item)}
           >
-             <Ionicons name="cart-outline" size={18} color="#FFF" />
+            <Ionicons name="cart-outline" size={18} color="#FFF" />
           </TouchableOpacity>
         </View>
       </View>
@@ -276,173 +277,187 @@ export default function HomeScreen({ navigation }) {
 
         {/* Main Content (One Scrollable List) */}
         <FlatList
-          data={products}
-          keyExtractor={item => item._id}
+          data={loading ? [1, 2, 3, 4, 5, 6] : products}
+          keyExtractor={(item, index) => loading ? `sk-${index}` : item._id}
           numColumns={2}
           onRefresh={handleRefresh}
           refreshing={refreshing}
-          onEndReached={handleLoadMore}
+          onEndReached={loading ? null : handleLoadMore}
           onEndReachedThreshold={0.5}
           ListHeaderComponent={
-            <>
-              <View style={styles.searchSection}>
-                <Feather name="search" size={18} color="#999" />
-                <TextInput
-                  style={styles.bodySearchInput}
-                  placeholder="Search gifts, products or categories"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  returnKeyType="search"
-                />
-              </View>
-              {/* Auto-sliding Banners */}
-              {!selectedCategory && (
-                <View style={styles.bannerContainer}>
-                  <FlatList
-                    ref={bannerRef}
-                    data={BANNERS}
-                    horizontal
-                    pagingEnabled
-                    showsHorizontalScrollIndicator={false}
-                    keyExtractor={(_, index) => index.toString()}
-                    getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-                    onScrollToIndexFailed={(info) => {
-                      setTimeout(() => {
-                        bannerRef.current?.scrollToIndex({ index: info.index, animated: false });
-                      }, 100);
-                    }}
-                    renderItem={({ item }) => (
-                      <Image source={{ uri: item }} style={styles.mainBanner} />
-                    )}
-                    onMomentumScrollEnd={(e) => {
-                      const idx = Math.round(e.nativeEvent.contentOffset.x / width);
-                      setActiveBanner(idx);
-                    }}
-                  />
-                  <View style={styles.pagination}>
-                    {BANNERS.map((_, i) => (
-                      <View key={i} style={[styles.dot, activeBanner === i && styles.activeDot]} />
-                    ))}
+            loading ? (
+              <View style={{ paddingTop: 10 }}>
+                <SearchBarSkeleton />
+                <BannerSkeleton />
+                <View style={styles.categoriesContainer}>
+                  <Text style={styles.sectionTitleHeader}>Explore Categories</Text>
+                  <View style={{ flexDirection: 'row', paddingLeft: 20, paddingTop: 15, marginBottom: 20 }}>
+                    {[1, 2, 3, 4, 5].map((i) => <CategorySkeleton key={i} />)}
                   </View>
                 </View>
-              )}
-
-              {/* Categories */}
-              <View style={styles.categoriesContainer}>
-                <Text style={styles.sectionTitleHeader}>Explore Categories</Text>
-                <FlatList
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  data={[{ _id: 'all', name: 'All' }, ...categories]}
-                  keyExtractor={item => item._id}
-                  contentContainerStyle={styles.categoryScroll}
-                  renderItem={({ item }) => {
-                    const isAll = item._id === 'all';
-                    const isSelected = isAll ? !selectedCategory : selectedCategory === item._id;
-                    return (
-                      <TouchableOpacity
-                        style={styles.categoryCircleItem}
-                        onPress={() => setSelectedCategory(isAll ? null : item._id)}
-                      >
-                        <View style={[styles.circle, isSelected && styles.circleSelected]}>
-                          {isAll ? (
-                            <Ionicons name="apps" size={24} color={isSelected ? "#D82B76" : "#555"} />
-                          ) : (
-                            <Image source={{ uri: item.image || `https://api.dicebear.com/7.x/initials/png?seed=${item.name}` }} style={styles.circleImg} />
-                          )}
-                        </View>
-                        <Text style={[styles.categoryName, isSelected && styles.categoryNameSelected]} numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  }}
-                />
+                <Text style={[styles.sectionTitleHeader, { marginBottom: 15 }]}>Recommended For You</Text>
               </View>
-
-              {/* Coupons Section (Replaces Ads) */}
-              {activeCoupons.length > 0 && !selectedCategory && (
-                <View style={styles.adsContainer}>
-                  <View style={styles.sectionHeaderRow}>
-                    <Text style={styles.sectionTitleHeader}>Hot Offers & Coupons</Text>
-                    <Ionicons name="flame" size={20} color="#FF6A3D" />
+            ) : (
+              <>
+                <View style={styles.searchSection}>
+                  <Feather name="search" size={18} color="#999" />
+                  <TextInput
+                    style={styles.bodySearchInput}
+                    placeholder="Search gifts, products or categories"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    returnKeyType="search"
+                  />
+                </View>
+                {/* Auto-sliding Banners */}
+                {!selectedCategory && (
+                  <View style={styles.bannerContainer}>
+                    <FlatList
+                      ref={bannerRef}
+                      data={BANNERS}
+                      horizontal
+                      pagingEnabled
+                      showsHorizontalScrollIndicator={false}
+                      keyExtractor={(_, index) => index.toString()}
+                      getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+                      onScrollToIndexFailed={(info) => {
+                        setTimeout(() => {
+                          bannerRef.current?.scrollToIndex({ index: info.index, animated: false });
+                        }, 100);
+                      }}
+                      renderItem={({ item }) => (
+                        <Image source={{ uri: item }} style={styles.mainBanner} />
+                      )}
+                      onMomentumScrollEnd={(e) => {
+                        const idx = Math.round(e.nativeEvent.contentOffset.x / width);
+                        setActiveBanner(idx);
+                      }}
+                    />
+                    <View style={styles.pagination}>
+                      {BANNERS.map((_, i) => (
+                        <View key={i} style={[styles.dot, activeBanner === i && styles.activeDot]} />
+                      ))}
+                    </View>
                   </View>
+                )}
+
+                {/* Categories */}
+                <View style={styles.categoriesContainer}>
+                  <Text style={styles.sectionTitleHeader}>Explore Categories</Text>
                   <FlatList
-                    ref={couponRef}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    data={activeCoupons}
-                    pagingEnabled
-                    snapToInterval={width - 15}
-                    decelerationRate="fast"
+                    data={[{ _id: 'all', name: 'All' }, ...categories]}
                     keyExtractor={item => item._id}
-                    contentContainerStyle={styles.adsScroll}
-                    getItemLayout={(_, index) => ({
-                      length: width - 15,
-                      offset: (width - 15) * index,
-                      index,
-                    })}
-                    onScrollToIndexFailed={(info) => {
-                      setTimeout(() => {
-                        couponRef.current?.scrollToIndex({ index: info.index, animated: false });
-                      }, 100);
+                    contentContainerStyle={styles.categoryScroll}
+                    renderItem={({ item }) => {
+                      const isAll = item._id === 'all';
+                      const isSelected = isAll ? !selectedCategory : selectedCategory === item._id;
+                      return (
+                        <TouchableOpacity
+                          style={styles.categoryCircleItem}
+                          onPress={() => setSelectedCategory(isAll ? null : item._id)}
+                        >
+                          <View style={[styles.circle, isSelected && styles.circleSelected]}>
+                            {isAll ? (
+                              <Ionicons name="apps" size={24} color={isSelected ? "#D82B76" : "#555"} />
+                            ) : (
+                              <Image source={{ uri: item.image || `https://api.dicebear.com/7.x/initials/png?seed=${item.name}` }} style={styles.circleImg} />
+                            )}
+                          </View>
+                          <Text style={[styles.categoryName, isSelected && styles.categoryNameSelected]} numberOfLines={1}>
+                            {item.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
                     }}
-                    renderItem={({ item, index }) => (
-                      <TouchableOpacity 
-                        style={styles.couponCardAd}
-                        activeOpacity={0.9}
-                        onPress={() => navigation.navigate('Offers')}
-                      >
-                        {item.image ? (
-                          <View style={{ flex: 1 }}>
-                            <Image source={{ uri: item.image }} style={styles.couponAdImg} />
-                            <View style={styles.couponOverlay}>
-                              <View style={styles.couponOverlayTop}>
-                                <View style={styles.discountOverlayBadge}>
-                                  <Text style={styles.discountOverlayText}>
-                                    {item.discountType === 'percentage' ? `${item.discountValue}% OFF` : `FLAT ₹${item.discountValue} OFF`}
-                                  </Text>
+                  />
+                </View>
+
+                {/* Coupons Section (Replaces Ads) */}
+                {activeCoupons.length > 0 && !selectedCategory && (
+                  <View style={styles.adsContainer}>
+                    <View style={styles.sectionHeaderRow}>
+                      <Text style={styles.sectionTitleHeader}>Hot Offers & Coupons</Text>
+                      <Ionicons name="flame" size={20} color="#FF6A3D" />
+                    </View>
+                    <FlatList
+                      ref={couponRef}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      data={activeCoupons}
+                      pagingEnabled
+                      snapToInterval={width - 15}
+                      decelerationRate="fast"
+                      keyExtractor={item => item._id}
+                      contentContainerStyle={styles.adsScroll}
+                      getItemLayout={(_, index) => ({
+                        length: width - 15,
+                        offset: (width - 15) * index,
+                        index,
+                      })}
+                      onScrollToIndexFailed={(info) => {
+                        setTimeout(() => {
+                          couponRef.current?.scrollToIndex({ index: info.index, animated: false });
+                        }, 100);
+                      }}
+                      renderItem={({ item, index }) => (
+                        <TouchableOpacity
+                          style={styles.couponCardAd}
+                          activeOpacity={0.9}
+                          onPress={() => navigation.navigate('Offers')}
+                        >
+                          {item.image ? (
+                            <View style={{ flex: 1 }}>
+                              <Image source={{ uri: item.image }} style={styles.couponAdImg} />
+                              <View style={styles.couponOverlay}>
+                                <View style={styles.couponOverlayTop}>
+                                  <View style={styles.discountOverlayBadge}>
+                                    <Text style={styles.discountOverlayText}>
+                                      {item.discountType === 'percentage' ? `${item.discountValue}% OFF` : `FLAT ₹${item.discountValue} OFF`}
+                                    </Text>
+                                  </View>
+                                  <View style={styles.liveBadge}>
+                                    <View style={styles.liveDot} />
+                                    <Text style={styles.liveText}>LIVE</Text>
+                                  </View>
                                 </View>
-                                <View style={styles.liveBadge}>
-                                  <View style={styles.liveDot} />
-                                  <Text style={styles.liveText}>LIVE</Text>
+                                <View style={styles.couponOverlayBottom}>
+                                  <Text style={styles.overlayMinOrder}>Min. ₹{item.minOrderAmount}</Text>
                                 </View>
-                              </View>
-                              <View style={styles.couponOverlayBottom}>
-                                <Text style={styles.overlayMinOrder}>Min. ₹{item.minOrderAmount}</Text>
                               </View>
                             </View>
-                          </View>
-                        ) : (
-                          <View style={[styles.couponCardFallback, { backgroundColor: index % 2 === 0 ? '#1E293B' : '#D82B76' }]}>
-                             <View style={styles.couponDeco} />
-                             <View style={styles.couponBody}>
+                          ) : (
+                            <View style={[styles.couponCardFallback, { backgroundColor: index % 2 === 0 ? '#1E293B' : '#D82B76' }]}>
+                              <View style={styles.couponDeco} />
+                              <View style={styles.couponBody}>
                                 <Text style={styles.couponCardTitle}>
                                   {item.discountType === 'percentage' ? `${item.discountValue}% OFF` : `₹${item.discountValue} OFF`}
                                 </Text>
                                 <View style={styles.codePill}>
                                   <Text style={styles.codePillText}>{item.code}</Text>
                                 </View>
-                             </View>
-                             <View style={styles.couponDecoRight} />
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    )}
-                    onMomentumScrollEnd={(e) => {
-                      const idx = Math.round(e.nativeEvent.contentOffset.x / (width - 15));
-                      setActiveCouponIdx(idx);
-                    }}
-                  />
-                </View>
-              )}
+                              </View>
+                              <View style={styles.couponDecoRight} />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                      onMomentumScrollEnd={(e) => {
+                        const idx = Math.round(e.nativeEvent.contentOffset.x / (width - 15));
+                        setActiveCouponIdx(idx);
+                      }}
+                    />
+                  </View>
+                )}
 
-              <Text style={[styles.sectionTitleHeader, { marginBottom: 10 }]}>
-                {selectedCategory ? categories.find(c => c._id === selectedCategory)?.name : 'Recommended For You'}
-              </Text>
-            </>
+                <Text style={[styles.sectionTitleHeader, { marginBottom: 10 }]}>
+                  {selectedCategory ? categories.find(c => c._id === selectedCategory)?.name : 'Recommended For You'}
+                </Text>
+              </>
+            )
           }
-          renderItem={renderProduct}
+          renderItem={loading ? () => <ProductCardSkeleton /> : renderProduct}
           contentContainerStyle={styles.listContent}
           columnWrapperStyle={styles.columnWrapper}
           showsVerticalScrollIndicator={false}
@@ -538,8 +553,8 @@ export default function HomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
+  container: {
+    flex: 1,
     backgroundColor: '#FFF',
   },
   header: {
@@ -587,33 +602,33 @@ const styles = StyleSheet.create({
   adsContainer: { paddingBottom: 10, marginBottom: 10 },
   adsScroll: { paddingHorizontal: 15, paddingVertical: 10 },
   sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5, paddingHorizontal: 15 },
-  couponCardAd: { 
-    width: width - 30, height: 100, marginRight: 15, borderRadius: 18, 
+  couponCardAd: {
+    width: width - 30, height: 100, marginRight: 15, borderRadius: 18,
     overflow: 'hidden', backgroundColor: '#FFF',
   },
   couponAdImg: { width: '100%', height: '100%', resizeMode: 'cover', borderRadius: 18 },
-  couponOverlay: { 
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+  couponOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     justifyContent: 'space-between', padding: 12, borderRadius: 18
   },
   couponOverlayTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  discountOverlayBadge: { 
-    backgroundColor: '#D82B76', paddingHorizontal: 12, paddingVertical: 6, 
-    borderRadius: 10, elevation: 3 
+  discountOverlayBadge: {
+    backgroundColor: '#D82B76', paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 10, elevation: 3
   },
   discountOverlayText: { color: '#FFF', fontSize: 14, fontWeight: '900', letterSpacing: 0.5 },
-  liveBadge: { 
-    flexDirection: 'row', alignItems: 'center', gap: 5, 
-    backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 
+  liveBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20
   },
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#22C55E' },
   liveText: { color: '#FFF', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
   couponOverlayBottom: { flexDirection: 'row', justifyContent: 'flex-start' },
-  overlayMinOrder: { 
-    color: '#FFF', fontSize: 11, fontWeight: '800', 
-    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 
+  overlayMinOrder: {
+    color: '#FFF', fontSize: 11, fontWeight: '800',
+    backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8
   },
-  couponCardFallback: { 
+  couponCardFallback: {
     flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15,
     position: 'relative'
   },
@@ -621,9 +636,9 @@ const styles = StyleSheet.create({
   couponDecoRight: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF', position: 'absolute', right: -14, top: 38 },
   couponBody: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   couponCardTitle: { color: '#FFF', fontSize: 22, fontWeight: '900', letterSpacing: 0.5 },
-  codePill: { 
-    backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 5, 
-    borderRadius: 10, marginVertical: 8, borderStyle: 'dashed', borderWidth: 1, borderColor: '#FFF' 
+  codePill: {
+    backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 15, paddingVertical: 5,
+    borderRadius: 10, marginVertical: 8, borderStyle: 'dashed', borderWidth: 1, borderColor: '#FFF'
   },
   codePillText: { color: '#FFF', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
   productCardGrid: {
@@ -642,15 +657,15 @@ const styles = StyleSheet.create({
   },
   imgWrapper: { width: '100%', height: 140, backgroundColor: '#F9F9F9', position: 'relative' },
   productImageGrid: { width: '100%', height: '100%', resizeMode: 'cover' },
-  cardHeaderActions: { 
-    position: 'absolute', top: 8, left: 8, right: 8, 
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' 
+  cardHeaderActions: {
+    position: 'absolute', top: 8, left: 8, right: 8,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'
   },
   discountBadgeSmall: { backgroundColor: '#D82B76', paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 5 },
   discountTextSmall: { color: '#FFF', fontSize: 9, fontWeight: '900' },
-  ratingBadgeSmall: { 
-    backgroundColor: 'rgba(255,255,255,0.92)', flexDirection: 'row', alignItems: 'center', 
-    gap: 2, paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 5 
+  ratingBadgeSmall: {
+    backgroundColor: 'rgba(255,255,255,0.92)', flexDirection: 'row', alignItems: 'center',
+    gap: 2, paddingHorizontal: 5, paddingVertical: 1.5, borderRadius: 5
   },
   ratingTextSmall: { fontSize: 9, fontWeight: '800', color: '#1A1A1A' },
 
@@ -661,7 +676,7 @@ const styles = StyleSheet.create({
   productPriceHome: { fontSize: 14, fontWeight: '900', color: '#111827' },
   listPriceHome: { fontSize: 9, color: '#94A3B8', textDecorationLine: 'line-through' },
   productSubHome: { fontSize: 9, color: '#64748B', marginTop: 1, fontWeight: '600' },
-  
+
   addBtnGrid: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#D82B76', justifyContent: 'center', alignItems: 'center' },
   fab: {
     position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366',
