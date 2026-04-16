@@ -2,12 +2,23 @@
 
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
-import { useAdmin } from "../../context/AdminContext";
 import CategoryList from "./categoryList";
 import AddEditCategory from "./addEditCategory";
+import { useResource } from "../../hooks/useResource";
+import * as service from "../../services/adminService";
 
 export default function CategoryView() {
-  const { categories, loading, deleteCategory } = useAdmin();
+  const {
+    data: categories,
+    loading,
+    total,
+    totalPages,
+    params,
+    onPageChange,
+    onSearchChange,
+    refresh
+  } = useResource<any>(service.getCategories, "categories");
+
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -19,6 +30,7 @@ export default function CategoryView() {
   const closeForm = () => {
     setShowForm(false);
     setEditingCategory(null);
+    refresh();
   };
 
   const handleEdit = (category: any) => {
@@ -27,7 +39,14 @@ export default function CategoryView() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteCategory(id);
+    if (window.confirm("Are you sure you want to delete this category?")) {
+      try {
+        await service.deleteCategory(id);
+        refresh();
+      } catch (error) {
+        alert("Failed to delete category");
+      }
+    }
   };
 
   return (
@@ -51,6 +70,12 @@ export default function CategoryView() {
         <CategoryList
           categories={categories}
           loading={loading}
+          total={total}
+          totalPages={totalPages}
+          currentPage={params.page}
+          searchTerm={params.search}
+          onPageChange={onPageChange}
+          onSearchChange={onSearchChange}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />

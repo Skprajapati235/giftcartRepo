@@ -23,23 +23,24 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
   const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   return (
-    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="text-sm text-slate-500">Page {currentPage} of {totalPages}</div>
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="mt-6 flex items-center justify-between border-t border-border-theme pt-6">
+      <div className="text-sm font-bold text-slate-400 uppercase tracking-widest font-sans">
+        Page {currentPage} of {totalPages}
+      </div>
+      <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
-          className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl bg-hover-theme px-5 py-2.5 text-sm font-bold text-foreground transition hover:opacity-80 disabled:opacity-30 border border-border-theme"
         >
-          Prev
+          Previous
         </button>
-        {pageNumbers.map(createPageButton)}
         <button
           type="button"
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
-          className="rounded-2xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl bg-hover-theme px-5 py-2.5 text-sm font-bold text-foreground transition hover:opacity-80 disabled:opacity-30 border border-border-theme"
         >
           Next
         </button>

@@ -108,8 +108,13 @@ exports.getUserOrders = async (req, res) => {
 // GET /api/order/admin/all
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await orderService.getAllOrders();
-    res.json(orders);
+    const { page, limit, search } = req.query;
+    const data = await orderService.getAllOrders({
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+      search: search || ""
+    });
+    res.json(data);
   } catch (error) {
     console.error("Get All Orders Error:", error);
     res.status(500).json({ success: false, message: "Error fetching orders" });

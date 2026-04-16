@@ -35,23 +35,23 @@ export const registerAdmin = async (payload: {
   return response.data;
 };
 
-export const getProducts = async () => {
-  const response = await authApi(getAuthToken()).get("/product");
+export const getProducts = async (params?: { page?: number; limit?: number; search?: string }) => {
+  const response = await authApi(getAuthToken()).get("/product", { params });
   return response.data;
 };
 
-export const getCategories = async () => {
-  const response = await authApi(getAuthToken()).get("/category");
+export const getCategories = async (params?: { page?: number; limit?: number; search?: string }) => {
+  const response = await authApi(getAuthToken()).get("/category", { params });
   return response.data;
 };
 
-export const getUsers = async () => {
-  const response = await authApi(getAuthToken()).get("/admin/users");
+export const getUsers = async (params?: { page?: number; limit?: number; search?: string }) => {
+  const response = await authApi(getAuthToken()).get("/admin/users", { params });
   return response.data;
 };
 
-export const getAdmins = async () => {
-  const response = await authApi(getAuthToken()).get("/admin/users/admins");
+export const getAdmins = async (params?: { page?: number; limit?: number; search?: string }) => {
+  const response = await authApi(getAuthToken()).get("/admin/users/admins", { params });
   return response.data;
 };
 
@@ -70,8 +70,8 @@ export const deleteCategory = async (id: string) => {
   return response.data;
 };
 
-export const getCities = async () => {
-  const response = await authApi(getAuthToken()).get("/city");
+export const getCities = async (params?: { page?: number; limit?: number; search?: string }) => {
+  const response = await authApi(getAuthToken()).get("/city", { params });
   return response.data;
 };
 
@@ -169,8 +169,8 @@ export const deleteAdmin = async (id: string) => {
   return response.data;
 };
 
-export const getAllOrders = async () => {
-  const response = await authApi(getAuthToken()).get("/order/admin/all");
+export const getAllOrders = async (params?: { page?: number; limit?: number; search?: string }) => {
+  const response = await authApi(getAuthToken()).get("/order/admin/all", { params });
   return response.data;
 };
 

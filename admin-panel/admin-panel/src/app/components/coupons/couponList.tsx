@@ -1,35 +1,65 @@
 "use client";
 
 import React from "react";
-import { Edit2, Trash2, Tag, Calendar, ShieldCheck, ShieldAlert, Percent, IndianRupee } from "lucide-react";
+import { Search, Edit2, Trash2, Tag, Calendar, ShieldCheck, ShieldAlert, Percent, IndianRupee } from "lucide-react";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
+import Pagination from "../Pagination";
 
 interface CouponListProps {
   coupons: any[];
   loading: boolean;
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  searchTerm: string;
+  onPageChange: (page: number) => void;
+  onSearchChange: (search: string) => void;
   onEdit: (coupon: any) => void;
   onDelete: (id: string) => void;
 }
 
-export default function CouponList({ coupons, loading, onEdit, onDelete }: CouponListProps) {
+export default function CouponList({ 
+  coupons, 
+  loading, 
+  total,
+  totalPages,
+  currentPage,
+  searchTerm,
+  onPageChange,
+  onSearchChange,
+  onEdit, 
+  onDelete 
+}: CouponListProps) {
   if (loading) {
     return <TableSkeleton rows={8} cols={6} />;
   }
 
-  if (coupons.length === 0) {
-    return (
-      <div className="bg-card rounded-[2.5rem] border border-border-theme p-20 text-center">
-        <div className="mx-auto w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-          <Tag className="text-slate-400" size={32} />
-        </div>
-        <h3 className="text-lg font-bold">No coupons found</h3>
-        <p className="text-slate-500 mt-1">Start by creating your first promotional offer.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-card rounded-3xl border border-border-theme overflow-hidden shadow-sm">
+    <div className="bg-card rounded-3xl border border-border-theme overflow-hidden shadow-sm min-h-[500px]">
+      <div className="p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
+        <div className="relative w-full max-w-sm">
+          <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+          <input
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search coupon code..."
+            className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-background text-sm outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-background px-4 py-3 rounded-2xl border border-border-theme font-sans">
+          Total Coupons: {total}
+        </div>
+      </div>
+
+      {coupons.length === 0 ? (
+        <div className="p-20 text-center">
+          <div className="mx-auto w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+            <Tag className="text-slate-400" size={32} />
+          </div>
+          <h3 className="text-lg font-bold">No coupons found</h3>
+          <p className="text-slate-500 mt-1">Try a different search or create a new coupon.</p>
+        </div>
+      ) : (
       <div className="overflow-x-auto">
         <table className="w-full text-left table-fixed border-collapse">
           <thead>
@@ -123,6 +153,14 @@ export default function CouponList({ coupons, loading, onEdit, onDelete }: Coupo
             })}
           </tbody>
         </table>
+      </div>
+      )}
+
+      <div className="p-6 border-t border-border-theme bg-card flex items-center justify-between font-sans">
+        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          Showing {(currentPage - 1) * 10 + Math.min(1, coupons.length)}-{Math.min(currentPage * 10, total)} of {total}
+        </div>
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
     </div>
   );

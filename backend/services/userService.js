@@ -1,12 +1,54 @@
 const User = require("../models/User");
 const Admin = require("../models/Admin");
 
-exports.getUsers = async () => {
-  return await User.find().select("name email city state mobileNumber profilePic createdAt");
+exports.getUsers = async ({ page = 1, limit = 10, search = "" } = {}) => {
+  const skip = (page - 1) * limit;
+  const query = search ? {
+    $or: [
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } }
+    ]
+  } : {};
+
+  const users = await User.find(query)
+    .select("name email city state mobileNumber profilePic createdAt")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await User.countDocuments(query);
+
+  return {
+    data: users,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
-exports.getAdmins = async () => {
-  return await Admin.find().select("name email city state mobileNumber profilePic role createdAt");
+exports.getAdmins = async ({ page = 1, limit = 10, search = "" } = {}) => {
+  const skip = (page - 1) * limit;
+  const query = search ? {
+    $or: [
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } }
+    ]
+  } : {};
+
+  const admins = await Admin.find(query)
+    .select("name email city state mobileNumber profilePic role createdAt")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Admin.countDocuments(query);
+
+  return {
+    data: admins,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 exports.updateUser = async (id, data) => {

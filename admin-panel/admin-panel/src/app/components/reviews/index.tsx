@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getAllReviews, adminReplyReview, adminDeleteReview } from "../../services/reviewService";
+import { getAllReviews, adminReplyReview, adminDeleteReview, updateReviewStatus } from "../../services/reviewService";
 import ReviewList from "./reviewList";
 import { useToast } from "../../../context/ToastContext";
+import { useResource } from "../../hooks/useResource";
 
 export interface Review {
   _id: string;
@@ -21,31 +22,26 @@ export interface Review {
 }
 
 export default function ReviewsView() {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: reviews,
+    loading,
+    error,
+    total,
+    totalPages,
+    params,
+    onPageChange,
+    onSearchChange,
+    refresh
+  } = useResource<Review>(getAllReviews, "reviews");
+
   const { showToast } = useToast();
-
-  const fetchReviews = async () => {
-    try {
-      const response = await getAllReviews();
-      setReviews(response);
-    } catch (error) {
-      showToast("Fetch reviews failed", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchReviews();
-  }, []);
 
   const handleDelete = async (reviewId: string) => {
     if (window.confirm("Are you sure you want to delete this review?")) {
       try {
         await adminDeleteReview(reviewId);
         showToast("Review deleted successfully!", "success");
-        fetchReviews();
+        refresh();
       } catch (error) {
         showToast("Failed to delete review", "error");
       }
@@ -54,10 +50,9 @@ export default function ReviewsView() {
 
   const handleStatusUpdate = async (reviewId: string, status: string) => {
     try {
-      const { updateReviewStatus } = await import("../../services/reviewService");
       await updateReviewStatus(reviewId, status);
       showToast(`Review ${status} successfully!`, "success");
-      fetchReviews();
+      refresh();
     } catch (error) {
       showToast("Failed to update status", "error");
     }
@@ -68,9 +63,20 @@ export default function ReviewsView() {
       <div className="mb-8 items-end justify-between">
         <h1 className="text-2xl font-bold text-slate-900 mt-1">Customer Reviews</h1>
       </div>
+      {error && (
+        <div className="mb-4 rounded-3xl bg-rose-50 p-6 text-rose-700 font-bold border border-rose-200">
+          {error}
+        </div>
+      )}
       <ReviewList
         reviews={reviews}
         loading={loading}
+        total={total}
+        totalPages={totalPages}
+        currentPage={params.page}
+        searchTerm={params.search}
+        onPageChange={onPageChange}
+        onSearchChange={onSearchChange}
         onDelete={handleDelete}
         onStatusUpdate={handleStatusUpdate}
       />

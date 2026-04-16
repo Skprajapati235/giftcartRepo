@@ -8,8 +8,8 @@ export default function CollectionsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    categoryService.getCategories()
-      .then(data => setCategories(data || []))
+    categoryService.getCategories({ limit: 100 })
+      .then(resp => setCategories(resp.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

@@ -38,8 +38,9 @@ export default function HomeScreen({ navigation }) {
   const route = useRoute();
   const { signOut, user, updateUser } = useContext(AuthContext);
   const { showToast } = useToast();
+  
   const [categories, setCategories] = useState([]);
-  const [allProducts, setAllProducts] = useState([]);
+  const [products, setProducts] = useState([]);
   const [activeCoupons, setActiveCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -49,6 +50,11 @@ export default function HomeScreen({ navigation }) {
   const [showLocationModal, setShowLocationModal] = useState(!user?.state || !user?.city);
   const [locationLoading, setLocationLoading] = useState(false);
   const userLocation = user?.state && user?.city ? `${user.state}, ${user.city}` : 'Set your location';
+
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Auto-sliding banner logic
   const [activeBanner, setActiveBanner] = useState(0);
@@ -84,41 +90,64 @@ export default function HomeScreen({ navigation }) {
     }
   }, [route.params?.categoryId]);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (isInitial = true) => {
+    if (isInitial) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+
     try {
-      const [categoriesData, productsData, couponsData, cartRes] = await Promise.all([
-        categoryService.getCategories().catch(() => []),
-        productService.getProducts().catch(() => []),
-        couponService.getActiveCoupons().catch(() => []),
+      const currentPage = isInitial ? 1 : page;
+      
+      const [categoriesData, prodResp, couponsData, cartRes] = await Promise.all([
+        categoryService.getCategories({ limit: 50 }).catch(() => ({ data: [] })),
+        productService.getProducts({ 
+          page: currentPage, 
+          limit: 10, 
+          search: searchQuery,
+          category: selectedCategory === 'all' ? null : selectedCategory 
+        }),
+        couponService.getActiveCoupons({ limit: 20 }).catch(() => ({ data: [] })),
         AsyncStorage.getItem('@giftcart_cart'),
       ]);
-      setCategories(categoriesData || []);
-      setAllProducts(productsData || []);
-      setActiveCoupons(couponsData || []);
-      setCartCount(cartRes ? JSON.parse(cartRes).length : 0);
+
+      const newProducts = prodResp.data || [];
+      if (isInitial) {
+        setProducts(newProducts);
+        setCategories(categoriesData?.data || []);
+        setActiveCoupons(couponsData?.data || []);
+        setCartCount(cartRes ? JSON.parse(cartRes).length : 0);
+        setPage(2);
+      } else {
+        setProducts(prev => [...prev, ...newProducts]);
+        setPage(prev => prev + 1);
+      }
+
+      setHasMore(currentPage < (prodResp.totalPages || 1));
     } catch (error) {
       if (error.response?.status === 401) signOut();
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+      setRefreshing(false);
     }
-  }, [signOut]);
+  }, [signOut, page, searchQuery, selectedCategory]);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', loadData);
-    return unsubscribe;
-  }, [navigation, loadData]);
+    loadData(true);
+  }, [searchQuery, selectedCategory]);
 
-  const filteredProducts = useMemo(() => {
-    let prods = allProducts;
-    if (selectedCategory) {
-      prods = prods.filter(p => p.category?._id === selectedCategory);
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadData(true);
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      loadData(false);
     }
-    if (searchQuery) {
-      prods = prods.filter(p => p.name?.toLowerCase().includes(searchQuery.toLowerCase()));
-    }
-    return prods;
-  }, [allProducts, selectedCategory, searchQuery]);
+  };
 
   const addToCart = async (product) => {
     try {
@@ -211,8 +240,6 @@ export default function HomeScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-
-
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -249,9 +276,13 @@ export default function HomeScreen({ navigation }) {
 
         {/* Main Content (One Scrollable List) */}
         <FlatList
-          data={filteredProducts}
+          data={products}
           keyExtractor={item => item._id}
           numColumns={2}
+          onRefresh={handleRefresh}
+          refreshing={refreshing}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
           ListHeaderComponent={
             <>
               <View style={styles.searchSection}>
@@ -415,6 +446,13 @@ export default function HomeScreen({ navigation }) {
           contentContainerStyle={styles.listContent}
           columnWrapperStyle={styles.columnWrapper}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={() => (
+            loadingMore ? (
+              <View style={{ paddingVertical: 20 }}>
+                <ActivityIndicator color="#D82B76" />
+              </View>
+            ) : null
+          )}
           ListEmptyComponent={() => (
             <View style={styles.emptyBox}>
               {loading ? <ActivityIndicator color="#D82B76" /> : <Text style={styles.emptyText}>No products found</Text>}
@@ -680,14 +718,9 @@ const styles = StyleSheet.create({
   },
   searchIcon: { padding: 8 },
   menuButton: { padding: 5 },
-  searchIcon: { padding: 8 },
   logoImage: {
     width: 100,
     height: 50,
     resizeMode: 'contain',
   },
 });
-
-
-
-

@@ -1,28 +1,45 @@
 "use client";
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { Search, LayoutGrid, List, MoreHorizontal, Trash2, Edit3, Box, Eye } from "lucide-react";
+import { Search, LayoutGrid, List, MoreHorizontal, Trash2, Edit3, Box, Eye, Filter } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton, CardGridSkeleton } from "../skeletonLoader/commonSkeleton";
+import CategoryDropdown from "./categoryDropdown";
 
 interface ProductListProps {
   products: any[];
   loading: boolean;
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  searchTerm: string;
+  selectedCategory: string;
+  onPageChange: (page: number) => void;
+  onSearchChange: (search: string) => void;
+  onCategoryChange: (id: string) => void;
   onEdit: (product: any) => void;
   onView: (product: any) => void;
   onDelete: (id: string) => void;
 }
 
-export default function ProductList({ products, loading, onEdit, onView, onDelete }: ProductListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+export default function ProductList({ 
+  products, 
+  loading, 
+  total, 
+  totalPages, 
+  currentPage, 
+  searchTerm, 
+  selectedCategory,
+  onPageChange, 
+  onSearchChange, 
+  onCategoryChange,
+  onEdit, 
+  onView, 
+  onDelete 
+}: ProductListProps) {
   const [viewMode, setViewMode] = useState<"card" | "list">("list");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-
-  console.log('====================================');
-  console.log("products", products);
-  console.log('====================================');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -33,23 +50,6 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredProducts = useMemo(
-    () =>
-      products.filter((product) =>
-        product.name?.toLowerCase().includes(normalizedSearch) ||
-        product.category?.name?.toLowerCase().includes(normalizedSearch)
-      ),
-    [products, normalizedSearch]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / 10));
-  const currentProducts = filteredProducts.slice((currentPage - 1) * 10, currentPage * 10);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [normalizedSearch]);
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
@@ -67,24 +67,34 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
     <div className="bg-card rounded-3xl border border-border-theme shadow-sm overflow-hidden min-h-[400px]">
       {/* Table Header Filter Bar */}
       <div className="p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-          <input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search products..."
-            className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-hover-theme text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+        <div className="flex flex-1 items-center gap-4">
+          <div className="relative w-full max-w-sm">
+            <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+            <input
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search products..."
+              className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-hover-theme text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          
+          <CategoryDropdown 
+            selectedCategory={selectedCategory} 
+            onCategoryChange={onCategoryChange} 
           />
         </div>
+
         <div className="flex items-center gap-2">
           <div className="flex bg-background p-1 rounded-xl border border-border-theme">
             <button
+              type="button"
               onClick={() => setViewMode("card")}
               className={`p-2 rounded-lg transition ${viewMode === "card" ? "bg-card shadow-md text-primary" : "text-slate-400 hover:text-foreground"}`}
             >
               <LayoutGrid size={18} />
             </button>
             <button
+              type="button"
               onClick={() => setViewMode("list")}
               className={`p-2 rounded-lg transition ${viewMode === "list" ? "bg-card shadow-md text-primary" : "text-slate-400 hover:text-foreground"}`}
             >
@@ -100,7 +110,7 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
         ) : (
           <CardGridSkeleton count={8} />
         )
-      ) : filteredProducts.length === 0 ? (
+      ) : products.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No products found for your search.</div>
       ) : viewMode === "list" ? (
         <div className="overflow-x-auto min-h-[400px]">
@@ -117,7 +127,7 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
-              {currentProducts.map((p) => (
+              {products.map((p) => (
                 <tr key={p._id} className="hover:bg-hover-theme transition-colors group border-b border-border-theme/50">
                   <td className="px-6 py-5 overflow-hidden">
                     <div className="flex items-center gap-4">
@@ -198,7 +208,7 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
       ) : (
 
         <div className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 bg-background/50">
-          {currentProducts.map((p) => (
+          {products.map((p) => (
             <div key={p._id} className="bg-card rounded-3xl p-4 border border-border-theme shadow-lg hover:shadow-primary/5 transition hover:-translate-y-1 relative">
               <div className="h-44 w-full rounded-2xl overflow-hidden bg-background border border-border-theme mb-4">
                 {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="p-10 text-slate-200" />}
@@ -266,9 +276,9 @@ export default function ProductList({ products, loading, onEdit, onView, onDelet
 
       <div className="p-6 border-t border-border-theme bg-card flex items-center justify-between">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
-          Showing {(currentPage - 1) * 10 + Math.min(1, filteredProducts.length)}-{Math.min(currentPage * 10, filteredProducts.length)} of {filteredProducts.length}
+          Showing {(currentPage - 1) * 10 + Math.min(1, products.length)}-{Math.min(currentPage * 10, total)} of {total}
         </div>
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
     </div>
   );

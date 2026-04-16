@@ -16,8 +16,8 @@ const authApi = (token?: string) =>
     },
   });
 
-export const getAllReviews = async () => {
-  const response = await authApi(getAuthToken()).get("/review/admin/all");
+export const getAllReviews = async (params?: { page?: number; limit?: number; search?: string }) => {
+  const response = await authApi(getAuthToken()).get("/review/admin/all", { params });
   return response.data;
 };
 

@@ -1,5 +1,6 @@
 const Review = require("../models/Review");
 const Product = require("../models/Product");
+const User = require("../models/User");
 
 exports.createReview = async (userId, productId, data) => {
   const { rating, comment, images } = data;
@@ -19,10 +20,22 @@ exports.createReview = async (userId, productId, data) => {
   return review;
 };
 
-exports.getProductReviews = async (productId) => {
-  return await Review.find({ product: productId, status: "approved" })
+exports.getProductReviews = async (productId, { page = 1, limit = 10 } = {}) => {
+  const skip = (page - 1) * limit;
+  const reviews = await Review.find({ product: productId, status: "approved" })
     .populate("user", "name email profilePic")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Review.countDocuments({ product: productId, status: "approved" });
+
+  return {
+    data: reviews,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 exports.updateReview = async (reviewId, userId, data, isAdmin = false) => {
@@ -101,11 +114,43 @@ exports.deleteReview = async (reviewId, userId) => {
 };
 
 // Admin Services
-exports.getAllReviews = async () => {
-  return await Review.find()
+exports.getAllReviews = async ({ page = 1, limit = 10, search = "" } = {}) => {
+  const skip = (page - 1) * limit;
+  let query = {};
+
+  if (search) {
+     const products = await Product.find({ name: { $regex: search, $options: "i" } }).select('_id');
+     const users = await User.find({ 
+       $or: [
+         { name: { $regex: search, $options: "i" } },
+         { email: { $regex: search, $options: "i" } }
+       ] 
+     }).select('_id');
+
+     query = {
+       $or: [
+         { comment: { $regex: search, $options: "i" } },
+         { product: { $in: products.map(p => p._id) } },
+         { user: { $in: users.map(u => u._id) } }
+       ]
+     };
+  }
+
+  const reviews = await Review.find(query)
     .populate("user", "name email profilePic")
     .populate("product", "name image price")
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Review.countDocuments(query);
+
+  return {
+    data: reviews,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 exports.getReviewById = async (reviewId) => {

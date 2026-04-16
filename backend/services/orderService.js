@@ -109,10 +109,45 @@ exports.getUserOrders = async (userId) => {
 // ─── ADMIN ──────────────────────────────────────────────
 
 // Get all orders (admin)
-exports.getAllOrders = async () => {
-  return await Order.find()
+exports.getAllOrders = async ({ page = 1, limit = 10, search = "" } = {}) => {
+  const skip = (page - 1) * limit;
+  let query = {};
+
+  if (search) {
+     // Check if search is a valid ObjectId (Order ID)
+     const mongoose = require("mongoose");
+     const isObjectId = mongoose.Types.ObjectId.isValid(search);
+     
+     if (isObjectId) {
+       query = { _id: search };
+     } else {
+       // Search in user details (needs populate or aggregation, but simpler to search in populated fields if possible)
+       // For simplicity, we'll try to find users first or use aggregation
+       const users = await User.find({
+         $or: [
+           { name: { $regex: search, $options: "i" } },
+           { email: { $regex: search, $options: "i" } }
+         ]
+       }).select('_id');
+       
+       query = { user: { $in: users.map(u => u._id) } };
+     }
+  }
+
+  const orders = await Order.find(query)
     .populate("user", "name email")
-    .sort("-createdAt");
+    .sort("-createdAt")
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Order.countDocuments(query);
+
+  return {
+    data: orders,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 // Get single order detail by ID (admin)

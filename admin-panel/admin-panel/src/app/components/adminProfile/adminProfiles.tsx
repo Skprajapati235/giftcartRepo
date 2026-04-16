@@ -1,20 +1,30 @@
 "use client";
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { useAdmin } from "../../context/AdminContext";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 import Pagination from "../Pagination";
 import AdminEditForm from "./adminEdit";
 import { MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
+import { useResource } from "../../hooks/useResource";
+import * as service from "../../services/adminService";
 
 export default function AdminsPage() {
-    const { admins, loading, error, deleteAdmin } = useAdmin();
+    const {
+        data: admins,
+        loading,
+        error,
+        total,
+        totalPages,
+        params,
+        onPageChange,
+        onSearchChange,
+        refresh
+    } = useResource<any>(service.getAdmins, "admins");
+
     const { user } = useAuth();
     const activeAdminId = user?._id || null;
-    const [searchTerm, setSearchTerm] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
     const router = useRouter();
@@ -31,25 +41,16 @@ export default function AdminsPage() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const normalizedSearch = searchTerm.trim().toLowerCase();
-    const filteredAdmins = useMemo(
-        () =>
-            admins.filter(
-                (admin) =>
-                    admin.name.toLowerCase().includes(normalizedSearch) ||
-                    admin.email.toLowerCase().includes(normalizedSearch) ||
-                    (admin.city?.toLowerCase() || "").includes(normalizedSearch) ||
-                    admin.role.toLowerCase().includes(normalizedSearch)
-            ),
-        [normalizedSearch, admins]
-    );
-
-    const totalPages = Math.max(1, Math.ceil(filteredAdmins.length / 10));
-    const pageAdmins = filteredAdmins.slice((currentPage - 1) * 10, currentPage * 10);
-
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [normalizedSearch]);
+    const deleteAdmin = async (id: string) => {
+        if (window.confirm("Are you sure you want to delete this admin?")) {
+            try {
+                await service.deleteAdmin(id);
+                refresh();
+            } catch (err) {
+                alert("Failed to delete admin");
+            }
+        }
+    };
 
     if (editingId) {
         // Show only edit form
@@ -64,14 +65,14 @@ export default function AdminsPage() {
                 <div className="relative w-full max-w-sm">
                     <input
                         type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        value={params.search}
+                        onChange={(e) => onSearchChange(e.target.value)}
                         placeholder="Search name, email, city..."
                         className="w-full pl-4 pr-4 py-3 rounded-2xl border border-border-theme bg-background text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
                     />
                 </div>
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-background px-4 py-3 rounded-2xl border border-border-theme font-sans">
-                    Total Admins: {filteredAdmins.length}
+                    Total Admins: {total}
                 </div>
             </div>
 
@@ -79,7 +80,7 @@ export default function AdminsPage() {
                 <TableSkeleton rows={8} cols={5} />
             ) : error ? (
                 <div className="p-20 text-center text-rose-500 italic">{error}</div>
-            ) : filteredAdmins.length === 0 ? (
+            ) : admins.length === 0 ? (
                 <div className="p-20 text-center text-slate-400 italic">No admins found.</div>
             ) : (
                 <div className="overflow-x-auto min-h-[450px]">
@@ -94,7 +95,7 @@ export default function AdminsPage() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border-theme">
-                            {pageAdmins.map((admin) => (
+                            {admins.map((admin) => (
                                 <tr
                                     key={admin._id}
                                     className="hover:bg-hover-theme transition-all duration-300 group border-b border-border-theme/50"
@@ -159,9 +160,9 @@ export default function AdminsPage() {
             {/* Pagination */}
             <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
-                    Showing {filteredAdmins.length} Admins
+                    Showing {(params.page - 1) * 10 + Math.min(1, admins.length)}-{Math.min(params.page * 10, total)} of {total}
                 </div>
-                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+                <Pagination currentPage={params.page} totalPages={totalPages} onPageChange={onPageChange} />
             </div>
         </div>
     );

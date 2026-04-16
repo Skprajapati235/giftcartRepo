@@ -1,32 +1,26 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import CouponList from "./couponList";
 import AddEditCoupon from "./addEditCoupon";
+import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/couponService";
 
 export default function CouponView() {
-  const [coupons, setCoupons] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: coupons,
+    loading,
+    total,
+    totalPages,
+    params,
+    onPageChange,
+    onSearchChange,
+    refresh
+  } = useResource<any>(service.getAllCoupons, "coupons");
+
   const [editingCoupon, setEditingCoupon] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
-
-  const fetchCoupons = async () => {
-    setLoading(true);
-    try {
-      const data = await service.getAllCoupons();
-      setCoupons(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCoupons();
-  }, []);
 
   const openForm = () => {
     setEditingCoupon(null);
@@ -36,7 +30,7 @@ export default function CouponView() {
   const closeForm = () => {
     setShowForm(false);
     setEditingCoupon(null);
-    fetchCoupons();
+    refresh();
   };
 
   const handleEdit = (coupon: any) => {
@@ -48,7 +42,7 @@ export default function CouponView() {
     if (!window.confirm("Are you sure?")) return;
     try {
       await service.deleteCoupon(id);
-      fetchCoupons();
+      refresh();
     } catch (err) {
       console.error(err);
     }
@@ -75,6 +69,12 @@ export default function CouponView() {
         <CouponList
           coupons={coupons}
           loading={loading}
+          total={total}
+          totalPages={totalPages}
+          currentPage={params.page}
+          searchTerm={params.search}
+          onPageChange={onPageChange}
+          onSearchChange={onSearchChange}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />

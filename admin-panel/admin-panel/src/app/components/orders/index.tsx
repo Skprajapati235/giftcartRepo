@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { getAllOrders, updateOrderStatus as updateOrderStatusApi } from "../../services/adminService";
+import { useResource } from "../../hooks/useResource";
 import OrderList from "./orderList";
 
 interface OrderItem {
@@ -21,28 +22,21 @@ interface Order {
 }
 
 export default function OrdersView() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchOrders = async () => {
-    try {
-      const response = await getAllOrders();
-      setOrders(response);
-    } catch (error) {
-      console.error("Fetch orders failed", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const {
+    data: orders,
+    loading,
+    total,
+    totalPages,
+    params,
+    onPageChange,
+    onSearchChange,
+    refresh
+  } = useResource<Order>(getAllOrders, "orders");
 
   const updateStatus = async (orderId: string, newStatus: string) => {
     try {
       await updateOrderStatusApi(orderId, newStatus);
-      fetchOrders();
+      refresh();
     } catch (error) {
       alert("Failed to update status");
     }
@@ -56,6 +50,12 @@ export default function OrdersView() {
       <OrderList
         orders={orders}
         loading={loading}
+        total={total}
+        totalPages={totalPages}
+        currentPage={params.page}
+        searchTerm={params.search}
+        onPageChange={onPageChange}
+        onSearchChange={onSearchChange}
         onUpdateStatus={updateStatus}
       />
     </>

@@ -4,8 +4,23 @@ exports.createCategory = async (data) => {
   return await Category.create(data);
 };
 
-exports.getCategories = async () => {
-  return await Category.find();
+exports.getCategories = async ({ page = 1, limit = 10, search = "" } = {}) => {
+  const skip = (page - 1) * limit;
+  const query = search ? { name: { $regex: search, $options: "i" } } : {};
+
+  const categories = await Category.find(query)
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Category.countDocuments(query);
+
+  return {
+    data: categories,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 exports.updateCategory = async (id, data) => {

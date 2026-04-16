@@ -11,7 +11,11 @@ exports.createReview = async (req, res) => {
 
 exports.getProductReviews = async (req, res) => {
   try {
-    const data = await service.getProductReviews(req.params.productId);
+    const { page, limit } = req.query;
+    const data = await service.getProductReviews(req.params.productId, {
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10
+    });
     res.json(data);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -40,7 +44,12 @@ exports.deleteReview = async (req, res) => {
 // Admin Controllers
 exports.getAllReviews = async (req, res) => {
   try {
-    const data = await service.getAllReviews();
+    const { page, limit, search } = req.query;
+    const data = await service.getAllReviews({
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+      search: search || ""
+    });
     res.json(data);
   } catch (error) {
     res.status(400).json({ message: error.message });

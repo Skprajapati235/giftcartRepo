@@ -2,13 +2,26 @@
 
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
-import { useAdmin } from "../../context/AdminContext";
 import ProductList from "./productList";
 import AddEditProduct from "./addeditProduct";
 import ProductDetailDialogue from "./productDetailDialogue";
+import { useResource } from "../../hooks/useResource";
+import * as service from "../../services/adminService";
 
 export default function ProductView() {
-  const { products, loading, error, deleteProduct } = useAdmin();
+  const { 
+    data: products, 
+    loading, 
+    error, 
+    total, 
+    totalPages, 
+    params, 
+    onPageChange, 
+    onSearchChange, 
+    onCategoryChange,
+    refresh 
+  } = useResource<any>(service.getProducts, "products");
+
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [viewingProduct, setViewingProduct] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +34,7 @@ export default function ProductView() {
   const closeForm = () => {
     setShowForm(false);
     setEditingProduct(null);
+    refresh(); // Refresh list after closing form (which might have created/edited)
   };
 
   const handleEdit = (product: any) => {
@@ -29,7 +43,12 @@ export default function ProductView() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteProduct(id);
+    try {
+      await service.deleteProduct(id);
+      refresh();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete product");
+    }
   };
 
   return (
@@ -59,6 +78,14 @@ export default function ProductView() {
         <ProductList
           products={products}
           loading={loading}
+          total={total}
+          totalPages={totalPages}
+          currentPage={params.page}
+          searchTerm={params.search}
+          selectedCategory={params.category}
+          onPageChange={onPageChange}
+          onSearchChange={onSearchChange}
+          onCategoryChange={onCategoryChange}
           onEdit={handleEdit}
           onView={setViewingProduct}
           onDelete={handleDelete}

@@ -12,8 +12,33 @@ exports.createProduct = async (data) => {
   }
 };
 
-exports.getProducts = async () => {
-  return await Product.find().populate("category");
+exports.getProducts = async ({ page = 1, limit = 10, search = "", category = "" } = {}) => {
+  const skip = (page - 1) * limit;
+  let query = {};
+  if (search) {
+    query.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+    ];
+  }
+  if (category && category !== "all" && category !== "null" && category !== "undefined") {
+    query.category = category;
+  }
+
+  const products = await Product.find(query)
+    .populate("category")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await Product.countDocuments(query);
+
+  return {
+    data: products,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+  };
 };
 
 exports.getProductById = async (id) => {

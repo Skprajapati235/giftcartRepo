@@ -21,21 +21,49 @@ export default function LocationSelectionModal({ visible, onLocationSelect, load
   const [stateModalVisible, setStateModalVisible] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
 
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   useEffect(() => {
     if (visible && cities.length === 0) {
-      fetchCities();
+      fetchCities(true);
     }
   }, [visible]);
 
-  const fetchCities = async () => {
+  const fetchCities = async (isInitial = true) => {
+    if (isInitial) setLoading(true);
+    else setLoadingMore(true);
+
     try {
-      const data = await locationService.getCities();
-      setCities(data);
+      const currentPage = isInitial ? 1 : page;
+      const resp = await locationService.getCities({
+        page: currentPage,
+        limit: 10
+      });
+
+      const newData = resp.data || [];
+      if (isInitial) {
+        setCities(newData);
+        setPage(2);
+      } else {
+        setCities(prev => [...prev, ...newData]);
+        setPage(prev => prev + 1);
+      }
+      setHasMore(currentPage < (resp.totalPages || 1));
       setLoading(false);
     } catch (error) {
       console.log('Failed to fetch cities:', error);
       Alert.alert('Error', 'Failed to fetch locations!');
       setLoading(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchCities(false);
     }
   };
 
@@ -159,6 +187,13 @@ export default function LocationSelectionModal({ visible, onLocationSelect, load
                       renderItem={({ item }) => <StateItem item={item} />}
                       scrollEnabled={true}
                       nestedScrollEnabled={true}
+                      onEndReached={handleLoadMore}
+                      onEndReachedThreshold={0.5}
+                      ListFooterComponent={() => 
+                        loadingMore ? (
+                          <ActivityIndicator size="small" color="#D82B76" style={{ marginVertical: 10 }} />
+                        ) : null
+                      }
                     />
                   </View>
                 </View>

@@ -11,6 +11,9 @@ const orderService = {
   },
   getUserOrders: async () => {
     const response = await api.get('/order/user');
+    if (response.data && response.data.data) {
+      return response.data.data;
+    }
     return response.data;
   },
 };

@@ -8,15 +8,21 @@ import { useRouter } from "next/navigation";
 
 export default function NotificationManager() {
   const [newOrders, setNewOrders] = useState<any[]>([]);
+  const newOrdersRef = React.useRef<any[]>([]);
   const { showToast } = useToast();
   const router = useRouter();
+
+  // Sync ref with state
+  useEffect(() => {
+    newOrdersRef.current = newOrders;
+  }, [newOrders]);
 
   const checkOrders = async () => {
     try {
       const orders = await getUnviewedOrders();
       if (orders && orders.length > 0) {
         // Filter out orders we already have in our local state to avoid multiple toasts for same order
-        const freshOrders = orders.filter((o: any) => !newOrders.find((no) => no._id === o._id));
+        const freshOrders = orders.filter((o: any) => !newOrdersRef.current.find((no) => no._id === o._id));
 
         if (freshOrders.length > 0) {
           freshOrders.forEach((order: any) => {
@@ -37,7 +43,7 @@ export default function NotificationManager() {
     checkOrders();
     const interval = setInterval(checkOrders, 30000);
     return () => clearInterval(interval);
-  }, [newOrders]);
+  }, []); // Only run once on mount
 
   const handleDismiss = async (id: string) => {
     try {

@@ -6,7 +6,7 @@ exports.create = async (req, res) => {
 };
 
 exports.getAll = async (req, res) => {
-  const data = await service.getCities();
+  const data = await service.getCities(req.query);
   res.json(data);
 };
 

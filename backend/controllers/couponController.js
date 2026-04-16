@@ -14,8 +14,25 @@ exports.create = async (req, res) => {
 // Admin: Get all coupons
 exports.getAll = async (req, res) => {
   try {
-    const coupons = await Coupon.find().sort({ createdAt: -1 });
-    res.json(coupons);
+    const { page, limit, search } = req.query;
+    const p = parseInt(page) || 1;
+    const l = parseInt(limit) || 10;
+    const skip = (p - 1) * l;
+    const query = search ? { code: { $regex: search, $options: "i" } } : {};
+
+    const coupons = await Coupon.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(l);
+
+    const total = await Coupon.countDocuments(query);
+
+    res.json({
+      data: coupons,
+      total,
+      page: p,
+      totalPages: Math.ceil(total / l),
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -90,11 +107,30 @@ exports.validate = async (req, res) => {
 // User: Get active coupons for display
 exports.getActive = async (req, res) => {
   try {
-    const coupons = await Coupon.find({ 
+    const { page, limit } = req.query;
+    const p = parseInt(page) || 1;
+    const l = parseInt(limit) || 10;
+    const skip = (p - 1) * l;
+
+    const query = { 
       isActive: true, 
       expiryDate: { $gt: new Date() } 
-    }).select("code discountType discountValue minOrderAmount maxDiscount expiryDate image");
-    res.json(coupons);
+    };
+
+    const coupons = await Coupon.find(query)
+      .select("code discountType discountValue minOrderAmount maxDiscount expiryDate image")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(l);
+
+    const total = await Coupon.countDocuments(query);
+
+    res.json({
+      data: coupons,
+      total,
+      page: p,
+      totalPages: Math.ceil(total / l),
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

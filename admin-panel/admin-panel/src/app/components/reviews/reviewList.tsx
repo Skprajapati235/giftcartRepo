@@ -10,13 +10,28 @@ import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 interface ReviewListProps {
   reviews: Review[];
   loading: boolean;
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  searchTerm: string;
+  onPageChange: (page: number) => void;
+  onSearchChange: (search: string) => void;
   onDelete: (id: string) => void;
   onStatusUpdate: (id: string, status: string) => void;
 }
 
-export default function ReviewList({ reviews, loading, onDelete, onStatusUpdate }: ReviewListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+export default function ReviewList({ 
+  reviews, 
+  loading, 
+  total,
+  totalPages,
+  currentPage,
+  searchTerm,
+  onPageChange,
+  onSearchChange,
+  onDelete, 
+  onStatusUpdate 
+}: ReviewListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [selectedGallery, setSelectedGallery] = useState<{ images: string[]; index: number } | null>(null);
@@ -38,20 +53,6 @@ export default function ReviewList({ reviews, loading, onDelete, onStatusUpdate 
     setCollapsedReplies(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredReviews = useMemo(
-    () =>
-      reviews.filter((rev) =>
-        rev.product.name.toLowerCase().includes(normalizedSearch) ||
-        rev.user?.name.toLowerCase().includes(normalizedSearch) ||
-        rev.comment.toLowerCase().includes(normalizedSearch)
-      ),
-    [reviews, normalizedSearch]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredReviews.length / 10));
-  const currentReviews = filteredReviews.slice((currentPage - 1) * 10, currentPage * 10);
-
   if (loading) {
     return (
       <div className="bg-card rounded-3xl border border-border-theme p-4">
@@ -68,13 +69,13 @@ export default function ReviewList({ reviews, loading, onDelete, onStatusUpdate 
           <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
           <input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search reviews, products, users..."
             className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-hover-theme text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest px-4 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-border-theme">
-          Total Reviews: {filteredReviews.length}
+          Total Reviews: {total}
         </div>
       </div>
 
@@ -91,7 +92,7 @@ export default function ReviewList({ reviews, loading, onDelete, onStatusUpdate 
             </tr>
           </thead>
           <tbody className="divide-y divide-border-theme">
-            {currentReviews.map((review) => {
+            {reviews.map((review) => {
               const itemIsCollapsed = collapsedReplies[review._id] || false;
               
               return (
@@ -292,9 +293,9 @@ export default function ReviewList({ reviews, loading, onDelete, onStatusUpdate 
 
       <div className="p-6 border-t border-border-theme bg-card flex items-center justify-between">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
-          Showing {(currentPage - 1) * 10 + Math.min(1, filteredReviews.length)}-{Math.min(currentPage * 10, filteredReviews.length)} of {filteredReviews.length}
+          Showing {(currentPage - 1) * 10 + Math.min(1, reviews.length)}-{Math.min(currentPage * 10, total)} of {total}
         </div>
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
 
       {/* Gallery Modal */}

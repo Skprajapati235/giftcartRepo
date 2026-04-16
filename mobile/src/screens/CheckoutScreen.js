@@ -51,8 +51,8 @@ export default function CheckoutScreen({ navigation, route }) {
 
   const fetchActiveCoupons = async () => {
     try {
-      const data = await couponService.getActiveCoupons();
-      setActiveCoupons(data || []);
+      const res = await couponService.getActiveCoupons({ limit: 50 });
+      setActiveCoupons(res.data || []);
     } catch (err) {
       console.log('Error fetching active coupons:', err);
     }

@@ -1,13 +1,31 @@
 const service = require("../services/userService");
 
 exports.getAll = async (req, res) => {
-  const data = await service.getUsers();
-  res.json(data);
+  try {
+    const { page, limit, search } = req.query;
+    const data = await service.getUsers({
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+      search: search || ""
+    });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.getAdmins = async (req, res) => {
-  const data = await service.getAdmins();
-  res.json(data);
+  try {
+    const { page, limit, search } = req.query;
+    const data = await service.getAdmins({
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 10,
+      search: search || ""
+    });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.update = async (req, res) => {

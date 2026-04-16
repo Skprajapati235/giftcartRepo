@@ -2,12 +2,23 @@
 
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
-import { useAdmin } from "../../context/AdminContext";
 import CityList from "./cityList";
 import AddEditCity from "./addEditCity";
+import { useResource } from "../../hooks/useResource";
+import * as service from "../../services/adminService";
 
 export default function CityView() {
-  const { cities, loading, deleteCity } = useAdmin();
+  const {
+    data: cities,
+    loading,
+    total,
+    totalPages,
+    params,
+    onPageChange,
+    onSearchChange,
+    refresh
+  } = useResource<any>(service.getCities, "cities");
+
   const [editingCity, setEditingCity] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -19,6 +30,7 @@ export default function CityView() {
   const closeForm = () => {
     setShowForm(false);
     setEditingCity(null);
+    refresh();
   };
 
   const handleEdit = (city: any) => {
@@ -27,7 +39,14 @@ export default function CityView() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteCity(id);
+    if (window.confirm("Are you sure you want to delete this city group?")) {
+      try {
+        await service.deleteCity(id);
+        refresh();
+      } catch (err) {
+        alert("Failed to delete city group");
+      }
+    }
   };
 
   return (
@@ -48,7 +67,18 @@ export default function CityView() {
       {showForm ? (
         <AddEditCity city={editingCity} onClose={closeForm} />
       ) : (
-        <CityList cities={cities} loading={loading} onEdit={handleEdit} onDelete={handleDelete} />
+        <CityList
+          cities={cities}
+          loading={loading}
+          total={total}
+          totalPages={totalPages}
+          currentPage={params.page}
+          searchTerm={params.search}
+          onPageChange={onPageChange}
+          onSearchChange={onSearchChange}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       )}
     </>
   );

@@ -8,14 +8,30 @@ import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 interface UserListProps {
   users: any[];
   loading: boolean;
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  searchTerm: string;
+  onPageChange: (page: number) => void;
+  onSearchChange: (search: string) => void;
   error: string | null;
   onView: (user: any) => void;
   onDelete: (id: string) => void;
 }
 
-export default function UserList({ users, loading, error, onView, onDelete }: UserListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+export default function UserList({ 
+  users, 
+  loading, 
+  total,
+  totalPages,
+  currentPage,
+  searchTerm,
+  onPageChange,
+  onSearchChange,
+  error, 
+  onView, 
+  onDelete 
+}: UserListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -28,24 +44,6 @@ export default function UserList({ users, loading, error, onView, onDelete }: Us
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredUsers = useMemo(
-    () =>
-      users.filter((user) =>
-        user.name?.toLowerCase().includes(normalizedSearch) ||
-        user.email?.toLowerCase().includes(normalizedSearch) ||
-        user.city?.toLowerCase().includes(normalizedSearch)
-      ),
-    [users, normalizedSearch]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / 10));
-  const currentUsers = filteredUsers.slice((currentPage - 1) * 10, currentPage * 10);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [normalizedSearch]);
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
@@ -61,14 +59,14 @@ export default function UserList({ users, loading, error, onView, onDelete }: Us
           <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
           <input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search name, email or city..."
             className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-hover-theme text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary/20"
           />
         </div>
         <div className="flex items-center gap-3">
           <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-hover-theme px-4 py-3 rounded-2xl border border-border-theme">
-            {filteredUsers.length} Users Found
+            {total} Users Found
           </div>
         </div>
       </div>
@@ -77,7 +75,7 @@ export default function UserList({ users, loading, error, onView, onDelete }: Us
         <TableSkeleton rows={8} cols={5} />
       ) : error ? (
         <div className="p-20 text-center text-rose-500 font-bold">{error}</div>
-      ) : filteredUsers.length === 0 ? (
+      ) : users.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No users found.</div>
       ) : (
         <div className="overflow-x-auto min-h-[350px]">
@@ -92,7 +90,7 @@ export default function UserList({ users, loading, error, onView, onDelete }: Us
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
-              {currentUsers.map((user) => (
+              {users.map((user) => (
                 <tr key={user._id} className="hover:bg-hover-theme transition-colors group border-b border-border-theme/50">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
@@ -171,9 +169,9 @@ export default function UserList({ users, loading, error, onView, onDelete }: Us
 
       <div className="p-6 border-t border-border-theme bg-card flex items-center justify-between">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-          Results {filteredUsers.length} Customers
+          Results {total} Customers
         </div>
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
     </div>
   );

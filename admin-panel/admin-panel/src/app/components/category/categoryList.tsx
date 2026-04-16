@@ -8,13 +8,28 @@ import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 interface CategoryListProps {
   categories: any[];
   loading: boolean;
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  searchTerm: string;
+  onPageChange: (page: number) => void;
+  onSearchChange: (search: string) => void;
   onEdit: (category: any) => void;
   onDelete: (id: string) => void;
 }
 
-export default function CategoryList({ categories, loading, onEdit, onDelete }: CategoryListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+export default function CategoryList({ 
+  categories, 
+  loading, 
+  total,
+  totalPages,
+  currentPage,
+  searchTerm,
+  onPageChange,
+  onSearchChange,
+  onEdit, 
+  onDelete 
+}: CategoryListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -27,22 +42,6 @@ export default function CategoryList({ categories, loading, onEdit, onDelete }: 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredCategories = useMemo(
-    () =>
-      categories.filter((category) =>
-        category.name?.toLowerCase().includes(normalizedSearch)
-      ),
-    [categories, normalizedSearch]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredCategories.length / 10));
-  const currentCategories = filteredCategories.slice((currentPage - 1) * 10, currentPage * 10);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [normalizedSearch]);
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this category?")) {
@@ -58,7 +57,7 @@ export default function CategoryList({ categories, loading, onEdit, onDelete }: 
           <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
           <input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search categories..."
             className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-background text-sm outline-none focus:ring-2 focus:ring-primary/20"
           />
@@ -67,7 +66,7 @@ export default function CategoryList({ categories, loading, onEdit, onDelete }: 
 
       {loading ? (
         <TableSkeleton rows={7} cols={4} />
-      ) : filteredCategories.length === 0 ? (
+      ) : categories.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No categories found.</div>
       ) : (
         <div className="overflow-x-auto min-h-[350px]">
@@ -81,7 +80,7 @@ export default function CategoryList({ categories, loading, onEdit, onDelete }: 
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
-              {currentCategories.map((c) => (
+              {categories.map((c) => (
                 <tr key={c._id} className="hover:bg-hover-theme transition-all duration-300 group border-b border-border-theme/50">
                   <td className="px-6 py-5">
                     <div className="h-10 w-14 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden shrink-0">
@@ -133,9 +132,9 @@ export default function CategoryList({ categories, loading, onEdit, onDelete }: 
 
       <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
-          Showing {filteredCategories.length} Categories
+          Showing {(currentPage - 1) * 10 + Math.min(1, categories.length)}-{Math.min(currentPage * 10, total)} of {total}
         </div>
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
     </div>
   );

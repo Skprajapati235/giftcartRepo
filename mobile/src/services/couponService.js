@@ -6,8 +6,11 @@ const couponService = {
     const response = await apiClient.post('/coupons/validate', payload);
     return response.data;
   },
-  getActiveCoupons: async () => {
-    const response = await apiClient.get('/coupons/active');
+  getActiveCoupons: async (params = {}) => {
+    const response = await apiClient.get('/coupons/active', { params });
+    if (Array.isArray(response.data)) {
+      return { data: response.data, total: response.data.length, totalPages: 1 };
+    }
     return response.data;
   },
 };

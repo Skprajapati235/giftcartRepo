@@ -9,12 +9,26 @@ import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 interface OrderListProps {
   orders: any[];
   loading: boolean;
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  searchTerm: string;
+  onPageChange: (page: number) => void;
+  onSearchChange: (search: string) => void;
   onUpdateStatus: (id: string, newStatus: string) => void;
 }
 
-export default function OrderList({ orders, loading, onUpdateStatus }: OrderListProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+export default function OrderList({ 
+  orders, 
+  loading, 
+  total,
+  totalPages,
+  currentPage,
+  searchTerm,
+  onPageChange,
+  onSearchChange,
+  onUpdateStatus 
+}: OrderListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -28,23 +42,6 @@ export default function OrderList({ orders, loading, onUpdateStatus }: OrderList
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  const filteredOrders = useMemo(
-    () => orders.filter((order) =>
-      order._id.toLowerCase().includes(normalizedSearch) ||
-      order.user?.name?.toLowerCase().includes(normalizedSearch) ||
-      order.status.toLowerCase().includes(normalizedSearch)
-    ),
-    [normalizedSearch, orders]
-  );
-
-  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / 10));
-  const pageOrders = filteredOrders.slice((currentPage - 1) * 10, currentPage * 10);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [normalizedSearch]);
-
   return (
     <div className="bg-card rounded-3xl border border-border-theme shadow-sm overflow-hidden min-h-[600px]">
       <div className="p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
@@ -52,19 +49,19 @@ export default function OrderList({ orders, loading, onUpdateStatus }: OrderList
           <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
           <input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search order ID or customer..."
             className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-background text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-background px-4 py-3 rounded-2xl border border-border-theme font-sans">
-          Total Orders: {filteredOrders.length}
+          Total Orders: {total}
         </div>
       </div>
 
       {loading ? (
         <TableSkeleton rows={8} cols={6} />
-      ) : filteredOrders.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No orders found.</div>
       ) : (
         <div className="overflow-x-auto min-h-[450px]">
@@ -80,7 +77,7 @@ export default function OrderList({ orders, loading, onUpdateStatus }: OrderList
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
-              {pageOrders.map((order) => (
+              {orders.map((order) => (
                 <tr key={order._id} className="hover:bg-hover-theme transition-all duration-300 group border-b border-border-theme/50">
                   <td className="px-6 py-5 w-[20%]">
                     <div className="flex items-center gap-3">
@@ -175,9 +172,9 @@ export default function OrderList({ orders, loading, onUpdateStatus }: OrderList
 
       <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
-          Showing {filteredOrders.length} Orders
+          Showing {(currentPage - 1) * 10 + Math.min(1, orders.length)}-{Math.min(currentPage * 10, total)} of {total}
         </div>
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
     </div>
   );
