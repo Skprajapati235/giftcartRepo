@@ -28,8 +28,10 @@ export default function OffersScreen({ navigation }) {
 
   const fetchCoupons = async () => {
     try {
-      const data = await couponService.getActiveCoupons();
-      setCoupons(data || []);
+      const res = await couponService.getActiveCoupons({ limit: 100 });
+      // API returns paginated object { data: [...], total: ... }
+      const list = res.data || (Array.isArray(res) ? res : []);
+      setCoupons(list);
     } catch (err) {
       showToast('Could not load offers', 'error');
     } finally {
