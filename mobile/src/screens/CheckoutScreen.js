@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import orderService from '../services/orderService';
 import couponService from '../services/couponService';
+import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../context/ToastContext';
 
@@ -25,6 +26,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const { user } = useContext(AuthContext);
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
   const [showWebView, setShowWebView] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Online');
@@ -36,14 +38,51 @@ export default function CheckoutScreen({ navigation, route }) {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [activeCoupons, setActiveCoupons] = useState([]);
   const [showCouponModal, setShowCouponModal] = useState(false);
-  
+
   // Shipping Address Form State
   const [shippingInfo, setShippingInfo] = useState({
     fullName: user?.name || '',
     phone: '',
-    address: '',
+    houseNo: '',
+    street: '',
     pinCode: '',
+    landmark: '',
   });
+
+  const getCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Please allow location permission to fetch your address.');
+        return;
+      }
+
+      setLocationLoading(true);
+      let location = await Location.getCurrentPositionAsync({});
+      let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+
+      if (reverseGeocode.length > 0) {
+        const addr = reverseGeocode[0];
+        console.log('Location Address:', addr);
+        setShippingInfo({
+          ...shippingInfo,
+          houseNo: addr.name || addr.district || '',
+          street: addr.street || addr.subregion || addr.city || '',
+          pinCode: addr.postalCode || '',
+          landmark: addr.name !== addr.street ? addr.name : '',
+        });
+        showToast('Location fetched successfully!', 'success');
+      }
+    } catch (error) {
+      console.error('Location Error:', error);
+      showToast('Error fetching location', 'error');
+    } finally {
+      setLocationLoading(false);
+    }
+  };
 
   React.useEffect(() => {
     fetchActiveCoupons();
@@ -117,24 +156,28 @@ export default function CheckoutScreen({ navigation, route }) {
 
   const handleCheckout = async () => {
     // Validate Form
-    if (!shippingInfo.fullName || !shippingInfo.phone || !shippingInfo.address || !shippingInfo.pinCode) {
-      showToast('Please fill all shipping details', 'warning');
+    const { fullName, phone, houseNo, street, pinCode, landmark } = shippingInfo;
+    if (!fullName || !phone || !houseNo || !street || !pinCode) {
+      showToast('Please fill all required shipping details', 'warning');
       return;
     }
+
+    const fullAddress = `${houseNo}, ${street}${landmark ? `, Near ${landmark}` : ''}`;
+    const finalShippingInfo = { ...shippingInfo, address: fullAddress };
 
     setLoading(true);
     try {
       const orderData = {
         items: cartItems,
         totalAmount: finalTotal,
-        shippingAddress: shippingInfo,
+        shippingAddress: finalShippingInfo,
         paymentMethod,
         couponCode: appliedCoupon,
         discountAmount: couponDiscount,
       };
-      
+
       const res = await orderService.createOrder(orderData);
-      
+
       if (paymentMethod === 'COD') {
         // For COD, directly mark as success
         const raw = await AsyncStorage.getItem('@giftcart_cart');
@@ -170,7 +213,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const onMessage = async (event) => {
     const data = JSON.parse(event.nativeEvent.data);
     setShowWebView(false);
-    
+
     if (data.status === 'success') {
       setLoading(true);
       try {
@@ -179,7 +222,7 @@ export default function CheckoutScreen({ navigation, route }) {
           razorpay_payment_id: data.razorpay_payment_id,
           razorpay_signature: data.razorpay_signature,
         });
-        
+
         // Remove only ordered items from cart
         const raw = await AsyncStorage.getItem('@giftcart_cart');
         const cart = raw ? JSON.parse(raw) : [];
@@ -244,13 +287,13 @@ export default function CheckoutScreen({ navigation, route }) {
     return (
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => setShowWebView(false)}>
-                <Ionicons name="close" size={30} color="#000" />
-            </TouchableOpacity>
-            <Text style={styles.title}>Secure Payment</Text>
-            <View style={{ width: 30 }} />
+          <TouchableOpacity onPress={() => setShowWebView(false)}>
+            <Ionicons name="close" size={30} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.title}>Secure Payment</Text>
+          <View style={{ width: 30 }} />
         </View>
-        <WebView 
+        <WebView
           originWhitelist={['*']}
           source={{ html: razorpayHtml }}
           onMessage={onMessage}
@@ -272,34 +315,64 @@ export default function CheckoutScreen({ navigation, route }) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
+            <Text style={styles.sectionTitle}>Delivery Address</Text>
+            <TouchableOpacity
+              style={styles.locationBtn}
+              onPress={getCurrentLocation}
+              disabled={locationLoading}
+            >
+              {locationLoading ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <>
+                  <Ionicons name="location-outline" size={14} color="#FFF" />
+                  <Text style={styles.locationBtnText}>Use My Location</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.addressForm}>
             <TextInput
               style={styles.input}
-              placeholder="Full Name"
+              placeholder="Full Name (Required)"
               value={shippingInfo.fullName}
-              onChangeText={(t) => setShippingInfo({...shippingInfo, fullName: t})}
+              onChangeText={(t) => setShippingInfo({ ...shippingInfo, fullName: t })}
             />
             <TextInput
               style={styles.input}
-              placeholder="Phone Number"
+              placeholder="Phone Number (Required)"
               keyboardType="phone-pad"
               value={shippingInfo.phone}
-              onChangeText={(t) => setShippingInfo({...shippingInfo, phone: t})}
+              onChangeText={(t) => setShippingInfo({ ...shippingInfo, phone: t })}
             />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="House / Flat No (Req)"
+                value={shippingInfo.houseNo}
+                onChangeText={(t) => setShippingInfo({ ...shippingInfo, houseNo: t })}
+              />
+              <TextInput
+                style={[styles.input, { flex: 1 }]}
+                placeholder="Pin Code (Req)"
+                keyboardType="number-pad"
+                value={shippingInfo.pinCode}
+                onChangeText={(t) => setShippingInfo({ ...shippingInfo, pinCode: t })}
+              />
+            </View>
             <TextInput
-              style={[styles.input, { height: 80 }]}
-              placeholder="Full Address (House No, Street, Landmark)"
-              multiline
-              value={shippingInfo.address}
-              onChangeText={(t) => setShippingInfo({...shippingInfo, address: t})}
+              style={styles.input}
+              placeholder="Street / Area / Colony (Required)"
+              value={shippingInfo.street}
+              onChangeText={(t) => setShippingInfo({ ...shippingInfo, street: t })}
             />
             <TextInput
               style={styles.input}
-              placeholder="Pin Code"
-              keyboardType="number-pad"
-              value={shippingInfo.pinCode}
-              onChangeText={(t) => setShippingInfo({...shippingInfo, pinCode: t})}
+              placeholder="Landmark (Optional)"
+              value={shippingInfo.landmark}
+              onChangeText={(t) => setShippingInfo({ ...shippingInfo, landmark: t })}
             />
           </View>
         </View>
@@ -319,21 +392,21 @@ export default function CheckoutScreen({ navigation, route }) {
                 editable={!appliedCoupon}
               />
               {appliedCoupon ? (
-                <TouchableOpacity 
-                   onPress={() => {
-                     setAppliedCoupon(null);
-                     setCouponDiscount(0);
-                     setCouponCode('');
-                   }}
-                   style={styles.removeCoupon}
+                <TouchableOpacity
+                  onPress={() => {
+                    setAppliedCoupon(null);
+                    setCouponDiscount(0);
+                    setCouponCode('');
+                  }}
+                  style={styles.removeCoupon}
                 >
                   <Ionicons name="close-circle" size={24} color="#D82B76" />
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity 
-                   onPress={handleApplyCoupon} 
-                   style={styles.applyBtn}
-                   disabled={validatingCoupon}
+                <TouchableOpacity
+                  onPress={handleApplyCoupon}
+                  style={styles.applyBtn}
+                  disabled={validatingCoupon}
                 >
                   {validatingCoupon ? (
                     <ActivityIndicator size="small" color="#D82B76" />
@@ -370,7 +443,7 @@ export default function CheckoutScreen({ navigation, route }) {
                   <Ionicons name="close" size={24} color="#333" />
                 </TouchableOpacity>
               </View>
-              
+
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 {activeCoupons.length > 0 ? activeCoupons.map((item) => (
                   <View key={item._id} style={styles.couponItemNew}>
@@ -388,7 +461,7 @@ export default function CheckoutScreen({ navigation, route }) {
                         </Text>
                       </View>
                       <Text style={styles.couponMinOrderModal}>Valid on orders above ₹{item.minOrderAmount}</Text>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.modalApplyBtn}
                         onPress={() => {
                           setCouponCode(item.code);
@@ -494,8 +567,8 @@ export default function CheckoutScreen({ navigation, route }) {
           )}
         </View>
 
-        <TouchableOpacity 
-          style={[styles.payBtn, loading && { opacity: 0.7 }]} 
+        <TouchableOpacity
+          style={[styles.payBtn, loading && { opacity: 0.7 }]}
           onPress={handleCheckout}
           disabled={loading}
         >
@@ -516,6 +589,20 @@ export default function CheckoutScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF' },
+  locationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2E7D32',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 5,
+  },
+  locationBtnText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
   title: { fontSize: 20, fontWeight: '800', color: '#000' },
   content: { padding: 20 },
   section: { marginBottom: 25 },
@@ -567,8 +654,8 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, maxHeight: '80%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '900', color: '#111' },
-  couponItemNew: { 
-    borderRadius: 20, overflow: 'hidden', borderStyle: 'solid', 
+  couponItemNew: {
+    borderRadius: 20, overflow: 'hidden', borderStyle: 'solid',
     borderWidth: 1, borderColor: '#EEE', backgroundColor: '#FFF', marginBottom: 15,
     elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4
   },
@@ -581,4 +668,4 @@ const styles = StyleSheet.create({
   couponMinOrderModal: { fontSize: 11, color: '#666', fontWeight: '600', marginBottom: 15 },
   modalApplyBtn: { backgroundColor: '#D82B76', paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
   modalApplyBtnText: { color: '#FFF', fontWeight: '800', fontSize: 13 },
- });
+});

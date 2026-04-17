@@ -29,8 +29,11 @@ const orderSchema = new mongoose.Schema({
   shippingAddress: {
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
-    address: { type: String, required: true },
+    houseNo: { type: String, required: true },
+    street: { type: String, required: true },
+    landmark: { type: String },
     pinCode: { type: String, required: true },
+    address: { type: String }, // For backward compatibility/summary
   },
   status: {
     type: String,

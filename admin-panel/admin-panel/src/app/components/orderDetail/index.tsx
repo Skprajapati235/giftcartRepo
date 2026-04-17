@@ -16,6 +16,9 @@ interface OrderDetailData {
     fullName: string;
     phone: string;
     address: string;
+    houseNo?: string;
+    street?: string;
+    landmark?: string;
     pinCode: string;
   };
   items: Array<{ 
@@ -223,7 +226,16 @@ export default function OrderDetailView() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Address</span>
-                  <span className="font-bold text-right">{order.shippingAddress.address}</span>
+                  <div className="text-right">
+                    {order.shippingAddress.houseNo && <div className="font-bold">{order.shippingAddress.houseNo}</div>}
+                    {order.shippingAddress.street && <div className="font-bold">{order.shippingAddress.street}</div>}
+                    {(!order.shippingAddress.houseNo && !order.shippingAddress.street) && (
+                      <div className="font-bold">{order.shippingAddress.address}</div>
+                    )}
+                    {order.shippingAddress.landmark && (
+                      <div className="text-xs text-slate-500 font-medium">Near {order.shippingAddress.landmark}</div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-400">Pin Code</span>
