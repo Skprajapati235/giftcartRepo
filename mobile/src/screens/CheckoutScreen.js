@@ -48,6 +48,8 @@ export default function CheckoutScreen({ navigation, route }) {
     pinCode: '',
     landmark: '',
   });
+  const [savedAddress, setSavedAddress] = useState(null);
+  const [showAddressForm, setShowAddressForm] = useState(false);
 
   const getCurrentLocation = async () => {
     try {
@@ -66,7 +68,6 @@ export default function CheckoutScreen({ navigation, route }) {
 
       if (reverseGeocode.length > 0) {
         const addr = reverseGeocode[0];
-        console.log('Location Address:', addr);
         setShippingInfo({
           ...shippingInfo,
           houseNo: addr.name || addr.district || '',
@@ -77,14 +78,30 @@ export default function CheckoutScreen({ navigation, route }) {
         showToast('Location fetched successfully!', 'success');
       }
     } catch (error) {
-      console.error('Location Error:', error);
       showToast('Error fetching location', 'error');
     } finally {
       setLocationLoading(false);
     }
   };
 
+  // Load saved address on mount
   React.useEffect(() => {
+    const loadSavedAddress = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('@giftcart_saved_address');
+        if (raw) {
+          const addr = JSON.parse(raw);
+          setSavedAddress(addr);
+          setShippingInfo(addr); // Pre-fill form too
+          setShowAddressForm(false); // Default: show saved card
+        } else {
+          setShowAddressForm(true); // No saved address, show form
+        }
+      } catch (e) {
+        setShowAddressForm(true);
+      }
+    };
+    loadSavedAddress();
     fetchActiveCoupons();
   }, []);
 
@@ -156,14 +173,23 @@ export default function CheckoutScreen({ navigation, route }) {
 
   const handleCheckout = async () => {
     // Validate Form
-    const { fullName, phone, houseNo, street, pinCode, landmark } = shippingInfo;
-    if (!fullName || !phone || !houseNo || !street || !pinCode) {
+    // Validation is handled below after resolving active address
+
+    const activeAddress = showAddressForm ? shippingInfo : (savedAddress || shippingInfo);
+    const { fullName: fn, phone: ph, houseNo: hn, street: st, pinCode: pc } = activeAddress;
+    if (!fn || !ph || !hn || !st || !pc) {
       showToast('Please fill all required shipping details', 'warning');
       return;
     }
 
-    const fullAddress = `${houseNo}, ${street}${landmark ? `, Near ${landmark}` : ''}`;
-    const finalShippingInfo = { ...shippingInfo, address: fullAddress };
+    const fullAddress = `${hn}, ${st}${activeAddress.landmark ? `, Near ${activeAddress.landmark}` : ''}`;
+    const finalShippingInfo = { ...activeAddress, address: fullAddress };
+
+    // Save address for next time
+    try {
+      await AsyncStorage.setItem('@giftcart_saved_address', JSON.stringify(finalShippingInfo));
+      setSavedAddress(finalShippingInfo);
+    } catch (e) {}
 
     setLoading(true);
     try {
@@ -315,66 +341,113 @@ export default function CheckoutScreen({ navigation, route }) {
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.section}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-            <Text style={styles.sectionTitle}>Delivery Address</Text>
-            <TouchableOpacity
-              style={styles.locationBtn}
-              onPress={getCurrentLocation}
-              disabled={locationLoading}
-            >
-              {locationLoading ? (
-                <ActivityIndicator size="small" color="#FFF" />
-              ) : (
-                <>
-                  <Ionicons name="location-outline" size={14} color="#FFF" />
-                  <Text style={styles.locationBtnText}>Use My Location</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.sectionTitle}>Delivery Address</Text>
 
-          <View style={styles.addressForm}>
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name (Required)"
-              value={shippingInfo.fullName}
-              onChangeText={(t) => setShippingInfo({ ...shippingInfo, fullName: t })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number (Required)"
-              keyboardType="phone-pad"
-              value={shippingInfo.phone}
-              onChangeText={(t) => setShippingInfo({ ...shippingInfo, phone: t })}
-            />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                placeholder="House / Flat No (Req)"
-                value={shippingInfo.houseNo}
-                onChangeText={(t) => setShippingInfo({ ...shippingInfo, houseNo: t })}
-              />
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                placeholder="Pin Code (Req)"
-                keyboardType="number-pad"
-                value={shippingInfo.pinCode}
-                onChangeText={(t) => setShippingInfo({ ...shippingInfo, pinCode: t })}
-              />
+          {/* Saved Address Card */}
+          {savedAddress && !showAddressForm && (
+            <View style={styles.savedAddressCard}>
+              <View style={styles.savedAddressTop}>
+                <View style={styles.savedAddressBadge}>
+                  <Ionicons name="checkmark-circle" size={16} color="#16A34A" />
+                  <Text style={styles.savedAddressBadgeText}>Delivering To</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.changeAddressBtn}
+                  onPress={() => {
+                    setShippingInfo({ ...savedAddress });
+                    setShowAddressForm(true);
+                  }}
+                >
+                  <Ionicons name="pencil-outline" size={13} color="#D82B76" />
+                  <Text style={styles.changeAddressBtnText}>Change</Text>
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.savedName}>{savedAddress.fullName}</Text>
+              <Text style={styles.savedPhone}>{savedAddress.phone}</Text>
+              <Text style={styles.savedAddr}>
+                {savedAddress.houseNo}, {savedAddress.street}
+                {savedAddress.landmark ? `, Near ${savedAddress.landmark}` : ''}
+              </Text>
+              <Text style={styles.savedPin}>PIN: {savedAddress.pinCode}</Text>
             </View>
-            <TextInput
-              style={styles.input}
-              placeholder="Street / Area / Colony (Required)"
-              value={shippingInfo.street}
-              onChangeText={(t) => setShippingInfo({ ...shippingInfo, street: t })}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Landmark (Optional)"
-              value={shippingInfo.landmark}
-              onChangeText={(t) => setShippingInfo({ ...shippingInfo, landmark: t })}
-            />
-          </View>
+          )}
+
+          {/* New Address Form */}
+          {showAddressForm && (
+            <>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#555' }}>
+                  {savedAddress ? 'Enter new address' : 'Enter delivery address'}
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {savedAddress && (
+                    <TouchableOpacity
+                      onPress={() => setShowAddressForm(false)}
+                      style={[styles.locationBtn, { backgroundColor: '#6B7280' }]}
+                    >
+                      <Text style={styles.locationBtnText}>Use Saved</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.locationBtn}
+                    onPress={getCurrentLocation}
+                    disabled={locationLoading}
+                  >
+                    {locationLoading ? (
+                      <ActivityIndicator size="small" color="#FFF" />
+                    ) : (
+                      <>
+                        <Ionicons name="location-outline" size={13} color="#FFF" />
+                        <Text style={styles.locationBtnText}>My Location</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={styles.addressForm}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Full Name (Required)"
+                  value={shippingInfo.fullName}
+                  onChangeText={(t) => setShippingInfo({ ...shippingInfo, fullName: t })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Phone Number (Required)"
+                  keyboardType="phone-pad"
+                  value={shippingInfo.phone}
+                  onChangeText={(t) => setShippingInfo({ ...shippingInfo, phone: t })}
+                />
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="House / Flat No (Req)"
+                    value={shippingInfo.houseNo}
+                    onChangeText={(t) => setShippingInfo({ ...shippingInfo, houseNo: t })}
+                  />
+                  <TextInput
+                    style={[styles.input, { flex: 1 }]}
+                    placeholder="Pin Code (Req)"
+                    keyboardType="number-pad"
+                    value={shippingInfo.pinCode}
+                    onChangeText={(t) => setShippingInfo({ ...shippingInfo, pinCode: t })}
+                  />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Street / Area / Colony (Required)"
+                  value={shippingInfo.street}
+                  onChangeText={(t) => setShippingInfo({ ...shippingInfo, street: t })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Landmark / Nearby (Optional)"
+                  value={shippingInfo.landmark}
+                  onChangeText={(t) => setShippingInfo({ ...shippingInfo, landmark: t })}
+                />
+              </View>
+            </>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -668,4 +741,46 @@ const styles = StyleSheet.create({
   couponMinOrderModal: { fontSize: 11, color: '#666', fontWeight: '600', marginBottom: 15 },
   modalApplyBtn: { backgroundColor: '#D82B76', paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
   modalApplyBtnText: { color: '#FFF', fontWeight: '800', fontSize: 13 },
+  // Saved Address Card
+  savedAddressCard: {
+    backgroundColor: '#F0FFF4',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#BBF7D0',
+    padding: 16,
+    marginBottom: 4,
+  },
+  savedAddressTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  savedAddressBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  savedAddressBadgeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#16A34A',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  changeAddressBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#D82B76',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  changeAddressBtnText: { color: '#D82B76', fontSize: 12, fontWeight: '800' },
+  savedName: { fontSize: 15, fontWeight: '900', color: '#111', marginBottom: 2 },
+  savedPhone: { fontSize: 13, color: '#555', fontWeight: '600', marginBottom: 6 },
+  savedAddr: { fontSize: 13, color: '#333', lineHeight: 20 },
+  savedPin: { fontSize: 12, color: '#555', fontWeight: '700', marginTop: 4 },
 });

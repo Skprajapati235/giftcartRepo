@@ -18,7 +18,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
 import { Feather, Ionicons, FontAwesome } from '@expo/vector-icons';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useFocusEffect } from '@react-navigation/native';
 import categoryService from '../services/categoryService';
 import productService from '../services/productService';
 import LocationSelectionModal from '../components/LocationSelectionModal';
@@ -90,6 +90,19 @@ export default function HomeScreen({ navigation }) {
       setSelectedCategory(route.params.categoryId);
     }
   }, [route.params?.categoryId]);
+
+  // Reload cart count every time screen is focused (e.g. after checkout)
+  useFocusEffect(
+    useCallback(() => {
+      const syncCartCount = async () => {
+        try {
+          const raw = await AsyncStorage.getItem('@giftcart_cart');
+          setCartCount(raw ? JSON.parse(raw).length : 0);
+        } catch (e) {}
+      };
+      syncCartCount();
+    }, [])
+  );
 
   const loadData = useCallback(async (isInitial = true) => {
     if (isInitial) {
