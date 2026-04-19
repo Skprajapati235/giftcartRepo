@@ -2,6 +2,8 @@ const Order = require("../models/Order");
 const Coupon = require("../models/Coupon");
 const emailService = require("../utils/emailService");
 const User = require("../models/User");
+const crypto = require("crypto");
+const whatsappService = require("../utils/whatsappService");
 
 // Create a new order record in DB
 exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, paymentMethod = 'Online', couponCode, discountAmount = 0 }) => {
@@ -45,6 +47,7 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
 
   const order = new Order({
     user: userId,
+    trackingToken: crypto.randomBytes(16).toString("hex"),
     items: processedItems,
     totalAmount: finalTotal,
     shippingAddress,
@@ -70,6 +73,21 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
     }
   }
 
+  // WhatsApp: order placed (Pending)
+  try {
+    const user = await User.findById(userId);
+    const toList = [user?.mobileNumber, savedOrder?.shippingAddress?.phone].filter(Boolean);
+    await whatsappService.sendWhatsAppMessageToMany({
+      toList,
+      body: whatsappService.formatOrderUpdateMessage({
+        order: savedOrder,
+        statusOverride: "Pending",
+      }),
+    });
+  } catch (err) {
+    console.warn("[whatsapp] order placed send failed:", err?.message || err);
+  }
+
   return savedOrder;
 };
 
@@ -88,6 +106,23 @@ exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
 
   if (updatedOrder) {
     emailService.sendOrderNotification(updatedOrder, updatedOrder.user);
+
+    // WhatsApp: order confirmed/processing
+    try {
+      const toList = [
+        updatedOrder?.user?.mobileNumber,
+        updatedOrder?.shippingAddress?.phone,
+      ].filter(Boolean);
+      await whatsappService.sendWhatsAppMessageToMany({
+        toList,
+        body: whatsappService.formatOrderUpdateMessage({
+          order: updatedOrder,
+          statusOverride: "Processing",
+        }),
+      });
+    } catch (err) {
+      console.warn("[whatsapp] order processing send failed:", err?.message || err);
+    }
   }
 
   return updatedOrder;
@@ -156,8 +191,46 @@ exports.getAllOrders = async ({ page = 1, limit = 10, search = "" } = {}) => {
 // Get single order detail by ID (admin)
 exports.getOrderById = async (id) => {
   return await Order.findById(id)
-    .populate("user", "name email phone")
+    .populate("user", "name email mobileNumber")
     .populate("items.product", "image name salePrice price");
+};
+
+// Public: fetch limited order info by tracking token
+exports.getPublicOrderByTrackingToken = async (trackingToken) => {
+  if (!trackingToken) return null;
+
+  const order = await Order.findOne({ trackingToken })
+    .populate("items.product", "image name salePrice price")
+    .select(
+      "trackingToken status paymentMethod paymentStatus totalAmount shippingAddress items processingAt shippedAt deliveredAt cancelledAt createdAt updatedAt"
+    );
+
+  if (!order) return null;
+
+  // Reduce shipping fields to safe subset (no full address)
+  const safeShipping = {
+    fullName: order.shippingAddress?.fullName,
+    phone: order.shippingAddress?.phone,
+    pinCode: order.shippingAddress?.pinCode,
+    landmark: order.shippingAddress?.landmark,
+  };
+
+  return {
+    _id: order._id,
+    trackingToken: order.trackingToken,
+    status: order.status,
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    totalAmount: order.totalAmount,
+    shippingAddress: safeShipping,
+    items: order.items,
+    processingAt: order.processingAt,
+    shippedAt: order.shippedAt,
+    deliveredAt: order.deliveredAt,
+    cancelledAt: order.cancelledAt,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+  };
 };
 
 // Update order status (admin)
@@ -169,7 +242,24 @@ exports.updateOrderStatus = async (id, status) => {
   if (status === "Delivered") updateData.deliveredAt = Date.now();
   if (status === "Cancelled") updateData.cancelledAt = Date.now();
 
-  return await Order.findByIdAndUpdate(id, updateData, { new: true });
+  const updated = await Order.findByIdAndUpdate(id, updateData, { new: true }).populate("user");
+
+  if (updated) {
+    try {
+      const toList = [updated?.user?.mobileNumber, updated?.shippingAddress?.phone].filter(Boolean);
+      await whatsappService.sendWhatsAppMessageToMany({
+        toList,
+        body: whatsappService.formatOrderUpdateMessage({
+          order: updated,
+          statusOverride: status,
+        }),
+      });
+    } catch (err) {
+      console.warn("[whatsapp] order status send failed:", err?.message || err);
+    }
+  }
+
+  return updated;
 };
 
 // Mark order as viewed by admin

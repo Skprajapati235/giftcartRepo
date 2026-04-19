@@ -1,6 +1,11 @@
 const User = require("../models/User");
 const Admin = require("../models/Admin");
 const bcrypt = require("bcryptjs");
+const whatsappService = require("../utils/whatsappService");
+
+function isTruthyEnv(value) {
+  return String(value || "").toLowerCase() === "true";
+}
 
 exports.registerUser = async (data) => {
   const { name, email, password } = data;
@@ -21,6 +26,17 @@ exports.loginUser = async (data) => {
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) throw new Error("Invalid credentials");
+
+  if (isTruthyEnv(process.env.WHATSAPP_SEND_ON_LOGIN)) {
+    try {
+      await whatsappService.sendWhatsAppMessage({
+        to: user?.mobileNumber,
+        body: whatsappService.formatLoginMessage({ user }),
+      });
+    } catch (err) {
+      console.warn("[whatsapp] login send failed:", err?.message || err);
+    }
+  }
 
   return user;
 };

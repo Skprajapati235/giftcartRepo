@@ -6,6 +6,12 @@ const orderSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  trackingToken: {
+    type: String,
+    index: true,
+    unique: true,
+    sparse: true,
+  },
   items: [
     {
       product: {

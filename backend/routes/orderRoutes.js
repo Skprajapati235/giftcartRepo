@@ -8,6 +8,9 @@ router.post("/create", authMiddleware, controller.createOrder);
 router.post("/verify", authMiddleware, controller.verifyPayment);
 router.get("/user", authMiddleware, controller.getUserOrders);
 
+// Public customer tracking (token-based)
+router.get("/public/:token", controller.getPublicOrderByToken);
+
 // Admin routes
 router.get("/admin/all", authMiddleware, adminMiddleware, controller.getAllOrders);
 router.get("/admin/unviewed", authMiddleware, adminMiddleware, controller.getUnviewedOrders);
