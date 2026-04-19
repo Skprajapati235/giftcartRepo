@@ -5,7 +5,7 @@ import { CheckCircle, AlertCircle, AlertTriangle, X, Info } from 'lucide-react';
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 interface Toast {
-  id: number;
+  id: string;
   message: string;
   type: ToastType;
 }
@@ -18,9 +18,11 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const toastSeqRef = React.useRef(0);
 
   const showToast = useCallback((message: string, type: ToastType = 'success') => {
-    const id = Date.now();
+    toastSeqRef.current += 1;
+    const id = `${Date.now()}-${toastSeqRef.current}`;
     setToasts((prev) => [...prev, { id, message, type }]);
 
     setTimeout(() => {
@@ -28,7 +30,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }, 4000);
   }, []);
 
-  const removeToast = (id: number) => {
+  const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 

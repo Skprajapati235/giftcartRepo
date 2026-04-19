@@ -12,6 +12,23 @@ const orderSchema = new mongoose.Schema({
     unique: true,
     sparse: true,
   },
+  whatsappLogs: [
+    {
+      event: { type: String }, // e.g. order_placed, order_processing, order_status_update
+      to: { type: String },
+      sid: { type: String },
+      success: { type: Boolean },
+      skipped: { type: Boolean },
+      reason: { type: String },
+      error: {
+        status: { type: Number },
+        code: { type: Number },
+        message: { type: String },
+        moreInfo: { type: String },
+      },
+      createdAt: { type: Date, default: Date.now },
+    },
+  ],
   items: [
     {
       product: {

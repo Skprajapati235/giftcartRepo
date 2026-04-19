@@ -5,6 +5,21 @@ const User = require("../models/User");
 const crypto = require("crypto");
 const whatsappService = require("../utils/whatsappService");
 
+async function appendWhatsAppLogs(orderId, event, results) {
+  if (!orderId || !Array.isArray(results) || results.length === 0) return;
+  const logs = results.map((r) => ({
+    event,
+    to: r?.to,
+    sid: r?.sid,
+    success: Boolean(r?.success),
+    skipped: Boolean(r?.skipped),
+    reason: r?.reason,
+    error: r?.error,
+    createdAt: new Date(),
+  }));
+  await Order.findByIdAndUpdate(orderId, { $push: { whatsappLogs: { $each: logs } } });
+}
+
 // Create a new order record in DB
 exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, paymentMethod = 'Online', couponCode, discountAmount = 0 }) => {
   const processedItems = items.map((item) => {
@@ -77,13 +92,14 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
   try {
     const user = await User.findById(userId);
     const toList = [user?.mobileNumber, savedOrder?.shippingAddress?.phone].filter(Boolean);
-    await whatsappService.sendWhatsAppMessageToMany({
+    const results = await whatsappService.sendWhatsAppMessageToMany({
       toList,
       body: whatsappService.formatOrderUpdateMessage({
         order: savedOrder,
         statusOverride: "Pending",
       }),
     });
+    await appendWhatsAppLogs(savedOrder._id, "order_placed", results);
   } catch (err) {
     console.warn("[whatsapp] order placed send failed:", err?.message || err);
   }
@@ -113,13 +129,14 @@ exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
         updatedOrder?.user?.mobileNumber,
         updatedOrder?.shippingAddress?.phone,
       ].filter(Boolean);
-      await whatsappService.sendWhatsAppMessageToMany({
+      const results = await whatsappService.sendWhatsAppMessageToMany({
         toList,
         body: whatsappService.formatOrderUpdateMessage({
           order: updatedOrder,
           statusOverride: "Processing",
         }),
       });
+      await appendWhatsAppLogs(updatedOrder._id, "order_processing", results);
     } catch (err) {
       console.warn("[whatsapp] order processing send failed:", err?.message || err);
     }
@@ -247,13 +264,14 @@ exports.updateOrderStatus = async (id, status) => {
   if (updated) {
     try {
       const toList = [updated?.user?.mobileNumber, updated?.shippingAddress?.phone].filter(Boolean);
-      await whatsappService.sendWhatsAppMessageToMany({
+      const results = await whatsappService.sendWhatsAppMessageToMany({
         toList,
         body: whatsappService.formatOrderUpdateMessage({
           order: updated,
           statusOverride: status,
         }),
       });
+      await appendWhatsAppLogs(updated._id, "order_status_update", results);
     } catch (err) {
       console.warn("[whatsapp] order status send failed:", err?.message || err);
     }

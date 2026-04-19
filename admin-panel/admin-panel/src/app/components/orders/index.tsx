@@ -19,6 +19,15 @@ interface Order {
   totalAmount: number;
   status: string;
   createdAt: string;
+  whatsappLogs?: Array<{
+    event?: string;
+    to?: string;
+    sid?: string;
+    success?: boolean;
+    skipped?: boolean;
+    reason?: string;
+    createdAt?: string;
+  }>;
 }
 
 export default function OrdersView() {

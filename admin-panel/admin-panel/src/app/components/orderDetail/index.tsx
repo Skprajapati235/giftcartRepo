@@ -8,7 +8,7 @@ import { RowSkeleton } from "../skeletonLoader/commonSkeleton";
 
 interface OrderDetailData {
   _id: string;
-  user: { name: string; email: string; phone?: string };
+  user: { name: string; email: string; mobileNumber?: string };
   totalAmount: number;
   status: string;
   paymentStatus: string;
@@ -30,6 +30,16 @@ interface OrderDetailData {
     expectedDeliveryDate?: string
   }>;
   createdAt: string;
+  whatsappLogs?: Array<{
+    event?: string;
+    to?: string;
+    sid?: string;
+    success?: boolean;
+    skipped?: boolean;
+    reason?: string;
+    error?: { code?: number; message?: string };
+    createdAt?: string;
+  }>;
 }
 
 export default function OrderDetailView() {
@@ -247,6 +257,44 @@ export default function OrderDetailView() {
                 </div>
               </div>
             </div>
+          </section>
+
+          <section className={`rounded-2xl border p-6 shadow-sm ${cardBg}`}>
+            <h2 className="mb-6 text-lg font-bold border-b border-slate-100 pb-4">WhatsApp status</h2>
+            {Array.isArray(order.whatsappLogs) && order.whatsappLogs.length ? (
+              <div className="space-y-3">
+                {order.whatsappLogs.slice(-8).reverse().map((log, idx) => {
+                  const ok = log.success;
+                  const skipped = log.skipped;
+                  const label = ok ? "Sent" : skipped ? "Skipped" : "Failed";
+                  const cls = ok
+                    ? "bg-emerald-50 text-emerald-700"
+                    : skipped
+                      ? "bg-slate-100 text-slate-600"
+                      : "bg-red-50 text-red-700";
+                  return (
+                    <div key={idx} className="flex items-center justify-between gap-3 text-sm">
+                      <div className="min-w-0">
+                        <div className="font-bold truncate">{log.event || "event"}</div>
+                        <div className="text-xs text-slate-500 truncate">
+                          {log.to || "—"} {log.sid ? `• SID: ${log.sid}` : ""}
+                        </div>
+                        {!ok && !skipped && log.error?.message && (
+                          <div className="text-[11px] text-red-600 font-semibold truncate">
+                            {log.error.code ? `[${log.error.code}] ` : ""}{log.error.message}
+                          </div>
+                        )}
+                      </div>
+                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg ${cls}`}>
+                        {label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-sm text-slate-500">No WhatsApp attempts logged yet.</div>
+            )}
           </section>
         </div>
       </div>

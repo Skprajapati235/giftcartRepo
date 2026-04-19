@@ -22,8 +22,10 @@ function normalizeToWhatsAppAddress(raw) {
   // If no +, try a practical default for local numbers (common case).
   // Example: "9876543210" + WHATSAPP_DEFAULT_COUNTRY_CODE="+91" => whatsapp:+919876543210
   const country = String(process.env.WHATSAPP_DEFAULT_COUNTRY_CODE || "").trim();
-  if (country && /^\+\d+$/.test(country) && /^\d{10}$/.test(cleaned)) {
-    return `whatsapp:${country}${cleaned}`;
+  if (country && /^\+\d+$/.test(country)) {
+    if (/^\d{10}$/.test(cleaned)) return `whatsapp:${country}${cleaned}`;
+    if (/^0\d{10}$/.test(cleaned)) return `whatsapp:${country}${cleaned.slice(1)}`;
+    if (/^91\d{10}$/.test(cleaned) && country === "+91") return `whatsapp:+${cleaned}`;
   }
 
   return null;
@@ -55,27 +57,53 @@ async function sendWhatsAppMessage({ to, body }) {
       to: normalizedTo,
       body,
     });
-    return { skipped: true, reason: "disabled" };
+    return { to: normalizedTo, skipped: true, reason: "disabled" };
   }
 
   const client = getClient();
   if (!client) {
     console.warn("[whatsapp] Twilio client not configured. Skipping send.");
-    return { skipped: true, reason: "no_client" };
+    return { to: normalizedTo, skipped: true, reason: "no_client" };
   }
 
   if (!from) {
     console.warn("[whatsapp] WHATSAPP_FROM missing. Skipping send.");
-    return { skipped: true, reason: "no_from" };
+    return { to: normalizedTo, skipped: true, reason: "no_from" };
   }
 
-  const message = await client.messages.create({
-    from,
-    to: normalizedTo,
-    body,
-  });
+  if (!String(from).startsWith("whatsapp:")) {
+    console.warn("[whatsapp] WHATSAPP_FROM must start with whatsapp:. Skipping send.", { from });
+    return { to: normalizedTo, skipped: true, reason: "invalid_from" };
+  }
 
-  return { success: true, sid: message.sid };
+  try {
+    const message = await client.messages.create({
+      from,
+      to: normalizedTo,
+      body,
+    });
+    console.log("[whatsapp] sent", { to: normalizedTo, sid: message.sid });
+    return { to: normalizedTo, success: true, sid: message.sid };
+  } catch (err) {
+    // Twilio errors often include: status, code, moreInfo
+    console.warn("[whatsapp] send failed", {
+      to: normalizedTo,
+      status: err?.status,
+      code: err?.code,
+      message: err?.message,
+      moreInfo: err?.moreInfo,
+    });
+    return {
+      to: normalizedTo,
+      success: false,
+      error: {
+        status: err?.status,
+        code: err?.code,
+        message: err?.message,
+        moreInfo: err?.moreInfo,
+      },
+    };
+  }
 }
 
 async function sendWhatsAppMessageToMany({ toList, body }) {
@@ -96,7 +124,7 @@ async function sendWhatsAppMessageToMany({ toList, body }) {
 }
 
 function buildTrackUrl(trackingToken) {
-  const base = (process.env.BASE_URL || "").replace(/\/+$/, "");
+  const base = (process.env.TRACK_BASE_URL || process.env.BASE_URL || "").replace(/\/+$/, "");
   if (!base || !trackingToken) return null;
   return `${base}/track/${trackingToken}`;
 }

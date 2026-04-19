@@ -72,7 +72,8 @@ export default function OrderList({
                 <th className="px-6 py-4 w-[20%] font-sans">Customer</th>
                 <th className="px-6 py-4 w-[15%] font-sans">Total Amount</th>
                 <th className="px-6 py-4 w-[15%] font-sans">Payment</th>
-                <th className="px-6 py-4 w-[20%] font-sans">Status</th>
+                <th className="px-6 py-4 w-[12%] font-sans">Status</th>
+                <th className="px-6 py-4 w-[8%] font-sans">WhatsApp</th>
                 <th className="px-6 py-4 w-[10%] text-right font-sans">Actions</th>
               </tr>
             </thead>
@@ -137,6 +138,35 @@ export default function OrderList({
                       <option value="Delivered">Delivered</option>
                       <option value="Cancelled">Cancelled</option>
                     </select>
+                  </td>
+                  <td className="px-6 py-5">
+                    {(() => {
+                      const logs = Array.isArray(order.whatsappLogs) ? order.whatsappLogs : [];
+                      if (logs.length === 0) {
+                        return (
+                          <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-500">
+                            —
+                          </span>
+                        );
+                      }
+                      const last = logs[logs.length - 1];
+                      const ok = last?.success;
+                      const skipped = last?.skipped;
+                      const label = ok ? "Sent" : skipped ? "Skipped" : "Failed";
+                      const cls = ok
+                        ? "bg-emerald-50 text-emerald-700"
+                        : skipped
+                          ? "bg-slate-100 text-slate-600"
+                          : "bg-red-50 text-red-700";
+                      return (
+                        <span
+                          title={last?.to ? `To: ${last.to}` : undefined}
+                          className={`text-[10px] font-black px-2.5 py-1 rounded-lg ${cls}`}
+                        >
+                          {label}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-5 text-right relative">
                     <button
