@@ -40,7 +40,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     try {
       // Delete old image if exists
       if (form.image) {
-        await service.deleteImage(form.image).catch(() => {});
+        await service.deleteImage(form.image).catch(() => { });
       }
       const file = event.target.files[0];
       const data = await service.uploadImage(file);
@@ -85,7 +85,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
   };
 
   return (
-    <section className="bg-card rounded-[2.5rem] border border-border-theme shadow-2xl max-w-5xl mx-auto overflow-hidden animate-in zoom-in-95 duration-200">
+    <section className="bg-card rounded-[2.5rem] border border-border-theme shadow-2xl mx-auto overflow-hidden animate-in zoom-in-95 duration-200">
       <div className="p-6 border-b border-border-theme flex justify-between items-center bg-hover-theme/50">
         <h2 className="text-lg font-bold text-foreground">
           {product ? "Edit Product" : "Add New Product"}
@@ -177,25 +177,52 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 />
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Delivery Time (Hours)</label>
-                <input
-                  value={form.deliveryTime}
-                  onChange={(e) => setForm({ ...form, deliveryTime: e.target.value })}
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 24-48"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Expected Delivery (Hours)</label>
-                <input
-                  value={form.expectedDeliveryDate}
-                  onChange={(e) => setForm({ ...form, expectedDeliveryDate: e.target.value })}
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 2 Hours"
-                />
-              </div>
+
+
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="isCodAvailable"
+                checked={form.isCodAvailable}
+                onChange={(e) => setForm({ ...form, isCodAvailable: e.target.checked })}
+                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
+              />
+              <label htmlFor="isCodAvailable" className="text-sm font-bold text-slate-700">Cash on Delivery Available</label>
+            </div>
+          </div>
+
+          {/* Right Side: Image Upload */}
+          <div className="space-y-6">
+            <label className="block text-sm font-bold text-slate-700 uppercase tracking-tighter">Product Image</label>
+            <div className="relative aspect-square w-full h-96 rounded-3xl border-2 border-dashed border-border-theme bg-hover-theme/30 flex flex-col items-center justify-center overflow-hidden group">
+              {form.image ? (
+                <>
+                  <img src={form.image} className="h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                    <label className="cursor-pointer bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg text-sm">
+                      Update Image
+                      <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
+                    </label>
+                  </div>
+                </>
+              ) : (
+                <label className="cursor-pointer flex flex-col items-center gap-4">
+                  <div className="p-4 bg-primary/10 text-primary rounded-2xl shadow-sm">
+                    <Upload size={32} />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-primary font-bold">Select Image</span>
+                    <p className="text-xs text-slate-400 font-medium mt-1 uppercase tracking-widest">JPG, PNG allowed</p>
+                  </div>
+                  <input type="file" onChange={handleFileUpload} className="hidden" />
+                </label>
+              )}
+              {uploadingImage && (
+                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+                  <p className="text-primary font-bold">Uploading...</p>
+                </div>
+              )}
+
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
@@ -229,49 +256,25 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 />
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="isCodAvailable"
-                checked={form.isCodAvailable}
-                onChange={(e) => setForm({ ...form, isCodAvailable: e.target.checked })}
-                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
-              />
-              <label htmlFor="isCodAvailable" className="text-sm font-bold text-slate-700">Cash on Delivery Available</label>
-            </div>
-          </div>
-
-          {/* Right Side: Image Upload */}
-          <div className="space-y-6">
-            <label className="block text-sm font-bold text-slate-700 uppercase tracking-tighter">Product Image</label>
-            <div className="relative aspect-square w-full rounded-3xl border-2 border-dashed border-border-theme bg-hover-theme/30 flex flex-col items-center justify-center overflow-hidden group">
-              {form.image ? (
-                <>
-                  <img src={form.image} className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <label className="cursor-pointer bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg text-sm">
-                      Update Image
-                      <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
-                    </label>
-                  </div>
-                </>
-              ) : (
-                <label className="cursor-pointer flex flex-col items-center gap-4">
-                  <div className="p-4 bg-primary/10 text-primary rounded-2xl shadow-sm">
-                    <Upload size={32} />
-                  </div>
-                  <div className="text-center">
-                    <span className="text-primary font-bold">Select Image</span>
-                    <p className="text-xs text-slate-400 font-medium mt-1 uppercase tracking-widest">JPG, PNG allowed</p>
-                  </div>
-                  <input type="file" onChange={handleFileUpload} className="hidden" />
-                </label>
-              )}
-              {uploadingImage && (
-                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
-                  <p className="text-primary font-bold">Uploading...</p>
-                </div>
-              )}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Delivery Time (Hours)</label>
+                <input
+                  value={form.deliveryTime}
+                  onChange={(e) => setForm({ ...form, deliveryTime: e.target.value })}
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 24-48"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Expected Delivery (Hours)</label>
+                <input
+                  value={form.expectedDeliveryDate}
+                  onChange={(e) => setForm({ ...form, expectedDeliveryDate: e.target.value })}
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 2 Hours"
+                />
+              </div>
             </div>
           </div>
         </div>
