@@ -124,7 +124,7 @@ export default function ProductDetailScreen({ route, navigation }) {
            <Image source={{ uri: product.image }} style={styles.mainImage} />
            {discountPercent > 0 && (
              <View style={styles.offBadge}>
-               <Text style={styles.offText}>{discountPercent}% OFF</Text>
+               <Text style={styles.offText}>{product.discount}% OFF</Text>
              </View>
            )}
         </View>
@@ -204,7 +204,7 @@ export default function ProductDetailScreen({ route, navigation }) {
               {discountPercent > 0 && (
                 <View style={styles.summaryRow}>
                    <Text style={styles.sumLabel}>Discount</Text>
-                   <Text style={[styles.sumVal, { color: '#16A34A' }]}>-₹{(discountAmount * quantity).toFixed(2)}</Text>
+                   <Text style={[styles.sumVal, { color: '#16A34A' }]}>-₹{(product.discount * quantity).toFixed(2)}</Text>
                 </View>
               )}
               <View style={styles.summaryRow}>

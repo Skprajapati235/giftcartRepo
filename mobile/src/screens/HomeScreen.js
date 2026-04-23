@@ -197,6 +197,7 @@ export default function HomeScreen({ navigation }) {
       setLocationLoading(false);
     }
   };
+  
 
   const renderProduct = ({ item }) => (
     <TouchableOpacity
@@ -213,7 +214,8 @@ export default function HomeScreen({ navigation }) {
           {item.salePrice && item.price > item.salePrice && (
             <View style={styles.discountBadgeSmall}>
               <Text style={styles.discountTextSmall}>
-                {Math.round(((item.price - item.salePrice) / item.price) * 100)}% OFF
+                {item.discount}% OFF
+                {/* {Math.round(((item.price - item.salePrice) / item.price) * 100)}% OFF */}
               </Text>
             </View>
           )}
