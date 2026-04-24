@@ -27,7 +27,9 @@ interface OrderDetailData {
     quantity: number, 
     price: number,
     deliveryTime?: string,
-    expectedDeliveryDate?: string
+    expectedDeliveryDate?: string,
+    selectedVariant?: string,
+    isEggless?: boolean
   }>;
   createdAt: string;
   whatsappLogs?: Array<{
@@ -142,6 +144,12 @@ export default function OrderDetailView() {
                     </div>
                     <div>
                       <h4 className="font-bold">{item.name}</h4>
+                      {(item.selectedVariant || item.isEggless) && (
+                         <div className="mt-1 text-xs text-slate-500 font-bold">
+                           {item.selectedVariant && <span className="mr-2">Variant: {item.selectedVariant}</span>}
+                           {item.isEggless && <span className="text-emerald-600">Eggless</span>}
+                         </div>
+                      )}
                       <div className="mt-1 flex gap-4 text-[10px] items-center">
                          <span className="text-slate-400 font-mono">ID: {order._id.slice(-6)}</span>
                          {item.expectedDeliveryDate && (

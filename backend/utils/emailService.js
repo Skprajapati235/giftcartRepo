@@ -12,8 +12,11 @@ exports.sendOrderNotification = async (order, user) => {
   try {
     const itemsList = order.items
       .map(
-        (item) =>
-          `<li>${item.name} - Quantity: ${item.quantity} - Total: ₹${item.itemTotal}</li>`
+        (item) => {
+          let variantStr = item.selectedVariant ? ` [${item.selectedVariant}]` : '';
+          let egglessStr = item.isEggless ? ' (Eggless)' : '';
+          return `<li>${item.name}${variantStr}${egglessStr} - Quantity: ${item.quantity} - Total: ₹${item.itemTotal}</li>`;
+        }
       )
       .join("");
 

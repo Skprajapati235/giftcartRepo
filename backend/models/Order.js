@@ -40,6 +40,8 @@ const orderSchema = new mongoose.Schema({
       quantity: { type: Number, required: true },
       price: { type: Number, required: true },
       salePrice: { type: Number },
+      selectedVariant: { type: String },
+      isEggless: { type: Boolean, default: false },
       shippingCost: { type: Number, default: 0 },
       discount: { type: Number, default: 0 },
       tax: { type: Number, default: 0 },

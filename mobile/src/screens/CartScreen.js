@@ -19,14 +19,17 @@ export default function CartScreen({ navigation }) {
   const [selectedItems, setSelectedItems] = useState([]);
   const [total, setTotal] = useState(0);
 
+  const getId = (item) => item.cartItemId || item._id;
+
   const loadCart = async () => {
     try {
       const raw = await AsyncStorage.getItem('@giftcart_cart');
       const items = raw ? JSON.parse(raw) : [];
       setCartItems(items);
       // Default select all on load
-      setSelectedItems(items.map(i => i._id));
-      calculateTotal(items, items.map(i => i._id));
+      const ids = items.map(i => getId(i));
+      setSelectedItems(ids);
+      calculateTotal(items, ids);
     } catch (err) {
       console.error(err);
     }
@@ -34,7 +37,7 @@ export default function CartScreen({ navigation }) {
 
   const calculateTotal = (items, selectedIds) => {
     const sum = items
-      .filter(item => selectedIds.includes(item._id))
+      .filter(item => selectedIds.includes(getId(item)))
       .reduce((acc, item) => acc + (item.salePrice || item.price || 0), 0);
     setTotal(sum);
   };
@@ -57,7 +60,7 @@ export default function CartScreen({ navigation }) {
 
   const removeItem = async (id) => {
     try {
-      const nextItems = cartItems.filter(item => item._id !== id);
+      const nextItems = cartItems.filter(item => getId(item) !== id);
       const nextSelected = selectedItems.filter(i => i !== id);
       await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(nextItems));
       setCartItems(nextItems);
@@ -70,7 +73,7 @@ export default function CartScreen({ navigation }) {
   };
 
   const handleCheckout = () => {
-    const itemsToOrder = cartItems.filter(item => selectedItems.includes(item._id));
+    const itemsToOrder = cartItems.filter(item => selectedItems.includes(getId(item)));
     if (itemsToOrder.length === 0) {
       showToast('Please select items to checkout', 'warning');
       return;
@@ -79,10 +82,11 @@ export default function CartScreen({ navigation }) {
   };
 
   const renderItem = ({ item }) => {
-    const isSelected = selectedItems.includes(item._id);
+    const id = getId(item);
+    const isSelected = selectedItems.includes(id);
     return (
       <View style={styles.card}>
-        <TouchableOpacity onPress={() => toggleSelection(item._id)} style={styles.checkbox}>
+        <TouchableOpacity onPress={() => toggleSelection(id)} style={styles.checkbox}>
            <Ionicons 
              name={isSelected ? "checkbox" : "square-outline"} 
              size={24} 
@@ -93,9 +97,14 @@ export default function CartScreen({ navigation }) {
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
           <Text style={styles.price}>₹{item.salePrice || item.price}</Text>
-          {item.weight ? <Text style={styles.weightText}>{item.weight}</Text> : null}
+          {(item.selectedVariant || item.weight) && (
+            <Text style={styles.weightText}>
+              {item.selectedVariant || item.weight}
+              {item.isEggless && ' • Eggless'}
+            </Text>
+          )}
         </View>
-        <TouchableOpacity onPress={() => removeItem(item._id)} style={styles.removeBtn}>
+        <TouchableOpacity onPress={() => removeItem(id)} style={styles.removeBtn}>
           <Feather name="trash-2" size={20} color="#FF6A3D" />
         </TouchableOpacity>
       </View>
@@ -114,7 +123,7 @@ export default function CartScreen({ navigation }) {
 
       <FlatList
         data={cartItems}
-        keyExtractor={item => item._id}
+        keyExtractor={item => getId(item)}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         ListEmptyComponent={() => (

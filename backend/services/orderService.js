@@ -43,6 +43,8 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
       discount,
       tax,
       itemTotal,
+      selectedVariant: item.selectedVariant || null,
+      isEggless: item.isEggless || false,
       deliveryTime: item.deliveryTime,
       expectedDeliveryDate: item.expectedDeliveryDate,
     };

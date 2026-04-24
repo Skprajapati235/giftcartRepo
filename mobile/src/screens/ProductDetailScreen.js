@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Dimensions, Platform, Modal, ActivityIndicator, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { getProductReviews, deleteReview, likeReview, dislikeReview } from '../services/reviewService';
 import { toggleWishlist, getWishlist } from '../services/wishlistService';
-import orderService from '../services/orderService';
 import { useToast } from '../context/ToastContext';
 
 const { width } = Dimensions.get('window');
@@ -23,11 +22,27 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  // Variant States
+  const [selectedWeight, setSelectedWeight] = useState(product.weightOptions?.length > 0 ? product.weightOptions[0] : null);
+  const [selectedFlower, setSelectedFlower] = useState(product.flowerOptions?.length > 0 ? product.flowerOptions[0] : null);
+  const [isEggless, setIsEggless] = useState(false);
+  
+  // Image Gallery
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const galleryImages = [product.image, ...(product.images || [])].filter(Boolean);
+
   // Pricing Calculations
   const mrp = Number(product.price || 0);
-  const salePrice = product.salePrice !== undefined && product.salePrice !== null ? Number(product.salePrice) : mrp;
-  const unitPrice = salePrice;
-  const discountAmount = mrp > salePrice ? mrp - salePrice : 0;
+  let baseSalePrice = product.salePrice !== undefined && product.salePrice !== null ? Number(product.salePrice) : mrp;
+  
+  if (selectedWeight) baseSalePrice = selectedWeight.price;
+  if (selectedFlower) baseSalePrice = selectedFlower.price;
+  
+  // Optional: add 50rs for eggless? If not specified, we keep price same
+  if (isEggless) baseSalePrice += 50; 
+
+  const unitPrice = baseSalePrice;
+  const discountAmount = mrp > baseSalePrice ? mrp - baseSalePrice : 0;
   const discountPercent = mrp > 0 ? Math.round((discountAmount / mrp) * 100) : 0;
   
   const tax = Number(product.tax || 0);
@@ -68,7 +83,6 @@ export default function ProductDetailScreen({ route, navigation }) {
   const fetchReviews = async () => {
     try {
       const res = await getProductReviews(product._id);
-      // Handle both paginated object and direct array response
       const reviewsArray = res.data || (Array.isArray(res) ? res : []);
       setReviews(reviewsArray);
     } catch (err) {
@@ -93,15 +107,36 @@ export default function ProductDetailScreen({ route, navigation }) {
     try {
       const raw = await AsyncStorage.getItem('@giftcart_cart');
       const cart = raw ? JSON.parse(raw) : [];
-      if (cart.some(i => i._id === product._id)) {
+      
+      const variantStr = selectedWeight ? selectedWeight.weight : (selectedFlower ? `${selectedFlower.count} Flowers` : '');
+      const egglessStr = product.hasEgglessOption && isEggless ? 'Eggless' : '';
+      const cartItemId = `${product._id}_${variantStr}_${egglessStr}`;
+
+      if (cart.some(i => i.cartItemId === cartItemId || (!i.cartItemId && i._id === product._id))) {
         navigation.navigate('Cart');
         return;
       }
-      cart.push({ ...product, quantity });
+      
+      const cartItem = { 
+        ...product, 
+        cartItemId,
+        quantity,
+        salePrice: unitPrice, // Overriding with variant price
+        selectedVariant: variantStr || null,
+        isEggless: product.hasEgglessOption ? isEggless : false
+      };
+      
+      cart.push(cartItem);
       await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(cart));
       setAdded(true);
       showToast('Added to cart', 'success');
     } catch (err) { showToast('Could not add to cart.', 'error'); }
+  };
+
+  const handleScroll = (event) => {
+    const scrollPosition = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollPosition / width);
+    setActiveImageIndex(index);
   };
 
   return (
@@ -119,12 +154,32 @@ export default function ProductDetailScreen({ route, navigation }) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-        {/* Main Image Banner */}
+        {/* Main Image Gallery Banner */}
         <View style={styles.imageWrapper}>
-           <Image source={{ uri: product.image }} style={styles.mainImage} />
+           <ScrollView 
+             horizontal 
+             pagingEnabled 
+             showsHorizontalScrollIndicator={false}
+             onScroll={handleScroll}
+             scrollEventThrottle={16}
+           >
+             {galleryImages.map((img, idx) => (
+               <Image key={idx} source={{ uri: img }} style={styles.mainImage} />
+             ))}
+           </ScrollView>
+           
+           {/* Pagination Dots */}
+           {galleryImages.length > 1 && (
+             <View style={styles.paginationDots}>
+               {galleryImages.map((_, idx) => (
+                 <View key={idx} style={[styles.dot, activeImageIndex === idx && styles.activeDot]} />
+               ))}
+             </View>
+           )}
+
            {discountPercent > 0 && (
              <View style={styles.offBadge}>
-               <Text style={styles.offText}>{product.discount}% OFF</Text>
+               <Text style={styles.offText}>{discountPercent}% OFF</Text>
              </View>
            )}
         </View>
@@ -135,10 +190,12 @@ export default function ProductDetailScreen({ route, navigation }) {
            
            <View style={styles.topInfo}>
               <View style={styles.categoryInfo}>
-                 <Text style={styles.categoryName}>{product.category?.name || 'EXCLUSIVE GIFT'}</Text>
+                 <View style={styles.catBadge}>
+                   <Text style={styles.categoryName}>{product.category?.name || 'EXCLUSIVE GIFT'}</Text>
+                 </View>
                  <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={12} color="#FFD700" />
-                    <Text style={styles.ratingValue}>{product.ratings?.toFixed(1) || '4.5'}</Text>
+                    <Ionicons name="star" size={12} color="#F59E0B" />
+                    <Text style={styles.ratingValue}>{product.ratings?.toFixed(1) || '4.8'}</Text>
                  </View>
               </View>
               <Text style={styles.productTitle}>{product.name}</Text>
@@ -146,13 +203,13 @@ export default function ProductDetailScreen({ route, navigation }) {
 
            {/* Quick Specification Grid */}
            <View style={styles.specGrid}>
-              {product.weight && (
+              {product.weight && !product.weightOptions?.length && (
                 <View style={styles.specItem}>
                    <MaterialCommunityIcons name="weight" size={20} color="#D82B76" />
                    <Text style={styles.specLabel}>{product.weight}</Text>
                 </View>
               )}
-              {product.flowers && (
+              {product.flowers && !product.flowerOptions?.length && (
                 <View style={styles.specItem}>
                    <MaterialCommunityIcons name="flower" size={20} color="#D82B76" />
                    <Text style={styles.specLabel}>{product.flowers} Flores</Text>
@@ -160,9 +217,97 @@ export default function ProductDetailScreen({ route, navigation }) {
               )}
                <View style={[styles.specItem, { borderRightWidth: 0 }]}>
                   <MaterialCommunityIcons name="clock-outline" size={20} color="#D82B76" />
-                  <Text style={styles.specLabel}>{product.deliveryTime ? `${product.deliveryTime} Hours` : '24-48 Hours'}</Text>
+                  <Text style={styles.specLabel}>{product.deliveryTime ? `${product.deliveryTime} Hrs` : '24-48 Hrs'}</Text>
                </View>
             </View>
+
+           {/* Variants Selection Section */}
+           {(product.weightOptions?.length > 0 || product.flowerOptions?.length > 0 || product.hasEgglessOption) && (
+             <View style={styles.variantsContainer}>
+               
+               {/* Weight Variants */}
+               {product.weightOptions?.length > 0 && (
+                 <View style={styles.variantGroup}>
+                   <Text style={styles.variantLabel}>Select Weight</Text>
+                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                     {product.weightOptions.map((opt, i) => {
+                       const isSelected = selectedWeight?.weight === opt.weight;
+                       return (
+                         <TouchableOpacity 
+                           key={i} 
+                           style={[styles.chip, isSelected && styles.activeChip]}
+                           onPress={() => setSelectedWeight(opt)}
+                         >
+                           <Text style={[styles.chipText, isSelected && styles.activeChipText]}>{opt.weight}</Text>
+                           <Text style={[styles.chipPrice, isSelected && styles.activeChipPrice]}>₹{opt.price}</Text>
+                         </TouchableOpacity>
+                       );
+                     })}
+                   </ScrollView>
+                 </View>
+               )}
+
+               {/* Flower Variants */}
+               {product.flowerOptions?.length > 0 && (
+                 <View style={styles.variantGroup}>
+                   <Text style={styles.variantLabel}>Select Quantity</Text>
+                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
+                     {product.flowerOptions.map((opt, i) => {
+                       const isSelected = selectedFlower?.count === opt.count;
+                       return (
+                         <TouchableOpacity 
+                           key={i} 
+                           style={[styles.chip, isSelected && styles.activeChip]}
+                           onPress={() => setSelectedFlower(opt)}
+                         >
+                           <Text style={[styles.chipText, isSelected && styles.activeChipText]}>{opt.count} Flowers</Text>
+                           <Text style={[styles.chipPrice, isSelected && styles.activeChipPrice]}>₹{opt.price}</Text>
+                         </TouchableOpacity>
+                       );
+                     })}
+                   </ScrollView>
+                 </View>
+               )}
+
+               {/* Eggless Option */}
+               {product.hasEgglessOption && (
+                 <View style={[styles.variantGroup, styles.egglessContainer]}>
+                   <Text style={styles.variantLabel}>Cake Type</Text>
+                   <View style={styles.egglessToggleRow}>
+                     <TouchableOpacity 
+                       style={[styles.eggBtn, !isEggless && styles.eggBtnActive]}
+                       onPress={() => setIsEggless(false)}
+                     >
+                       <View style={styles.vegMarkContainer}>
+                         <View style={[styles.vegMark, { borderColor: '#B91C1C' }]}>
+                           <View style={[styles.vegDot, { backgroundColor: '#B91C1C' }]} />
+                         </View>
+                       </View>
+                       <View style={styles.eggBtnTexts}>
+                         <Text style={[styles.eggBtnText, !isEggless && styles.eggBtnTextActive]}>With Egg</Text>
+                         <Text style={[styles.eggPriceText, !isEggless && styles.eggBtnTextActive]}>No extra charge</Text>
+                       </View>
+                     </TouchableOpacity>
+                     
+                     <TouchableOpacity 
+                       style={[styles.eggBtn, isEggless && styles.eggBtnActive]}
+                       onPress={() => setIsEggless(true)}
+                     >
+                       <View style={styles.vegMarkContainer}>
+                         <View style={[styles.vegMark, { borderColor: '#16A34A' }]}>
+                           <View style={[styles.vegDot, { backgroundColor: '#16A34A' }]} />
+                         </View>
+                       </View>
+                       <View style={styles.eggBtnTexts}>
+                         <Text style={[styles.eggBtnText, isEggless && styles.eggBtnTextActive]}>100% Eggless</Text>
+                         <Text style={[styles.eggPriceText, isEggless && styles.eggBtnTextActive]}>+₹50 Additional</Text>
+                       </View>
+                     </TouchableOpacity>
+                   </View>
+                 </View>
+               )}
+             </View>
+           )}
 
             <View style={styles.deliveryInfoRow}>
                <Feather name="truck" size={18} color="#D82B76" />
@@ -178,8 +323,8 @@ export default function ProductDetailScreen({ route, navigation }) {
                  <Text style={styles.label}>Total Price</Text>
                  <View style={styles.mainPriceRow}>
                     <Text style={styles.currency}>₹</Text>
-                    <Text style={styles.currentPrice}>{salePrice.toLocaleString()}</Text>
-                    {mrp > salePrice && (
+                    <Text style={styles.currentPrice}>{unitPrice.toLocaleString()}</Text>
+                    {mrp > unitPrice && (
                        <Text style={styles.oldPriceText}>₹{mrp.toLocaleString()}</Text>
                     )}
                  </View>
@@ -382,7 +527,10 @@ const styles = StyleSheet.create({
   headerBtn: { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   
   imageWrapper: { width: width, height: ITEM_HEIGHT, position: 'relative' },
-  mainImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  mainImage: { width: width, height: ITEM_HEIGHT, resizeMode: 'cover' },
+  paginationDots: { position: 'absolute', bottom: 60, width: '100%', flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.4)' },
+  activeDot: { backgroundColor: '#FFF', width: 24 },
   offBadge: { position: 'absolute', bottom: 60, right: 0, backgroundColor: '#D82B76', paddingHorizontal: 15, paddingVertical: 8, borderTopLeftRadius: 20 },
   offText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
 
@@ -398,6 +546,36 @@ const styles = StyleSheet.create({
   ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF9C4', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5 },
   ratingValue: { fontSize: 12, fontWeight: '800', color: '#FBC02D' },
   productTitle: { fontSize: 28, fontWeight: '900', color: '#1A1A1A', lineHeight: 34 },
+
+  variantsContainer: { marginBottom: 25 },
+  variantGroup: { marginBottom: 20 },
+  variantLabel: { fontSize: 14, fontWeight: '800', color: '#1A1A1A', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  chipsScroll: { flexDirection: 'row', paddingBottom: 5 },
+  chip: { 
+    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10, 
+    marginRight: 10, backgroundColor: '#F8FAFC', minWidth: 90, alignItems: 'center'
+  },
+  activeChip: { borderColor: '#D82B76', backgroundColor: '#FFF0F5' },
+  chipText: { fontSize: 14, fontWeight: '700', color: '#64748B' },
+  activeChipText: { color: '#D82B76' },
+  chipPrice: { fontSize: 12, fontWeight: '900', color: '#1E293B', marginTop: 2 },
+  activeChipPrice: { color: '#D82B76' },
+
+  egglessContainer: { marginTop: 5 },
+  egglessToggleRow: { flexDirection: 'row', gap: 12 },
+  eggBtn: { 
+    flex: 1, flexDirection: 'row', alignItems: 'center', 
+    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 16, 
+    padding: 12, backgroundColor: '#F8FAFC' 
+  },
+  eggBtnActive: { borderColor: '#D82B76', backgroundColor: '#FFF0F5' },
+  vegMarkContainer: { marginRight: 10 },
+  vegMark: { width: 16, height: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', borderRadius: 2 },
+  vegDot: { width: 8, height: 8, borderRadius: 4 },
+  eggBtnTexts: { flex: 1 },
+  eggBtnText: { fontSize: 13, fontWeight: '800', color: '#4B5563' },
+  eggBtnTextActive: { color: '#D82B76' },
+  eggPriceText: { fontSize: 10, fontWeight: '600', color: '#9CA3AF', marginTop: 2 },
 
   specGrid: { flexDirection: 'row', backgroundColor: '#F8FAFC', borderRadius: 20, padding: 15, marginBottom: 25, borderWidth: 1, borderColor: '#F1F5F9' },
   specItem: { flex: 1, alignItems: 'center', borderRightWidth: 1, borderRightColor: '#E2E8F0', paddingVertical: 5 },

@@ -572,6 +572,12 @@ export default function CheckoutScreen({ navigation, route }) {
                 <View key={item._id + idx} style={styles.orderItem}>
                   <View style={styles.orderItemLeft}>
                     <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+                    {(item.selectedVariant || item.weight) && (
+                      <Text style={styles.itemMeta}>
+                        Variant: {item.selectedVariant || item.weight}
+                        {item.isEggless ? ' (Eggless)' : ''}
+                      </Text>
+                    )}
                     <Text style={styles.itemMeta}>Qty {quantity} · ₹{basePrice} each</Text>
                     {discount > 0 && <Text style={styles.itemMeta}>Discount {discount}%</Text>}
                     {tax > 0 && <Text style={styles.itemMeta}>Tax {tax}%</Text>}

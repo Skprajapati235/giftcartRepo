@@ -98,9 +98,13 @@ export const createProduct = async (payload: {
   summary?: string;
   layout?: string;
   image: string;
+  images?: string[];
   category: string;
   weight?: string;
+  weightOptions?: { weight: string; price: number }[];
   flowers?: number;
+  flowerOptions?: { count: number; price: number }[];
+  hasEgglessOption?: boolean;
   shippingCost?: number;
   discount?: number;
   tax?: number;
@@ -120,9 +124,13 @@ export const updateProduct = async (
     summary?: string;
     layout?: string;
     image: string;
+    images?: string[];
     category: string;
     weight?: string;
+    weightOptions?: { weight: string; price: number }[];
     flowers?: number;
+    flowerOptions?: { count: number; price: number }[];
+    hasEgglessOption?: boolean;
     shippingCost?: number;
     discount?: number;
     tax?: number;
