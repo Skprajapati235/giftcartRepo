@@ -25,25 +25,47 @@ export default function WishlistScreen({ navigation }) {
     }, [])
   );
 
-  const renderWishItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.card} 
-      onPress={() => navigation.navigate('ProductDetail', { product: item })}
-    >
-      <Image source={{ uri: item.image }} style={styles.image} />
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.category}>{item.category?.name || 'Category'}</Text>
-        <Text style={styles.price}>₹{item.salePrice || item.price}</Text>
-      </View>
+  const handleRemove = async (productId) => {
+    try {
+      await toggleWishlist(productId);
+      fetchWishlist();
+    } catch (error) {
+      console.warn("Error removing from wishlist", error);
+    }
+  };
+
+  const renderWishItem = ({ item }) => {
+    const product = item.product;
+    if (!product) return null; // safety check
+    
+    return (
       <TouchableOpacity 
-        style={styles.addBtn}
-        onPress={() => navigation.navigate('ProductDetail', { product: item })}
+        style={styles.card} 
+        onPress={() => navigation.navigate('ProductDetail', { product: product })}
       >
-        <Feather name="chevron-right" size={20} color="#FFF" />
+        <Image source={{ uri: product.image }} style={styles.image} />
+        <View style={styles.info}>
+          <Text style={styles.name}>{product.name}</Text>
+          <Text style={styles.category}>{product.category?.name || 'Category'}</Text>
+          <Text style={styles.price}>₹{product.salePrice || product.price}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity 
+            style={[styles.addBtn, { backgroundColor: '#F8FAFC' }]}
+            onPress={() => handleRemove(product._id)}
+          >
+            <Feather name="trash-2" size={18} color="#EF4444" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.addBtn}
+            onPress={() => navigation.navigate('ProductDetail', { product: product })}
+          >
+            <Feather name="chevron-right" size={20} color="#FFF" />
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>

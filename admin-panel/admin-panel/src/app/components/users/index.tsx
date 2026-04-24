@@ -5,6 +5,7 @@ import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
 import UserList from "./userList";
 import UserDetailDialogue from "./userDetailDialogue";
+import UserWishlistDialogue from "./userWishlistDialogue";
 
 export default function UsersView() {
   const {
@@ -20,6 +21,7 @@ export default function UsersView() {
   } = useResource<any>(service.getUsers, "users");
 
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedWishlistUser, setSelectedWishlistUser] = useState<any>(null);
 
   const handleDelete = async (id: string) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
@@ -49,6 +51,7 @@ export default function UsersView() {
         onSearchChange={onSearchChange}
         error={error}
         onView={setSelectedUser}
+        onViewWishlist={setSelectedWishlistUser}
         onDelete={handleDelete}
       />
 
@@ -59,6 +62,13 @@ export default function UsersView() {
             onClose={() => setSelectedUser(null)}
           />
         </div>
+      )}
+
+      {selectedWishlistUser && (
+        <UserWishlistDialogue
+          user={selectedWishlistUser}
+          onClose={() => setSelectedWishlistUser(null)}
+        />
       )}
     </>
   );

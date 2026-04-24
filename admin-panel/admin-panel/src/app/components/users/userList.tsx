@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useRef, useEffect } from "react";
-import { Search, Users, MoreHorizontal, Trash2, Mail, MapPin, Calendar } from "lucide-react";
+import { Search, Users, MoreHorizontal, Trash2, Mail, MapPin, Calendar, Heart } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 
@@ -16,6 +16,7 @@ interface UserListProps {
   onSearchChange: (search: string) => void;
   error: string | null;
   onView: (user: any) => void;
+  onViewWishlist: (user: any) => void;
   onDelete: (id: string) => void;
 }
 
@@ -30,6 +31,7 @@ export default function UserList({
   onSearchChange,
   error, 
   onView, 
+  onViewWishlist,
   onDelete 
 }: UserListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -148,6 +150,16 @@ export default function UserList({
                           }}
                         >
                           View Profile
+                        </button>
+                        <button
+                          className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-foreground hover:bg-hover-theme transition"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            onViewWishlist(user);
+                          }}
+                        >
+                          <Heart size={16} />
+                          View Wishlist
                         </button>
                         <div className="mx-2 my-1 border-t border-border-theme" />
                         <button

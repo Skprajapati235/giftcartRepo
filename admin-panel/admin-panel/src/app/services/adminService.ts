@@ -198,3 +198,8 @@ export const markOrderAsViewed = async (id: string) => {
   const response = await authApi(getAuthToken()).put(`/order/admin/${id}/viewed`);
   return response.data;
 };
+
+export const getUserWishlist = async (userId: string, params?: { page?: number; limit?: number; filter?: string }) => {
+  const response = await authApi(getAuthToken()).get(`/wishlist/admin/user/${userId}`, { params });
+  return response.data;
+};

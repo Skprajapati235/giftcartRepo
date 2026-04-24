@@ -53,7 +53,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   const checkWishlistStatus = async () => {
     try {
       const wishlist = await getWishlist();
-      setInWishlist(wishlist.some((item) => item._id === product._id));
+      setInWishlist(wishlist.some((item) => item.product && item.product._id === product._id));
     } catch (err) {}
   };
 
@@ -61,7 +61,7 @@ export default function ProductDetailScreen({ route, navigation }) {
     if (!user) { showToast('Please login to add items to wishlist', 'warning'); return; }
     try {
       const response = await toggleWishlist(product._id);
-      setInWishlist(response.includes(product._id));
+      setInWishlist(response.status === 'added');
     } catch (err) { showToast('Could not update wishlist', 'error'); }
   };
 
