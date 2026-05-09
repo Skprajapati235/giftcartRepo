@@ -106,7 +106,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
 
 
   return (
-    <section className="bg-card rounded-[1.2rem] border border-border-theme shadow-2xl mx-auto overflow-hidden animate-in zoom-in-95 duration-200 w-full flex flex-col">
+    <section className="bg-card rounded-[1.2rem] border border-border-theme shadow-1xl mx-auto overflow-hidden animate-in zoom-in-95 duration-200 w-full flex flex-col">
       <div className="p-6 border-b border-border-theme flex justify-between items-center bg-hover-theme/50 flex-shrink-0">
         <h2 className="text-lg font-bold text-foreground">
           {product ? "Edit Product" : "Add New Product"}
