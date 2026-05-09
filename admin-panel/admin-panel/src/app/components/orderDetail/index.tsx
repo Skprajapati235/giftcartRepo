@@ -20,6 +20,7 @@ interface OrderItem {
   expectedDeliveryDate?: string;
   selectedVariant?: string;
   isEggless?: boolean;
+  flavor?: string;
 }
 
 interface OrderDetailData {
