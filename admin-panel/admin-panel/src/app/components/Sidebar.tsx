@@ -22,6 +22,7 @@ import {
   Star,
   Gift,
   Ticket,
+  Pipette,
 } from "lucide-react";
 
 type NavChild = {
@@ -52,6 +53,7 @@ const navigation: NavItem[] = [
       { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
       { key: "payments", href: "/payments", label: "Payments", icon: CreditCard },
       { key: "reviews", href: "/reviews", label: "Reviews", icon: Star },
+      { key: "flavors", href: "/flavors", label: "Flavors", icon: Pipette },
     ],
   },
   { key: "category", href: "/category", label: "Categories", icon: Tag },

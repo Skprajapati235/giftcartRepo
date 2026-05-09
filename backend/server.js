@@ -112,7 +112,7 @@ app.use("/api/wishlist", require("./routes/wishlistRoutes"));
 app.use("/api/upload", authMiddleware, require("./routes/uploadRoutes"));
 app.use("/api/admin/users", adminMiddleware, require("./routes/userRoutes"));
 app.use("/api/coupons", require("./routes/couponRoutes"));
-
+app.use("/api/flavor", require("./routes/flavorRoutes"));
 
 app.listen(PORT, () =>
   console.log(`Server running on ${PORT}`)

@@ -207,6 +207,17 @@ export default function ProductDetailScreen({ route, navigation }) {
             </View>
           </View>
 
+          {/* Flavor Detail */}
+          {product.flavor && (
+            <View style={styles.flavorDetailContainer}>
+               <MaterialCommunityIcons name="cake-variant" size={20} color="#D82B76" />
+               <View style={{ marginLeft: 12 }}>
+                 <Text style={styles.flavorLabel}>Selected Flavor</Text>
+                 <Text style={styles.flavorNameDetail}>{product.flavor.name || product.flavor}</Text>
+               </View>
+            </View>
+          )}
+
           {/* Eggless Option */}
           {product.hasEgglessOption && (
             <View style={styles.variantsContainer}>
@@ -588,6 +599,29 @@ const styles = StyleSheet.create({
   btnRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   btnText: { color: '#FFF', fontSize: 16, fontWeight: '900' },
   btnSubTotal: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '800' },
+  
+  flavorDetailContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    padding: 15,
+    borderRadius: 18,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  flavorLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  flavorNameDetail: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#1A1A1A',
+  },
 
   // Modal Styles
   modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },

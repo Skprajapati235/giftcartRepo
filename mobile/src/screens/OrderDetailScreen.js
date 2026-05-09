@@ -116,14 +116,23 @@ export default function OrderDetailScreen({ route, navigation }) {
                 <View style={styles.productInfo}>
                   <Text style={styles.productName} numberOfLines={2}>{item.name || product.name || 'Gift Item'}</Text>
 
-                  {/* Variant + Eggless Badge */}
-                  {item.isEggless && (
-                    <View style={styles.variantBadge}>
-                      <Text style={styles.variantBadgeText}>
-                        Eggless
-                      </Text>
-                    </View>
-                  )}
+                  {/* Variant + Eggless + Flavor Badges */}
+                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                    {item.isEggless && (
+                      <View style={styles.variantBadge}>
+                        <Text style={styles.variantBadgeText}>
+                          Eggless
+                        </Text>
+                      </View>
+                    )}
+                    {item.flavor && (
+                      <View style={[styles.variantBadge, { backgroundColor: '#E0F2FE', borderColor: '#BAE6FD' }]}>
+                        <Text style={[styles.variantBadgeText, { color: '#0369A1' }]}>
+                          {item.flavor}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
 
                   <View style={styles.itemMetaRow}>
                     <Text style={styles.productSub}>Qty: {item.quantity}</Text>

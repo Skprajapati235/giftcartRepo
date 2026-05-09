@@ -12,7 +12,7 @@ interface AddEditProductProps {
 }
 
 export default function AddEditProduct({ product, onClose }: AddEditProductProps) {
-  const { categories, createProduct, updateProduct } = useAdmin();
+  const { categories, flavors, createProduct, updateProduct } = useAdmin();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -33,6 +33,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     // isCodAvailable: product?.isCodAvailable !== undefined ? product.isCodAvailable : true,
     deliveryTime: product?.deliveryTime || "3-5",
     expectedDeliveryDate: product?.expectedDeliveryDate || "Monday, 20 Oct",
+    flavor: product?.flavor?._id || product?.flavor || "",
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, isMain: boolean = false) => {
@@ -148,6 +149,17 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
               >
                 <option value="">Select Category</option>
                 {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-500 mb-2">Cake Flavor (Optional)</label>
+              <select
+                value={form.flavor}
+                onChange={(e) => setForm({ ...form, flavor: e.target.value })}
+                className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Select Flavor</option>
+                {flavors.map((f: any) => <option key={f._id} value={f._id}>{f.name}</option>)}
               </select>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">

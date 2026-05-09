@@ -16,6 +16,7 @@ interface AdminContextState {
   users: any[];
   admins: any[];
   cities: any[];
+  flavors: any[];
   loading: boolean;
   error: string;
   totalProducts: number;
@@ -25,41 +26,17 @@ interface AdminContextState {
   createCategory: (payload: { name: string; image?: string }) => Promise<void>;
   updateCategory: (id: string, payload: { name: string; image?: string }) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
+  createFlavor: (payload: { name: string; image?: string }) => Promise<void>;
+  updateFlavor: (id: string, payload: { name: string; image?: string }) => Promise<void>;
+  deleteFlavor: (id: string) => Promise<void>;
   createCity: (payload: { state: string; cities: string[]; image?: string }) => Promise<void>;
   updateCity: (id: string, payload: { state: string; cities: string[]; image?: string }) => Promise<void>;
   deleteCity: (id: string) => Promise<void>;
-  createProduct: (payload: {
-    name: string;
-    price: number;
-    salePrice?: number;
-    description: string;
-    summary?: string;
-    layout?: string;
-    image: string;
-    category: string;
-    weight?: string;
-    flowers?: number;
-    isCodAvailable?: boolean;
-  }) => Promise<void>;
-  updateProduct: (
-    id: string,
-    payload: {
-      name: string;
-      price: number;
-      salePrice?: number;
-      description: string;
-      summary?: string;
-      layout?: string;
-      image: string;
-      category: string;
-      weight?: string;
-      flowers?: number;
-      isCodAvailable?: boolean;
-    }
-  ) => Promise<void>;
+  createProduct: (payload: any) => Promise<void>;
+  updateProduct: (id: string, payload: any) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
-  updateAdmin: (id: string, payload: { name?: string; email?: string; city?: string }) => Promise<void>;
+  updateAdmin: (id: string, payload: any) => Promise<void>;
   deleteAdmin: (id: string) => Promise<void>;
 }
 
@@ -70,6 +47,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
+  const [flavors, setFlavors] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,30 +70,34 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setError("");
 
     try {
-      const [productData, categoryData, cityData, userData, adminData] = await Promise.all([
-        service.getProducts({ limit: 1000 }), // Get large batch for context
-        service.getCategories({ limit: 1000 }),
-        service.getCities({ limit: 1000 }),
-        service.getUsers({ limit: 1000 }),
-        service.getAdmins({ limit: 1000 }),
+      const [productData, categoryData, cityData, userData, adminData, flavorData] = await Promise.all([
+        service.getProducts({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
+        service.getCategories({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
+        service.getCities({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
+        service.getUsers({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
+        service.getAdmins({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
+        service.getFlavors({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
       ]);
 
-      const pArr = productData.data || productData || [];
-      const cArr = categoryData.data || categoryData || [];
-      const cityArr = cityData.data || cityData || [];
-      const uArr = userData.data || userData || [];
-      const aArr = adminData.data || adminData || [];
+      const pArr = productData?.data || (Array.isArray(productData) ? productData : []);
+      const cArr = categoryData?.data || (Array.isArray(categoryData) ? categoryData : []);
+      const cityArr = cityData?.data || (Array.isArray(cityData) ? cityData : []);
+      const uArr = userData?.data || (Array.isArray(userData) ? userData : []);
+      const aArr = adminData?.data || (Array.isArray(adminData) ? adminData : []);
+      const fArr = flavorData?.data || (Array.isArray(flavorData) ? flavorData : []);
 
-      setProducts([...pArr].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setCategories([...cArr].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-      setCities([...cityArr].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setProducts([...pArr].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
+      setCategories([...cArr].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
+      setCities([...cityArr].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
+      setFlavors([...fArr].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
       setUsers(uArr);
       setAdmins(aArr);
 
-      setTotalProducts(productData.total || pArr.length);
-      setTotalCategories(categoryData.total || cArr.length);
-      setTotalUsers(userData.total || uArr.length);
+      setTotalProducts(productData?.total || pArr.length);
+      setTotalCategories(categoryData?.total || cArr.length);
+      setTotalUsers(userData?.total || uArr.length);
     } catch (err) {
+      console.error("FetchAll Error:", err);
       setError(err instanceof Error ? err.message : "Unable to load admin data");
     } finally {
       setLoading(false);
@@ -146,39 +128,27 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     await refreshAll();
   };
 
-  const handleCreateProduct = async (payload: {
-    name: string;
-    price: number;
-    salePrice?: number;
-    description: string;
-    summary?: string;
-    layout?: string;
-    image: string;
-    category: string;
-    weight?: string;
-    flowers?: number;
-    isCodAvailable?: boolean;
-  }) => {
+  const handleCreateFlavor = async (payload: { name: string, image?: string }) => {
+    await service.createFlavor(payload);
+    await refreshAll();
+  };
+
+  const handleUpdateFlavor = async (id: string, payload: { name: string, image?: string }) => {
+    await service.updateFlavor(id, payload);
+    await refreshAll();
+  };
+
+  const handleFlavorDelete = async (id: string) => {
+    await service.deleteFlavor(id);
+    await refreshAll();
+  };
+
+  const handleCreateProduct = async (payload: any) => {
     await service.createProduct(payload);
     await refreshAll();
   };
 
-  const handleUpdateProduct = async (
-    id: string,
-    payload: {
-      name: string;
-      price: number;
-      salePrice?: number;
-      description: string;
-      summary?: string;
-      layout?: string;
-      image: string;
-      category: string;
-      weight?: string;
-      flowers?: number;
-      isCodAvailable?: boolean;
-    }
-  ) => {
+  const handleUpdateProduct = async (id: string, payload: any) => {
     await service.updateProduct(id, payload);
     await refreshAll();
   };
@@ -208,10 +178,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     await refreshAll();
   };
 
-  const handleUpdateAdmin = async (
-    id: string,
-    payload: { name?: string; email?: string; city?: string }
-  ) => {
+  const handleUpdateAdmin = async (id: string, payload: any) => {
     await service.updateAdmin(id, payload);
     await refreshAll();
   };
@@ -221,12 +188,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     await refreshAll();
   };
 
-
   const value = useMemo(
     () => ({
       products,
       categories,
       cities,
+      flavors,
       users,
       admins,
       loading,
@@ -247,8 +214,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       deleteUser: handleDeleteUser,
       updateAdmin: handleUpdateAdmin,
       deleteAdmin: handleDeleteAdmin,
+      createFlavor: handleCreateFlavor,
+      updateFlavor: handleUpdateFlavor,
+      deleteFlavor: handleFlavorDelete,
     }),
-    [products, categories, cities, users, admins, loading, error, totalProducts, totalUsers, totalCategories]
+    [products, categories, cities, flavors, users, admins, loading, error, totalProducts, totalUsers, totalCategories]
   );
 
   return (

@@ -578,13 +578,18 @@ export default function CheckoutScreen({ navigation, route }) {
                 <View key={item._id + idx} style={styles.orderItem}>
                   <View style={styles.orderItemLeft}>
                     <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                    {item.isEggless && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, marginBottom: 4 }}>
-                        <Text style={{ fontSize: 12, color: '#D82B76', fontWeight: '800', backgroundColor: '#FFF0F5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
+                    <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: 2, marginBottom: 4, flexWrap: 'wrap' }}>
+                      {item.isEggless && (
+                        <Text style={{ fontSize: 10, color: '#D82B76', fontWeight: '800', backgroundColor: '#FFF0F5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
                           Eggless
                         </Text>
-                      </View>
-                    )}
+                      )}
+                      {item.flavor && (
+                        <Text style={{ fontSize: 10, color: '#0369A1', fontWeight: '800', backgroundColor: '#E0F2FE', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
+                          {item.flavor?.name || item.flavor}
+                        </Text>
+                      )}
+                    </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={styles.itemMeta}>Qty {quantity} · ₹{salePrice} each</Text>
                       {hasSaving && <Text style={{ fontSize: 11, color: '#CBD5E1', textDecorationLine: 'line-through' }}>₹{mrp}</Text>}

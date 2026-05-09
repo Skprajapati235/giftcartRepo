@@ -22,7 +22,11 @@ const productSchema = new mongoose.Schema({
   ratings: { type: Number, default: 0 },
   numReviews: { type: Number, default: 0 },
   deliveryTime: { type: String, default: "24-48" }, // e.g., "2-4 hours"
-  expectedDeliveryDate: { type: String, default: "2 Hours" } // e.g., "Tomorrow"
+  expectedDeliveryDate: { type: String, default: "2 Hours" }, // e.g., "Tomorrow"
+  flavor: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Flavor"
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Product", productSchema);

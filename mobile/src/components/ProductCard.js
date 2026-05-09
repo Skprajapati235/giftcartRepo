@@ -10,6 +10,11 @@ export default function ProductCard({ product, onPress, onAddToCart, onBuyNow })
       <View style={styles.info}>
         <Text numberOfLines={2} style={styles.name}>{product.name}</Text>
         <Text style={styles.category}>{product.category?.name || 'Unknown'}</Text>
+        {product.flavor && (
+          <View style={styles.flavorBadge}>
+            <Text style={styles.flavorText}>{product.flavor.name || product.flavor}</Text>
+          </View>
+        )}
         <Text style={styles.price}>₹{product.price?.toFixed(0)}</Text>
         <View style={styles.actionsRow}>
           <TouchableOpacity style={[styles.actionButton, styles.buyButton]} onPress={onBuyNow}>
@@ -86,5 +91,21 @@ const styles = StyleSheet.create({
   actionText: {
     color: '#fff',
     fontWeight: '800',
+  },
+  flavorBadge: {
+    backgroundColor: '#ffeff8',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#ffd6ef',
+  },
+  flavorText: {
+    color: '#D82B76',
+    fontSize: 10,
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
 });

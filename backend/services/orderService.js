@@ -47,6 +47,7 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
       isEggless: item.isEggless || false,
       deliveryTime: item.deliveryTime,
       expectedDeliveryDate: item.expectedDeliveryDate,
+      flavor: item.flavor?.name || item.flavor || null,
     };
   });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X, Tag, IndianRupee, Weight, FileText } from "lucide-react";
+import { X, Tag, IndianRupee, Weight, FileText, Pipette } from "lucide-react";
 
 interface ProductDetailProps {
   product: any;
@@ -74,6 +74,14 @@ export default function ProductDetailDialogue({ product, onClose }: ProductDetai
                 <span className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Expected Delivery</span>
                 <span className="font-bold text-foreground text-sm">{product.expectedDeliveryDate || "N/A"}</span>
              </div>
+             {product.flavor && (
+               <div className="flex items-center justify-between border border-border-theme rounded-xl px-5 py-4 bg-primary/5">
+                  <span className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-widest">
+                    <Pipette size={12} /> Cake Flavor
+                  </span>
+                  <span className="font-bold text-primary text-sm">{product.flavor?.name || product.flavor}</span>
+               </div>
+             )}
 
           </div>
 

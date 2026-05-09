@@ -48,6 +48,7 @@ const orderSchema = new mongoose.Schema({
       itemTotal: { type: Number, required: true },
       deliveryTime: { type: String },
       expectedDeliveryDate: { type: String },
+      flavor: { type: String },
     },
   ],
   totalAmount: { type: Number, required: true },

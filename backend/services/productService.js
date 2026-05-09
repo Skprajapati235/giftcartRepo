@@ -27,6 +27,7 @@ exports.getProducts = async ({ page = 1, limit = 10, search = "", category = "" 
 
   const products = await Product.find(query)
     .populate("category")
+    .populate("flavor")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -42,7 +43,7 @@ exports.getProducts = async ({ page = 1, limit = 10, search = "", category = "" 
 };
 
 exports.getProductById = async (id) => {
-  return await Product.findById(id).populate("category");
+  return await Product.findById(id).populate("category").populate("flavor");
 };
 
 exports.updateProduct = async (id, data) => {

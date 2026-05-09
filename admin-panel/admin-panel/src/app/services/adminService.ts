@@ -105,6 +105,7 @@ export const createProduct = async (payload: {
   discount?: number;
   tax?: number;
   isCodAvailable?: boolean;
+  flavor?: string;
 }) => {
   const response = await authApi(getAuthToken()).post("/product", payload);
   return response.data;
@@ -127,6 +128,7 @@ export const updateProduct = async (
     discount?: number;
     tax?: number;
     isCodAvailable?: boolean;
+    flavor?: string;
   }
 ) => {
   const response = await authApi(getAuthToken()).put(`/product/${id}`, payload);
@@ -201,5 +203,25 @@ export const markOrderAsViewed = async (id: string) => {
 
 export const getUserWishlist = async (userId: string, params?: { page?: number; limit?: number; filter?: string }) => {
   const response = await authApi(getAuthToken()).get(`/wishlist/admin/user/${userId}`, { params });
+  return response.data;
+};
+
+export const getFlavors = async (params?: { page?: number; limit?: number; search?: string; all?: boolean }) => {
+  const response = await authApi(getAuthToken()).get("/flavor", { params });
+  return response.data;
+};
+
+export const createFlavor = async (payload: { name: string; image?: string }) => {
+  const response = await authApi(getAuthToken()).post("/flavor", payload);
+  return response.data;
+};
+
+export const updateFlavor = async (id: string, payload: { name: string; image?: string }) => {
+  const response = await authApi(getAuthToken()).put(`/flavor/${id}`, payload);
+  return response.data;
+};
+
+export const deleteFlavor = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/flavor/${id}`);
   return response.data;
 };

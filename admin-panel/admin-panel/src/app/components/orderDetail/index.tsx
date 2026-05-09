@@ -182,14 +182,19 @@ export default function OrderDetailView() {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-slate-900 truncate">{item.name}</h4>
 
-                      {/* Variant + Eggless badge */}
-                      {item.isEggless && (
-                        <div className="mt-1 flex items-center gap-1.5">
+                      {/* Variant + Eggless + Flavor badges */}
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                        {item.isEggless && (
                           <span className="inline-flex items-center bg-pink-50 text-pink-700 border border-pink-200 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-tight">
                             Eggless
                           </span>
-                        </div>
-                      )}
+                        )}
+                        {item.flavor && (
+                          <span className="inline-flex items-center bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-tight">
+                            {item.flavor}
+                          </span>
+                        )}
+                      </div>
 
                       <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-semibold text-slate-500">
                         <span>Qty: <strong className="text-slate-700">{item.quantity}</strong></span>
