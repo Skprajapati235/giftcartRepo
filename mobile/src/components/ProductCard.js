@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 
 export default function ProductCard({ product, onPress, onAddToCart, onBuyNow }) {
+
   return (
     <TouchableOpacity activeOpacity={0.85} style={styles.card} onPress={onPress}>
       <View style={styles.imageWrapper}>
@@ -10,15 +11,20 @@ export default function ProductCard({ product, onPress, onAddToCart, onBuyNow })
       <View style={styles.info}>
         <Text numberOfLines={2} style={styles.name}>{product.name}</Text>
         <Text style={styles.category}>{product.category?.name || 'Unknown'}</Text>
-        <View style={{ flexDirection: 'row', gap: 5 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
           {product.flavor && (
-            <View style={styles.flavorBadge}>
+            <View style={[styles.badge, styles.flavorBadge]}>
               <Text style={styles.flavorText}>{product.flavor.name || product.flavor}</Text>
             </View>
           )}
           {product.weight && (
-            <View style={[styles.flavorBadge, { backgroundColor: '#F1F5F9' }]}>
-              <Text style={[styles.flavorText, { color: '#64748B' }]}>{product.weight}</Text>
+            <View style={[styles.badge, styles.weightBadge]}>
+              <Text style={styles.weightText}>{product.weight}</Text>
+            </View>
+          )}
+          {product.flowerCount && (
+            <View style={[styles.badge, styles.flowerBadge]}>
+              <Text style={styles.flowerText}>{product.flowerCount}</Text>
             </View>
           )}
         </View>
@@ -99,20 +105,44 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '800',
   },
-  flavorBadge: {
-    backgroundColor: '#ffeff8',
+  badge: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#ffd6ef',
+    alignSelf: 'flex-start',
+  },
+  flavorBadge: {
+    backgroundColor: '#FFF0F5',
+    borderColor: '#FECDD3',
+  },
+  weightBadge: {
+    backgroundColor: '#F0FDFA',
+    borderColor: '#CCFBF1',
+  },
+  flowerBadge: {
+    backgroundColor: '#F5F3FF',
+    borderColor: '#EDE9FE',
   },
   flavorText: {
     color: '#D82B76',
-    fontSize: 10,
-    fontWeight: '800',
+    fontSize: 9,
+    fontWeight: '900',
     textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  weightText: {
+    color: '#0D9488',
+    fontSize: 9,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  flowerText: {
+    color: '#7C3AED',
+    fontSize: 9,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });

@@ -1,8 +1,12 @@
 const service = require("../services/productService");
 
 exports.create = async (req, res) => {
-  const data = await service.createProduct(req.body);
-  res.json(data);
+  try {
+    const data = await service.createProduct(req.body);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.getAll = async (req, res) => {
@@ -22,16 +26,28 @@ exports.getAll = async (req, res) => {
 };
 
 exports.getOne = async (req, res) => {
-  const data = await service.getProductById(req.params.id);
-  res.json(data);
+  try {
+    const data = await service.getProductById(req.params.id);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.update = async (req, res) => {
-  const data = await service.updateProduct(req.params.id, req.body);
-  res.json(data);
+  try {
+    const data = await service.updateProduct(req.params.id, req.body);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.delete = async (req, res) => {
-  await service.deleteProduct(req.params.id);
-  res.json({ message: "Deleted" });
+  try {
+    await service.deleteProduct(req.params.id);
+    res.json({ message: "Deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

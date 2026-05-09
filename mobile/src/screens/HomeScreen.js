@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
-import { Feather, Ionicons, FontAwesome } from '@expo/vector-icons';
+import { Feather, Ionicons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import categoryService from '../services/categoryService';
 import productService from '../services/productService';
@@ -98,7 +98,7 @@ export default function HomeScreen({ navigation }) {
         try {
           const raw = await AsyncStorage.getItem('@giftcart_cart');
           setCartCount(raw ? JSON.parse(raw).length : 0);
-        } catch (e) {}
+        } catch (e) { }
       };
       syncCartCount();
     }, [])
@@ -197,7 +197,7 @@ export default function HomeScreen({ navigation }) {
       setLocationLoading(false);
     }
   };
-  
+
 
   const renderProduct = ({ item }) => (
     <TouchableOpacity
@@ -233,6 +233,27 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.deliveryBadgeHome}>
               <Feather name="truck" size={8} color="#2E7D32" />
               <Text style={styles.deliveryDateTextHome}>{item.expectedDeliveryDate}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+          {item.flavor && (
+            <View style={[styles.homeBadge, styles.homeFlavorBadge, { flexDirection: 'row', alignItems: 'center', gap: 2 }]}>
+              <MaterialCommunityIcons name="cake-variant" size={8} color="#D82B76" />
+              <Text style={styles.homeFlavorText}>{item.flavor.name || item.flavor}</Text>
+            </View>
+          )}
+          {item.weight && (
+            <View style={[styles.homeBadge, styles.homeWeightBadge, { flexDirection: 'row', alignItems: 'center', gap: 2 }]}>
+              <MaterialCommunityIcons name="weight" size={8} color="#0D9488" />
+              <Text style={styles.homeWeightText}>{item.weight}</Text>
+            </View>
+          )}
+          {item.flowerCount && (
+            <View style={[styles.homeBadge, styles.homeFlowerBadge, { flexDirection: 'row', alignItems: 'center', gap: 2 }]}>
+              <MaterialCommunityIcons name="flower" size={8} color="#7C3AED" />
+              <Text style={styles.homeFlowerText}>{item.flowerCount}</Text>
             </View>
           )}
         </View>
@@ -709,6 +730,42 @@ const styles = StyleSheet.create({
     fontSize: 7,
     fontWeight: '800',
     color: '#2E7D32',
+  },
+  homeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  homeFlavorBadge: {
+    backgroundColor: '#FFF0F5',
+    borderColor: '#FECDD3',
+  },
+  homeWeightBadge: {
+    backgroundColor: '#F0FDFA',
+    borderColor: '#CCFBF1',
+  },
+  homeFlowerBadge: {
+    backgroundColor: '#F5F3FF',
+    borderColor: '#EDE9FE',
+  },
+  homeFlavorText: {
+    color: '#D82B76',
+    fontSize: 8,
+    fontWeight: '900',
+    // textTransform: 'uppercase',
+  },
+  homeWeightText: {
+    color: '#0D9488',
+    fontSize: 8,
+    fontWeight: '900',
+    // textTransform: 'uppercase',
+  },
+  homeFlowerText: {
+    color: '#7C3AED',
+    fontSize: 8,
+    fontWeight: '900',
+    // textTransform: 'uppercase',
   },
   fab: {
     position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366',

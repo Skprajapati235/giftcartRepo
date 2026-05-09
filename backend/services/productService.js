@@ -1,13 +1,20 @@
 const Product = require("../models/Product");
 
 exports.createProduct = async (data) => {
-  console.log("Creating Product with data:", data);
+  if (data.flavor === "" || data.flavor === "null" || data.flavor === "undefined") {
+    data.flavor = undefined;
+  }
+  console.log("Creating Product with cleaned data:", data);
   try {
     const product = await Product.create(data);
     console.log("Saved Product:", product);
     return product;
   } catch (error) {
-    console.error("Error creating product:", error);
+    console.error("Error creating product details:", {
+      message: error.message,
+      stack: error.stack,
+      data: data
+    });
     throw error;
   }
 };
@@ -47,7 +54,20 @@ exports.getProductById = async (id) => {
 };
 
 exports.updateProduct = async (id, data) => {
-  return await Product.findByIdAndUpdate(id, data, { new: true });
+  if (data.flavor === "" || data.flavor === "null" || data.flavor === "undefined") {
+    data.flavor = null;
+  }
+  try {
+    return await Product.findByIdAndUpdate(id, data, { new: true });
+  } catch (error) {
+    console.error("Error updating product details:", {
+      message: error.message,
+      stack: error.stack,
+      id,
+      data
+    });
+    throw error;
+  }
 };
 
 exports.deleteProduct = async (id) => {
