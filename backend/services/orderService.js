@@ -48,6 +48,8 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
       deliveryTime: item.deliveryTime,
       expectedDeliveryDate: item.expectedDeliveryDate,
       flavor: item.flavor?.name || item.flavor || null,
+      weight: item.weight || null,
+      flowerCount: item.flowerCount || null,
     };
   });
 
@@ -78,7 +80,7 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
   });
 
   const savedOrder = await order.save();
-  
+
   if (couponCode) {
     await Coupon.findOneAndUpdate({ code: couponCode }, { $inc: { usedCount: 1 } });
   }
@@ -172,24 +174,24 @@ exports.getAllOrders = async ({ page = 1, limit = 10, search = "" } = {}) => {
   let query = {};
 
   if (search) {
-     // Check if search is a valid ObjectId (Order ID)
-     const mongoose = require("mongoose");
-     const isObjectId = mongoose.Types.ObjectId.isValid(search);
-     
-     if (isObjectId) {
-       query = { _id: search };
-     } else {
-       // Search in user details (needs populate or aggregation, but simpler to search in populated fields if possible)
-       // For simplicity, we'll try to find users first or use aggregation
-       const users = await User.find({
-         $or: [
-           { name: { $regex: search, $options: "i" } },
-           { email: { $regex: search, $options: "i" } }
-         ]
-       }).select('_id');
-       
-       query = { user: { $in: users.map(u => u._id) } };
-     }
+    // Check if search is a valid ObjectId (Order ID)
+    const mongoose = require("mongoose");
+    const isObjectId = mongoose.Types.ObjectId.isValid(search);
+
+    if (isObjectId) {
+      query = { _id: search };
+    } else {
+      // Search in user details (needs populate or aggregation, but simpler to search in populated fields if possible)
+      // For simplicity, we'll try to find users first or use aggregation
+      const users = await User.find({
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } }
+        ]
+      }).select('_id');
+
+      query = { user: { $in: users.map(u => u._id) } };
+    }
   }
 
   const orders = await Order.find(query)
@@ -256,7 +258,7 @@ exports.getPublicOrderByTrackingToken = async (trackingToken) => {
 // Update order status (admin)
 exports.updateOrderStatus = async (id, status) => {
   const updateData = { status };
-  
+
   if (status === "Processing") updateData.processingAt = Date.now();
   if (status === "Shipped") updateData.shippedAt = Date.now();
   if (status === "Delivered") updateData.deliveredAt = Date.now();
@@ -290,6 +292,6 @@ exports.markOrderAsViewed = async (id) => {
 
 // Get unviewed orders (for alerts)
 exports.getUnviewedOrders = async () => {
-    return await Order.find({ isAdminViewed: false, $or: [{ paymentMethod: 'COD' }, { paymentStatus: 'Success' }] })
-      .populate("user", "name email");
+  return await Order.find({ isAdminViewed: false, $or: [{ paymentMethod: 'COD' }, { paymentStatus: 'Success' }] })
+    .populate("user", "name email");
 };

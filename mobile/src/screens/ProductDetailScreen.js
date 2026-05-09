@@ -218,6 +218,26 @@ export default function ProductDetailScreen({ route, navigation }) {
             </View>
           )}
 
+          {product.weight && (
+            <View style={styles.flavorDetailContainer}>
+               <MaterialCommunityIcons name="weight" size={20} color="#D82B76" />
+               <View style={{ marginLeft: 12 }}>
+                 <Text style={styles.flavorLabel}>Weight</Text>
+                 <Text style={styles.flavorNameDetail}>{product.weight}</Text>
+               </View>
+            </View>
+          )}
+
+          {product.flowerCount && (
+            <View style={styles.flavorDetailContainer}>
+               <MaterialCommunityIcons name="flower" size={20} color="#D82B76" />
+               <View style={{ marginLeft: 12 }}>
+                 <Text style={styles.flavorLabel}>Flowers</Text>
+                 <Text style={styles.flavorNameDetail}>{product.flowerCount}</Text>
+               </View>
+            </View>
+          )}
+
           {/* Eggless Option */}
           {product.hasEgglessOption && (
             <View style={styles.variantsContainer}>

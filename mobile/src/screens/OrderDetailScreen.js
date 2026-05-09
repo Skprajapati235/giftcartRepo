@@ -132,6 +132,20 @@ export default function OrderDetailScreen({ route, navigation }) {
                         </Text>
                       </View>
                     )}
+                    {item.weight && (
+                      <View style={[styles.variantBadge, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0' }]}>
+                        <Text style={[styles.variantBadgeText, { color: '#64748B' }]}>
+                          {item.weight}
+                        </Text>
+                      </View>
+                    )}
+                    {item.flowerCount && (
+                      <View style={[styles.variantBadge, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0' }]}>
+                        <Text style={[styles.variantBadgeText, { color: '#64748B' }]}>
+                          {item.flowerCount}
+                        </Text>
+                      </View>
+                    )}
                   </View>
 
                   <View style={styles.itemMetaRow}>

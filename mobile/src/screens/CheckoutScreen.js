@@ -589,6 +589,16 @@ export default function CheckoutScreen({ navigation, route }) {
                           {item.flavor?.name || item.flavor}
                         </Text>
                       )}
+                      {item.weight && (
+                        <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '800', backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
+                          {item.weight}
+                        </Text>
+                      )}
+                      {item.flowerCount && (
+                        <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '800', backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
+                          {item.flowerCount}
+                        </Text>
+                      )}
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Text style={styles.itemMeta}>Qty {quantity} · ₹{salePrice} each</Text>

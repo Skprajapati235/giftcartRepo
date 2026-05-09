@@ -21,6 +21,8 @@ interface OrderItem {
   selectedVariant?: string;
   isEggless?: boolean;
   flavor?: string;
+  weight?: string;
+  flowerCount?: string;
 }
 
 interface OrderDetailData {
@@ -193,6 +195,16 @@ export default function OrderDetailView() {
                         {item.flavor && (
                           <span className="inline-flex items-center bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-tight">
                             {item.flavor}
+                          </span>
+                        )}
+                        {item.weight && (
+                          <span className="inline-flex items-center bg-slate-50 text-slate-700 border border-slate-200 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-tight">
+                            {item.weight}
+                          </span>
+                        )}
+                        {item.flowerCount && (
+                          <span className="inline-flex items-center bg-slate-50 text-slate-700 border border-slate-200 text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-tight">
+                            {item.flowerCount}
                           </span>
                         )}
                       </div>

@@ -34,6 +34,8 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     deliveryTime: product?.deliveryTime || "3-5",
     expectedDeliveryDate: product?.expectedDeliveryDate || "Monday, 20 Oct",
     flavor: product?.flavor?._id || product?.flavor || "",
+    weight: product?.weight || "",
+    flowerCount: product?.flowerCount || "",
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, isMain: boolean = false) => {
@@ -161,6 +163,28 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 <option value="">Select Flavor</option>
                 {flavors.map((f: any) => <option key={f._id} value={f._id}>{f.name}</option>)}
               </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Weight (for Cakes)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 500g, 1kg"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  value={form.weight}
+                  onChange={(e) => setForm({ ...form, weight: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Flower Count (Bouquet)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 10 Roses, 24 Lilies"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  value={form.flowerCount}
+                  onChange={(e) => setForm({ ...form, flowerCount: e.target.value })}
+                />
+              </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>

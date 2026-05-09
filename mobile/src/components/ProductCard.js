@@ -10,11 +10,18 @@ export default function ProductCard({ product, onPress, onAddToCart, onBuyNow })
       <View style={styles.info}>
         <Text numberOfLines={2} style={styles.name}>{product.name}</Text>
         <Text style={styles.category}>{product.category?.name || 'Unknown'}</Text>
-        {product.flavor && (
-          <View style={styles.flavorBadge}>
-            <Text style={styles.flavorText}>{product.flavor.name || product.flavor}</Text>
-          </View>
-        )}
+        <View style={{ flexDirection: 'row', gap: 5 }}>
+          {product.flavor && (
+            <View style={styles.flavorBadge}>
+              <Text style={styles.flavorText}>{product.flavor.name || product.flavor}</Text>
+            </View>
+          )}
+          {product.weight && (
+            <View style={[styles.flavorBadge, { backgroundColor: '#F1F5F9' }]}>
+              <Text style={[styles.flavorText, { color: '#64748B' }]}>{product.weight}</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.price}>₹{product.price?.toFixed(0)}</Text>
         <View style={styles.actionsRow}>
           <TouchableOpacity style={[styles.actionButton, styles.buyButton]} onPress={onBuyNow}>

@@ -26,7 +26,9 @@ const productSchema = new mongoose.Schema({
   flavor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Flavor"
-  }
+  },
+  weight: { type: String }, // e.g., "500g", "1kg"
+  flowerCount: { type: String } // e.g., "10 Roses", "24 Lilies"
 }, { timestamps: true });
 
 module.exports = mongoose.model("Product", productSchema);

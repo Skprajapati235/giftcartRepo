@@ -106,6 +106,8 @@ export const createProduct = async (payload: {
   tax?: number;
   isCodAvailable?: boolean;
   flavor?: string;
+  weight?: string;
+  flowerCount?: string;
 }) => {
   const response = await authApi(getAuthToken()).post("/product", payload);
   return response.data;
@@ -129,6 +131,8 @@ export const updateProduct = async (
     tax?: number;
     isCodAvailable?: boolean;
     flavor?: string;
+    weight?: string;
+    flowerCount?: string;
   }
 ) => {
   const response = await authApi(getAuthToken()).put(`/product/${id}`, payload);
