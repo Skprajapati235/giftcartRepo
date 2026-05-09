@@ -65,10 +65,7 @@ export default function ProductDetailDialogue({ product, onClose }: ProductDetai
 
           {/* Additional Specifics */}
           <div className="space-y-4 mb-8">
-             <div className="flex items-center justify-between border border-border-theme rounded-xl px-5 py-4 bg-card">
-                <span className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest"><Weight size={16} /> Item Weight</span>
-                <span className="font-bold text-foreground text-sm">{product.weight || "N/A"}</span>
-             </div>
+
              <div className="flex items-center justify-between border border-border-theme rounded-xl px-5 py-4 bg-card">
                 <span className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Delivery Time</span>
                 <span className="font-bold text-foreground text-sm">{product.deliveryTime || "24"} Hours</span>
@@ -77,12 +74,7 @@ export default function ProductDetailDialogue({ product, onClose }: ProductDetai
                 <span className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">Expected Delivery</span>
                 <span className="font-bold text-foreground text-sm">{product.expectedDeliveryDate || "N/A"}</span>
              </div>
-             {product.flowers && (
-               <div className="flex items-center justify-between border border-border-theme rounded-xl px-5 py-4 bg-card">
-                  <span className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest"><Tag size={16} /> Flowers Count</span>
-                  <span className="font-bold text-foreground text-sm">{product.flowers}</span>
-               </div>
-             )}
+
           </div>
 
           <div className="border-t border-border-theme pt-8 mb-8">

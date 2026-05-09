@@ -54,6 +54,7 @@ export default function MyOrdersScreen({ navigation }) {
 
   const renderOrder = ({ item }) => {
     const firstItemImage = item.items?.[0]?.product?.image;
+    const firstItem = item.items?.[0];
     
     return (
     <TouchableOpacity style={styles.orderCard} onPress={() => navigation.navigate('OrderDetail', { order: item })}>
@@ -74,12 +75,25 @@ export default function MyOrdersScreen({ navigation }) {
         )}
         <View style={styles.orderContentInfo}>
           <Text style={styles.orderDate}>{new Date(item.createdAt).toDateString()}</Text>
-          <Text style={styles.orderItems}>{item.items?.length || 0} items</Text>
+          {/* Show first item name + variant */}
+          {firstItem && (
+            <Text style={styles.orderItemName} numberOfLines={1}>
+              {firstItem.name}
+              {firstItem.isEggless ? ' · Eggless' : ''}
+            </Text>
+          )}
+          <Text style={styles.orderItems}>
+            {item.items?.length || 0} item{item.items?.length !== 1 ? 's' : ''}
+            {item.items?.length > 1 ? ` (+ ${item.items.length - 1} more)` : ''}
+          </Text>
         </View>
       </View>
 
       <View style={styles.orderFooter}>
-        <Text style={styles.totalLabel}>Total Amount:</Text>
+        <View>
+          <Text style={styles.totalLabel}>Total Amount</Text>
+          <Text style={styles.paymentMethod}>{item.paymentMethod || 'Online'} • {item.paymentStatus}</Text>
+        </View>
         <Text style={styles.totalValue}>₹{item.totalAmount}</Text>
       </View>
     </TouchableOpacity>
@@ -131,7 +145,9 @@ const styles = StyleSheet.create({
   orderImage: { width: 50, height: 50, borderRadius: 8, backgroundColor: '#F0F0F0' },
   orderContentInfo: { marginLeft: 15 },
   orderDate: { fontSize: 13, color: '#999' },
-  orderItems: { fontSize: 13, color: '#666', marginTop: 4 },
+  orderItemName: { fontSize: 14, fontWeight: '700', color: '#1a1a1a', marginTop: 2 },
+  orderItems: { fontSize: 12, color: '#888', marginTop: 3 },
+  paymentMethod: { fontSize: 11, color: '#888', marginTop: 2 },
   orderFooter: { borderTopWidth: 1, borderTopColor: '#F5F5F5', paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   totalLabel: { fontSize: 14, color: '#666' },
   totalValue: { fontSize: 16, fontWeight: '800', color: '#D82B76' },

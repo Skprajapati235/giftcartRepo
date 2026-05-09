@@ -8,7 +8,7 @@ import { useResource } from "../../hooks/useResource";
 
 export interface Review {
   _id: string;
-  product: { name: string; image: string; price: number };
+  product: { name: string; image: string; price: number } | null;
   user: { name: string; email: string; profilePic?: string };
   rating: number;
   comment: string;

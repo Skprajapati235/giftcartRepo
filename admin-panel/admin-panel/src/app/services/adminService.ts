@@ -100,10 +100,6 @@ export const createProduct = async (payload: {
   image: string;
   images?: string[];
   category: string;
-  weight?: string;
-  weightOptions?: { weight: string; price: number }[];
-  flowers?: number;
-  flowerOptions?: { count: number; price: number }[];
   hasEgglessOption?: boolean;
   shippingCost?: number;
   discount?: number;
@@ -126,10 +122,6 @@ export const updateProduct = async (
     image: string;
     images?: string[];
     category: string;
-    weight?: string;
-    weightOptions?: { weight: string; price: number }[];
-    flowers?: number;
-    flowerOptions?: { count: number; price: number }[];
     hasEgglessOption?: boolean;
     shippingCost?: number;
     discount?: number;

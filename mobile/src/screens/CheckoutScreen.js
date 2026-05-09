@@ -125,23 +125,26 @@ export default function CheckoutScreen({ navigation, route }) {
   const orderSummary = cartItems.reduce(
     (summary, item) => {
       const quantity = Number(item.quantity || 1);
-      const basePrice = item.salePrice !== undefined && item.salePrice !== null ? Number(item.salePrice) : Number(item.price || 0);
-      const discount = Number(item.discount || 0);
-      const tax = Number(item.tax || 0);
-      const shippingCost = Number(item.shippingCost || 0);
-      const discountedPrice = basePrice * (1 - discount / 100);
-      const taxAmount = discountedPrice * (tax / 100);
-      const itemTotal = (discountedPrice + taxAmount + shippingCost) * quantity;
+      const mrp = Number(item.price || 0);                          // original MRP
+      const salePrice = Number(
+        item.salePrice !== undefined && item.salePrice !== null
+          ? item.salePrice
+          : item.price || 0
+      );                                                             // actual offer price
+      const tax = Number(item.tax || 0);                            // product tax %
+      const shippingCost = Number(item.shippingCost || 0);          // shipping per item
+      const taxAmount = salePrice * (tax / 100);                    // tax on sale price
+      const itemTotal = (salePrice + taxAmount + shippingCost) * quantity;
 
       return {
-        subtotal: summary.subtotal + basePrice * quantity,
-        discountTotal: summary.discountTotal + (basePrice - discountedPrice) * quantity,
+        subtotal: summary.subtotal + mrp * quantity,       // show full MRP sum
+        savingsTotal: summary.savingsTotal + (mrp - salePrice) * quantity, // savings from MRP
         taxTotal: summary.taxTotal + taxAmount * quantity,
         shippingTotal: summary.shippingTotal + shippingCost * quantity,
         grandTotal: summary.grandTotal + itemTotal,
       };
     },
-    { subtotal: 0, discountTotal: 0, taxTotal: 0, shippingTotal: 0, grandTotal: 0 }
+    { subtotal: 0, savingsTotal: 0, taxTotal: 0, shippingTotal: 0, grandTotal: 0 }
   );
 
   const displayTotal = Number(orderSummary.grandTotal.toFixed(2));
@@ -189,7 +192,7 @@ export default function CheckoutScreen({ navigation, route }) {
     try {
       await AsyncStorage.setItem('@giftcart_saved_address', JSON.stringify(finalShippingInfo));
       setSavedAddress(finalShippingInfo);
-    } catch (e) {}
+    } catch (e) { }
 
     setLoading(true);
     try {
@@ -560,28 +563,34 @@ export default function CheckoutScreen({ navigation, route }) {
           <View style={styles.summaryCard}>
             {cartItems.map((item, idx) => {
               const quantity = Number(item.quantity || 1);
-              const basePrice = item.salePrice !== undefined && item.salePrice !== null ? Number(item.salePrice) : Number(item.price || 0);
-              const discount = Number(item.discount || 0);
+              const mrp = Number(item.price || 0);
+              const salePrice = Number(
+                item.salePrice !== undefined && item.salePrice !== null
+                  ? item.salePrice : item.price || 0
+              );
               const tax = Number(item.tax || 0);
               const shippingCost = Number(item.shippingCost || 0);
-              const discountedPrice = basePrice * (1 - discount / 100);
-              const taxAmount = Number((discountedPrice * (tax / 100)).toFixed(2));
-              const itemTotal = Number(((discountedPrice + taxAmount + shippingCost) * quantity).toFixed(2));
+              const taxAmount = Number((salePrice * (tax / 100)).toFixed(2));
+              const itemTotal = Number(((salePrice + taxAmount + shippingCost) * quantity).toFixed(2));
+              const hasSaving = mrp > salePrice;
 
               return (
                 <View key={item._id + idx} style={styles.orderItem}>
                   <View style={styles.orderItemLeft}>
                     <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-                    {(item.selectedVariant || item.weight) && (
-                      <Text style={styles.itemMeta}>
-                        Variant: {item.selectedVariant || item.weight}
-                        {item.isEggless ? ' (Eggless)' : ''}
-                      </Text>
+                    {item.isEggless && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, marginBottom: 4 }}>
+                        <Text style={{ fontSize: 12, color: '#D82B76', fontWeight: '800', backgroundColor: '#FFF0F5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
+                          Eggless
+                        </Text>
+                      </View>
                     )}
-                    <Text style={styles.itemMeta}>Qty {quantity} · ₹{basePrice} each</Text>
-                    {discount > 0 && <Text style={styles.itemMeta}>Discount {discount}%</Text>}
-                    {tax > 0 && <Text style={styles.itemMeta}>Tax {tax}%</Text>}
-                    {shippingCost > 0 && <Text style={styles.itemMeta}>Shipping ₹{shippingCost}</Text>}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={styles.itemMeta}>Qty {quantity} · ₹{salePrice} each</Text>
+                      {hasSaving && <Text style={{ fontSize: 11, color: '#CBD5E1', textDecorationLine: 'line-through' }}>₹{mrp}</Text>}
+                    </View>
+                    {tax > 0 && <Text style={styles.itemMeta}>Tax {tax}%  (+₹{taxAmount.toFixed(2)})</Text>}
+                    {shippingCost > 0 && <Text style={styles.itemMeta}>Shipping +₹{shippingCost}</Text>}
                   </View>
                   <Text style={styles.itemPrice}>₹{itemTotal}</Text>
                 </View>
@@ -589,13 +598,15 @@ export default function CheckoutScreen({ navigation, route }) {
             })}
             <View style={styles.divider} />
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Subtotal</Text>
+              <Text style={styles.summaryLabel}>MRP Total</Text>
               <Text style={styles.summaryValue}>₹{orderSummary.subtotal.toFixed(2)}</Text>
             </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Discount</Text>
-              <Text style={styles.summaryValue}>-₹{orderSummary.discountTotal.toFixed(2)}</Text>
-            </View>
+            {orderSummary.savingsTotal > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: '#16A34A' }]}>Savings (Sale Price)</Text>
+                <Text style={[styles.summaryValue, { color: '#16A34A' }]}>-₹{orderSummary.savingsTotal.toFixed(2)}</Text>
+              </View>
+            )}
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Tax</Text>
               <Text style={styles.summaryValue}>₹{orderSummary.taxTotal.toFixed(2)}</Text>

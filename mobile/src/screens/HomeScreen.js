@@ -245,13 +245,7 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.listPriceHome}>₹{item.price}</Text>
               )}
             </View>
-            {item.weight || item.flowers ? (
-              <Text style={styles.productSubHome} numberOfLines={1}>
-                {item.weight || item.flowers + ' flowers'}
-              </Text>
-            ) : (
-              <Text style={styles.productSubHome}>Special Gift Case</Text>
-            )}
+            <Text style={styles.productSubHome}>Special Gift Case</Text>
           </View>
           <TouchableOpacity
             style={styles.addBtnGrid}

@@ -101,11 +101,24 @@ export default function ReviewList({
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-2xl border border-border-theme bg-hover-theme overflow-hidden shrink-0 shadow-sm transition-transform group-hover:scale-105">
-                        <img src={review.product.image} className="h-full w-full object-cover" alt="" />
-                      </div>
+  {review.product?.image ? (
+    <img src={review.product.image} className="h-full w-full object-cover" alt="" />
+  ) : (
+    <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-500 text-xs">No Image</div>
+  )}
+</div>
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-foreground truncate">{review.product.name}</p>
-                        <p className="text-xs font-black text-primary mt-0.5">₹{review.product.price}</p>
+                        {review.product ? (
+                          <>
+                            <p className="text-sm font-bold text-foreground truncate">{review.product.name}</p>
+                            <p className="text-xs font-black text-primary mt-0.5">₹{review.product.price}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-bold text-foreground truncate">Product Unavailable</p>
+                            <p className="text-xs font-black text-primary mt-0.5">₹-</p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </td>

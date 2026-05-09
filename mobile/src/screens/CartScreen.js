@@ -38,7 +38,11 @@ export default function CartScreen({ navigation }) {
   const calculateTotal = (items, selectedIds) => {
     const sum = items
       .filter(item => selectedIds.includes(getId(item)))
-      .reduce((acc, item) => acc + (item.salePrice || item.price || 0), 0);
+      .reduce((acc, item) => {
+        const qty = Number(item.quantity || 1);
+        const sp = Number(item.salePrice !== undefined && item.salePrice !== null ? item.salePrice : item.price || 0);
+        return acc + (sp * qty);
+      }, 0);
     setTotal(sum);
   };
 
@@ -84,25 +88,36 @@ export default function CartScreen({ navigation }) {
   const renderItem = ({ item }) => {
     const id = getId(item);
     const isSelected = selectedItems.includes(id);
+    const salePrice = Number(item.salePrice !== undefined && item.salePrice !== null ? item.salePrice : item.price || 0);
+    const mrpPrice = Number(item.price || 0);
+    const hasSaving = mrpPrice > salePrice;
+    const qty = Number(item.quantity || 1);
     return (
       <View style={styles.card}>
         <TouchableOpacity onPress={() => toggleSelection(id)} style={styles.checkbox}>
-           <Ionicons 
-             name={isSelected ? "checkbox" : "square-outline"} 
-             size={24} 
-             color={isSelected ? "#D82B76" : "#DDD"} 
-           />
+          <Ionicons
+            name={isSelected ? "checkbox" : "square-outline"}
+            size={24}
+            color={isSelected ? "#D82B76" : "#DDD"}
+          />
         </TouchableOpacity>
         <Image source={{ uri: item.image }} style={styles.image} />
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
-          <Text style={styles.price}>₹{item.salePrice || item.price}</Text>
-          {(item.selectedVariant || item.weight) && (
-            <Text style={styles.weightText}>
-              {item.selectedVariant || item.weight}
-              {item.isEggless && ' • Eggless'}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 }}>
+            <Text style={styles.price}>₹{salePrice}</Text>
+            {hasSaving && (
+              <Text style={styles.mrpText}>₹{mrpPrice}</Text>
+            )}
+          </View>
+          {item.isEggless && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <Text style={{ fontSize: 11, color: '#D82B76', fontWeight: '800', backgroundColor: '#FFF0F5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
+                Eggless
+              </Text>
+            </View>
           )}
+          {qty > 1 && <Text style={styles.qtyText}>Qty: {qty}</Text>}
         </View>
         <TouchableOpacity onPress={() => removeItem(id)} style={styles.removeBtn}>
           <Feather name="trash-2" size={20} color="#FF6A3D" />
@@ -143,8 +158,8 @@ export default function CartScreen({ navigation }) {
             <Text style={styles.totalLabel}>Total Amount:</Text>
             <Text style={styles.totalVal}>₹{total.toFixed(0)}</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.checkoutBtn} 
+          <TouchableOpacity
+            style={styles.checkoutBtn}
             onPress={handleCheckout}
           >
             <Text style={styles.checkoutText}>Checkout Now</Text>
@@ -166,7 +181,8 @@ const styles = StyleSheet.create({
   info: { flex: 1, marginLeft: 15, justifyContent: 'center' },
   name: { fontSize: 16, fontWeight: '600', color: '#333' },
   price: { fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginTop: 5 },
-  weightText: { fontSize: 12, color: '#888', marginTop: 2, fontWeight: '600' },
+  mrpText: { fontSize: 13, color: '#CBD5E1', textDecorationLine: 'line-through', fontWeight: '600' },
+  qtyText: { fontSize: 12, color: '#888', fontWeight: '600', marginTop: 2 },
   removeBtn: { padding: 10, justifyContent: 'center' },
   footer: { padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#EEE' },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },

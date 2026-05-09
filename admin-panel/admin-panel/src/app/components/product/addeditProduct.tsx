@@ -25,15 +25,12 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     image: product?.image || "",
     images: product?.images || [],
     category: product?.category?._id || product?.category || "",
-    weight: product?.weight || "",
-    weightOptions: product?.weightOptions || [],
-    flowers: product?.flowers ? String(product.flowers) : "",
-    flowerOptions: product?.flowerOptions || [],
+    isCodAvailable: product?.isCodAvailable !== undefined ? product.isCodAvailable : true,
     hasEgglessOption: product?.hasEgglessOption || false,
     shippingCost: product?.shippingCost !== undefined ? String(product.shippingCost) : "0",
     discount: product?.discount !== undefined ? String(product.discount) : "0",
     tax: product?.tax !== undefined ? String(product.tax) : "0",
-    isCodAvailable: product?.isCodAvailable !== undefined ? product.isCodAvailable : true,
+    // isCodAvailable: product?.isCodAvailable !== undefined ? product.isCodAvailable : true,
     deliveryTime: product?.deliveryTime || "3-5",
     expectedDeliveryDate: product?.expectedDeliveryDate || "Monday, 20 Oct",
   });
@@ -82,14 +79,10 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
         ...form,
         price: Number(form.price) || 0,
         salePrice: form.salePrice ? Number(form.salePrice) : undefined,
-        flowers: form.flowers ? Number(form.flowers) : undefined,
-        weight: form.weight ? form.weight.toString() : undefined,
         shippingCost: form.shippingCost ? Number(form.shippingCost) : 0,
         discount: form.discount ? Number(form.discount) : 0,
         tax: form.tax ? Number(form.tax) : 0,
         isCodAvailable: form.isCodAvailable,
-        weightOptions: form.weightOptions.map((opt: any) => ({ ...opt, price: Number(opt.price) })),
-        flowerOptions: form.flowerOptions.map((opt: any) => ({ ...opt, count: Number(opt.count), price: Number(opt.price) })),
       };
 
       if (product?._id) {
@@ -107,33 +100,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     }
   };
 
-  const addWeightOption = () => {
-    setForm(f => ({ ...f, weightOptions: [...f.weightOptions, { weight: "", price: 0 }] }));
-  };
-  const removeWeightOption = (index: number) => {
-    const newOpts = [...form.weightOptions];
-    newOpts.splice(index, 1);
-    setForm(f => ({ ...f, weightOptions: newOpts }));
-  };
-  const updateWeightOption = (index: number, field: string, value: any) => {
-    const newOpts = [...form.weightOptions];
-    newOpts[index] = { ...newOpts[index], [field]: value };
-    setForm(f => ({ ...f, weightOptions: newOpts }));
-  };
 
-  const addFlowerOption = () => {
-    setForm(f => ({ ...f, flowerOptions: [...f.flowerOptions, { count: 0, price: 0 }] }));
-  };
-  const removeFlowerOption = (index: number) => {
-    const newOpts = [...form.flowerOptions];
-    newOpts.splice(index, 1);
-    setForm(f => ({ ...f, flowerOptions: newOpts }));
-  };
-  const updateFlowerOption = (index: number, field: string, value: any) => {
-    const newOpts = [...form.flowerOptions];
-    newOpts[index] = { ...newOpts[index], [field]: value };
-    setForm(f => ({ ...f, flowerOptions: newOpts }));
-  };
 
   return (
     <section className="bg-card rounded-[2.5rem] border border-border-theme shadow-2xl mx-auto overflow-hidden animate-in zoom-in-95 duration-200 w-full max-w-5xl h-[90vh] flex flex-col">
@@ -222,64 +189,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 <label htmlFor="hasEgglessOption" className="text-sm font-bold text-slate-700">Has Eggless Option (Cakes)</label>
               </div>
 
-              {/* Weight Options */}
-              <div className="mb-6 bg-hover-theme/50 p-4 rounded-xl border border-border-theme">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-bold text-slate-700">Weight Variants</label>
-                  <button type="button" onClick={addWeightOption} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold flex items-center gap-1">
-                    <Plus size={12} /> Add
-                  </button>
-                </div>
-                {form.weightOptions.map((opt: any, i: any) => (
-                  <div key={i} className="flex items-center gap-2 mb-2">
-                    <input
-                      value={opt.weight}
-                      onChange={(e) => updateWeightOption(i, "weight", e.target.value)}
-                      placeholder="e.g. 500gm"
-                      className="flex-1 rounded-lg border border-border-theme px-3 py-2 text-sm"
-                    />
-                    <input
-                      value={opt.price}
-                      onChange={(e) => updateWeightOption(i, "price", e.target.value)}
-                      placeholder="Price ₹"
-                      type="number"
-                      className="w-24 rounded-lg border border-border-theme px-3 py-2 text-sm"
-                    />
-                    <button type="button" onClick={() => removeWeightOption(i)} className="text-rose-500 p-2"><Trash2 size={16} /></button>
-                  </div>
-                ))}
-                {form.weightOptions.length === 0 && <p className="text-xs text-slate-400">No weight variants added.</p>}
-              </div>
 
-              {/* Flower Options */}
-              <div className="mb-6 bg-hover-theme/50 p-4 rounded-xl border border-border-theme">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="block text-sm font-bold text-slate-700">Flower Count Variants</label>
-                  <button type="button" onClick={addFlowerOption} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded font-bold flex items-center gap-1">
-                    <Plus size={12} /> Add
-                  </button>
-                </div>
-                {form.flowerOptions.map((opt: any, i: any) => (
-                  <div key={i} className="flex items-center gap-2 mb-2">
-                    <input
-                      value={opt.count}
-                      onChange={(e) => updateFlowerOption(i, "count", e.target.value)}
-                      placeholder="Count (e.g. 10)"
-                      type="number"
-                      className="flex-1 rounded-lg border border-border-theme px-3 py-2 text-sm"
-                    />
-                    <input
-                      value={opt.price}
-                      onChange={(e) => updateFlowerOption(i, "price", e.target.value)}
-                      placeholder="Price ₹"
-                      type="number"
-                      className="w-24 rounded-lg border border-border-theme px-3 py-2 text-sm"
-                    />
-                    <button type="button" onClick={() => removeFlowerOption(i)} className="text-rose-500 p-2"><Trash2 size={16} /></button>
-                  </div>
-                ))}
-                {form.flowerOptions.length === 0 && <p className="text-xs text-slate-400">No flower variants added.</p>}
-              </div>
 
             </div>
 

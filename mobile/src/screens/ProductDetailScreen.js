@@ -22,33 +22,31 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // Variant States
-  const [selectedWeight, setSelectedWeight] = useState(product.weightOptions?.length > 0 ? product.weightOptions[0] : null);
-  const [selectedFlower, setSelectedFlower] = useState(product.flowerOptions?.length > 0 ? product.flowerOptions[0] : null);
   const [isEggless, setIsEggless] = useState(false);
-  
+
   // Image Gallery
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const galleryImages = [product.image, ...(product.images || [])].filter(Boolean);
 
-  // Pricing Calculations
-  const mrp = Number(product.price || 0);
-  let baseSalePrice = product.salePrice !== undefined && product.salePrice !== null ? Number(product.salePrice) : mrp;
-  
-  if (selectedWeight) baseSalePrice = selectedWeight.price;
-  if (selectedFlower) baseSalePrice = selectedFlower.price;
-  
-  // Optional: add 50rs for eggless? If not specified, we keep price same
-  if (isEggless) baseSalePrice += 50; 
+  // Pricing Calculations — MRP and Sale Price per variant
+  const baseMRP = Number(product.price || 0); // global MRP fallback
+  const globalSalePrice = product.salePrice !== undefined && product.salePrice !== null
+    ? Number(product.salePrice)
+    : baseMRP;
 
-  const unitPrice = baseSalePrice;
-  const discountAmount = mrp > baseSalePrice ? mrp - baseSalePrice : 0;
-  const discountPercent = mrp > 0 ? Math.round((discountAmount / mrp) * 100) : 0;
-  
-  const tax = Number(product.tax || 0);
-  const shippingCost = Number(product.shippingCost || 0);
-  const quantityNum = Number(quantity || 1);
-  const totalPayable = (unitPrice * quantityNum) + (unitPrice * (tax / 100) * quantityNum) + (shippingCost * quantityNum);
+  // Variant overrides: use variant's salePrice if set, else variant's price
+  let variantMRP = baseMRP;
+  let variantSalePrice = globalSalePrice;
+
+  const unitMRP = baseMRP;
+  let unitSalePrice = globalSalePrice;
+
+  // Eggless adds ₹50 to sale price only
+  if (isEggless) unitSalePrice += 50;
+
+  const savingsAmount = unitMRP > unitSalePrice ? unitMRP - unitSalePrice : 0;
+  const savingsPercent = unitMRP > 0 && savingsAmount > 0 ? Math.round((savingsAmount / unitMRP) * 100) : 0;
+  const discountPercent = product?.discount || savingsPercent;
 
   useEffect(() => {
     const checkCart = async () => {
@@ -56,7 +54,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         const raw = await AsyncStorage.getItem('@giftcart_cart');
         const cart = raw ? JSON.parse(raw) : [];
         setAdded(cart.some((item) => item._id === product._id));
-      } catch (err) {}
+      } catch (err) { }
     };
     checkCart();
     fetchReviews();
@@ -69,7 +67,7 @@ export default function ProductDetailScreen({ route, navigation }) {
     try {
       const wishlist = await getWishlist();
       setInWishlist(wishlist.some((item) => item.product && item.product._id === product._id));
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const handleToggleWishlist = async () => {
@@ -95,37 +93,37 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   const handleLike = async (id) => {
     if (!user) return showToast('Please login to engage', 'warning');
-    try { await likeReview(id); fetchReviews(); } catch (e) {}
+    try { await likeReview(id); fetchReviews(); } catch (e) { }
   };
 
   const handleDislike = async (id) => {
     if (!user) return showToast('Please login to engage', 'warning');
-    try { await dislikeReview(id); fetchReviews(); } catch (e) {}
+    try { await dislikeReview(id); fetchReviews(); } catch (e) { }
   };
 
   const addToCart = async () => {
     try {
       const raw = await AsyncStorage.getItem('@giftcart_cart');
       const cart = raw ? JSON.parse(raw) : [];
-      
-      const variantStr = selectedWeight ? selectedWeight.weight : (selectedFlower ? `${selectedFlower.count} Flowers` : '');
+
       const egglessStr = product.hasEgglessOption && isEggless ? 'Eggless' : '';
-      const cartItemId = `${product._id}_${variantStr}_${egglessStr}`;
+      const cartItemId = `${product._id}_${egglessStr}`;
 
       if (cart.some(i => i.cartItemId === cartItemId || (!i.cartItemId && i._id === product._id))) {
         navigation.navigate('Cart');
         return;
       }
-      
-      const cartItem = { 
-        ...product, 
+
+      const cartItem = {
+        ...product,
         cartItemId,
         quantity,
-        salePrice: unitPrice, // Overriding with variant price
-        selectedVariant: variantStr || null,
+        price: unitMRP,         
+        salePrice: unitSalePrice, 
+        discount: 0,             
         isEggless: product.hasEgglessOption ? isEggless : false
       };
-      
+
       cart.push(cartItem);
       await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(cart));
       setAdded(true);
@@ -142,356 +140,276 @@ export default function ProductDetailScreen({ route, navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      
+
       {/* Floating Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-           <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="chevron-back" size={24} color="#FFF" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.headerBtn} onPress={handleToggleWishlist}>
-           <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={22} color={inWishlist ? "#FF3D00" : "#FFF"} />
+          <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={22} color={inWishlist ? "#FF3D00" : "#FFF"} />
         </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         {/* Main Image Gallery Banner */}
         <View style={styles.imageWrapper}>
-           <ScrollView 
-             horizontal 
-             pagingEnabled 
-             showsHorizontalScrollIndicator={false}
-             onScroll={handleScroll}
-             scrollEventThrottle={16}
-           >
-             {galleryImages.map((img, idx) => (
-               <Image key={idx} source={{ uri: img }} style={styles.mainImage} />
-             ))}
-           </ScrollView>
-           
-           {/* Pagination Dots */}
-           {galleryImages.length > 1 && (
-             <View style={styles.paginationDots}>
-               {galleryImages.map((_, idx) => (
-                 <View key={idx} style={[styles.dot, activeImageIndex === idx && styles.activeDot]} />
-               ))}
-             </View>
-           )}
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          >
+            {galleryImages.map((img, idx) => (
+              <Image key={idx} source={{ uri: img }} style={styles.mainImage} />
+            ))}
+          </ScrollView>
 
-           {discountPercent > 0 && (
-             <View style={styles.offBadge}>
-               <Text style={styles.offText}>{discountPercent}% OFF</Text>
-             </View>
-           )}
+          {/* Pagination Dots */}
+          {galleryImages.length > 1 && (
+            <View style={styles.paginationDots}>
+              {galleryImages.map((_, idx) => (
+                <View key={idx} style={[styles.dot, activeImageIndex === idx && styles.activeDot]} />
+              ))}
+            </View>
+          )}
+
+          {discountPercent > 0 && (
+            <View style={styles.offBadge}>
+              <Text style={styles.offText}>{discountPercent}% OFF</Text>
+            </View>
+          )}
         </View>
 
         {/* Content Details */}
         <View style={styles.contentBox}>
-           <View style={styles.dragHandle} />
-           
-           <View style={styles.topInfo}>
-              <View style={styles.categoryInfo}>
-                 <View style={styles.catBadge}>
-                   <Text style={styles.categoryName}>{product.category?.name || 'EXCLUSIVE GIFT'}</Text>
-                 </View>
-                 <View style={styles.ratingBadge}>
-                    <Ionicons name="star" size={12} color="#F59E0B" />
-                    <Text style={styles.ratingValue}>{product.ratings?.toFixed(1) || '4.8'}</Text>
-                 </View>
-              </View>
-              <Text style={styles.productTitle}>{product.name}</Text>
-           </View>
+          <View style={styles.dragHandle} />
 
-           {/* Quick Specification Grid */}
-           <View style={styles.specGrid}>
-              {product.weight && !product.weightOptions?.length && (
-                <View style={styles.specItem}>
-                   <MaterialCommunityIcons name="weight" size={20} color="#D82B76" />
-                   <Text style={styles.specLabel}>{product.weight}</Text>
-                </View>
-              )}
-              {product.flowers && !product.flowerOptions?.length && (
-                <View style={styles.specItem}>
-                   <MaterialCommunityIcons name="flower" size={20} color="#D82B76" />
-                   <Text style={styles.specLabel}>{product.flowers} Flores</Text>
-                </View>
-              )}
-               <View style={[styles.specItem, { borderRightWidth: 0 }]}>
-                  <MaterialCommunityIcons name="clock-outline" size={20} color="#D82B76" />
-                  <Text style={styles.specLabel}>{product.deliveryTime ? `${product.deliveryTime} Hrs` : '24-48 Hrs'}</Text>
-               </View>
+          <View style={styles.topInfo}>
+            <View style={styles.categoryInfo}>
+              <View style={styles.catBadge}>
+                <Text style={styles.categoryName}>{product.category?.name || 'EXCLUSIVE GIFT'}</Text>
+              </View>
+              <View style={styles.ratingBadge}>
+                <Ionicons name="star" size={12} color="#F59E0B" />
+                <Text style={styles.ratingValue}>{product.ratings?.toFixed(1) || '4.8'}</Text>
+              </View>
             </View>
+            <Text style={styles.productTitle}>{product.name}</Text>
+          </View>
 
-           {/* Variants Selection Section */}
-           {(product.weightOptions?.length > 0 || product.flowerOptions?.length > 0 || product.hasEgglessOption) && (
-             <View style={styles.variantsContainer}>
-               
-               {/* Weight Variants */}
-               {product.weightOptions?.length > 0 && (
-                 <View style={styles.variantGroup}>
-                   <Text style={styles.variantLabel}>Select Weight</Text>
-                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-                     {product.weightOptions.map((opt, i) => {
-                       const isSelected = selectedWeight?.weight === opt.weight;
-                       return (
-                         <TouchableOpacity 
-                           key={i} 
-                           style={[styles.chip, isSelected && styles.activeChip]}
-                           onPress={() => setSelectedWeight(opt)}
-                         >
-                           <Text style={[styles.chipText, isSelected && styles.activeChipText]}>{opt.weight}</Text>
-                           <Text style={[styles.chipPrice, isSelected && styles.activeChipPrice]}>₹{opt.price}</Text>
-                         </TouchableOpacity>
-                       );
-                     })}
-                   </ScrollView>
-                 </View>
-               )}
-
-               {/* Flower Variants */}
-               {product.flowerOptions?.length > 0 && (
-                 <View style={styles.variantGroup}>
-                   <Text style={styles.variantLabel}>Select Quantity</Text>
-                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll}>
-                     {product.flowerOptions.map((opt, i) => {
-                       const isSelected = selectedFlower?.count === opt.count;
-                       return (
-                         <TouchableOpacity 
-                           key={i} 
-                           style={[styles.chip, isSelected && styles.activeChip]}
-                           onPress={() => setSelectedFlower(opt)}
-                         >
-                           <Text style={[styles.chipText, isSelected && styles.activeChipText]}>{opt.count} Flowers</Text>
-                           <Text style={[styles.chipPrice, isSelected && styles.activeChipPrice]}>₹{opt.price}</Text>
-                         </TouchableOpacity>
-                       );
-                     })}
-                   </ScrollView>
-                 </View>
-               )}
-
-               {/* Eggless Option */}
-               {product.hasEgglessOption && (
-                 <View style={[styles.variantGroup, styles.egglessContainer]}>
-                   <Text style={styles.variantLabel}>Cake Type</Text>
-                   <View style={styles.egglessToggleRow}>
-                     <TouchableOpacity 
-                       style={[styles.eggBtn, !isEggless && styles.eggBtnActive]}
-                       onPress={() => setIsEggless(false)}
-                     >
-                       <View style={styles.vegMarkContainer}>
-                         <View style={[styles.vegMark, { borderColor: '#B91C1C' }]}>
-                           <View style={[styles.vegDot, { backgroundColor: '#B91C1C' }]} />
-                         </View>
-                       </View>
-                       <View style={styles.eggBtnTexts}>
-                         <Text style={[styles.eggBtnText, !isEggless && styles.eggBtnTextActive]}>With Egg</Text>
-                         <Text style={[styles.eggPriceText, !isEggless && styles.eggBtnTextActive]}>No extra charge</Text>
-                       </View>
-                     </TouchableOpacity>
-                     
-                     <TouchableOpacity 
-                       style={[styles.eggBtn, isEggless && styles.eggBtnActive]}
-                       onPress={() => setIsEggless(true)}
-                     >
-                       <View style={styles.vegMarkContainer}>
-                         <View style={[styles.vegMark, { borderColor: '#16A34A' }]}>
-                           <View style={[styles.vegDot, { backgroundColor: '#16A34A' }]} />
-                         </View>
-                       </View>
-                       <View style={styles.eggBtnTexts}>
-                         <Text style={[styles.eggBtnText, isEggless && styles.eggBtnTextActive]}>100% Eggless</Text>
-                         <Text style={[styles.eggPriceText, isEggless && styles.eggBtnTextActive]}>+₹50 Additional</Text>
-                       </View>
-                     </TouchableOpacity>
-                   </View>
-                 </View>
-               )}
-             </View>
-           )}
-
-            <View style={styles.deliveryInfoRow}>
-               <Feather name="truck" size={18} color="#D82B76" />
-               <View style={{ marginLeft: 12 }}>
-                  <Text style={styles.deliveryMainText}>Get it in {product.expectedDeliveryDate || 'N/A'}</Text>
-                  <Text style={styles.deliverySubText}>Approx. Delivery Time: {product.deliveryTime || '24'} Hrs</Text>
-               </View>
+          {/* Quick Specification Grid */}
+          <View style={styles.specGrid}>
+            <View style={[styles.specItem, { borderRightWidth: 0 }]}>
+              <MaterialCommunityIcons name="clock-outline" size={20} color="#D82B76" />
+              <Text style={styles.specLabel}>{product.deliveryTime ? `${product.deliveryTime} Hrs` : '24-48 Hrs'}</Text>
             </View>
+          </View>
 
-           {/* Pricing Section */}
-           <View style={styles.priceContainer}>
-              <View>
-                 <Text style={styles.label}>Total Price</Text>
-                 <View style={styles.mainPriceRow}>
-                    <Text style={styles.currency}>₹</Text>
-                    <Text style={styles.currentPrice}>{unitPrice.toLocaleString()}</Text>
-                    {mrp > unitPrice && (
-                       <Text style={styles.oldPriceText}>₹{mrp.toLocaleString()}</Text>
-                    )}
-                 </View>
-              </View>
-              <View style={styles.quantityWidget}>
-                 <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))} style={styles.qBtn}>
-                    <Feather name="minus" size={16} color="#1A1A1A" />
-                 </TouchableOpacity>
-                 <Text style={styles.qVal}>{quantity}</Text>
-                 <TouchableOpacity onPress={() => setQuantity(quantity + 1)} style={styles.qBtn}>
-                    <Feather name="plus" size={16} color="#1A1A1A" />
-                 </TouchableOpacity>
-              </View>
-           </View>
-
-           {/* Summary breakdown mini card */}
-           <View style={styles.summaryCard}>
-              <View style={styles.summaryRow}>
-                 <Text style={styles.sumLabel}>Price per unit</Text>
-                 <Text style={styles.sumVal}>₹{unitPrice.toFixed(2)}</Text>
-              </View>
-              {discountPercent > 0 && (
-                <View style={styles.summaryRow}>
-                   <Text style={styles.sumLabel}>Discount</Text>
-                   <Text style={[styles.sumVal, { color: '#16A34A' }]}>-₹{(product.discount * quantity).toFixed(2)}</Text>
-                </View>
-              )}
-              <View style={styles.summaryRow}>
-                 <Text style={styles.sumLabel}>Tax ({tax}%)</Text>
-                 <Text style={styles.sumVal}>+₹{(unitPrice * (tax / 100) * quantity).toFixed(2)}</Text>
-              </View>
-              <View style={styles.summaryRow}>
-                 <Text style={styles.sumLabel}>Shipping Cost</Text>
-                 <Text style={styles.sumVal}>+₹{(shippingCost * quantity).toFixed(2)}</Text>
-              </View>
-              <View style={styles.sumDivider} />
-              <View style={styles.summaryRow}>
-                 <Text style={styles.finalLabel}>Total Payable Amount</Text>
-                 <Text style={styles.finalPrice}>₹{totalPayable.toFixed(2)}</Text>
-              </View>
-           </View>
-
-           {/* COD & Trust Section */}
-           <View style={styles.trustRow}>
-              {product.isCodAvailable && (
-                <View style={styles.trustBadge}>
-                   <MaterialCommunityIcons name="cash-multiple" size={16} color="#16A34A" />
-                   <Text style={styles.trustText}>Cash on Delivery Available</Text>
-                </View>
-              )}
-              <View style={styles.trustBadge}>
-                 <MaterialCommunityIcons name="shield-check" size={16} color="#2979FF" />
-                 <Text style={styles.trustText}>Genuine Product</Text>
-              </View>
-           </View>
-
-           {/* Description */}
-           <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Product Description</Text>
-              <Text style={styles.descriptionText}>
-                 {product.description || 'Elegant and sophisticated, this curated selection is designed to make every moment memorable.'}
-              </Text>
-           </View>
-
-           {/* Reviews Section */}
-           <View style={styles.section}>
-              <View style={styles.rowBetween}>
-                 <Text style={styles.sectionTitle}>Reviews ({reviews.length})</Text>
-              </View>
-              
-              {loadingReviews ? (
-                <ActivityIndicator color="#D82B76" style={{ margin: 20 }} />
-              ) : reviews.length === 0 ? (
-                <View style={styles.emptyReviews}>
-                   <MaterialCommunityIcons name="star-outline" size={40} color="#DDD" />
-                   <Text style={styles.emptyText}>No reviews yet. Share your feedback!</Text>
-                </View>
-              ) : (
-                reviews.map((rev) => (
-                  <View key={rev._id} style={styles.reviewCard}>
-                     <View style={styles.revHeader}>
-                        <View style={styles.revProfile}>
-                           {rev.user?.profilePic ? (
-                             <Image source={{ uri: rev.user.profilePic }} style={styles.revImg} />
-                           ) : (
-                             <Text style={styles.revInitial}>{rev.user?.name?.charAt(0)}</Text>
-                           )}
+          {/* Eggless Option */}
+          {product.hasEgglessOption && (
+            <View style={styles.variantsContainer}>
+                <View style={[styles.variantGroup, styles.egglessContainer]}>
+                  <Text style={styles.variantLabel}>Cake Type</Text>
+                  <View style={styles.egglessToggleRow}>
+                    <TouchableOpacity
+                      style={[styles.eggBtn, !isEggless && styles.eggBtnActive]}
+                      onPress={() => setIsEggless(false)}
+                    >
+                      <View style={styles.vegMarkContainer}>
+                        <View style={[styles.vegMark, { borderColor: '#B91C1C' }]}>
+                          <View style={[styles.vegDot, { backgroundColor: '#B91C1C' }]} />
                         </View>
-                        <View style={styles.revNameSet}>
-                           <Text style={styles.revName}>{rev.user?.name || 'Anonymous'}</Text>
-                           <View style={styles.revStars}>
-                              {[1,2,3,4,5].map(s => (
-                                <Ionicons key={s} name="star" size={10} color={s <= rev.rating ? "#FFD700" : "#EEE"} />
-                              ))}
-                              <Text style={styles.revDate}>{new Date(rev.createdAt).toLocaleDateString()}</Text>
-                           </View>
-                        </View>
-                        {user && rev.user?._id === user.id && (
-                           <TouchableOpacity onPress={() => navigation.navigate('AddReview', { product, existingReview: rev })}>
-                              <Feather name="edit-2" size={16} color="#D82B76" />
-                           </TouchableOpacity>
-                        )}
-                     </View>
-                     <Text style={styles.revComment}>{rev.comment}</Text>
+                      </View>
+                      <View style={styles.eggBtnTexts}>
+                        <Text style={[styles.eggBtnText, !isEggless && styles.eggBtnTextActive]}>With Egg</Text>
+                        <Text style={[styles.eggPriceText, !isEggless && styles.eggBtnTextActive]}>No extra charge</Text>
+                      </View>
+                    </TouchableOpacity>
 
-                     {rev.images && rev.images.length > 0 && (
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.revImagesList}>
-                           {rev.images.map((img, idx) => (
-                              <TouchableOpacity 
-                                 key={idx} 
-                                 activeOpacity={0.9}
-                                 onPress={() => {
-                                    setSelectedImage(img);
-                                    setIsModalVisible(true);
-                                 }}
-                              >
-                                 <Image source={{ uri: img }} style={styles.revImageItem} />
-                              </TouchableOpacity>
-                           ))}
-                        </ScrollView>
-                     )}
-                     
-                     <View style={styles.revActions}>
-                        <TouchableOpacity style={styles.engBtn} onPress={() => handleLike(rev._id)}>
-                           <Ionicons 
-                             name={user && (rev.likes || []).includes(user.id) ? "thumbs-up" : "thumbs-up-outline"} 
-                             size={14} 
-                             color={user && (rev.likes || []).includes(user.id) ? "#D82B76" : "#666"} 
-                           />
-                           <Text style={styles.engText}>{(rev.likes || []).length}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.engBtn} onPress={() => handleDislike(rev._id)}>
-                           <Ionicons 
-                             name={user && (rev.dislikes || []).includes(user.id) ? "thumbs-down" : "thumbs-down-outline"} 
-                             size={14} 
-                             color={user && (rev.dislikes || []).includes(user.id) ? "#333" : "#666"} 
-                           />
-                           <Text style={styles.engText}>{(rev.dislikes || []).length}</Text>
-                        </TouchableOpacity>
-                     </View>
-
-                     {rev.reply && (
-                        <View style={styles.replyBox}>
-                           <Text style={styles.replyBrand}>GIFT CART RESPONSE</Text>
-                           <Text style={styles.replyMsg}>{rev.reply}</Text>
+                    <TouchableOpacity
+                      style={[styles.eggBtn, isEggless && styles.eggBtnActive]}
+                      onPress={() => setIsEggless(true)}
+                    >
+                      <View style={styles.vegMarkContainer}>
+                        <View style={[styles.vegMark, { borderColor: '#16A34A' }]}>
+                          <View style={[styles.vegDot, { backgroundColor: '#16A34A' }]} />
                         </View>
-                     )}
+                      </View>
+                      <View style={styles.eggBtnTexts}>
+                        <Text style={[styles.eggBtnText, isEggless && styles.eggBtnTextActive]}>100% Eggless</Text>
+                        <Text style={[styles.eggPriceText, isEggless && styles.eggBtnTextActive]}>+₹50 Additional</Text>
+                      </View>
+                    </TouchableOpacity>
                   </View>
-                ))
+                </View>
+            </View>
+          )}
+
+          <View style={styles.deliveryInfoRow}>
+            <Feather name="truck" size={18} color="#D82B76" />
+            <View style={{ marginLeft: 12 }}>
+              <Text style={styles.deliveryMainText}>Get it in {product.expectedDeliveryDate || 'N/A'}</Text>
+              <Text style={styles.deliverySubText}>Approx. Delivery Time: {product.deliveryTime || '24'} Hrs</Text>
+            </View>
+          </View>
+
+          {/* Pricing Section */}
+          <View style={styles.priceContainer}>
+            <View>
+              <Text style={styles.label}>Sale Price</Text>
+              <View style={styles.mainPriceRow}>
+                <Text style={styles.currency}>₹</Text>
+                <Text style={styles.currentPrice}>{unitSalePrice.toLocaleString()}</Text>
+                {unitMRP > unitSalePrice && (
+                  <Text style={styles.oldPriceText}>₹{unitMRP.toLocaleString()}</Text>
+                )}
+              </View>
+              {savingsAmount > 0 && (
+                <View style={styles.savingsBadge}>
+                  <Text style={styles.savingsText}>You save ₹{savingsAmount.toLocaleString()} ({savingsPercent}% OFF)</Text>
+                </View>
               )}
-           </View>
+            </View>
+            <View style={styles.quantityWidget}>
+              <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))} style={styles.qBtn}>
+                <Feather name="minus" size={16} color="#1A1A1A" />
+              </TouchableOpacity>
+              <Text style={styles.qVal}>{quantity}</Text>
+              <TouchableOpacity onPress={() => setQuantity(quantity + 1)} style={styles.qBtn}>
+                <Feather name="plus" size={16} color="#1A1A1A" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+
+
+          {/* COD & Trust Section */}
+          <View style={styles.trustRow}>
+            {product.isCodAvailable && (
+              <View style={styles.trustBadge}>
+                <MaterialCommunityIcons name="cash-multiple" size={16} color="#16A34A" />
+                <Text style={styles.trustText}>Cash on Delivery Available</Text>
+              </View>
+            )}
+            <View style={styles.trustBadge}>
+              <MaterialCommunityIcons name="shield-check" size={16} color="#2979FF" />
+              <Text style={styles.trustText}>Genuine Product</Text>
+            </View>
+          </View>
+
+          {/* Description */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Product Description</Text>
+            <Text style={styles.descriptionText}>
+              {product.description || 'Elegant and sophisticated, this curated selection is designed to make every moment memorable.'}
+            </Text>
+          </View>
+
+          {/* Reviews Section */}
+          <View style={styles.section}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.sectionTitle}>Reviews ({reviews.length})</Text>
+            </View>
+
+            {loadingReviews ? (
+              <ActivityIndicator color="#D82B76" style={{ margin: 20 }} />
+            ) : reviews.length === 0 ? (
+              <View style={styles.emptyReviews}>
+                <MaterialCommunityIcons name="star-outline" size={40} color="#DDD" />
+                <Text style={styles.emptyText}>No reviews yet. Share your feedback!</Text>
+              </View>
+            ) : (
+              reviews.map((rev) => (
+                <View key={rev._id} style={styles.reviewCard}>
+                  <View style={styles.revHeader}>
+                    <View style={styles.revProfile}>
+                      {rev.user?.profilePic ? (
+                        <Image source={{ uri: rev.user.profilePic }} style={styles.revImg} />
+                      ) : (
+                        <Text style={styles.revInitial}>{rev.user?.name?.charAt(0)}</Text>
+                      )}
+                    </View>
+                    <View style={styles.revNameSet}>
+                      <Text style={styles.revName}>{rev.user?.name || 'Anonymous'}</Text>
+                      <View style={styles.revStars}>
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Ionicons key={s} name="star" size={10} color={s <= rev.rating ? "#FFD700" : "#EEE"} />
+                        ))}
+                        <Text style={styles.revDate}>{new Date(rev.createdAt).toLocaleDateString()}</Text>
+                      </View>
+                    </View>
+                    {user && rev.user?._id === user.id && (
+                      <TouchableOpacity onPress={() => navigation.navigate('AddReview', { product, existingReview: rev })}>
+                        <Feather name="edit-2" size={16} color="#D82B76" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  <Text style={styles.revComment}>{rev.comment}</Text>
+
+                  {rev.images && rev.images.length > 0 && (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.revImagesList}>
+                      {rev.images.map((img, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          activeOpacity={0.9}
+                          onPress={() => {
+                            setSelectedImage(img);
+                            setIsModalVisible(true);
+                          }}
+                        >
+                          <Image source={{ uri: img }} style={styles.revImageItem} />
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+
+                  <View style={styles.revActions}>
+                    <TouchableOpacity style={styles.engBtn} onPress={() => handleLike(rev._id)}>
+                      <Ionicons
+                        name={user && (rev.likes || []).includes(user.id) ? "thumbs-up" : "thumbs-up-outline"}
+                        size={14}
+                        color={user && (rev.likes || []).includes(user.id) ? "#D82B76" : "#666"}
+                      />
+                      <Text style={styles.engText}>{(rev.likes || []).length}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.engBtn} onPress={() => handleDislike(rev._id)}>
+                      <Ionicons
+                        name={user && (rev.dislikes || []).includes(user.id) ? "thumbs-down" : "thumbs-down-outline"}
+                        size={14}
+                        color={user && (rev.dislikes || []).includes(user.id) ? "#333" : "#666"}
+                      />
+                      <Text style={styles.engText}>{(rev.dislikes || []).length}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {rev.reply && (
+                    <View style={styles.replyBox}>
+                      <Text style={styles.replyBrand}>GIFT CART RESPONSE</Text>
+                      <Text style={styles.replyMsg}>{rev.reply}</Text>
+                    </View>
+                  )}
+                </View>
+              ))
+            )}
+          </View>
         </View>
       </ScrollView>
 
       {/* Modern Sticky Footer Action */}
       <View style={styles.footer}>
-         <TouchableOpacity 
-            style={[styles.mainBtn, added && styles.addedBtn]} 
-            activeOpacity={0.8}
-            onPress={addToCart}
-         >
-            <View style={styles.btnRow}>
-               <Feather name={added ? "shopping-bag" : "shopping-cart"} size={20} color="#FFF" />
-               <Text style={styles.btnText}>{added ? 'IN YOUR CART' : 'ADD TO BAG'}</Text>
-            </View>
-            <Text style={styles.btnSubTotal}>Total: ₹{totalPayable.toFixed(0)}</Text>
-         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.mainBtn, added && styles.addedBtn]}
+          activeOpacity={0.8}
+          onPress={addToCart}
+        >
+          <View style={styles.btnRow}>
+            <Feather name={added ? "shopping-bag" : "shopping-cart"} size={20} color="#FFF" />
+            <Text style={styles.btnText}>{added ? 'IN YOUR CART' : 'ADD TO BAG'}</Text>
+          </View>
+          <Text style={styles.btnSubTotal}>Total: ₹{(unitSalePrice * quantity).toFixed(0)}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Full Screen Image Viewer Modal */}
@@ -501,16 +419,16 @@ export default function ProductDetailScreen({ route, navigation }) {
         onRequestClose={() => setIsModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <TouchableOpacity 
-            style={styles.modalCloseBtn} 
+          <TouchableOpacity
+            style={styles.modalCloseBtn}
             onPress={() => setIsModalVisible(false)}
           >
             <Ionicons name="close" size={30} color="#FFF" />
           </TouchableOpacity>
-          <Image 
-            source={{ uri: selectedImage }} 
-            style={styles.fullImage} 
-            resizeMode="contain" 
+          <Image
+            source={{ uri: selectedImage }}
+            style={styles.fullImage}
+            resizeMode="contain"
           />
         </View>
       </Modal>
@@ -520,12 +438,12 @@ export default function ProductDetailScreen({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
-  header: { 
-    position: 'absolute', top: Platform.OS === 'ios' ? 50 : 30, left: 15, right: 15, 
-    flexDirection: 'row', justifyContent: 'space-between', zIndex: 100 
+  header: {
+    position: 'absolute', top: Platform.OS === 'ios' ? 50 : 30, left: 15, right: 15,
+    flexDirection: 'row', justifyContent: 'space-between', zIndex: 100
   },
   headerBtn: { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  
+
   imageWrapper: { width: width, height: ITEM_HEIGHT, position: 'relative' },
   mainImage: { width: width, height: ITEM_HEIGHT, resizeMode: 'cover' },
   paginationDots: { position: 'absolute', bottom: 60, width: '100%', flexDirection: 'row', justifyContent: 'center', gap: 6 },
@@ -534,12 +452,12 @@ const styles = StyleSheet.create({
   offBadge: { position: 'absolute', bottom: 60, right: 0, backgroundColor: '#D82B76', paddingHorizontal: 15, paddingVertical: 8, borderTopLeftRadius: 20 },
   offText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
 
-  contentBox: { 
+  contentBox: {
     marginTop: -40, backgroundColor: '#FFF', borderTopLeftRadius: 40, borderTopRightRadius: 40,
     minHeight: 600, paddingHorizontal: 25, paddingBottom: 120
   },
   dragHandle: { width: 40, height: 5, backgroundColor: '#E0E0E0', borderRadius: 3, alignSelf: 'center', marginTop: 15, marginBottom: 20 },
-  
+
   topInfo: { marginBottom: 20 },
   categoryInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 },
   categoryName: { fontSize: 11, fontWeight: '900', color: '#D82B76', letterSpacing: 1.5, textTransform: 'uppercase' },
@@ -551,8 +469,8 @@ const styles = StyleSheet.create({
   variantGroup: { marginBottom: 20 },
   variantLabel: { fontSize: 14, fontWeight: '800', color: '#1A1A1A', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   chipsScroll: { flexDirection: 'row', paddingBottom: 5 },
-  chip: { 
-    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10, 
+  chip: {
+    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10,
     marginRight: 10, backgroundColor: '#F8FAFC', minWidth: 90, alignItems: 'center'
   },
   activeChip: { borderColor: '#D82B76', backgroundColor: '#FFF0F5' },
@@ -563,10 +481,10 @@ const styles = StyleSheet.create({
 
   egglessContainer: { marginTop: 5 },
   egglessToggleRow: { flexDirection: 'row', gap: 12 },
-  eggBtn: { 
-    flex: 1, flexDirection: 'row', alignItems: 'center', 
-    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 16, 
-    padding: 12, backgroundColor: '#F8FAFC' 
+  eggBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 16,
+    padding: 12, backgroundColor: '#F8FAFC'
   },
   eggBtnActive: { borderColor: '#D82B76', backgroundColor: '#FFF0F5' },
   vegMarkContainer: { marginRight: 10 },
@@ -587,6 +505,9 @@ const styles = StyleSheet.create({
   currency: { fontSize: 18, fontWeight: '900', color: '#D82B76' },
   currentPrice: { fontSize: 32, fontWeight: '900', color: '#1A1A1A' },
   oldPriceText: { fontSize: 14, color: '#CBD5E1', textDecorationLine: 'line-through', marginLeft: 10, fontWeight: '600' },
+  savingsBadge: { marginTop: 6, backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
+  savingsText: { fontSize: 12, color: '#16A34A', fontWeight: '800' },
+  chipMrp: { fontSize: 10, color: '#CBD5E1', textDecorationLine: 'line-through', fontWeight: '600' },
 
   quantityWidget: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 15, padding: 4 },
   qBtn: { width: 38, height: 38, backgroundColor: '#FFF', borderRadius: 12, justifyContent: 'center', alignItems: 'center', elevation: 2 },
@@ -654,12 +575,12 @@ const styles = StyleSheet.create({
   replyBrand: { fontSize: 10, fontWeight: '900', color: '#D82B76', letterSpacing: 1, marginBottom: 5 },
   replyMsg: { fontSize: 13, color: '#1E293B', fontWeight: '600', lineHeight: 20 },
 
-  footer: { 
+  footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 25, paddingBottom: Platform.OS === 'ios' ? 35 : 20, paddingTop: 15,
     backgroundColor: 'rgba(255,255,255,0.95)', borderTopWidth: 1, borderTopColor: '#F1F5F9'
   },
-  mainBtn: { 
-    backgroundColor: '#D82B76', height: 65, borderRadius: 22, flexDirection: 'row', 
+  mainBtn: {
+    backgroundColor: '#D82B76', height: 65, borderRadius: 22, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 25,
     shadowColor: '#D82B76', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 5
   },
