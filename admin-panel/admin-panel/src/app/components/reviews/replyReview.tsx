@@ -61,9 +61,9 @@ export default function ReplyReviewView() {
         <div className="md:col-span-1 space-y-6">
           <div className="bg-card p-6 rounded-3xl border border-border-theme shadow-sm">
             <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Product</h3>
-            <img src={review.product.image} className="w-full aspect-square object-cover rounded-2xl border border-border-theme mb-4" alt="" />
-            <p className="font-bold text-slate-900">{review.product.name}</p>
-            <p className="text-primary font-black mt-1">₹{review.product.price}</p>
+            <img src={review.product?.image || ""} className="w-full aspect-square object-cover rounded-2xl border border-border-theme mb-4" alt="" />
+            <p className="font-bold text-slate-900">{review.product?.name || "Deleted Product"}</p>
+            <p className="text-primary font-black mt-1">₹{review.product?.price || 0}</p>
           </div>
 
           <div className="bg-card p-6 rounded-3xl border border-border-theme shadow-sm">
