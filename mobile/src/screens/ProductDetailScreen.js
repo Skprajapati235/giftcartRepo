@@ -118,9 +118,9 @@ export default function ProductDetailScreen({ route, navigation }) {
         ...product,
         cartItemId,
         quantity,
-        price: unitMRP,         
-        salePrice: unitSalePrice, 
-        discount: 0,             
+        price: unitMRP,
+        salePrice: unitSalePrice,
+        discount: 0,
         isEggless: product.hasEgglessOption ? isEggless : false
       };
 
@@ -144,11 +144,16 @@ export default function ProductDetailScreen({ route, navigation }) {
       {/* Floating Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
-          <Ionicons name="chevron-back" size={24} color="#FFF" />
+          <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.headerBtn} onPress={handleToggleWishlist}>
-          <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={22} color={inWishlist ? "#FF3D00" : "#FFF"} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.headerBtn}>
+            <Feather name="share-2" size={20} color="#1A1A1A" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerBtn} onPress={handleToggleWishlist}>
+            <Ionicons name={inWishlist ? "heart" : "heart-outline"} size={22} color={inWishlist ? "#F43F5E" : "#1A1A1A"} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
@@ -189,120 +194,134 @@ export default function ProductDetailScreen({ route, navigation }) {
           <View style={styles.topInfo}>
             <View style={styles.categoryInfo}>
               <View style={styles.catBadge}>
-                <Text style={styles.categoryName}>{product.category?.name || 'EXCLUSIVE GIFT'}</Text>
+                <MaterialCommunityIcons name="flower" size={14} color="#D82B76" />
+                <Text style={styles.categoryName}>{product.category?.name || 'FLOWERS'}</Text>
               </View>
               <View style={styles.ratingBadge}>
                 <Ionicons name="star" size={12} color="#F59E0B" />
-                <Text style={styles.ratingValue}>{product.ratings?.toFixed(1) || '4.8'}</Text>
+                <Text style={styles.ratingValue}>{product.ratings?.toFixed(1) || '4.8'} <Text style={styles.ratingCount}>({product.reviewsCount || 120})</Text></Text>
               </View>
             </View>
-            <Text style={styles.productTitle}>{product.name}</Text>
-          </View>
 
-          {/* Quick Specification Grid */}
-          <View style={styles.specGrid}>
-            <View style={[styles.specItem, { borderRightWidth: 0 }]}>
-              <MaterialCommunityIcons name="clock-outline" size={20} color="#D82B76" />
-              <Text style={styles.specLabel}>{product.deliveryTime ? `${product.deliveryTime} Hrs` : '24-48 Hrs'}</Text>
-            </View>
-          </View>
-
-          {/* Flavor Detail */}
-          {product.flavor && (
-            <View style={styles.flavorDetailContainer}>
-               <MaterialCommunityIcons name="cake-variant" size={20} color="#D82B76" />
-               <View style={{ marginLeft: 12 }}>
-                 <Text style={styles.flavorLabel}>Selected Flavor</Text>
-                 <Text style={styles.flavorNameDetail}>{product.flavor.name || product.flavor}</Text>
-               </View>
-            </View>
-          )}
-
-          {product.weight && (
-            <View style={styles.flavorDetailContainer}>
-               <MaterialCommunityIcons name="weight" size={20} color="#D82B76" />
-               <View style={{ marginLeft: 12 }}>
-                 <Text style={styles.flavorLabel}>Weight</Text>
-                 <Text style={styles.flavorNameDetail}>{product.weight}</Text>
-               </View>
-            </View>
-          )}
-
-          {product.flowerCount && (
-            <View style={styles.flavorDetailContainer}>
-               <MaterialCommunityIcons name="flower" size={20} color="#D82B76" />
-               <View style={{ marginLeft: 12 }}>
-                 <Text style={styles.flavorLabel}>Flowers</Text>
-                 <Text style={styles.flavorNameDetail}>{product.flowerCount}</Text>
-               </View>
-            </View>
-          )}
-
-          {/* Eggless Option */}
-          {product.hasEgglessOption && (
-            <View style={styles.variantsContainer}>
-                <View style={[styles.variantGroup, styles.egglessContainer]}>
-                  <Text style={styles.variantLabel}>Cake Type</Text>
-                  <View style={styles.egglessToggleRow}>
-                    <TouchableOpacity
-                      style={[styles.eggBtn, !isEggless && styles.eggBtnActive]}
-                      onPress={() => setIsEggless(false)}
-                    >
-                      <View style={styles.vegMarkContainer}>
-                        <View style={[styles.vegMark, { borderColor: '#B91C1C' }]}>
-                          <View style={[styles.vegDot, { backgroundColor: '#B91C1C' }]} />
-                        </View>
-                      </View>
-                      <View style={styles.eggBtnTexts}>
-                        <Text style={[styles.eggBtnText, !isEggless && styles.eggBtnTextActive]}>With Egg</Text>
-                        <Text style={[styles.eggPriceText, !isEggless && styles.eggBtnTextActive]}>No extra charge</Text>
-                      </View>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={[styles.eggBtn, isEggless && styles.eggBtnActive]}
-                      onPress={() => setIsEggless(true)}
-                    >
-                      <View style={styles.vegMarkContainer}>
-                        <View style={[styles.vegMark, { borderColor: '#16A34A' }]}>
-                          <View style={[styles.vegDot, { backgroundColor: '#16A34A' }]} />
-                        </View>
-                      </View>
-                      <View style={styles.eggBtnTexts}>
-                        <Text style={[styles.eggBtnText, isEggless && styles.eggBtnTextActive]}>100% Eggless</Text>
-                        <Text style={[styles.eggPriceText, isEggless && styles.eggBtnTextActive]}>+₹50 Additional</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
+            <View style={styles.titleRow}>
+              <View style={{ flex: 1, paddingRight: 15 }}>
+                <Text style={styles.productTitle}>{product.name}</Text>
+                <View style={styles.titleUnderline} />
+              </View>
+              <View style={styles.giftWrapBox}>
+                <View style={styles.giftWrapIconBox}>
+                  <Feather name="gift" size={18} color="#D82B76" />
                 </View>
-            </View>
-          )}
-
-          <View style={styles.deliveryInfoRow}>
-            <Feather name="truck" size={18} color="#D82B76" />
-            <View style={{ marginLeft: 12 }}>
-              <Text style={styles.deliveryMainText}>Get it in {product.expectedDeliveryDate || 'N/A'}</Text>
-              <Text style={styles.deliverySubText}>Approx. Delivery Time: {product.deliveryTime || '24'} Hrs</Text>
-            </View>
-          </View>
-
-          {/* Pricing Section */}
-          <View style={styles.priceContainer}>
-            <View>
-              <Text style={styles.label}>Sale Price</Text>
-              <View style={styles.mainPriceRow}>
-                <Text style={styles.currency}>₹</Text>
-                <Text style={styles.currentPrice}>{unitSalePrice.toLocaleString()}</Text>
-                {unitMRP > unitSalePrice && (
-                  <Text style={styles.oldPriceText}>₹{unitMRP.toLocaleString()}</Text>
-                )}
+                <Text style={styles.giftWrapText}>Gift Wrap</Text>
               </View>
+            </View>
+
+            <View style={styles.mainPriceRowTop}>
+              <Text style={styles.currentPriceTop}>₹{unitSalePrice.toLocaleString()}</Text>
+              {unitMRP > unitSalePrice && (
+                <Text style={styles.oldPriceTextTop}>₹{unitMRP.toLocaleString()}</Text>
+              )}
               {savingsAmount > 0 && (
-                <View style={styles.savingsBadge}>
-                  <Text style={styles.savingsText}>You save ₹{savingsAmount.toLocaleString()} ({savingsPercent}% OFF)</Text>
+                <View style={styles.savingsBadgeTop}>
+                  <Text style={styles.savingsTextTop}>You Save ₹{savingsAmount.toLocaleString()}</Text>
                 </View>
               )}
             </View>
+          </View>
+
+          {/* Specifications Grid */}
+          <View style={styles.featuresGrid}>
+            <View style={styles.featureCard}>
+              <View style={styles.featureIconBox}>
+                <MaterialCommunityIcons name="moped" size={22} color="#D82B76" />
+              </View>
+              <Text style={styles.featureLabel}>Delivery</Text>
+              <Text style={styles.featureValue}>{product.deliveryTime ? `${product.deliveryTime} Hrs` : '2-4 Hours'}</Text>
+            </View>
+            {product.flavor ? (
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBox}>
+                  <MaterialCommunityIcons name="cake-variant" size={22} color="#D82B76" />
+                </View>
+                <Text style={styles.featureLabel}>Flavor</Text>
+                <Text style={styles.featureValue} numberOfLines={1}>{product.flavor.name || product.flavor}</Text>
+              </View>
+            ) : product.flowerCount ? (
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBox}>
+                  <MaterialCommunityIcons name="flower" size={22} color="#D82B76" />
+                </View>
+                <Text style={styles.featureLabel}>Flowers</Text>
+                <Text style={styles.featureValue} numberOfLines={1}>{product.flowerCount}</Text>
+              </View>
+            ) : (
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBox}>
+                  <MaterialCommunityIcons name="gift-outline" size={22} color="#D82B76" />
+                </View>
+                <Text style={styles.featureLabel}>Type</Text>
+                <Text style={styles.featureValue} numberOfLines={1}>Premium</Text>
+              </View>
+            )}
+            
+            {product.weight ? (
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBox}>
+                  <MaterialCommunityIcons name="weight" size={22} color="#D82B76" />
+                </View>
+                <Text style={styles.featureLabel}>Weight</Text>
+                <Text style={styles.featureValue} numberOfLines={1}>{product.weight}</Text>
+              </View>
+            ) : (
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBox}>
+                  <MaterialCommunityIcons name="leaf" size={22} color="#D82B76" />
+                </View>
+                <Text style={styles.featureLabel}>Freshness</Text>
+                <Text style={styles.featureValue}>100% Fresh</Text>
+              </View>
+            )}
+
+            {product.weight ? (
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBox}>
+                  <MaterialCommunityIcons name="leaf" size={22} color="#D82B76" />
+                </View>
+                <Text style={styles.featureLabel}>Freshness</Text>
+                <Text style={styles.featureValue} numberOfLines={1}>100% Fresh</Text>
+              </View>
+            ) : (
+              <View style={styles.featureCard}>
+                <View style={styles.featureIconBox}>
+                  <Ionicons name="heart" size={22} color="#D82B76" />
+                </View>
+                <Text style={styles.featureLabel}>Perfect</Text>
+                <Text style={styles.featureValue} numberOfLines={1}>Occasions</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Express Delivery Box */}
+          <View style={styles.expressDeliveryBox}>
+            <View style={styles.expressImgPlaceholder}>
+              <MaterialCommunityIcons name="moped" size={32} color="#D82B76" />
+            </View>
+            <View style={styles.expressTextContainer}>
+              <Text style={styles.expressTitle}>Express Delivery</Text>
+              <Text style={styles.expressSub}>{product.expectedDeliveryDate ? `${product.expectedDeliveryDate} Hrs` : '2-4 Hours'}</Text>
+            </View>
+            <View style={styles.fastDeliveryIconBox}>
+              <MaterialCommunityIcons name="clock-fast" size={24} color="#D82B76" />
+              <View style={{ marginLeft: 4 }}>
+                <Text style={styles.fastDeliveryText}>FAST</Text>
+                <Text style={styles.fastDeliveryText}>DELIVERY</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Quantity Section */}
+          {/* <View style={styles.quantitySection}>
+            <Text style={styles.quantityTitle}>Quantity</Text>
             <View style={styles.quantityWidget}>
               <TouchableOpacity onPress={() => setQuantity(Math.max(1, quantity - 1))} style={styles.qBtn}>
                 <Feather name="minus" size={16} color="#1A1A1A" />
@@ -312,29 +331,40 @@ export default function ProductDetailScreen({ route, navigation }) {
                 <Feather name="plus" size={16} color="#1A1A1A" />
               </TouchableOpacity>
             </View>
-          </View>
+          </View> */}
 
-
-
-          {/* COD & Trust Section */}
-          <View style={styles.trustRow}>
+          {/* Trust Section */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.trustRow} style={{ marginBottom: 30 }}>
             {product.isCodAvailable && (
               <View style={styles.trustBadge}>
-                <MaterialCommunityIcons name="cash-multiple" size={16} color="#16A34A" />
-                <Text style={styles.trustText}>Cash on Delivery Available</Text>
+                <MaterialCommunityIcons name="cash-multiple" size={20} color="#16A34A" />
+                <View>
+                  <Text style={styles.trustTitle}>Cash on Delivery</Text>
+                  <Text style={styles.trustSub}>Available</Text>
+                </View>
               </View>
             )}
             <View style={styles.trustBadge}>
-              <MaterialCommunityIcons name="shield-check" size={16} color="#2979FF" />
-              <Text style={styles.trustText}>Genuine Product</Text>
+              <MaterialCommunityIcons name="shield-check" size={20} color="#2979FF" />
+              <View>
+                <Text style={styles.trustTitle}>100% Original</Text>
+                <Text style={styles.trustSub}>& Fresh</Text>
+              </View>
             </View>
-          </View>
+            <View style={styles.trustBadge}>
+              <Feather name="lock" size={18} color="#9C27B0" />
+              <View>
+                <Text style={styles.trustTitle}>Secure</Text>
+                <Text style={styles.trustSub}>Payments</Text>
+              </View>
+            </View>
+          </ScrollView>
 
           {/* Description */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Product Description</Text>
             <Text style={styles.descriptionText}>
-              {product.description || 'Elegant and sophisticated, this curated selection is designed to make every moment memorable.'}
+              {product.description || 'Elegant and sophisticated, this curated selection is designed to make every moment memorable. Perfect for gifting your loved ones on special occasions.'}
             </Text>
           </View>
 
@@ -430,16 +460,18 @@ export default function ProductDetailScreen({ route, navigation }) {
 
       {/* Modern Sticky Footer Action */}
       <View style={styles.footer}>
+        <View style={styles.footerTotalBox}>
+          <Text style={styles.footerTotalLabel}>Total</Text>
+          <Text style={styles.footerTotalPrice}>₹{(unitSalePrice * quantity).toLocaleString()}</Text>
+        </View>
+        <View style={styles.footerDivider} />
         <TouchableOpacity
           style={[styles.mainBtn, added && styles.addedBtn]}
           activeOpacity={0.8}
           onPress={addToCart}
         >
-          <View style={styles.btnRow}>
-            <Feather name={added ? "shopping-bag" : "shopping-cart"} size={20} color="#FFF" />
-            <Text style={styles.btnText}>{added ? 'IN YOUR CART' : 'ADD TO BAG'}</Text>
-          </View>
-          <Text style={styles.btnSubTotal}>Total: ₹{(unitSalePrice * quantity).toFixed(0)}</Text>
+          <Feather name="shopping-bag" size={20} color="#FFF" />
+          <Text style={styles.btnText}>{added ? 'IN BAG' : 'ADD TO BAG'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -468,182 +500,122 @@ export default function ProductDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: {
     position: 'absolute', top: Platform.OS === 'ios' ? 50 : 30, left: 15, right: 15,
     flexDirection: 'row', justifyContent: 'space-between', zIndex: 100
   },
-  headerBtn: { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  headerRight: { flexDirection: 'row', gap: 10 },
+  headerBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
 
   imageWrapper: { width: width, height: ITEM_HEIGHT, position: 'relative' },
   mainImage: { width: width, height: ITEM_HEIGHT, resizeMode: 'cover' },
-  paginationDots: { position: 'absolute', bottom: 60, width: '100%', flexDirection: 'row', justifyContent: 'center', gap: 6 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.4)' },
-  activeDot: { backgroundColor: '#FFF', width: 24 },
-  offBadge: { position: 'absolute', bottom: 60, right: 0, backgroundColor: '#D82B76', paddingHorizontal: 15, paddingVertical: 8, borderTopLeftRadius: 20 },
-  offText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
+  paginationDots: { position: 'absolute', bottom: 40, width: '100%', flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.5)' },
+  activeDot: { backgroundColor: '#FFF', width: 20 },
+  offBadge: { position: 'absolute', bottom: 40, right: 0, backgroundColor: '#F43F5E', paddingHorizontal: 16, paddingVertical: 8, borderTopLeftRadius: 20, borderBottomLeftRadius: 20 },
+  offText: { color: '#FFF', fontWeight: '800', fontSize: 13 },
 
   contentBox: {
-    marginTop: -40, backgroundColor: '#FFF', borderTopLeftRadius: 40, borderTopRightRadius: 40,
-    minHeight: 600, paddingHorizontal: 25, paddingBottom: 120
+    marginTop: -25, backgroundColor: '#FFF', borderTopLeftRadius: 35, borderTopRightRadius: 35,
+    minHeight: 600, paddingHorizontal: 20, paddingBottom: 120
   },
-  dragHandle: { width: 40, height: 5, backgroundColor: '#E0E0E0', borderRadius: 3, alignSelf: 'center', marginTop: 15, marginBottom: 20 },
+  dragHandle: { width: 0, height: 0, marginTop: 20 },
 
-  topInfo: { marginBottom: 20 },
-  categoryInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 10 },
-  categoryName: { fontSize: 11, fontWeight: '900', color: '#D82B76', letterSpacing: 1.5, textTransform: 'uppercase' },
-  ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF9C4', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 5 },
-  ratingValue: { fontSize: 12, fontWeight: '800', color: '#FBC02D' },
-  productTitle: { fontSize: 28, fontWeight: '900', color: '#1A1A1A', lineHeight: 34 },
+  topInfo: { marginBottom: 20, paddingTop: 10 },
+  categoryInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
+  catBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF0F5', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
+  categoryName: { fontSize: 10, fontWeight: '800', color: '#D82B76', letterSpacing: 0.5, textTransform: 'uppercase' },
+  ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFF9C4', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },
+  ratingValue: { fontSize: 12, fontWeight: '800', color: '#F59E0B' },
+  ratingCount: { color: '#9CA3AF', fontWeight: '600' },
 
-  variantsContainer: { marginBottom: 25 },
-  variantGroup: { marginBottom: 20 },
-  variantLabel: { fontSize: 14, fontWeight: '800', color: '#1A1A1A', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  chipsScroll: { flexDirection: 'row', paddingBottom: 5 },
-  chip: {
-    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 10,
-    marginRight: 10, backgroundColor: '#F8FAFC', minWidth: 90, alignItems: 'center'
-  },
-  activeChip: { borderColor: '#D82B76', backgroundColor: '#FFF0F5' },
-  chipText: { fontSize: 14, fontWeight: '700', color: '#64748B' },
-  activeChipText: { color: '#D82B76' },
-  chipPrice: { fontSize: 12, fontWeight: '900', color: '#1E293B', marginTop: 2 },
-  activeChipPrice: { color: '#D82B76' },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 15 },
+  productTitle: { fontSize: 26, fontWeight: '900', color: '#1E293B', lineHeight: 32, fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif' },
+  titleUnderline: { width: 35, height: 3, backgroundColor: '#F43F5E', marginTop: 10, borderRadius: 2 },
 
-  egglessContainer: { marginTop: 5 },
-  egglessToggleRow: { flexDirection: 'row', gap: 12 },
-  eggBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 16,
-    padding: 12, backgroundColor: '#F8FAFC'
-  },
-  eggBtnActive: { borderColor: '#D82B76', backgroundColor: '#FFF0F5' },
-  vegMarkContainer: { marginRight: 10 },
-  vegMark: { width: 16, height: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', borderRadius: 2 },
-  vegDot: { width: 8, height: 8, borderRadius: 4 },
-  eggBtnTexts: { flex: 1 },
-  eggBtnText: { fontSize: 13, fontWeight: '800', color: '#4B5563' },
-  eggBtnTextActive: { color: '#D82B76' },
-  eggPriceText: { fontSize: 10, fontWeight: '600', color: '#9CA3AF', marginTop: 2 },
+  giftWrapBox: { alignItems: 'center', marginTop: 5 },
+  giftWrapIconBox: { width: 44, height: 44, backgroundColor: '#FFF0F5', borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  giftWrapText: { fontSize: 10, color: '#475569', fontWeight: '600' },
 
-  specGrid: { flexDirection: 'row', backgroundColor: '#F8FAFC', borderRadius: 20, padding: 15, marginBottom: 25, borderWidth: 1, borderColor: '#F1F5F9' },
-  specItem: { flex: 1, alignItems: 'center', borderRightWidth: 1, borderRightColor: '#E2E8F0', paddingVertical: 5 },
-  specLabel: { fontSize: 12, fontWeight: '700', color: '#64748B', marginTop: 6 },
+  mainPriceRowTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  currentPriceTop: { fontSize: 32, fontWeight: '800', color: '#F43F5E' },
+  oldPriceTextTop: { fontSize: 16, color: '#94A3B8', textDecorationLine: 'line-through', fontWeight: '600' },
+  savingsBadgeTop: { backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },
+  savingsTextTop: { fontSize: 11, color: '#10B981', fontWeight: '700' },
 
-  priceContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
-  label: { fontSize: 12, color: '#94A3B8', fontWeight: '800', marginBottom: 4, textTransform: 'uppercase' },
-  mainPriceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
-  currency: { fontSize: 18, fontWeight: '900', color: '#D82B76' },
-  currentPrice: { fontSize: 32, fontWeight: '900', color: '#1A1A1A' },
-  oldPriceText: { fontSize: 14, color: '#CBD5E1', textDecorationLine: 'line-through', marginLeft: 10, fontWeight: '600' },
-  savingsBadge: { marginTop: 6, backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
-  savingsText: { fontSize: 12, color: '#16A34A', fontWeight: '800' },
-  chipMrp: { fontSize: 10, color: '#CBD5E1', textDecorationLine: 'line-through', fontWeight: '600' },
+  featuresGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
+  featureCard: { width: (width - 40 - 30) / 4, backgroundColor: '#FFF', borderRadius: 16, padding: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#F8FAFC' },
+  featureIconBox: { width: 36, height: 36, backgroundColor: '#FFF0F5', borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  featureLabel: { fontSize: 10, fontWeight: '800', color: '#1E293B', textAlign: 'center', marginBottom: 2 },
+  featureValue: { fontSize: 9, fontWeight: '500', color: '#64748B', textAlign: 'center' },
 
-  quantityWidget: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F1F5F9', borderRadius: 15, padding: 4 },
-  qBtn: { width: 38, height: 38, backgroundColor: '#FFF', borderRadius: 12, justifyContent: 'center', alignItems: 'center', elevation: 2 },
-  qVal: { fontSize: 18, fontWeight: '900', color: '#1A1A1A', marginHorizontal: 15 },
+  expressDeliveryBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF5F7', padding: 16, borderRadius: 16, marginBottom: 30, borderWidth: 1, borderColor: '#FCE7F3' },
+  expressImgPlaceholder: { width: 50, height: 50, backgroundColor: '#FFF', borderRadius: 25, justifyContent: 'center', alignItems: 'center', marginRight: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  expressTextContainer: { flex: 1 },
+  expressTitle: { fontSize: 14, fontWeight: '800', color: '#1E293B', marginBottom: 4 },
+  expressSub: { fontSize: 11, color: '#64748B', lineHeight: 16 },
+  fastDeliveryIconBox: { flexDirection: 'row', alignItems: 'center', marginLeft: 10 },
+  fastDeliveryText: { fontSize: 8, fontWeight: '900', color: '#D82B76', lineHeight: 10 },
 
-  summaryCard: { backgroundColor: '#FBFCFE', padding: 20, borderRadius: 24, marginBottom: 20, borderWidth: 1, borderColor: '#F1F5F9' },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-  sumLabel: { fontSize: 13, color: '#64748B', fontWeight: '600' },
-  sumVal: { fontSize: 13, color: '#1E293B', fontWeight: '800' },
-  sumDivider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 8 },
-  finalLabel: { fontSize: 15, fontWeight: '900', color: '#1A1A1A' },
-  finalPrice: { fontSize: 18, fontWeight: '900', color: '#D82B76' },
+  quantitySection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 },
+  quantityTitle: { fontSize: 16, fontWeight: '800', color: '#1E293B' },
+  quantityWidget: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 25, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1 },
+  qBtn: { width: 30, height: 30, justifyContent: 'center', alignItems: 'center' },
+  qVal: { fontSize: 16, fontWeight: '800', color: '#1E293B', marginHorizontal: 20 },
 
-  trustRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 30 },
-  trustBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F8FAFC', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9' },
-  trustText: { fontSize: 11, fontWeight: '700', color: '#475569' },
-  deliveryInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF0F5',
-    padding: 15,
-    borderRadius: 18,
-    marginBottom: 25,
-    borderWidth: 1,
-    borderColor: '#FEE2E2',
-  },
-  deliveryMainText: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: '#1A1A1A',
-  },
-  deliverySubText: {
-    fontSize: 12,
-    color: '#D82B76',
-    fontWeight: '700',
-    marginTop: 2,
-  },
+  trustRow: { gap: 10, paddingBottom: 5 },
+  trustBadge: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#FFF', paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 4, elevation: 1 },
+  trustTitle: { fontSize: 11, fontWeight: '800', color: '#1E293B' },
+  trustSub: { fontSize: 10, fontWeight: '500', color: '#64748B', marginTop: 2 },
 
-  section: { marginBottom: 35 },
-  sectionTitle: { fontSize: 18, fontWeight: '900', color: '#1A1A1A', marginBottom: 15 },
-  descriptionText: { fontSize: 15, color: '#475569', lineHeight: 24, fontWeight: '500' },
+  section: { marginBottom: 30 },
+  sectionTitle: { fontSize: 16, fontWeight: '800', color: '#1E293B', marginBottom: 12 },
+  descriptionText: { fontSize: 14, color: '#475569', lineHeight: 22, fontWeight: '400' },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   addReviewText: { color: '#D82B76', fontWeight: '800', fontSize: 14 },
 
   emptyReviews: { alignItems: 'center', padding: 40, backgroundColor: '#F8FAFC', borderRadius: 20 },
   emptyText: { marginTop: 10, fontSize: 14, color: '#94A3B8', fontWeight: '600', textAlign: 'center' },
 
-  reviewCard: { marginBottom: 25, backgroundColor: '#FFF', padding: 2 },
+  reviewCard: { marginBottom: 25, backgroundColor: '#FFF' },
   revHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  revProfile: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#FDF2F5', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
+  revProfile: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FDF2F5', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
   revImg: { width: '100%', height: '100%' },
-  revInitial: { fontSize: 20, fontWeight: '800', color: '#D82B76' },
-  revNameSet: { flex: 1, marginLeft: 15 },
-  revName: { fontSize: 16, fontWeight: '800', color: '#1A1A1A' },
-  revStars: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  revDate: { fontSize: 10, color: '#94A3B8', marginLeft: 5, fontWeight: '700' },
-  revComment: { fontSize: 15, color: '#334155', lineHeight: 22, fontWeight: '500', marginBottom: 12, backgroundColor: '#F8F9FA', padding: 12, borderRadius: 12 },
-  revImagesList: { flexDirection: 'row', marginBottom: 15, paddingLeft: 5 },
-  revImageItem: { width: 100, height: 100, borderRadius: 12, marginRight: 10, borderWidth: 1, borderColor: '#F1F5F9' },
-  revActions: { flexDirection: 'row', gap: 20, marginBottom: 15, paddingLeft: 5 },
+  revInitial: { fontSize: 18, fontWeight: '800', color: '#D82B76' },
+  revNameSet: { flex: 1, marginLeft: 12 },
+  revName: { fontSize: 15, fontWeight: '700', color: '#1A1A1A' },
+  revStars: { flexDirection: 'row', alignItems: 'center', gap: 2, marginTop: 2 },
+  revDate: { fontSize: 10, color: '#94A3B8', marginLeft: 8, fontWeight: '600' },
+  revComment: { fontSize: 14, color: '#475569', lineHeight: 20, fontWeight: '400', marginBottom: 12, backgroundColor: '#F8FAFC', padding: 12, borderRadius: 12 },
+  revImagesList: { flexDirection: 'row', marginBottom: 12 },
+  revImageItem: { width: 80, height: 80, borderRadius: 8, marginRight: 10, borderWidth: 1, borderColor: '#F1F5F9' },
+  revActions: { flexDirection: 'row', gap: 20, marginBottom: 10 },
   engBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  engText: { fontSize: 13, fontWeight: '800', color: '#64748B' },
+  engText: { fontSize: 12, fontWeight: '700', color: '#64748B' },
 
-  replyBox: { backgroundColor: '#F8FAFC', padding: 15, borderRadius: 18, borderTopLeftRadius: 4, marginLeft: 20 },
-  replyBrand: { fontSize: 10, fontWeight: '900', color: '#D82B76', letterSpacing: 1, marginBottom: 5 },
-  replyMsg: { fontSize: 13, color: '#1E293B', fontWeight: '600', lineHeight: 20 },
+  replyBox: { backgroundColor: '#FFF5F7', padding: 12, borderRadius: 12, borderTopLeftRadius: 0, marginLeft: 15, marginTop: 5 },
+  replyBrand: { fontSize: 10, fontWeight: '800', color: '#D82B76', letterSpacing: 1, marginBottom: 4 },
+  replyMsg: { fontSize: 13, color: '#334155', fontWeight: '500', lineHeight: 18 },
 
   footer: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 25, paddingBottom: Platform.OS === 'ios' ? 35 : 20, paddingTop: 15,
-    backgroundColor: 'rgba(255,255,255,0.95)', borderTopWidth: 1, borderTopColor: '#F1F5F9'
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 35 : 20, paddingTop: 15,
+    backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#F1F5F9',
+    shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 10
   },
+  footerTotalBox: { paddingRight: 20 },
+  footerTotalLabel: { fontSize: 12, fontWeight: '600', color: '#64748B' },
+  footerTotalPrice: { fontSize: 20, fontWeight: '800', color: '#F43F5E', marginTop: 2 },
+  footerDivider: { width: 1, height: 35, backgroundColor: '#E2E8F0', marginRight: 20 },
   mainBtn: {
-    backgroundColor: '#D82B76', height: 65, borderRadius: 22, flexDirection: 'row',
-    alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 25,
-    shadowColor: '#D82B76', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 5
+    flex: 1, backgroundColor: '#F43F5E', height: 55, borderRadius: 28, flexDirection: 'row',
+    alignItems: 'center', justifyContent: 'center', gap: 10,
+    shadowColor: '#F43F5E', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6
   },
-  addedBtn: { backgroundColor: '#1A1A1A' },
-  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  btnText: { color: '#FFF', fontSize: 16, fontWeight: '900' },
-  btnSubTotal: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '800' },
-  
-  flavorDetailContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 18,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-  },
-  flavorLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  flavorNameDetail: {
-    fontSize: 15,
-    fontWeight: '900',
-    color: '#1A1A1A',
-  },
-
-  // Modal Styles
+  addedBtn: { backgroundColor: '#1E293B', shadowColor: '#1E293B' },
+  btnText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
   modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
   modalCloseBtn: { position: 'absolute', top: 50, right: 25, zIndex: 10 },
   fullImage: { width: width, height: width * 1.5 }
