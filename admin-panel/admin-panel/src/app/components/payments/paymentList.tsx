@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
+import { adminTableWrapClass, adminTableClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
 
 interface PaymentListProps {
   payments: any[];
@@ -49,15 +50,15 @@ export default function PaymentList({ payments, loading }: PaymentListProps) {
       ) : filteredPayments.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No exact matches found.</div>
       ) : (
-        <div className="overflow-x-auto min-h-[400px]">
-          <table className="w-full text-left table-fixed">
+        <div className={`${adminTableWrapClass} min-h-[400px]`}>
+          <table className={adminTableClass}>
             <thead>
-              <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-                <th className="px-6 py-4 w-[25%] font-sans">Payment ID</th>
-                <th className="px-6 py-4 w-[25%] font-sans">Customer</th>
-                <th className="px-6 py-4 w-[20%] font-sans">Amount</th>
-                <th className="px-6 py-4 w-[20%] font-sans">Date</th>
-                <th className="px-6 py-4 w-[10%] font-sans">Status</th>
+              <tr className="bg-th-bg border-b border-border-theme">
+                <th className={adminTableHeadCellClass}>Payment ID</th>
+                <th className={adminTableHeadCellClass}>Customer</th>
+                <th className={adminTableHeadCellClass}>Amount</th>
+                <th className={adminTableHeadCellClass}>Date</th>
+                <th className={adminTableHeadCellClass}>Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">

@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Search, MoreHorizontal, Trash2, Edit3, MapPin } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
+import { adminTableWrapClass, adminTableClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
+import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 
 interface CityListProps {
   cities: any[];
@@ -31,17 +33,7 @@ export default function CityList({
   onDelete 
 }: CityListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useRowActionMenu(openMenuId, setOpenMenuId);
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this city group?")) {
@@ -69,59 +61,64 @@ export default function CityList({
       ) : cities.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No city groups found.</div>
       ) : (
-        <div className="overflow-x-auto min-h-[350px]">
-          <table className="w-full text-left table-fixed">
+        <div className={`${adminTableWrapClass} min-h-[350px]`}>
+          <table className={adminTableClass}>
             <thead>
-              <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-                <th className="px-6 py-4 w-[15%]">Image</th>
-                <th className="px-6 py-4 w-[20%]">State</th>
-                <th className="px-6 py-4 w-[35%]">Cities</th>
-                <th className="px-6 py-4 w-[20%]">Created At</th>
-                <th className="px-6 py-4 w-[10%] text-right">Actions</th>
+              <tr className="bg-th-bg border-b border-border-theme">
+                <th className={adminTableHeadCellClass}>Image</th>
+                <th className={adminTableHeadCellClass}>State</th>
+                <th className={adminTableHeadCellClass}>Cities</th>
+                <th className={adminTableHeadCellClass}>Created At</th>
+                <th className={`${adminTableHeadCellClass} text-right`}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
               {cities.map((city) => (
                 <tr key={city._id} className="hover:bg-hover-theme transition-all duration-300 group border-b border-border-theme/50">
-                  <td className="px-6 py-5">
+                  <td className={adminTableBodyCellClass}>
                     <div className="h-10 w-14 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden shrink-0">
-                      {city.image ? <img src={city.image} className="h-full w-full object-cover" /> : <MapPin className="h-full w-full p-3 text-slate-200" />}
+                      {city.image ? <img src={city.image} className="h-full w-full object-cover" alt="" /> : <MapPin className="h-full w-full p-3 text-slate-200" />}
                     </div>
                   </td>
-                  <td className="px-6 py-5">
+                  <td className={adminTableBodyCellClass}>
                     <span className="font-bold text-slate-900">{city.state}</span>
                   </td>
-                  <td className="px-6 py-5 text-slate-500 text-sm">
+                  <td className={`${adminTableBodyCellClass} text-slate-500 text-sm`}>
                     {city.cities?.slice(0, 4).join(", ")} {city.cities?.length > 4 ? `+ ${city.cities.length - 4} more` : ""}
                   </td>
-                  <td className="px-6 py-5 text-slate-500 text-sm">
+                  <td className={`${adminTableBodyCellClass} text-slate-500 text-sm`}>
                     {new Date(city.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
-                  <td className="px-6 py-5 text-right relative">
-                    <button
-                      onClick={() => setOpenMenuId(openMenuId === city._id ? null : city._id)}
-                      className="p-2 text-slate-400 hover:text-slate-900 transition rounded-xl"
-                    >
-                      <MoreHorizontal size={20} />
-                    </button>
-                    {openMenuId === city._id && (
-                      <div ref={menuRef} className="absolute right-6 top-14 w-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in duration-200">
-                        <button
-                          onClick={() => { setOpenMenuId(null); onEdit(city); }}
-                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
-                        >
-                          <Edit3 size={16} className="text-blue-600" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(city._id)}
-                          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 transition"
-                        >
-                          <Trash2 size={16} />
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                  <td className={`${adminTableBodyCellClass} text-right`}>
+                    <div className="relative inline-flex justify-end" data-row-action>
+                      <button
+                        type="button"
+                        onClick={() => setOpenMenuId(openMenuId === city._id ? null : city._id)}
+                        className="p-2 text-slate-400 hover:text-slate-900 transition rounded-xl"
+                      >
+                        <MoreHorizontal size={20} />
+                      </button>
+                      {openMenuId === city._id && (
+                        <div className={`${rowActionDropdownClass} w-40`}>
+                          <button
+                            type="button"
+                            onClick={() => { setOpenMenuId(null); onEdit(city); }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
+                          >
+                            <Edit3 size={16} className="text-blue-600" />
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(city._id)}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 transition"
+                          >
+                            <Trash2 size={16} />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -1,12 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
-import { Feather, Ionicons } from '@expo/vector-icons';
-import { getWishlist } from '../services/wishlistService';
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { getWishlist, toggleWishlist } from '../services/wishlistService';
 import { useFocusEffect } from '@react-navigation/native';
+import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function WishlistScreen({ navigation }) {
   const [wishlist, setWishlist] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { bottom } = useLayoutInsets();
 
   const fetchWishlist = async () => {
     try {
@@ -68,14 +71,8 @@ export default function WishlistScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>My Wishlist</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeScreen style={styles.container}>
+      <ScreenHeader title="My Wishlist" onBack={() => navigation.goBack()} border />
 
       {loading ? (
         <View style={styles.centered}>
@@ -86,7 +83,7 @@ export default function WishlistScreen({ navigation }) {
           data={wishlist}
           keyExtractor={item => item._id}
           renderItem={renderWishItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: bottom + 16 }]}
           ListEmptyComponent={() => (
             <View style={styles.empty}>
               <Feather name="heart" size={60} color="#DDD" />
@@ -101,15 +98,13 @@ export default function WishlistScreen({ navigation }) {
           )}
         />
       )}
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF' },
-  title: { fontSize: 20, fontWeight: '800', color: '#000' },
-  list: { padding: 15 },
+  list: { padding: 15, flexGrow: 1 },
   card: { flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 20, padding: 12, marginBottom: 15, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10 },
   image: { width: 80, height: 80, borderRadius: 15 },
   info: { flex: 1, marginLeft: 15, justifyContent: 'center' },

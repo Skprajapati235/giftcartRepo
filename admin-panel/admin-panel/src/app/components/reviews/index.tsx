@@ -60,8 +60,8 @@ export default function ReviewsView() {
 
   return (
     <>
-      <div className="mb-8 items-end justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 mt-1">Customer Reviews</h1>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Customer Reviews</h1>
       </div>
       {error && (
         <div className="mb-4 rounded-3xl bg-rose-50 p-6 text-rose-700 font-bold border border-rose-200">

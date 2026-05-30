@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 import Pagination from "../Pagination";
 import AdminEditForm from "./adminEdit";
@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
 import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
+import { adminTableWrapClass, adminTableClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
+import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 
 export default function AdminsPage() {
     const {
@@ -29,17 +31,7 @@ export default function AdminsPage() {
     const [editingId, setEditingId] = useState<string | null>(null);
     const router = useRouter();
 
-    const menuRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-                setOpenMenuId(null);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    useRowActionMenu(openMenuId, setOpenMenuId);
 
     const deleteAdmin = async (id: string) => {
         if (window.confirm("Are you sure you want to delete this admin?")) {
@@ -83,15 +75,15 @@ export default function AdminsPage() {
             ) : admins.length === 0 ? (
                 <div className="p-20 text-center text-slate-400 italic">No admins found.</div>
             ) : (
-                <div className="overflow-x-auto min-h-[450px]">
-                    <table className="w-full text-left table-fixed">
+                <div className={`${adminTableWrapClass} min-h-[450px]`}>
+                    <table className={adminTableClass}>
                         <thead>
-                            <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-                                <th className="px-6 py-4 w-[20%] font-sans">Name</th>
-                                <th className="px-6 py-4 w-[25%] font-sans">Email</th>
-                                <th className="px-6 py-4 w-[20%] font-sans">City</th>
-                                <th className="px-6 py-4 w-[15%] font-sans">Role</th>
-                                <th className="px-6 py-4 w-[20%] text-right font-sans">Actions</th>
+                            <tr className="bg-th-bg border-b border-border-theme">
+                                <th className={adminTableHeadCellClass}>Name</th>
+                                <th className={adminTableHeadCellClass}>Email</th>
+                                <th className={adminTableHeadCellClass}>City</th>
+                                <th className={adminTableHeadCellClass}>Role</th>
+                                <th className={`${adminTableHeadCellClass} text-right`}>Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border-theme">
@@ -113,8 +105,10 @@ export default function AdminsPage() {
                                     <td className="px-6 py-5 text-slate-600 truncate">{admin.email}</td>
                                     <td className="px-6 py-5 text-slate-600">{admin.city || "—"}</td>
                                     <td className="px-6 py-5 text-slate-600">{admin.role}</td>
-                                    <td className="px-6 py-5 text-right relative">
+                                    <td className={`${adminTableBodyCellClass} text-right`}>
+                                        <div className="relative inline-flex justify-end" data-row-action>
                                         <button
+                                            type="button"
                                             onClick={() => setOpenMenuId(openMenuId === admin._id ? null : admin._id)}
                                             className="p-2 text-slate-400 hover:text-slate-900 transition rounded-xl"
                                         >
@@ -122,10 +116,7 @@ export default function AdminsPage() {
                                         </button>
 
                                         {openMenuId === admin._id && (
-                                            <div
-                                                ref={menuRef}
-                                                className="absolute right-6 top-14 w-44 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in duration-200"
-                                            >
+                                            <div className={rowActionDropdownClass}>
                                                 <button
                                                     className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:opacity-90 rounded-xl transition"
                                                     onClick={() => router.push(`/admins/${admin._id}`)}
@@ -149,6 +140,7 @@ export default function AdminsPage() {
                                                 </button>
                                             </div>
                                         )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}

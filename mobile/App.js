@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import Loader from './src/components/loaders/Loader';
@@ -20,13 +21,15 @@ export default function App() {
   if (globalLoading) return <Loader />;
 
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <NavigationContainer>
-          <AppNavigator />
-          <StatusBar style="light" />
-        </NavigationContainer>
-      </AuthProvider>
-    </ToastProvider>
+    <SafeAreaProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <NavigationContainer>
+            <AppNavigator />
+            <StatusBar style="dark" />
+          </NavigationContainer>
+        </AuthProvider>
+      </ToastProvider>
+    </SafeAreaProvider>
   );
 }

@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Image,
@@ -14,6 +13,8 @@ import {
 import { Ionicons, Feather } from '@expo/vector-icons';
 import couponService from '../services/couponService';
 import { useToast } from '../context/ToastContext';
+import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 const { width } = Dimensions.get('window');
 
@@ -21,6 +22,7 @@ export default function OffersScreen({ navigation }) {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const { bottom } = useLayoutInsets();
 
   useEffect(() => {
     fetchCoupons();
@@ -46,23 +48,20 @@ export default function OffersScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeScreen style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#D82B76" />
-      </View>
+      </SafeScreen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Hot Offers & Coupons</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeScreen style={styles.container}>
+      <ScreenHeader title="Hot Offers & Coupons" onBack={() => navigation.goBack()} border />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.promoHeader}>
             <Ionicons name="gift" size={40} color="#D82B76" />
             <Text style={styles.promoMainText}>Exclusive Deals Just for You!</Text>
@@ -106,20 +105,14 @@ export default function OffersScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 15, paddingVertical: 15, backgroundColor: '#FFF',
-    borderBottomWidth: 1, borderBottomColor: '#EEE'
-  },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: '#111' },
-  scrollContent: { padding: 15, paddingBottom: 40 },
+  scrollContent: { padding: 15 },
   promoHeader: { alignItems: 'center', marginBottom: 25, marginTop: 10 },
   promoMainText: { fontSize: 22, fontWeight: '900', color: '#111', marginTop: 10, textAlign: 'center' },
   promoSubText: { fontSize: 13, color: '#666', textAlign: 'center', marginTop: 5, paddingHorizontal: 20 },

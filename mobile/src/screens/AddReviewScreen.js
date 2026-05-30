@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { addReview, updateReview } from '../services/reviewService';
 import apiClient from '../api/apiClient';
+import { SafeScreen } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function AddReviewScreen({ route, navigation }) {
   const { product, orderId, existingReview } = route.params;
@@ -11,6 +13,7 @@ export default function AddReviewScreen({ route, navigation }) {
   const [comment, setComment] = useState(existingReview?.comment || '');
   const [images, setImages] = useState(existingReview?.images || []);
   const [loading, setLoading] = useState(false);
+  const { bottom } = useLayoutInsets();
 
   const pickImage = async () => {
     if (images.length >= 5) {
@@ -97,7 +100,7 @@ export default function AddReviewScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeScreen style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={24} color="#000" />
@@ -108,7 +111,7 @@ export default function AddReviewScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]}>
         <View style={styles.productInfo}>
           <Image source={{ uri: product.image }} style={styles.productImage} />
           <View style={styles.productText}>
@@ -183,7 +186,7 @@ export default function AddReviewScreen({ route, navigation }) {
           )}
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, ActivityIndicator } from 'react-native';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image } from 'react-native';
 import categoryService from '../services/categoryService';
 import Skeleton from '../components/Skeleton';
+import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function CollectionsScreen({ navigation }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { bottom } = useLayoutInsets();
 
   useEffect(() => {
     categoryService.getCategories({ limit: 100 })
@@ -29,14 +31,8 @@ export default function CollectionsScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>All Collections</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeScreen style={styles.container}>
+      <ScreenHeader title="All Collections" onBack={() => navigation.goBack()} border />
 
       <FlatList
         data={loading ? [1, 2, 3, 4, 5, 6] : categories}
@@ -47,16 +43,14 @@ export default function CollectionsScreen({ navigation }) {
           </View>
         ) : renderCollection}
         numColumns={2}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: bottom + 16 }]}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF' },
-  title: { fontSize: 20, fontWeight: '800', color: '#000' },
   list: { padding: 15 },
   card: { flex: 1, height: 200, margin: 8, borderRadius: 20, overflow: 'hidden', elevation: 3 },
   image: { width: '100%', height: '100%' },

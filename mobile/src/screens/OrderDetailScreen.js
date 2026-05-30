@@ -1,6 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, StatusBar } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function OrderDetailScreen({ route, navigation }) {
   const { order } = route.params;
@@ -18,21 +20,17 @@ export default function OrderDetailScreen({ route, navigation }) {
   const steps = ['Processing', 'Shipped', 'Delivered'];
   const currentStepIndex = steps.indexOf(order.status);
   const statusConfig = getStatusConfig(order.status);
+  const { bottom } = useLayoutInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeScreen style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <ScreenHeader title="Order Details" onBack={() => navigation.goBack()} border />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color="#1A1A1A" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Details</Text>
-        <View style={styles.headerBtn} />
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottom + 24 }]}
+      >
 
         {/* Status Hero */}
         <View style={styles.heroCard}>
@@ -208,21 +206,13 @@ export default function OrderDetailScreen({ route, navigation }) {
           </View>
         </View>
 
-        <View style={{ height: 40 }} />
       </ScrollView>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FBFCFE' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 15, height: 60, backgroundColor: '#FFF',
-    borderBottomWidth: 1, borderBottomColor: '#F0F3F7'
-  },
-  headerBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: '#1A1A1A' },
   scrollContent: { padding: 15 },
 
   heroCard: {

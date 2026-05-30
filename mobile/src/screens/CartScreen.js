@@ -6,12 +6,12 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
-  SafeAreaView,
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useToast } from '../context/ToastContext';
+import { SafeScreen, ScreenHeader, StickyBottomBar } from '../components/layout';
 
 export default function CartScreen({ navigation }) {
   const { showToast } = useToast();
@@ -127,19 +127,14 @@ export default function CartScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>My Cart</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeScreen style={styles.container}>
+      <ScreenHeader title="My Cart" onBack={() => navigation.goBack()} border />
 
       <FlatList
         data={cartItems}
         keyExtractor={item => getId(item)}
         renderItem={renderItem}
+        style={styles.listFlex}
         contentContainerStyle={styles.list}
         ListEmptyComponent={() => (
           <View style={styles.empty}>
@@ -153,28 +148,24 @@ export default function CartScreen({ navigation }) {
       />
 
       {cartItems.length > 0 && (
-        <View style={styles.footer}>
+        <StickyBottomBar>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Amount:</Text>
             <Text style={styles.totalVal}>₹{total.toFixed(0)}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.checkoutBtn}
-            onPress={handleCheckout}
-          >
+          <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
             <Text style={styles.checkoutText}>Checkout Now</Text>
           </TouchableOpacity>
-        </View>
+        </StickyBottomBar>
       )}
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF' },
-  title: { fontSize: 20, fontWeight: '800', color: '#000' },
-  list: { padding: 15 },
+  listFlex: { flex: 1 },
+  list: { padding: 15, flexGrow: 1 },
   card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 15, padding: 10, marginBottom: 15, elevation: 2 },
   checkbox: { paddingRight: 10 },
   image: { width: 80, height: 80, borderRadius: 10 },
@@ -184,7 +175,6 @@ const styles = StyleSheet.create({
   mrpText: { fontSize: 13, color: '#CBD5E1', textDecorationLine: 'line-through', fontWeight: '600' },
   qtyText: { fontSize: 12, color: '#888', fontWeight: '600', marginTop: 2 },
   removeBtn: { padding: 10, justifyContent: 'center' },
-  footer: { padding: 20, backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#EEE' },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
   totalLabel: { fontSize: 18, fontWeight: '600', color: '#555' },
   totalVal: { fontSize: 22, fontWeight: '800', color: '#000' },

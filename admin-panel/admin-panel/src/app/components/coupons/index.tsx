@@ -50,7 +50,7 @@ export default function CouponView() {
 
   return (
     <>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-extrabold text-foreground tracking-tight mt-1">Coupons & Promo Codes</h1>
         {!showForm && (
           <button

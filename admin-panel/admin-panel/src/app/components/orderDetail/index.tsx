@@ -82,7 +82,7 @@ export default function OrderDetailView() {
 
   if (loading) return (
     <>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
           <div className="h-3 w-24 rounded-full bg-slate-200 dark:bg-slate-700 skeleton-shimmer" />
           <div className="h-7 w-48 rounded-xl bg-slate-200 dark:bg-slate-700 skeleton-shimmer" />
@@ -151,7 +151,7 @@ export default function OrderDetailView() {
         </div>
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
         >
           ← Back
         </button>

@@ -23,10 +23,10 @@ export default function AdminDetails() {
     if (!admin) return <div>Loading...</div>;
 
     return (
-        <div className="flex justify-center mt-10">
-            <section className="flex w-full gap-8 rounded-3xl bg-white p-8 shadow-sm">
+        <div className="flex justify-center mt-6 sm:mt-10">
+            <section className="flex w-full max-w-4xl flex-col gap-6 rounded-3xl bg-white p-4 shadow-sm sm:flex-row sm:gap-8 sm:p-8">
                 {/* Left: Profile Image & Basic Info */}
-                <div className="flex flex-col items-center gap-4 w-1/3">
+                <div className="flex w-full flex-col items-center gap-4 sm:w-1/3">
                     <img
                         src={admin.avatar || "https://via.placeholder.com/150"}
                         alt={admin.name}
@@ -46,7 +46,7 @@ export default function AdminDetails() {
                 </div>
 
                 {/* Right: Editable Info */}
-                <div className="flex w-2/3 flex-col gap-4">
+                <div className="flex w-full flex-col gap-4 sm:w-2/3">
                     <h3 className="text-lg font-semibold text-slate-900">Admin Details</h3>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>

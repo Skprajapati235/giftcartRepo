@@ -1,14 +1,35 @@
+"use client";
+
 import React from "react";
+import { useRouter } from "next/navigation";
 import { developerData } from "./developerData";
 
 export default function DeveloperInformation() {
+    const router = useRouter();
     const data = developerData;
+
+    const handleBack = () => {
+        if (window.history.length > 1) {
+            router.back();
+        } else {
+            router.push("/");
+        }
+    };
 
     return (
         <div className="min-h-screen bg-slate-50 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-700">
             {/* --- Navigation --- */}
             <nav className="fixed top-0 w-full z-[100] bg-white/70 backdrop-blur-xl border-b border-slate-200/60">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+                    <button
+                        type="button"
+                        onClick={handleBack}
+                        className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 transition"
+                    >
+                        <span className="text-lg">←</span>
+                        Back
+                    </button>
+
                     <div className="text-xl font-black tracking-tighter bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent italic">
                         {data.name};
                     </div>

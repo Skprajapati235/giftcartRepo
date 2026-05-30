@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   Alert,
   ScrollView,
@@ -20,6 +19,8 @@ import couponService from '../services/couponService';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../context/ToastContext';
+import { SafeScreen, ScreenHeader, StickyBottomBar } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function CheckoutScreen({ navigation, route }) {
   const { cartItems, total } = route.params;
@@ -39,6 +40,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const [activeCoupons, setActiveCoupons] = useState([]);
   const [showCouponModal, setShowCouponModal] = useState(false);
   const paymentHandledRef = useRef(false);
+  const { bottom } = useLayoutInsets();
 
   // Shipping Address Form State
   const [shippingInfo, setShippingInfo] = useState({
@@ -342,35 +344,23 @@ export default function CheckoutScreen({ navigation, route }) {
 
   if (showWebView) {
     return (
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setShowWebView(false)}>
-            <Ionicons name="close" size={30} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Secure Payment</Text>
-          <View style={{ width: 30 }} />
-        </View>
+      <SafeScreen style={{ flex: 1, backgroundColor: '#FFF' }}>
+        <ScreenHeader title="Secure Payment" onBack={() => setShowWebView(false)} border />
         <WebView
           originWhitelist={['*']}
           source={{ html: razorpayHtml }}
           onMessage={onMessage}
           style={{ flex: 1 }}
         />
-      </SafeAreaView>
+      </SafeScreen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Checkout</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeScreen style={styles.container}>
+      <ScreenHeader title="Checkout" onBack={() => navigation.goBack()} border />
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scrollFlex} contentContainerStyle={[styles.content, { paddingBottom: bottom + 100 }]}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Delivery Address</Text>
 
@@ -700,6 +690,9 @@ export default function CheckoutScreen({ navigation, route }) {
           )}
         </View>
 
+      </ScrollView>
+
+      <StickyBottomBar>
         <TouchableOpacity
           style={[styles.payBtn, loading && { opacity: 0.7 }]}
           onPress={handleCheckout}
@@ -713,15 +706,14 @@ export default function CheckoutScreen({ navigation, route }) {
             </Text>
           )}
         </TouchableOpacity>
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </SafeAreaView>
+      </StickyBottomBar>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF' },
+  scrollFlex: { flex: 1 },
   locationBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -771,7 +763,7 @@ const styles = StyleSheet.create({
   disabledText: { color: '#AAA' },
   selectedText: { color: '#D82B76' },
   codNote: { fontSize: 12, color: '#888', marginTop: 5, fontStyle: 'italic' },
-  payBtn: { backgroundColor: '#D82B76', borderRadius: 12, paddingVertical: 18, alignItems: 'center', marginTop: 10, elevation: 3 },
+  payBtn: { backgroundColor: '#D82B76', borderRadius: 12, paddingVertical: 18, alignItems: 'center', elevation: 3 },
   payBtnText: { color: '#FFF', fontSize: 18, fontWeight: '800' },
   // Coupon Styles
   couponContainer: { backgroundColor: '#FFF', borderRadius: 15, padding: 15, borderStyle: 'dashed', borderWidth: 1, borderColor: '#DDD' },

@@ -34,8 +34,8 @@ export default function PaymentsView() {
 
   return (
     <>
-      <div className="mb-8 items-end justify-between">
-        <h1 className="text-2xl font-bold text-foreground mt-1">Payment history</h1>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Payment history</h1>
         <p className="mt-1 text-sm text-slate-500">Track successful transactions and payment IDs.</p>
       </div>
 

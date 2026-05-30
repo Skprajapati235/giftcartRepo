@@ -1,14 +1,29 @@
 import React, { useEffect, useState, useContext, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Dimensions, Platform, Modal, ActivityIndicator, StatusBar } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Alert, Dimensions, Platform, Modal, ActivityIndicator, StatusBar } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { getProductReviews, deleteReview, likeReview, dislikeReview } from '../services/reviewService';
 import { toggleWishlist, getWishlist } from '../services/wishlistService';
 import { useToast } from '../context/ToastContext';
+import { SafeScreen, StickyBottomBar } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 const { width } = Dimensions.get('window');
 const ITEM_HEIGHT = 450;
+const EGGLESS_SURCHARGE = 50;
+
+function productHasEgglessOption(product) {
+  if (!product) return false;
+  if (product.hasEgglessOption === true || product.hasEgglessOption === 'true') return true;
+  const categoryName = (product.category?.name || product.category || '').toString().toLowerCase();
+  return /cake|pastry|bakery|dessert/.test(categoryName);
+}
+
+function buildEggCartItemId(productId, hasEggOption, isEggless) {
+  if (!hasEggOption) return String(productId);
+  return `${productId}_${isEggless ? 'eggless' : 'with_egg'}`;
+}
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
@@ -23,6 +38,8 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const [isEggless, setIsEggless] = useState(false);
+
+  const hasEgglessOption = productHasEgglessOption(product);
 
   // Image Gallery
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -41,19 +58,27 @@ export default function ProductDetailScreen({ route, navigation }) {
   const unitMRP = baseMRP;
   let unitSalePrice = globalSalePrice;
 
-  // Eggless adds ₹50 to sale price only
-  if (isEggless) unitSalePrice += 50;
+  if (hasEgglessOption && isEggless) unitSalePrice += EGGLESS_SURCHARGE;
 
   const savingsAmount = unitMRP > unitSalePrice ? unitMRP - unitSalePrice : 0;
   const savingsPercent = unitMRP > 0 && savingsAmount > 0 ? Math.round((savingsAmount / unitMRP) * 100) : 0;
   const discountPercent = product?.discount || savingsPercent;
+  const { top, stickyFooterPadding } = useLayoutInsets();
+  const footerBarHeight = 88 + stickyFooterPadding;
 
   useEffect(() => {
     const checkCart = async () => {
       try {
         const raw = await AsyncStorage.getItem('@giftcart_cart');
         const cart = raw ? JSON.parse(raw) : [];
-        setAdded(cart.some((item) => item._id === product._id));
+        const cartItemId = buildEggCartItemId(product._id, hasEgglessOption, isEggless);
+        setAdded(
+          cart.some(
+            (item) =>
+              item.cartItemId === cartItemId ||
+              (!hasEgglessOption && item._id === product._id && !item.cartItemId)
+          )
+        );
       } catch (err) { }
     };
     checkCart();
@@ -61,7 +86,7 @@ export default function ProductDetailScreen({ route, navigation }) {
     if (user) {
       checkWishlistStatus();
     }
-  }, [product, user]);
+  }, [product, user, isEggless, hasEgglessOption]);
 
   const checkWishlistStatus = async () => {
     try {
@@ -106,10 +131,9 @@ export default function ProductDetailScreen({ route, navigation }) {
       const raw = await AsyncStorage.getItem('@giftcart_cart');
       const cart = raw ? JSON.parse(raw) : [];
 
-      const egglessStr = product.hasEgglessOption && isEggless ? 'Eggless' : '';
-      const cartItemId = `${product._id}_${egglessStr}`;
+      const cartItemId = buildEggCartItemId(product._id, hasEgglessOption, isEggless);
 
-      if (cart.some(i => i.cartItemId === cartItemId || (!i.cartItemId && i._id === product._id))) {
+      if (cart.some((i) => i.cartItemId === cartItemId)) {
         navigation.navigate('Cart');
         return;
       }
@@ -121,7 +145,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         price: unitMRP,
         salePrice: unitSalePrice,
         discount: 0,
-        isEggless: product.hasEgglessOption ? isEggless : false
+        isEggless: hasEgglessOption ? isEggless : false,
       };
 
       cart.push(cartItem);
@@ -138,11 +162,11 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeScreen style={styles.container} edges={[]}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* Floating Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { top: top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBtn}>
           <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
         </TouchableOpacity>
@@ -156,7 +180,11 @@ export default function ProductDetailScreen({ route, navigation }) {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        contentContainerStyle={{ paddingBottom: footerBarHeight }}
+      >
         {/* Main Image Gallery Banner */}
         <View style={styles.imageWrapper}>
           <ScrollView
@@ -228,6 +256,43 @@ export default function ProductDetailScreen({ route, navigation }) {
               )}
             </View>
           </View>
+
+          {hasEgglessOption && (
+            <View style={styles.eggSection}>
+              <Text style={styles.eggSectionTitle}>Egg</Text>
+              <View style={styles.eggSegment}>
+                <TouchableOpacity
+                  style={[styles.eggChip, !isEggless && styles.eggChipActive]}
+                  onPress={() => setIsEggless(false)}
+                  activeOpacity={0.85}
+                >
+                  <MaterialCommunityIcons
+                    name="egg"
+                    size={15}
+                    color={!isEggless ? '#D82B76' : '#94A3B8'}
+                  />
+                  <Text style={[styles.eggChipText, !isEggless && styles.eggChipTextActive]}>
+                    With egg
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.eggChip, isEggless && styles.eggChipActive]}
+                  onPress={() => setIsEggless(true)}
+                  activeOpacity={0.85}
+                >
+                  <MaterialCommunityIcons
+                    name="egg-off"
+                    size={15}
+                    color={isEggless ? '#D82B76' : '#94A3B8'}
+                  />
+                  <Text style={[styles.eggChipText, isEggless && styles.eggChipTextActive]}>
+                    Eggless
+                  </Text>
+                  <Text style={styles.eggChipExtra}>+₹{EGGLESS_SURCHARGE}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
           {/* Specifications Grid */}
           <View style={styles.featuresGrid}>
@@ -458,22 +523,23 @@ export default function ProductDetailScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
-      {/* Modern Sticky Footer Action */}
-      <View style={styles.footer}>
-        <View style={styles.footerTotalBox}>
-          <Text style={styles.footerTotalLabel}>Total</Text>
-          <Text style={styles.footerTotalPrice}>₹{(unitSalePrice * quantity).toLocaleString()}</Text>
+      <StickyBottomBar absolute contentStyle={styles.footerInner}>
+        <View style={styles.footerRow}>
+          <View style={styles.footerTotalBox}>
+            <Text style={styles.footerTotalLabel}>Total</Text>
+            <Text style={styles.footerTotalPrice}>₹{(unitSalePrice * quantity).toLocaleString()}</Text>
+          </View>
+          <View style={styles.footerDivider} />
+          <TouchableOpacity
+            style={[styles.mainBtn, added && styles.addedBtn]}
+            activeOpacity={0.8}
+            onPress={addToCart}
+          >
+            <Feather name="shopping-bag" size={20} color="#FFF" />
+            <Text style={styles.btnText}>{added ? 'IN BAG' : 'ADD TO BAG'}</Text>
+          </TouchableOpacity>
         </View>
-        <View style={styles.footerDivider} />
-        <TouchableOpacity
-          style={[styles.mainBtn, added && styles.addedBtn]}
-          activeOpacity={0.8}
-          onPress={addToCart}
-        >
-          <Feather name="shopping-bag" size={20} color="#FFF" />
-          <Text style={styles.btnText}>{added ? 'IN BAG' : 'ADD TO BAG'}</Text>
-        </TouchableOpacity>
-      </View>
+      </StickyBottomBar>
 
       {/* Full Screen Image Viewer Modal */}
       <Modal
@@ -483,7 +549,7 @@ export default function ProductDetailScreen({ route, navigation }) {
       >
         <View style={styles.modalContainer}>
           <TouchableOpacity
-            style={styles.modalCloseBtn}
+            style={[styles.modalCloseBtn, { top: top + 12 }]}
             onPress={() => setIsModalVisible(false)}
           >
             <Ionicons name="close" size={30} color="#FFF" />
@@ -495,14 +561,14 @@ export default function ProductDetailScreen({ route, navigation }) {
           />
         </View>
       </Modal>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: {
-    position: 'absolute', top: Platform.OS === 'ios' ? 50 : 30, left: 15, right: 15,
+    position: 'absolute', left: 15, right: 15,
     flexDirection: 'row', justifyContent: 'space-between', zIndex: 100
   },
   headerRight: { flexDirection: 'row', gap: 10 },
@@ -518,7 +584,7 @@ const styles = StyleSheet.create({
 
   contentBox: {
     marginTop: -25, backgroundColor: '#FFF', borderTopLeftRadius: 35, borderTopRightRadius: 35,
-    minHeight: 600, paddingHorizontal: 20, paddingBottom: 120
+    minHeight: 600, paddingHorizontal: 20,
   },
   dragHandle: { width: 0, height: 0, marginTop: 20 },
 
@@ -543,6 +609,39 @@ const styles = StyleSheet.create({
   oldPriceTextTop: { fontSize: 16, color: '#94A3B8', textDecorationLine: 'line-through', fontWeight: '600' },
   savingsBadgeTop: { backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20 },
   savingsTextTop: { fontSize: 11, color: '#10B981', fontWeight: '700' },
+
+  eggSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+  },
+  eggSectionTitle: { fontSize: 13, fontWeight: '700', color: '#64748B', marginRight: 8 },
+  eggSegment: { flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 },
+  eggChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFF',
+  },
+  eggChipActive: {
+    borderColor: '#D82B76',
+    backgroundColor: '#FFF0F5',
+  },
+  eggChipText: { fontSize: 12, fontWeight: '700', color: '#64748B' },
+  eggChipTextActive: { color: '#D82B76' },
+  eggChipExtra: { fontSize: 10, fontWeight: '600', color: '#94A3B8', marginLeft: 2 },
 
   featuresGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   featureCard: { width: (width - 40 - 30) / 4, backgroundColor: '#FFF', borderRadius: 16, padding: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#F8FAFC' },
@@ -598,12 +697,12 @@ const styles = StyleSheet.create({
   replyBrand: { fontSize: 10, fontWeight: '800', color: '#D82B76', letterSpacing: 1, marginBottom: 4 },
   replyMsg: { fontSize: 13, color: '#334155', fontWeight: '500', lineHeight: 18 },
 
-  footer: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
+  footerInner: {
+    borderTopColor: '#F1F5F9',
+    shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 10,
+  },
+  footerRow: {
     flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 35 : 20, paddingTop: 15,
-    backgroundColor: '#FFF', borderTopWidth: 1, borderTopColor: '#F1F5F9',
-    shadowColor: '#000', shadowOffset: { width: 0, height: -5 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 10
   },
   footerTotalBox: { paddingRight: 20 },
   footerTotalLabel: { fontSize: 12, fontWeight: '600', color: '#64748B' },
@@ -617,6 +716,6 @@ const styles = StyleSheet.create({
   addedBtn: { backgroundColor: '#1E293B', shadowColor: '#1E293B' },
   btnText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
   modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
-  modalCloseBtn: { position: 'absolute', top: 50, right: 25, zIndex: 10 },
+  modalCloseBtn: { position: 'absolute', right: 25, zIndex: 10 },
   fullImage: { width: width, height: width * 1.5 }
 });

@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Search, MoreHorizontal, Trash2, Edit3, Tag } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
+import { adminTableWrapClass, adminTableClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
+import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 
 interface CategoryListProps {
   categories: any[];
@@ -31,17 +33,7 @@ export default function CategoryList({
   onDelete 
 }: CategoryListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useRowActionMenu(openMenuId, setOpenMenuId);
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this category?")) {
@@ -69,14 +61,14 @@ export default function CategoryList({
       ) : categories.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No categories found.</div>
       ) : (
-        <div className="overflow-x-auto min-h-[350px]">
-          <table className="w-full text-left table-fixed">
+        <div className={`${adminTableWrapClass} min-h-[350px]`}>
+          <table className={adminTableClass}>
             <thead>
-              <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-                <th className="px-6 py-4 w-[15%]">Image</th>
-                <th className="px-6 py-4 w-[45%]">Name</th>
-                <th className="px-6 py-4 w-[30%]">Created At</th>
-                <th className="px-6 py-4 w-[10%] text-right">Actions</th>
+              <tr className="bg-th-bg border-b border-border-theme">
+                <th className={adminTableHeadCellClass}>Image</th>
+                <th className={adminTableHeadCellClass}>Name</th>
+                <th className={adminTableHeadCellClass}>Created At</th>
+                <th className={`${adminTableHeadCellClass} text-right`}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
@@ -93,8 +85,10 @@ export default function CategoryList({
                   <td className="px-6 py-5 text-slate-500 text-sm">
                     {new Date(c.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
-                  <td className="px-6 py-5 text-right relative">
-                    <button 
+                  <td className={`${adminTableBodyCellClass} text-right`}>
+                    <div className="relative inline-flex justify-end" data-row-action>
+                    <button
+                      type="button"
                       onClick={() => setOpenMenuId(openMenuId === c._id ? null : c._id)}
                       className="p-2 text-slate-400 hover:text-slate-900 transition rounded-xl"
                     >
@@ -102,10 +96,7 @@ export default function CategoryList({
                     </button>
                     
                     {openMenuId === c._id && (
-                      <div 
-                        ref={menuRef}
-                        className="absolute right-6 top-14 w-40 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in duration-200"
-                      >
+                      <div className={`${rowActionDropdownClass} w-40`}>
                         <button 
                           onClick={() => { setOpenMenuId(null); onEdit(c); }}
                           className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
@@ -122,6 +113,7 @@ export default function CategoryList({
                         </button>
                       </div>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}

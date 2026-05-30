@@ -46,8 +46,8 @@ const Skeleton = ({ width: w, height: h, borderRadius = 8, style }) => {
   );
 };
 
-export const ProductCardSkeleton = () => (
-  <View style={styles.productCard}>
+export const ProductCardSkeleton = ({ cardWidth }) => (
+  <View style={[styles.productCard, cardWidth ? { width: cardWidth } : null]}>
     <Skeleton width="100%" height={150} borderRadius={20} />
     <View style={{ padding: 10 }}>
       <Skeleton width="80%" height={16} style={{ marginBottom: 8 }} />

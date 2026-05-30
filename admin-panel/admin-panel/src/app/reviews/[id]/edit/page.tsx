@@ -2,13 +2,14 @@
 
 import EditReviewView from "../../../components/reviews/editReview";
 import ProtectedRoute from "../../../components/ProtectedRoute";
+import AdminMain from "../../../components/AdminMain";
 
 export default function EditReviewPage() {
   return (
     <ProtectedRoute>
-      <main className="min-h-screen flex-1 p-8 bg-background text-foreground">
-         <EditReviewView />
-      </main>
+      <AdminMain className="min-h-screen">
+        <EditReviewView />
+      </AdminMain>
     </ProtectedRoute>
   );
 }

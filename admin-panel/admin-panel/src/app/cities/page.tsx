@@ -2,16 +2,19 @@
 
 import CityView from "../components/city";
 import ProtectedRoute from "../components/ProtectedRoute";
+import AdminMain from "../components/AdminMain";
 
 export default function CitiesPage() {
   return (
     <ProtectedRoute>
-      <main className={`flex-1 p-10 bg-background text-foreground`}>
-        <div className="mb-8 items-end justify-between">
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Shop Location Management</p>
+      <AdminMain>
+        <div className="mb-6 lg:mb-8">
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-500 sm:text-sm">
+            Location Management
+          </p>
         </div>
         <CityView />
-      </main>
+      </AdminMain>
     </ProtectedRoute>
   );
 }

@@ -36,8 +36,8 @@ export default function UsersView() {
 
   return (
     <>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground mt-1">Customer Accounts</h1>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Customer Accounts</h1>
       </div>
 
       <UserList

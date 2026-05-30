@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Review } from "./index";
 import Link from "next/link";
 import { Star, MessageCircle, Trash2, X, ChevronLeft, ChevronRight, CornerDownRight, Edit2, Search, MoreHorizontal, User, Box, ArrowRight, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Check, Ban } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
+import { adminTableWrapClass, adminTableWideClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
+import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 
 interface ReviewListProps {
   reviews: Review[];
@@ -33,21 +35,11 @@ export default function ReviewList({
   onStatusUpdate 
 }: ReviewListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  useRowActionMenu(openMenuId, setOpenMenuId);
   const [selectedGallery, setSelectedGallery] = useState<{ images: string[]; index: number } | null>(null);
   
   // Track collapsed state (true means hidden)
   const [collapsedReplies, setCollapsedReplies] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const toggleReply = (id: string) => {
     setCollapsedReplies(prev => ({ ...prev, [id]: !prev[id] }));
@@ -79,16 +71,16 @@ export default function ReviewList({
         </div>
       </div>
 
-      <div className="overflow-x-auto min-h-[400px]">
-        <table className="w-full text-left table-fixed border-collapse">
+      <div className={`${adminTableWrapClass} min-h-[400px]`}>
+        <table className={adminTableWideClass}>
           <thead>
-            <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-              <th className="px-6 py-4 w-[25%]">Product</th>
-              <th className="px-6 py-4 w-[20%]">Customer</th>
-              <th className="px-6 py-4 w-[12%]">Rating</th>
-              <th className="px-6 py-4 w-[25%] text-center">Engagement & Status</th>
-              <th className="px-6 py-4 w-[10%]">Media</th>
-              <th className="px-6 py-4 w-[12%] text-right">Actions</th>
+            <tr className="bg-th-bg border-b border-border-theme">
+              <th className={adminTableHeadCellClass}>Product</th>
+              <th className={adminTableHeadCellClass}>Customer</th>
+              <th className={adminTableHeadCellClass}>Rating</th>
+              <th className={`${adminTableHeadCellClass} text-center`}>Engagement & Status</th>
+              <th className={adminTableHeadCellClass}>Media</th>
+              <th className={`${adminTableHeadCellClass} text-right`}>Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-theme">
@@ -196,7 +188,7 @@ export default function ReviewList({
                       <span className="text-[10px] font-bold text-slate-300 uppercase italic">No images</span>
                     )}
                   </td>
-                  <td className="px-6 py-5 text-right relative">
+                  <td className={`${adminTableBodyCellClass} text-right`}>
                     <div className="flex items-center justify-end gap-2">
                        {review.status === 'pending' && (
                          <>
@@ -224,19 +216,17 @@ export default function ReviewList({
                           <CornerDownRight size={18} className={itemIsCollapsed ? "" : "rotate-90"} />
                         </button>
                        )}
+                       <div className="relative inline-flex" data-row-action>
                        <button
+                        type="button"
                         onClick={() => setOpenMenuId(openMenuId === review._id ? null : review._id)}
                         className="p-2 text-slate-400 hover:text-foreground transition rounded-xl bg-hover-theme/50"
                        >
                         <MoreHorizontal size={20} />
                        </button>
-                    </div>
 
                     {openMenuId === review._id && (
-                      <div
-                        ref={menuRef}
-                        className="absolute right-6 top-14 w-44 bg-card rounded-2xl shadow-2xl border border-border-theme py-2 z-50 animate-in fade-in zoom-in duration-200"
-                      >
+                      <div className={rowActionDropdownClass}>
                         <Link
                           href={`/reviews/${review._id}/reply`}
                           className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
@@ -261,6 +251,8 @@ export default function ReviewList({
                         </button>
                       </div>
                     )}
+                       </div>
+                    </div>
                   </td>
                 </tr>
                 {/* Premium Sleek Reply Row */}

@@ -1,7 +1,9 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { SafeScreen } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function RegisterScreen({ navigation }) {
   const { signUp } = useContext(AuthContext);
@@ -10,6 +12,7 @@ export default function RegisterScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { bottom } = useLayoutInsets();
 
   const onRegister = async () => {
     if (!name || !email || !password) {
@@ -30,8 +33,13 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <SafeScreen style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.inner}>
+        <ScrollView
+          contentContainerStyle={[styles.container, { paddingBottom: bottom + 24 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.box}>
 
           <View style={styles.titleContainer}>
@@ -89,21 +97,23 @@ export default function RegisterScreen({ navigation }) {
             </View>
           </View>
         </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </ScrollView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#fff' },
   container: {
     flexGrow: 1,
     backgroundColor: '#fff',
     padding: 24,
+    justifyContent: 'center',
   },
   inner: {
     flex: 1,
     justifyContent: 'center',
-    paddingVertical: 40,
   },
   box: {
     backgroundColor: '#fff',

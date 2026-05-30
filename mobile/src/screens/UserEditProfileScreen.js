@@ -13,6 +13,8 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
 import userService from '../services/userService';
+import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function UserEditProfileScreen({ navigation }) {
   const { user, updateUser } = useContext(AuthContext);
@@ -20,6 +22,7 @@ export default function UserEditProfileScreen({ navigation }) {
   const [mobileNumber, setMobileNumber] = useState(user?.mobileNumber || '');
   const [profileImage, setProfileImage] = useState(user?.profilePic || '');
   const [loading, setLoading] = useState(false);
+  const { bottom } = useLayoutInsets();
 
   const pickImage = async () => {
     try {
@@ -88,10 +91,9 @@ export default function UserEditProfileScreen({ navigation }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Edit Profile</Text>
-      </View>
+    <SafeScreen style={styles.safe}>
+      <ScreenHeader title="Edit Profile" onBack={() => navigation.goBack()} border />
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: bottom + 24 }]}>
 
       <View style={styles.imageSection}>
         <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
@@ -148,24 +150,15 @@ export default function UserEditProfileScreen({ navigation }) {
           {loading ? 'Updating...' : 'Update Profile'}
         </Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: '#FAFAFA' },
   container: {
-    paddingBottom: 30,
     backgroundColor: '#FAFAFA',
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#222',
   },
   imageSection: {
     alignItems: 'center',

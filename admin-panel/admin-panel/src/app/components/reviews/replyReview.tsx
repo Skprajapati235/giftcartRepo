@@ -48,7 +48,7 @@ export default function ReplyReviewView() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
         <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-500 hover:text-foreground transition-colors group">
           <div className="p-2 rounded-xl group-hover:bg-hover-theme transition-colors">
             <ArrowLeft className="h-5 w-5" />

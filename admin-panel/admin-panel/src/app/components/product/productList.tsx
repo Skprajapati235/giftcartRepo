@@ -1,10 +1,17 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
-import { Search, LayoutGrid, List, MoreHorizontal, Trash2, Edit3, Box, Eye, Filter } from "lucide-react";
+import React, { useState } from "react";
+import { Search, LayoutGrid, List, MoreHorizontal, Trash2, Edit3, Box, Eye } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton, CardGridSkeleton } from "../skeletonLoader/commonSkeleton";
 import CategoryDropdown from "./categoryDropdown";
+import {
+  adminTableWrapClass,
+  adminTableWideClass,
+  adminTableHeadCellClass,
+  adminTableBodyCellClass,
+} from "../ui/adminTable";
+import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 
 interface ProductListProps {
   products: any[];
@@ -37,19 +44,9 @@ export default function ProductList({
   onView, 
   onDelete 
 }: ProductListProps) {
-  const [viewMode, setViewMode] = useState<"card" | "list">("list");
+  const [viewMode, setViewMode] = useState<"card" | "list">("card");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useRowActionMenu(openMenuId, setOpenMenuId);
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
@@ -66,9 +63,9 @@ export default function ProductList({
   return (
     <div className="bg-card rounded-3xl border border-border-theme shadow-sm overflow-hidden min-h-[400px]">
       {/* Table Header Filter Bar */}
-      <div className="p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
-        <div className="flex flex-1 items-center gap-4">
-          <div className="relative w-full max-w-sm">
+      <div className="p-4 sm:p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center w-full min-w-0">
+          <div className="relative w-full min-w-0 sm:max-w-sm sm:flex-1">
             <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
             <input
               value={searchTerm}
@@ -113,17 +110,17 @@ export default function ProductList({
       ) : products.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No products found for your search.</div>
       ) : viewMode === "list" ? (
-        <div className="overflow-x-auto min-h-[400px]">
-          <table className="w-full text-left table-fixed">
+        <div className={`${adminTableWrapClass} min-h-[400px]`}>
+          <table className={adminTableWideClass}>
             <thead>
-              <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-                <th className="px-6 py-4 w-[30%]">Name</th>
-                <th className="px-6 py-4 w-[20%]">Description</th>
-                <th className="px-6 py-4 w-[15%]">Created At</th>
-                <th className="px-6 py-4 w-[10%]">Price</th>
-                <th className="px-6 py-4 w-[10%]">Sales Price</th>
-                <th className="px-6 py-4 w-[10%]">COD</th>
-                <th className="px-6 py-4 w-[5%] text-right">Actions</th>
+              <tr className="bg-th-bg border-b border-border-theme">
+                <th className={adminTableHeadCellClass}>Name</th>
+                <th className={adminTableHeadCellClass}>Description</th>
+                <th className={adminTableHeadCellClass}>Created At</th>
+                <th className={adminTableHeadCellClass}>Price</th>
+                <th className={adminTableHeadCellClass}>Sales Price</th>
+                <th className={adminTableHeadCellClass}>COD</th>
+                <th className={`${adminTableHeadCellClass} text-right`}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
@@ -172,8 +169,10 @@ export default function ProductList({
                       {p.isCodAvailable ? 'Available' : 'Not Available'}
                     </span>
                   </td>
-                  <td className="px-6 py-5 text-right relative">
+                  <td className={`${adminTableBodyCellClass} text-right`}>
+                    <div className="relative inline-flex justify-end" data-row-action>
                     <button
+                      type="button"
                       onClick={() => setOpenMenuId(openMenuId === p._id ? null : p._id)}
                       className="p-2 text-slate-400 hover:text-foreground transition rounded-xl"
                     >
@@ -181,10 +180,7 @@ export default function ProductList({
                     </button>
 
                     {openMenuId === p._id && (
-                      <div
-                        ref={menuRef}
-                        className="absolute right-6 top-14 w-44 bg-card rounded-2xl shadow-2xl border border-border-theme py-2 z-50 animate-in fade-in zoom-in duration-200"
-                      >
+                      <div className={rowActionDropdownClass}>
                         <button
                           onClick={() => { setOpenMenuId(null); onView(p); }}
                           className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
@@ -209,6 +205,7 @@ export default function ProductList({
                         </button>
                       </div>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -217,15 +214,16 @@ export default function ProductList({
         </div>
       ) : (
 
-        <div className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 bg-background/50">
+        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:gap-6 sm:p-6 lg:grid-cols-3 xl:grid-cols-4 bg-background/50">
           {products.map((p) => (
-            <div key={p._id} className="bg-card rounded-3xl p-4 border border-border-theme shadow-lg hover:shadow-primary/5 transition hover:-translate-y-1 relative">
+            <div key={p._id} className="bg-card rounded-3xl p-4 border border-border-theme shadow-lg hover:shadow-primary/10 transition relative isolate">
               <div className="h-44 w-full rounded-2xl overflow-hidden bg-background border border-border-theme mb-4">
                 {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="p-10 text-slate-200" />}
               </div>
               <div className="px-1">
                 <h4 className="font-bold text-foreground truncate">{p.name}</h4>
                 <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">{p.category?.name || "No Category"}</p>
+                <p className="text-sm text-slate-500 mt-2">{p.description}</p>
 
                 {/* Price Section */}
                 <div className="mt-4 flex items-center gap-2">
@@ -240,19 +238,18 @@ export default function ProductList({
                 </div>
 
                 {/* Action Menu Like List */}
-                <div className="absolute top-4 right-4">
+                <div className="absolute top-4 right-4 z-10" data-row-action>
+                  <div className="relative inline-flex">
                   <button
+                    type="button"
                     onClick={() => setOpenMenuId(openMenuId === p._id ? null : p._id)}
-                    className="p-2 text-slate-400 hover:text-foreground transition rounded-xl"
+                    className="p-2 text-slate-400 hover:text-foreground transition rounded-xl bg-card/80 backdrop-blur-sm"
                   >
                     <MoreHorizontal size={20} />
                   </button>
 
                   {openMenuId === p._id && (
-                    <div
-                      ref={menuRef}
-                      className="absolute right-0 top-10 w-44 bg-card rounded-2xl shadow-2xl border border-border-theme py-2 z-50 animate-in fade-in zoom-in duration-200"
-                    >
+                    <div className={rowActionDropdownClass}>
                       <button
                         onClick={() => { setOpenMenuId(null); onView(p); }}
                         className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
@@ -277,6 +274,7 @@ export default function ProductList({
                       </button>
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             </div>

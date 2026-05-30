@@ -2,13 +2,14 @@
 
 import ReplyReviewView from "../../../components/reviews/replyReview";
 import ProtectedRoute from "../../../components/ProtectedRoute";
+import AdminMain from "../../../components/AdminMain";
 
 export default function ReplyReviewPage() {
   return (
     <ProtectedRoute>
-      <main className="min-h-screen flex-1 p-8 bg-background">
-         <ReplyReviewView />
-      </main>
+      <AdminMain className="min-h-screen">
+        <ReplyReviewView />
+      </AdminMain>
     </ProtectedRoute>
   );
 }

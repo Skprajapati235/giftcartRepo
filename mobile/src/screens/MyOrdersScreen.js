@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   RefreshControl,
   Image,
@@ -13,13 +12,14 @@ import {
 import { Ionicons, Feather } from '@expo/vector-icons';
 import orderService from '../services/orderService';
 import { OrderSkeleton } from '../components/Skeleton';
+import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function MyOrdersScreen({ navigation }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  console.log("orders", orders);
+  const { bottom } = useLayoutInsets();
 
   const fetchOrders = async () => {
     try {
@@ -101,20 +101,14 @@ export default function MyOrdersScreen({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>My Orders</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeScreen style={styles.container}>
+      <ScreenHeader title="My Orders" onBack={() => navigation.goBack()} border />
 
       <FlatList
         data={loading ? [1, 2, 3, 4] : orders}
         keyExtractor={(item, index) => loading ? `sk-${index}` : item._id}
         renderItem={loading ? () => <OrderSkeleton /> : renderOrder}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: bottom + 16 }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -128,15 +122,13 @@ export default function MyOrdersScreen({ navigation }) {
           </View>
         ) : null}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-  title: { fontSize: 20, fontWeight: '800', color: '#000' },
-  list: { padding: 15 },
+  list: { padding: 15, flexGrow: 1 },
   orderCard: { backgroundColor: '#FFF', borderRadius: 15, padding: 15, marginBottom: 15, elevation: 2 },
   orderHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   orderId: { fontSize: 16, fontWeight: '700', color: '#333' },

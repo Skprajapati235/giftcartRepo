@@ -4,12 +4,12 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   FlatList,
   ActivityIndicator,
   Alert,
   Image,
   Dimensions,
+  useWindowDimensions,
   Platform,
   TextInput,
   Modal,
@@ -26,8 +26,12 @@ import userService from '../services/userService';
 import couponService from '../services/couponService';
 import { useToast } from '../context/ToastContext';
 import { ProductCardSkeleton, CategorySkeleton, BannerSkeleton, SearchBarSkeleton } from '../components/Skeleton';
+import { SafeScreen, BottomTabBar } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 const { width } = Dimensions.get('window');
+const GRID_H_PADDING = 16;
+const GRID_GAP = 10;
 
 const BANNERS = [
   'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=800&h=400&fit=crop',
@@ -36,6 +40,8 @@ const BANNERS = [
 ];
 
 export default function HomeScreen({ navigation }) {
+  const { width: screenWidth } = useWindowDimensions();
+  const productCardWidth = Math.floor((screenWidth - GRID_H_PADDING * 2 - GRID_GAP) / 2);
   const route = useRoute();
   const { signOut, user, updateUser } = useContext(AuthContext);
   const { showToast } = useToast();
@@ -51,6 +57,7 @@ export default function HomeScreen({ navigation }) {
   const [showLocationModal, setShowLocationModal] = useState(!user?.state || !user?.city);
   const [locationLoading, setLocationLoading] = useState(false);
   const userLocation = user?.state && user?.city ? `${user.state}, ${user.city}` : 'Set your location';
+  const { tabBarHeight } = useLayoutInsets();
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -201,7 +208,7 @@ export default function HomeScreen({ navigation }) {
 
   const renderProduct = ({ item }) => (
     <TouchableOpacity
-      style={styles.productCardGrid}
+      style={[styles.productCardGrid, { width: productCardWidth }]}
       activeOpacity={0.9}
       onPress={() => navigation.navigate('ProductDetail', { product: item })}
     >
@@ -282,7 +289,7 @@ export default function HomeScreen({ navigation }) {
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <SafeAreaView style={styles.container}>
+      <SafeScreen style={styles.container}>
         {/* Top Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.menuButton} onPress={() => setIsDrawerOpen(true)}>
@@ -482,7 +489,7 @@ export default function HomeScreen({ navigation }) {
                         </TouchableOpacity>
                       )}
                       onMomentumScrollEnd={(e) => {
-                        const idx = Math.round(e.nativeEvent.contentOffset.x / (width - 15));
+                        const idx = Math.round(e.nativeEvent.contentOffset.x / (screenWidth - 15));
                         setActiveCouponIdx(idx);
                       }}
                     />
@@ -495,9 +502,9 @@ export default function HomeScreen({ navigation }) {
               </>
             )
           }
-          renderItem={loading ? () => <ProductCardSkeleton /> : renderProduct}
-          contentContainerStyle={styles.listContent}
-          columnWrapperStyle={styles.columnWrapper}
+          renderItem={loading ? () => <ProductCardSkeleton cardWidth={productCardWidth} /> : renderProduct}
+          contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + 72 }]}
+          columnWrapperStyle={[styles.columnWrapper, { gap: GRID_GAP, paddingHorizontal: GRID_H_PADDING }]}
           showsVerticalScrollIndicator={false}
           ListFooterComponent={() => (
             loadingMore ? (
@@ -514,7 +521,10 @@ export default function HomeScreen({ navigation }) {
         />
 
         {/* Floating WhatsApp */}
-        <TouchableOpacity style={styles.fab} onPress={() => Alert.alert('WhatsApp', 'Opening support...')}>
+        <TouchableOpacity
+          style={[styles.fab, { bottom: tabBarHeight + 16 }]}
+          onPress={() => Alert.alert('WhatsApp', 'Opening support...')}
+        >
           <FontAwesome name="whatsapp" size={32} color="#FFF" />
         </TouchableOpacity>
 
@@ -555,31 +565,12 @@ export default function HomeScreen({ navigation }) {
           </View>
         </Modal>
 
-        {/* Bottom Nav */}
-        <View style={styles.bottomNav}>
-          {[
-            { name: 'HOME', icon: 'home', screen: 'Home' },
-            { name: 'COLLECTIONS', icon: 'grid', screen: 'Collections' },
-            { name: 'WISHLIST', icon: 'heart', screen: 'Wishlist' },
-            { name: 'CART', icon: 'shopping-cart', screen: 'Cart', badge: cartCount },
-            { name: 'MY ORDERS', icon: 'shopping-bag', screen: 'MyOrders' },
-          ].map((tab, idx) => (
-            <TouchableOpacity
-              key={tab.name}
-              style={styles.bottomNavItem}
-              onPress={() => navigation.navigate(tab.screen)}
-            >
-              <View>
-                <Feather name={tab.icon} size={22} color={idx === 0 ? '#D82B76' : '#555'} />
-                {tab.badge > 0 && (
-                  <View style={styles.badge}><Text style={styles.badgeText}>{tab.badge}</Text></View>
-                )}
-              </View>
-              <Text style={[styles.bottomNavText, idx === 0 && { color: '#D82B76' }]}>{tab.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </SafeAreaView>
+        <BottomTabBar
+          navigation={navigation}
+          activeScreen="Home"
+          cartBadge={cartCount}
+        />
+      </SafeScreen>
 
       <LocationSelectionModal
         visible={showLocationModal}
@@ -617,8 +608,8 @@ const styles = StyleSheet.create({
   drawerAvatar: { width: 80, height: 80, borderRadius: 40, overflow: 'hidden', marginBottom: 12, justifyContent: 'center', alignItems: 'center' },
   drawerAvatarImage: { width: '100%', height: '100%' },
   drawerLocation: { color: '#777', fontSize: 12, marginTop: 4, textAlign: 'center' },
-  listContent: { paddingBottom: 100 },
-  columnWrapper: { justifyContent: 'space-between', paddingHorizontal: 15 },
+  listContent: {},
+  columnWrapper: { justifyContent: 'flex-start' },
   bannerContainer: { height: 120, marginVertical: 15 },
   mainBanner: { width: width - 30, height: 120, borderRadius: 15, marginHorizontal: 15, resizeMode: 'cover' },
   pagination: { position: 'absolute', bottom: 10, alignSelf: 'center', flexDirection: 'row' },
@@ -681,7 +672,6 @@ const styles = StyleSheet.create({
   codePillText: { color: '#FFF', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
   productCardGrid: {
     backgroundColor: '#FFF',
-    width: (width - 45) / 2,
     marginBottom: 15,
     borderRadius: 18,
     overflow: 'hidden',
@@ -768,20 +758,9 @@ const styles = StyleSheet.create({
     // textTransform: 'uppercase',
   },
   fab: {
-    position: 'absolute', bottom: 90, right: 20, backgroundColor: '#25D366',
+    position: 'absolute', right: 20, backgroundColor: '#25D366',
     width: 55, height: 55, borderRadius: 40, justifyContent: 'center', alignItems: 'center', elevation: 5
   },
-  bottomNav: {
-    position: 'absolute', bottom: 0, width: '100%', height: 75, backgroundColor: '#FFF',
-    flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#EEE', paddingBottom: Platform.OS === 'ios' ? 15 : 0
-  },
-  bottomNavItem: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  bottomNavText: { fontSize: 9, fontWeight: '800', marginTop: 4, color: '#555' },
-  badge: {
-    position: 'absolute', right: -8, top: -5, backgroundColor: '#D82B76',
-    width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center'
-  },
-  badgeText: { color: '#FFF', fontSize: 10, fontWeight: '900' },
   drawerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', flexDirection: 'row' },
   drawerBackdrop: { flex: 1 },
   drawerContent: { width: width * 0.75, backgroundColor: '#FFF', padding: 20 },

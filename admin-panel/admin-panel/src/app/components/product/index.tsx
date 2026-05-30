@@ -53,12 +53,12 @@ export default function ProductView() {
 
   return (
     <>
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground mt-1">Products</h1>
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Products</h1>
         {!showForm && (
           <button
             onClick={openForm}
-            className="flex items-center gap-2 bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-lg shadow-primary/20"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-lg shadow-primary/20"
           >
             <Plus size={18} />
             Add Product

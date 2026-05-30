@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { Search, Users, MoreHorizontal, Trash2, Mail, MapPin, Calendar, Heart } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
+import { adminTableWrapClass, adminTableClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
+import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 
 interface UserListProps {
   users: any[];
@@ -35,17 +37,7 @@ export default function UserList({
   onDelete 
 }: UserListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useRowActionMenu(openMenuId, setOpenMenuId);
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
@@ -80,15 +72,15 @@ export default function UserList({
       ) : users.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No users found.</div>
       ) : (
-        <div className="overflow-x-auto min-h-[350px]">
-          <table className="w-full text-left table-fixed">
+        <div className={`${adminTableWrapClass} min-h-[350px]`}>
+          <table className={adminTableClass}>
             <thead>
-              <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-                <th className="px-6 py-4 w-[30%] font-sans">Customer</th>
-                <th className="px-6 py-4 w-[30%] font-sans">Email Address</th>
-                <th className="px-6 py-4 w-[20%] font-sans">Location</th>
-                <th className="px-6 py-4 w-[12%] font-sans">Joined</th>
-                <th className="px-6 py-4 w-[8%] text-right font-sans">Actions</th>
+              <tr className="bg-th-bg border-b border-border-theme">
+                <th className={adminTableHeadCellClass}>Customer</th>
+                <th className={adminTableHeadCellClass}>Email Address</th>
+                <th className={adminTableHeadCellClass}>Location</th>
+                <th className={adminTableHeadCellClass}>Joined</th>
+                <th className={`${adminTableHeadCellClass} text-right`}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
@@ -129,8 +121,10 @@ export default function UserList({
                       {new Date(user.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-right relative">
+                  <td className={`${adminTableBodyCellClass} text-right`}>
+                    <div className="relative inline-flex justify-end" data-row-action>
                     <button
+                      type="button"
                       onClick={() => setOpenMenuId(openMenuId === user._id ? null : user._id)}
                       className="p-2 text-slate-400 hover:text-slate-900 transition rounded-xl"
                     >
@@ -138,10 +132,7 @@ export default function UserList({
                     </button>
 
                     {openMenuId === user._id && (
-                      <div
-                        ref={menuRef}
-                        className="absolute right-6 top-14 w-44 bg-card rounded-2xl shadow-2xl border border-border-theme py-2 z-50 animate-in fade-in zoom-in duration-200"
-                      >
+                      <div className={rowActionDropdownClass}>
                         <button
                           className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-foreground hover:bg-hover-theme transition"
                           onClick={() => {
@@ -171,6 +162,7 @@ export default function UserList({
                         </button>
                       </div>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}

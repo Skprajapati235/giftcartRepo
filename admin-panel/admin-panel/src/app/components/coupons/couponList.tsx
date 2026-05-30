@@ -4,6 +4,7 @@ import React from "react";
 import { Search, Edit2, Trash2, Tag, Calendar, ShieldCheck, ShieldAlert, Percent, IndianRupee } from "lucide-react";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 import Pagination from "../Pagination";
+import { adminTableWrapClass, adminTableWideClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
 
 interface CouponListProps {
   coupons: any[];
@@ -60,17 +61,17 @@ export default function CouponList({
           <p className="text-slate-500 mt-1">Try a different search or create a new coupon.</p>
         </div>
       ) : (
-      <div className="overflow-x-auto">
-        <table className="w-full text-left table-fixed border-collapse">
+      <div className={adminTableWrapClass}>
+        <table className={adminTableWideClass}>
           <thead>
-            <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-              <th className="px-6 py-4 w-[25%] font-sans">Coupon Code</th>
-              <th className="px-6 py-4 w-[15%] font-sans">Discount</th>
-              <th className="px-6 py-4 w-[20%] font-sans">Conditions</th>
-              <th className="px-6 py-4 w-[15%] font-sans font-sans">Usage Stat</th>
-              <th className="px-6 py-4 w-[10%] font-sans">Expiry</th>
-              <th className="px-6 py-4 w-[15%] font-sans">Status</th>
-              <th className="px-8 py-4 w-[10%] text-right font-sans">Actions</th>
+            <tr className="bg-th-bg border-b border-border-theme">
+              <th className={adminTableHeadCellClass}>Coupon Code</th>
+              <th className={adminTableHeadCellClass}>Discount</th>
+              <th className={adminTableHeadCellClass}>Conditions</th>
+              <th className={adminTableHeadCellClass}>Usage Stat</th>
+              <th className={adminTableHeadCellClass}>Expiry</th>
+              <th className={adminTableHeadCellClass}>Status</th>
+              <th className={`${adminTableHeadCellClass} text-right`}>Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-theme">

@@ -1,11 +1,14 @@
 import React, { useContext } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
+import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function ProfileScreen({ navigation }) {
   const { user, signOut } = useContext(AuthContext);
   const userLocation = user?.state && user?.city ? `${user.state}, ${user.city}` : null;
+  const { bottom } = useLayoutInsets();
 
   const ProfileItem = ({ icon, label, onPress, color = '#555' }) => (
     <TouchableOpacity style={styles.item} onPress={onPress}>
@@ -18,18 +21,19 @@ export default function ProfileScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Account Profile</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
-          <Feather name="edit-3" size={20} color="#D82B76" />
-        </TouchableOpacity>
-      </View>
+    <SafeScreen style={styles.container}>
+      <ScreenHeader
+        title="Account Profile"
+        onBack={() => navigation.goBack()}
+        border
+        right={
+          <TouchableOpacity onPress={() => navigation.navigate('EditProfile')}>
+            <Feather name="edit-3" size={20} color="#D82B76" />
+          </TouchableOpacity>
+        }
+      />
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: bottom + 24 }]}>
         <View style={styles.profileHeader}>
           {user?.profilePic ? (
             <Image source={{ uri: user.profilePic }} style={styles.profileImage} />
@@ -67,16 +71,13 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.logoutText}>Sign Out of GiftCart</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 40 }} />
       </ScrollView>
-    </SafeAreaView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FAFAFA' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, backgroundColor: '#FFF' },
-  title: { fontSize: 20, fontWeight: '800', color: '#000' },
   scroll: { padding: 20 },
   profileHeader: { alignItems: 'center', backgroundColor: '#FFF', borderRadius: 20, padding: 30, marginBottom: 25, elevation: 3 },
   profileImage: { width: 100, height: 100, borderRadius: 50, marginBottom: 15 },

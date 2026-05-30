@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Search, ShoppingCart, MoreHorizontal, Eye } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
+import { adminTableWrapClass, adminTableWideClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
+import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 
 interface OrderListProps {
   orders: any[];
@@ -30,21 +32,11 @@ export default function OrderList({
   onUpdateStatus 
 }: OrderListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setOpenMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useRowActionMenu(openMenuId, setOpenMenuId);
 
   return (
     <div className="bg-card rounded-3xl border border-border-theme shadow-sm overflow-hidden min-h-[600px]">
-      <div className="p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
+      <div className="p-4 sm:p-6 border-b border-border-theme flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between bg-card relative z-10">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
           <input
@@ -54,8 +46,8 @@ export default function OrderList({
             className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-background text-sm outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
-        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-background px-4 py-3 rounded-2xl border border-border-theme font-sans">
-          Total Orders: {total}
+        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-background px-3 py-2 sm:px-4 sm:py-3 rounded-2xl border border-border-theme font-sans whitespace-nowrap">
+          Total: {total}
         </div>
       </div>
 
@@ -64,17 +56,17 @@ export default function OrderList({
       ) : orders.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No orders found.</div>
       ) : (
-        <div className="overflow-x-auto min-h-[450px]">
-          <table className="w-full text-left table-fixed">
+        <div className={`${adminTableWrapClass} min-h-[450px]`}>
+          <table className={adminTableWideClass}>
             <thead>
-              <tr className="bg-th-bg text-[11px] font-bold uppercase tracking-widest text-slate-500 border-b border-border-theme">
-                <th className="px-6 py-4 w-[20%] font-sans">Order ID</th>
-                <th className="px-6 py-4 w-[20%] font-sans">Customer</th>
-                <th className="px-6 py-4 w-[15%] font-sans">Total Amount</th>
-                <th className="px-6 py-4 w-[15%] font-sans">Payment</th>
-                <th className="px-6 py-4 w-[12%] font-sans">Status</th>
-                <th className="px-6 py-4 w-[8%] font-sans">WhatsApp</th>
-                <th className="px-6 py-4 w-[10%] text-right font-sans">Actions</th>
+              <tr className="bg-th-bg border-b border-border-theme">
+                <th className={adminTableHeadCellClass}>Order ID</th>
+                <th className={adminTableHeadCellClass}>Customer</th>
+                <th className={adminTableHeadCellClass}>Total Amount</th>
+                <th className={adminTableHeadCellClass}>Payment</th>
+                <th className={adminTableHeadCellClass}>Status</th>
+                <th className={adminTableHeadCellClass}>WhatsApp</th>
+                <th className={`${adminTableHeadCellClass} text-right`}>Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-theme">
@@ -168,8 +160,10 @@ export default function OrderList({
                       );
                     })()}
                   </td>
-                  <td className="px-6 py-5 text-right relative">
+                  <td className={`${adminTableBodyCellClass} text-right`}>
+                    <div className="relative inline-flex justify-end" data-row-action>
                     <button
+                      type="button"
                       onClick={() => setOpenMenuId(openMenuId === order._id ? null : order._id)}
                       className="p-2 text-slate-400 hover:text-slate-900 transition rounded-xl"
                     >
@@ -177,10 +171,7 @@ export default function OrderList({
                     </button>
 
                     {openMenuId === order._id && (
-                      <div
-                        ref={menuRef}
-                        className="absolute right-6 top-14 w-44 bg-white rounded-2xl shadow-2xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in duration-200"
-                      >
+                      <div className={rowActionDropdownClass}>
                         <Link
                           href={`/orders/${order._id}`}
                           className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-white bg-primary hover:opacity-90 rounded-xl transition"
@@ -199,6 +190,7 @@ export default function OrderList({
                         </button>
                       </div>
                     )}
+                    </div>
                   </td>
                 </tr>
               ))}

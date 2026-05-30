@@ -53,8 +53,8 @@ export default function OrdersView() {
 
   return (
     <>
-      <div className="mb-8 items-end justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 mt-1">Orders</h1>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Orders</h1>
       </div>
       <OrderList
         orders={orders}
