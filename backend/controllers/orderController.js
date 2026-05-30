@@ -1,12 +1,21 @@
 const crypto = require("crypto");
 const Coupon = require("../models/Coupon");
+const Order = require("../models/Order");
 const orderService = require("../services/orderService");
 const paymentService = require("../services/paymentService");
+
+function normalizeCouponCode(couponCode) {
+  if (!couponCode) return "";
+  if (typeof couponCode === "string") return couponCode.trim();
+  if (typeof couponCode === "object" && couponCode.code) return String(couponCode.code).trim();
+  return "";
+}
 
 // POST /api/order/create
 exports.createOrder = async (req, res) => {
   try {
-    const { items, shippingAddress, paymentMethod = 'Online', couponCode } = req.body;
+    const { items, shippingAddress, paymentMethod = 'Online', couponCode: rawCouponCode } = req.body;
+    const couponCode = normalizeCouponCode(rawCouponCode);
     const userId = req.user.id;
 
     const sampleTotal = items.reduce((sum, item) => {
@@ -61,6 +70,7 @@ exports.createOrder = async (req, res) => {
       success: true,
       order: newOrder,
       razorpayOrder,
+      razorpayKeyId: process.env.RAZORPAY_KEY_ID || null,
     });
   } catch (error) {
     console.error("Create Order Error:", error);
@@ -73,24 +83,53 @@ exports.verifyPayment = async (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ success: false, message: "Missing payment verification fields" });
+    }
+
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret) {
+      console.error("Verify Payment Error: RAZORPAY_KEY_SECRET is not set");
+      return res.status(500).json({ success: false, message: "Payment verification is not configured on server" });
+    }
+
+    const existingOrder = await Order.findOne({ razorpayOrderId: razorpay_order_id });
+    if (existingOrder?.paymentStatus === "Success") {
+      return res.json({
+        success: true,
+        message: "Payment already verified",
+        orderId: existingOrder._id,
+      });
+    }
+
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .createHmac("sha256", secret)
       .update(body.toString())
       .digest("hex");
 
     const isMatch = expectedSignature === razorpay_signature;
 
     if (isMatch) {
-      await orderService.markPaymentSuccess(razorpay_order_id, razorpay_payment_id);
-      res.json({ success: true, message: "Payment verified successfully" });
-    } else {
-      await orderService.markPaymentFailed(razorpay_order_id);
-      res.status(400).json({ success: false, message: "Invalid signature" });
+      const updatedOrder = await orderService.markPaymentSuccess(razorpay_order_id, razorpay_payment_id);
+      if (!updatedOrder) {
+        return res.status(404).json({
+          success: false,
+          message: "Order not found for this Razorpay payment",
+        });
+      }
+      return res.json({
+        success: true,
+        message: "Payment verified successfully",
+        orderId: updatedOrder._id,
+      });
     }
+
+    await orderService.markPaymentFailed(razorpay_order_id);
+    return res.status(400).json({ success: false, message: "Invalid payment signature" });
   } catch (error) {
     console.error("Verify Payment Error:", error);
-    res.status(500).json({ success: false, message: "Error verifying payment" });
+    res.status(500).json({ success: false, message: error.message || "Error verifying payment" });
   }
 };
 

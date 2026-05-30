@@ -14,10 +14,42 @@ async function appendWhatsAppLogs(orderId, event, results) {
     success: Boolean(r?.success),
     skipped: Boolean(r?.skipped),
     reason: r?.reason,
-    error: r?.error,
+    error: r?.error
+      ? {
+          status: r.error.status != null ? Number(r.error.status) : undefined,
+          code: r.error.code != null ? Number(r.error.code) : undefined,
+          message: r.error.message ? String(r.error.message) : undefined,
+          moreInfo: r.error.moreInfo ? String(r.error.moreInfo) : undefined,
+        }
+      : undefined,
     createdAt: new Date(),
   }));
   await Order.findByIdAndUpdate(orderId, { $push: { whatsappLogs: { $each: logs } } });
+}
+
+async function sendPostPaymentNotifications(updatedOrder) {
+  try {
+    await emailService.sendOrderNotification(updatedOrder, updatedOrder.user);
+  } catch (err) {
+    console.warn("[email] order notification failed:", err?.message || err);
+  }
+
+  try {
+    const toList = [
+      updatedOrder?.user?.mobileNumber,
+      updatedOrder?.shippingAddress?.phone,
+    ].filter(Boolean);
+    const results = await whatsappService.sendWhatsAppMessageToMany({
+      toList,
+      body: whatsappService.formatOrderUpdateMessage({
+        order: updatedOrder,
+        statusOverride: "Processing",
+      }),
+    });
+    await appendWhatsAppLogs(updatedOrder._id, "order_processing", results);
+  } catch (err) {
+    console.warn("[whatsapp] order processing send failed:", err?.message || err);
+  }
 }
 
 // Create a new order record in DB
@@ -112,7 +144,7 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
   return savedOrder;
 };
 
-// Update order after payment verification
+// Update order after payment verification (notifications run in background)
 exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
   const updatedOrder = await Order.findOneAndUpdate(
     { razorpayOrderId },
@@ -120,31 +152,13 @@ exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
       razorpayPaymentId,
       paymentStatus: "Success",
       status: "Processing",
-      processingAt: Date.now(),
+      processingAt: new Date(),
     },
     { new: true }
   ).populate("user");
 
   if (updatedOrder) {
-    emailService.sendOrderNotification(updatedOrder, updatedOrder.user);
-
-    // WhatsApp: order confirmed/processing
-    try {
-      const toList = [
-        updatedOrder?.user?.mobileNumber,
-        updatedOrder?.shippingAddress?.phone,
-      ].filter(Boolean);
-      const results = await whatsappService.sendWhatsAppMessageToMany({
-        toList,
-        body: whatsappService.formatOrderUpdateMessage({
-          order: updatedOrder,
-          statusOverride: "Processing",
-        }),
-      });
-      await appendWhatsAppLogs(updatedOrder._id, "order_processing", results);
-    } catch (err) {
-      console.warn("[whatsapp] order processing send failed:", err?.message || err);
-    }
+    void sendPostPaymentNotifications(updatedOrder);
   }
 
   return updatedOrder;

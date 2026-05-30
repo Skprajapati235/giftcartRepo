@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import {
   View,
   Text,
@@ -38,6 +38,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [activeCoupons, setActiveCoupons] = useState([]);
   const [showCouponModal, setShowCouponModal] = useState(false);
+  const paymentHandledRef = useRef(false);
 
   // Shipping Address Form State
   const [shippingInfo, setShippingInfo] = useState({
@@ -201,7 +202,7 @@ export default function CheckoutScreen({ navigation, route }) {
         totalAmount: finalTotal,
         shippingAddress: finalShippingInfo,
         paymentMethod,
-        couponCode: appliedCoupon,
+        couponCode: appliedCoupon || undefined,
         discountAmount: couponDiscount,
       };
 
@@ -218,11 +219,16 @@ export default function CheckoutScreen({ navigation, route }) {
         showToast('Order placed successfully with COD!', 'success');
         setTimeout(() => navigation.navigate('Home'), 1500);
       } else {
-        // Online payment
+        const razorpayKey = res.razorpayKeyId;
+        if (!razorpayKey || !res.razorpayOrder?.id) {
+          showToast('Online payment is not configured. Please try COD or contact support.', 'error');
+          return;
+        }
+        paymentHandledRef.current = false;
         setPaymentData({
           orderId: res.razorpayOrder.id,
           amount: res.razorpayOrder.amount,
-          key: 'rzp_test_SYHDfSdbJm7SOc',
+          key: razorpayKey,
           name: 'GiftCart',
           description: 'Payment for your order',
           user: {
@@ -240,10 +246,19 @@ export default function CheckoutScreen({ navigation, route }) {
   };
 
   const onMessage = async (event) => {
-    const data = JSON.parse(event.nativeEvent.data);
-    setShowWebView(false);
+    let data;
+    try {
+      data = JSON.parse(event.nativeEvent.data);
+    } catch {
+      showToast('Invalid payment response', 'error');
+      setShowWebView(false);
+      return;
+    }
 
     if (data.status === 'success') {
+      if (paymentHandledRef.current) return;
+      paymentHandledRef.current = true;
+      setShowWebView(false);
       setLoading(true);
       try {
         await orderService.verifyPayment({
@@ -252,7 +267,6 @@ export default function CheckoutScreen({ navigation, route }) {
           razorpay_signature: data.razorpay_signature,
         });
 
-        // Remove only ordered items from cart
         const raw = await AsyncStorage.getItem('@giftcart_cart');
         const cart = raw ? JSON.parse(raw) : [];
         const orderedIds = cartItems.map(i => i._id);
@@ -262,12 +276,22 @@ export default function CheckoutScreen({ navigation, route }) {
         showToast('Order placed successfully!', 'success');
         setTimeout(() => navigation.navigate('Home'), 1500);
       } catch (err) {
-        showToast('Payment verification failed', 'error');
+        const msg =
+          err.response?.data?.message ||
+          err.message ||
+          'Payment verification failed';
+        console.error('Payment verify error:', msg, err.response?.data);
+        showToast(msg, 'error');
       } finally {
         setLoading(false);
       }
-    } else {
-      showToast('Payment cancelled or failed', 'error');
+      return;
+    }
+
+    if (data.status === 'cancelled') {
+      if (paymentHandledRef.current) return;
+      setShowWebView(false);
+      showToast('Payment cancelled', 'warning');
     }
   };
 
@@ -280,6 +304,7 @@ export default function CheckoutScreen({ navigation, route }) {
       <body>
         <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
         <script>
+          window.__rzpPaymentDone = false;
           var options = {
             "key": "${paymentData.key}",
             "amount": "${paymentData.amount}",
@@ -288,6 +313,7 @@ export default function CheckoutScreen({ navigation, route }) {
             "description": "${paymentData.description}",
             "order_id": "${paymentData.orderId}",
             "handler": function (response) {
+              window.__rzpPaymentDone = true;
               window.ReactNativeWebView.postMessage(JSON.stringify({
                 status: 'success',
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -301,7 +327,9 @@ export default function CheckoutScreen({ navigation, route }) {
             },
             "modal": {
               "ondismiss": function() {
-                window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'cancelled' }));
+                if (!window.__rzpPaymentDone) {
+                  window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'cancelled' }));
+                }
               }
             }
           };

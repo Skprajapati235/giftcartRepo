@@ -6,7 +6,7 @@ const orderService = {
     return response.data;
   },
   verifyPayment: async (paymentData) => {
-    const response = await api.post('/order/verify', paymentData);
+    const response = await api.post('/order/verify', paymentData, { timeout: 60000 });
     return response.data;
   },
   getUserOrders: async () => {
