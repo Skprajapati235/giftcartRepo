@@ -91,14 +91,26 @@ export default function CheckoutScreen({ navigation, route }) {
   React.useEffect(() => {
     const loadSavedAddress = async () => {
       try {
+        const savedList = await AsyncStorage.getItem('@giftcart_saved_addresses');
+        if (savedList) {
+          const list = JSON.parse(savedList);
+          if (list.length > 0) {
+            const addr = list[0];
+            setSavedAddress(addr);
+            setShippingInfo(addr); // Pre-fill form too
+            setShowAddressForm(false);
+            return;
+          }
+        }
+
         const raw = await AsyncStorage.getItem('@giftcart_saved_address');
         if (raw) {
           const addr = JSON.parse(raw);
           setSavedAddress(addr);
-          setShippingInfo(addr); // Pre-fill form too
-          setShowAddressForm(false); // Default: show saved card
+          setShippingInfo(addr);
+          setShowAddressForm(false);
         } else {
-          setShowAddressForm(true); // No saved address, show form
+          setShowAddressForm(true);
         }
       } catch (e) {
         setShowAddressForm(true);

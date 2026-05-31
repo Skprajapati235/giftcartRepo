@@ -55,14 +55,14 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Preferences</Text>
           <ProfileItem icon="shopping-bag" label="My Orders" onPress={() => navigation.navigate('MyOrders')} />
           <ProfileItem icon="heart" label="Wishlist" onPress={() => navigation.navigate('Wishlist')} />
-          <ProfileItem icon="map-pin" label="Saved Addresses" onPress={() => {}} />
-          <ProfileItem icon="credit-card" label="Manage Payments" onPress={() => {}} />
+          <ProfileItem icon="map-pin" label="Saved Addresses" onPress={() => navigation.navigate('SavedAddresses')} />
+          <ProfileItem icon="credit-card" label="Manage Payments" onPress={() => navigation.navigate('ManagePayments')} />
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Utilities</Text>
           <ProfileItem icon="help-circle" label="Help & Support" onPress={() => {}} />
-          <ProfileItem icon="shield" label="Security" onPress={() => {}} />
+          <ProfileItem icon="shield" label="Terms & Policy" onPress={() => navigation.navigate('TermsPolicy')} />
           <ProfileItem icon="share-2" label="Share GiftCart" onPress={() => {}} />
         </View>
 

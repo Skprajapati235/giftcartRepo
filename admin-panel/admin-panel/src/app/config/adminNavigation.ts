@@ -13,6 +13,7 @@ import {
   Gift,
   Ticket,
   Pipette,
+  FileText,
 } from "lucide-react";
 
 export type NavChild = {
@@ -59,7 +60,8 @@ export const adminNavigation: NavItem[] = [
     icon: Settings,
     children: [
       { key: "adminProfile", href: "/admins", label: "Admin Profile", icon: Users },
-      { key: "Developer", href: "/developer", label: "Developer", icon: Users },
+      { key: "developer", href: "/developer", label: "Developer", icon: Users },
+      { key: "termsPolicy", href: "/terms", label: "Terms & Policy", icon: FileText },
     ],
   },
 ];
