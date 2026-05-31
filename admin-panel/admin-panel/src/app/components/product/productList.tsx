@@ -216,13 +216,13 @@ export default function ProductList({
         </div>
       ) : (
 
-        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:gap-6 sm:p-6 lg:grid-cols-3 xl:grid-cols-4 bg-background/50">
+        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:gap-6 sm:p-6 lg:grid-cols-3 xl:grid-cols-3 bg-background/50">
           {products.map((p) => (
-            <div key={p._id} className="bg-card rounded-3xl p-4 border border-border-theme shadow-lg hover:shadow-primary/10 transition relative isolate">
-              <div className="h-44 w-full rounded-2xl overflow-hidden bg-background border border-border-theme mb-4">
+            <div key={p._id} className="bg-card rounded-3xl border border-border-theme shadow-lg hover:shadow-primary/10 transition relative isolate">
+              <div className="h-65 w-full rounded-2xl overflow-hidden bg-background border border-border-theme mb-4">
                 {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="p-10 text-slate-200" />}
               </div>
-              <div className="px-1">
+              <div className="p-4">
                 <h4 className="font-bold text-foreground truncate">{p.name}</h4>
                 <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">{p.category?.name || "No Category"}</p>
                 {/* <p className="text-sm text-slate-500 mt-2">{p.description}</p> */}
