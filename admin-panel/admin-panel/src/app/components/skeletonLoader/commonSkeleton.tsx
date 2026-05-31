@@ -129,7 +129,7 @@ export const CardGridSkeleton: React.FC<CardGridSkeletonProps> = ({
 }) => (
   <>
     <ShimmerStyle />
-    <div className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 bg-background/50">
+    <div className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 bg-background/50">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}

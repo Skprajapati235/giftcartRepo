@@ -105,7 +105,7 @@ export default function ProductList({
         viewMode === "list" ? (
           <TableSkeleton rows={8} cols={5} />
         ) : (
-          <CardGridSkeleton count={8} />
+          <CardGridSkeleton count={9} />
         )
       ) : products.length === 0 ? (
         <div className="p-20 text-center text-slate-400 italic">No products found for your search.</div>
