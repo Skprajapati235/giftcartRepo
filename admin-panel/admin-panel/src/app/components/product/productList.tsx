@@ -29,20 +29,20 @@ interface ProductListProps {
   onDelete: (id: string) => void;
 }
 
-export default function ProductList({ 
-  products, 
-  loading, 
-  total, 
-  totalPages, 
-  currentPage, 
-  searchTerm, 
+export default function ProductList({
+  products,
+  loading,
+  total,
+  totalPages,
+  currentPage,
+  searchTerm,
   selectedCategory,
-  onPageChange, 
-  onSearchChange, 
+  onPageChange,
+  onSearchChange,
   onCategoryChange,
-  onEdit, 
-  onView, 
-  onDelete 
+  onEdit,
+  onView,
+  onDelete
 }: ProductListProps) {
   const [viewMode, setViewMode] = useState<"card" | "list">("card");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -74,10 +74,10 @@ export default function ProductList({
               className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-hover-theme text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
-          
-          <CategoryDropdown 
-            selectedCategory={selectedCategory} 
-            onCategoryChange={onCategoryChange} 
+
+          <CategoryDropdown
+            selectedCategory={selectedCategory}
+            onCategoryChange={onCategoryChange}
           />
         </div>
 
@@ -134,18 +134,21 @@ export default function ProductList({
                       <div className="truncate">
                         <div className="font-bold text-foreground truncate">{p.name}</div>
                         <div className="flex items-center gap-2 mt-0.5">
-                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.category?.name || 'No Category'}</span>
-                           {p.deliveryTime && (
-                             <span className="text-[8px] font-black text-primary bg-primary/5 px-1 rounded border border-primary/10">
-                               {p.deliveryTime} Hours
-                             </span>
-                           )}
+                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.category?.name || 'No Category'}</span>
+                          {p.deliveryTime && (
+                            <span className="text-[8px] font-black text-primary bg-primary/5 px-1 rounded border border-primary/10">
+                              {p.deliveryTime} Hours
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-5">
-                    <p className="text-slate-500 text-sm truncate">{p.description}</p>
+                    <p className="text-slate-500 text-sm line-clamp-1">
+                      {p.description}
+                    </p>
+                    {/* <p className="text-slate-500 text-sm truncate">{p.description}</p> */}
                   </td>
                   <td className="px-6 py-5 text-slate-500 text-sm">
                     {new Date(p.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -161,20 +164,91 @@ export default function ProductList({
                     </span>
                   </td>
                   <td className="px-6 py-5">
-                    <span className={`px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap ${
-                      p.isCodAvailable 
-                        ? 'bg-green-500/10 text-green-600 border border-green-500/20' 
-                        : 'bg-red-500/10 text-red-600 border border-red-500/20'
-                    }`}>
+                    <span className={`px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap ${p.isCodAvailable
+                      ? 'bg-green-500/10 text-green-600 border border-green-500/20'
+                      : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                      }`}>
                       {p.isCodAvailable ? 'Available' : 'Not Available'}
                     </span>
                   </td>
                   <td className={`${adminTableBodyCellClass} text-right`}>
                     <div className="relative inline-flex justify-end" data-row-action>
+                      <button
+                        type="button"
+                        onClick={() => setOpenMenuId(openMenuId === p._id ? null : p._id)}
+                        className="p-2 text-slate-400 hover:text-foreground transition rounded-xl"
+                      >
+                        <MoreHorizontal size={20} />
+                      </button>
+
+                      {openMenuId === p._id && (
+                        <div className={rowActionDropdownClass}>
+                          <button
+                            onClick={() => { setOpenMenuId(null); onView(p); }}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
+                          >
+                            <Eye size={16} className="text-slate-500" />
+                            View Details
+                          </button>
+                          <div className="mx-2 my-1 border-t border-border-theme" />
+                          <button
+                            onClick={() => handleEditClick(p)}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
+                          >
+                            <Edit3 size={16} className="text-blue-600" />
+                            Edit Product
+                          </button>
+                          <button
+                            onClick={() => handleDelete(p._id)}
+                            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-500/10 transition"
+                          >
+                            <Trash2 size={16} />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+
+        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:gap-6 sm:p-6 lg:grid-cols-3 xl:grid-cols-4 bg-background/50">
+          {products.map((p) => (
+            <div key={p._id} className="bg-card rounded-3xl p-4 border border-border-theme shadow-lg hover:shadow-primary/10 transition relative isolate">
+              <div className="h-44 w-full rounded-2xl overflow-hidden bg-background border border-border-theme mb-4">
+                {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="p-10 text-slate-200" />}
+              </div>
+              <div className="px-1">
+                <h4 className="font-bold text-foreground truncate">{p.name}</h4>
+                <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">{p.category?.name || "No Category"}</p>
+                {/* <p className="text-sm text-slate-500 mt-2">{p.description}</p> */}
+                <p className="text-sm text-slate-500 mt-2 line-clamp-2">
+                  {p.description}
+                </p>
+
+                {/* Price Section */}
+                <div className="mt-4 flex items-center gap-2">
+                  {p.salePrice && p.salePrice < p.price ? (
+                    <>
+                      <span className="text-slate-400 line-through font-bold">₹{p.price}</span>
+                      <span className="text-primary font-extrabold">₹{p.salePrice}</span>
+                    </>
+                  ) : (
+                    <span className="text-primary font-extrabold">₹{p.price || 0}</span>
+                  )}
+                </div>
+
+                {/* Action Menu Like List */}
+                <div className="absolute top-4 right-4 z-10" data-row-action>
+                  <div className="relative inline-flex">
                     <button
                       type="button"
                       onClick={() => setOpenMenuId(openMenuId === p._id ? null : p._id)}
-                      className="p-2 text-slate-400 hover:text-foreground transition rounded-xl"
+                      className="p-2 text-slate-400 hover:text-foreground transition rounded-xl bg-card/80 backdrop-blur-sm"
                     >
                       <MoreHorizontal size={20} />
                     </button>
@@ -205,75 +279,6 @@ export default function ProductList({
                         </button>
                       </div>
                     )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-
-        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:gap-6 sm:p-6 lg:grid-cols-3 xl:grid-cols-4 bg-background/50">
-          {products.map((p) => (
-            <div key={p._id} className="bg-card rounded-3xl p-4 border border-border-theme shadow-lg hover:shadow-primary/10 transition relative isolate">
-              <div className="h-44 w-full rounded-2xl overflow-hidden bg-background border border-border-theme mb-4">
-                {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="p-10 text-slate-200" />}
-              </div>
-              <div className="px-1">
-                <h4 className="font-bold text-foreground truncate">{p.name}</h4>
-                <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">{p.category?.name || "No Category"}</p>
-                <p className="text-sm text-slate-500 mt-2">{p.description}</p>
-
-                {/* Price Section */}
-                <div className="mt-4 flex items-center gap-2">
-                  {p.salePrice && p.salePrice < p.price ? (
-                    <>
-                      <span className="text-slate-400 line-through font-bold">₹{p.price}</span>
-                      <span className="text-primary font-extrabold">₹{p.salePrice}</span>
-                    </>
-                  ) : (
-                    <span className="text-primary font-extrabold">₹{p.price || 0}</span>
-                  )}
-                </div>
-
-                {/* Action Menu Like List */}
-                <div className="absolute top-4 right-4 z-10" data-row-action>
-                  <div className="relative inline-flex">
-                  <button
-                    type="button"
-                    onClick={() => setOpenMenuId(openMenuId === p._id ? null : p._id)}
-                    className="p-2 text-slate-400 hover:text-foreground transition rounded-xl bg-card/80 backdrop-blur-sm"
-                  >
-                    <MoreHorizontal size={20} />
-                  </button>
-
-                  {openMenuId === p._id && (
-                    <div className={rowActionDropdownClass}>
-                      <button
-                        onClick={() => { setOpenMenuId(null); onView(p); }}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
-                      >
-                        <Eye size={16} className="text-slate-500" />
-                        View Details
-                      </button>
-                      <div className="mx-2 my-1 border-t border-border-theme" />
-                      <button
-                        onClick={() => handleEditClick(p)}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-foreground hover:bg-hover-theme transition"
-                      >
-                        <Edit3 size={16} className="text-blue-600" />
-                        Edit Product
-                      </button>
-                      <button
-                        onClick={() => handleDelete(p._id)}
-                        className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-500/10 transition"
-                      >
-                        <Trash2 size={16} />
-                        Delete
-                      </button>
-                    </div>
-                  )}
                   </div>
                 </div>
               </div>
