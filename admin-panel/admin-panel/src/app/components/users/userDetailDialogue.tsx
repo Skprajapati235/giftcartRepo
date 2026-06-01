@@ -17,8 +17,17 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
     const fetchUserOrders = async () => {
       try {
         const allOrders = await getAllOrders();
+        // Normalize response to an array if API returns an object wrapper
+        const ordersArray = Array.isArray(allOrders)
+          ? allOrders
+          : Array.isArray(allOrders?.data)
+            ? allOrders.data
+            : Array.isArray(allOrders?.orders)
+              ? allOrders.orders
+              : [];
+
         // Assuming user match by email if ID is deeply populated
-        const userOrders = allOrders.filter((o: any) => o.user?.email === user.email);
+        const userOrders = ordersArray.filter((o: any) => o?.user?.email === user?.email || (o?.user?._id && user?._id && String(o.user._id) === String(user._id)) );
         setOrders(userOrders);
       } catch (err) {
         console.error(err);

@@ -81,7 +81,16 @@ export default function DashboardCharts({ orders }: DashboardChartsProps) {
               />
               <RechartsTooltip
                 cursor={{ fill: "var(--hover-bg)" }}
-                contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                contentStyle={{
+                  borderRadius: "16px",
+                  border: "none",
+                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.45)",
+                  background: "var(--card)",
+                  color: "var(--foreground)",
+                  padding: "10px 12px"
+                }}
+                labelStyle={{ color: "var(--foreground)", fontWeight: 700 }}
+                itemStyle={{ color: "var(--foreground)" }}
               />
               <Bar
                 dataKey="orders"
@@ -118,7 +127,16 @@ export default function DashboardCharts({ orders }: DashboardChartsProps) {
                 ))}
               </Pie>
               <RechartsTooltip
-                contentStyle={{ borderRadius: "16px", border: "none", boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                contentStyle={{
+                  borderRadius: "16px",
+                  border: "none",
+                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.45)",
+                  background: "var(--card)",
+                  color: "var(--foreground)",
+                  padding: "10px 12px"
+                }}
+                labelStyle={{ color: "var(--foreground)", fontWeight: 700 }}
+                itemStyle={{ color: "var(--foreground)" }}
               />
               <Legend
                 verticalAlign="bottom"

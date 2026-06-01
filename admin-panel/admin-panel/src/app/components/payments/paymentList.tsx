@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 import { adminTableWrapClass, adminTableClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
+import PaymentDetailDialog from "./paymentDetailDialog";
 
 interface PaymentListProps {
   payments: any[];
@@ -12,6 +13,7 @@ interface PaymentListProps {
 }
 
 export default function PaymentList({ payments, loading }: PaymentListProps) {
+  const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -63,8 +65,9 @@ export default function PaymentList({ payments, loading }: PaymentListProps) {
             </thead>
             <tbody className="divide-y divide-border-theme">
               {pagePayments.map((payment) => (
-                <tr key={payment._id} className="hover:bg-hover-theme transition-colors group border-b border-border-theme/50">
-                  <td className="px-6 py-5 overflow-hidden">
+                <tr key={payment._id} onClick={() => setSelectedPayment(payment)} className="hover:bg-hover-theme transition-colors group border-b border-border-theme/50 cursor-pointer">
+                  <td className="px-6 py-5 overflow-hidden flex items-center gap-3">
+                    <span className={`w-2 h-8 rounded-full ${payment.paymentStatus === 'Success' ? 'bg-emerald-400' : payment.paymentStatus === 'Processing' ? 'bg-amber-400' : payment.paymentStatus === 'Pending' ? 'bg-blue-400' : 'bg-red-400'}`} />
                     <span className="font-mono text-xs text-foreground font-bold tracking-widest">{payment.razorpayPaymentId}</span>
                   </td>
                   <td className="px-6 py-5">
@@ -80,13 +83,15 @@ export default function PaymentList({ payments, loading }: PaymentListProps) {
                     {new Date(payment.createdAt).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td className="px-6 py-5">
-                    <span className={`rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-widest ${
-                      payment.paymentStatus === 'Success' ? 'bg-green-500/10 text-green-600' :
-                      payment.paymentStatus === 'Pending' ? 'bg-amber-500/10 text-amber-600' :
-                      'bg-red-500/10 text-red-600'
-                    }`}>
-                      {payment.paymentStatus || 'Success'}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${payment.paymentStatus === 'Success' ? 'bg-emerald-400' : payment.paymentStatus === 'Processing' ? 'bg-amber-400' : payment.paymentStatus === 'Pending' ? 'bg-blue-400' : 'bg-red-400'}`} />
+                      <span className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-widest ${
+                        payment.paymentStatus === 'Success' ? 'bg-emerald-500/10 text-emerald-400' :
+                        payment.paymentStatus === 'Processing' ? 'bg-amber-500/10 text-amber-400' :
+                        payment.paymentStatus === 'Pending' ? 'bg-blue-500/10 text-blue-400' :
+                        'bg-red-500/10 text-red-400'
+                      }`}>{payment.paymentStatus || 'Success'}</span>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -101,6 +106,10 @@ export default function PaymentList({ payments, loading }: PaymentListProps) {
         </div>
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       </div>
+      {selectedPayment ? (
+        <PaymentDetailDialog payment={selectedPayment} onClose={() => setSelectedPayment(null)} />
+      ) : null}
     </div>
   );
 }
+
