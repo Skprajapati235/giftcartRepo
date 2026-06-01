@@ -11,32 +11,87 @@ interface UserDetailProps {
 
 export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
   const [orders, setOrders] = useState<any[]>([]);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [displayedOrders, setDisplayedOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchUserOrders = async () => {
       try {
-        const allOrders = await getAllOrders();
-        // Normalize response to an array if API returns an object wrapper
-        const ordersArray = Array.isArray(allOrders)
-          ? allOrders
-          : Array.isArray(allOrders?.data)
-            ? allOrders.data
-            : Array.isArray(allOrders?.orders)
-              ? allOrders.orders
+        let allOrdersArray: any[] = [];
+        let page = 1;
+        let hasMore = true;
+
+        // Fetch all pages of orders
+        while (hasMore) {
+          const response = await getAllOrders({ page, limit: 50 });
+
+          // Normalize response
+          const ordersData = Array.isArray(response)
+            ? response
+            : Array.isArray(response?.data)
+              ? response.data
               : [];
 
-        // Assuming user match by email if ID is deeply populated
-        const userOrders = ordersArray.filter((o: any) => o?.user?.email === user?.email || (o?.user?._id && user?._id && String(o.user._id) === String(user._id)) );
+          allOrdersArray = [...allOrdersArray, ...ordersData];
+
+          // Check if there are more pages
+          const totalPages = response?.totalPages || 1;
+          if (page >= totalPages) {
+            hasMore = false;
+          } else {
+            page += 1;
+          }
+        }
+
+        // Filter orders by user email or user ID
+        const userOrders = allOrdersArray.filter(
+          (o: any) => o?.user?.email === user?.email || (o?.user?._id && user?._id && String(o.user._id) === String(user._id))
+        );
+
         setOrders(userOrders);
+        setTotalOrders(userOrders.length);
+        setDisplayedOrders(userOrders.slice(0, itemsPerPage));
+        setHasMore(userOrders.length > itemsPerPage);
+        setPage(1);
       } catch (err) {
-        console.error(err);
+        console.error("Error fetching user orders:", err);
       } finally {
         setLoadingOrders(false);
       }
     };
     if (user) fetchUserOrders();
   }, [user]);
+
+  const loadMoreOrders = () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    setTimeout(() => {
+      const nextPage = page + 1;
+      const start = (nextPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const newOrders = orders.slice(start, end);
+      setDisplayedOrders((prev) => [...prev, ...newOrders]);
+      setPage(nextPage);
+      setHasMore(end < orders.length);
+      setLoadingMore(false);
+    }, 300);
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollElement = e.currentTarget;
+    if (
+      scrollElement.scrollHeight - scrollElement.scrollTop <= scrollElement.clientHeight + 50 &&
+      hasMore &&
+      !loadingMore
+    ) {
+      loadMoreOrders();
+    }
+  };
 
   if (!user) return null;
 
@@ -114,13 +169,13 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
           {/* Tabs */}
           <div className="border-b border-border-theme mb-4">
             <button className="border-b-2 border-primary text-primary font-bold text-sm pb-2 px-2 uppercase tracking-wide">
-              ORDER ({orders.length})
+              ORDER ({totalOrders})
             </button>
           </div>
         </div>
 
         {/* Orders List - Only this part is scrollable */}
-        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar" onScroll={handleScroll}>
           {loadingOrders ? (
             <div className="text-center py-10 text-slate-400 font-bold text-sm animate-pulse">Loading orders...</div>
           ) : orders.length === 0 ? (
@@ -132,7 +187,7 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
             </div>
           ) : (
             <div className="space-y-4 pb-6">
-              {orders.map((order) => (
+              {displayedOrders.map((order) => (
                 <div key={order._id} className="border border-border-theme p-4 rounded-xl flex justify-between items-center bg-hover-theme/50">
                   <div>
                     <p className="text-xs font-mono text-slate-400 font-bold mb-1">#{order._id.slice(-6)}</p>
@@ -144,6 +199,16 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
                   </span>
                 </div>
               ))}
+              {loadingMore && (
+                <div className="text-center py-4 text-slate-400 text-sm animate-pulse">
+                  Loading more orders...
+                </div>
+              )}
+              {!hasMore && displayedOrders.length > 0 && (
+                <div className="text-center py-4 text-slate-500 text-xs font-semibold">
+                  Showing all {totalOrders} orders
+                </div>
+              )}
             </div>
           )}
         </div>
