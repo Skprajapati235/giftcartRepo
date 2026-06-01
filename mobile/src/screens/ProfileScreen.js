@@ -63,6 +63,7 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Utilities</Text>
           <ProfileItem icon="help-circle" label="Help & Support" onPress={() => {}} />
           <ProfileItem icon="shield" label="Terms & Policy" onPress={() => navigation.navigate('TermsPolicy')} />
+          <ProfileItem icon="code" label="Developer" onPress={() => navigation.navigate('Developer')} />
           <ProfileItem icon="share-2" label="Share GiftCart" onPress={() => {}} />
         </View>
 
