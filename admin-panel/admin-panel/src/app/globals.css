@@ -13,6 +13,8 @@
   --border: #e2e8f0;
   --primary: #0f172a;
   --secondary: #D82B76;
+  --auth-grad-start: #f8fafc;
+  --auth-grad-end: #ffffff;
 }
 
 html.dark {
@@ -31,6 +33,8 @@ html.dark {
   /* User requested color */
   --secondary: #d946ef;
   /* Fuchsia */
+  --auth-grad-start: #020617;
+  --auth-grad-end: #0f172a;
 }
 
 html.light {
@@ -40,6 +44,8 @@ html.light {
   --border: #e2e8f0;
   --primary: #0f172a;
   --secondary: #D82B76;
+  --auth-grad-start: #f8fafc;
+  --auth-grad-end: #ffffff;
 }
 
 @theme inline {
@@ -188,4 +194,9 @@ html[data-theme='dark'] .shadow-sm {
 
 .blink-fast {
   animation: fast-blink .5s infinite;
+}
+
+/* Auth pages background that respects theme variables */
+.auth-bg {
+  background: linear-gradient(135deg, var(--auth-grad-start) 0%, var(--auth-grad-end) 100%);
 }
