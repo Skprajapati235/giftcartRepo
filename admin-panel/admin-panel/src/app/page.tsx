@@ -181,7 +181,7 @@ export default function Home() {
               {loading
                 ? <>
                   <div className="flex items-center justify-center gap-2">
-                    <Loader color="#f7f4f5" strokeWidth={3} />
+                    <Loader color="#fff" strokeWidth={3} />
                     <div className="animate-spin"></div>
                   </div>
                 </>
