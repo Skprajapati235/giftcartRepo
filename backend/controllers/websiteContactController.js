@@ -29,6 +29,58 @@ const contactController = {
             });
         }
     },
+
+    // GET ALL CONTACTS
+    getContacts: async (req, res) => {
+        try {
+            const contacts = await contactService.getContacts();
+
+            return res.status(200).json({
+                success: true,
+                message: "Contacts fetched successfully",
+                count: contacts.length,
+                data: contacts,
+            });
+        } catch (error) {
+            console.error("Get Contacts Error:", error);
+
+            return res.status(500).json({
+                success: false,
+                message: "Something went wrong",
+                error: error.message,
+            });
+        }
+    },
+
+    // DELETE CONTACT
+    deleteContact: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            const contact = await contactService.deleteContact(id);
+
+            if (!contact) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Contact not found",
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Contact deleted successfully",
+                data: contact,
+            });
+        } catch (error) {
+            console.error("Delete Contact Error:", error);
+
+            return res.status(500).json({
+                success: false,
+                message: "Something went wrong",
+                error: error.message,
+            });
+        }
+    },
 };
 
 module.exports = contactController;

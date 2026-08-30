@@ -6,7 +6,7 @@ import { rowActionDropdownClass, useRowActionMenu } from "@/app/components/ui/us
 import { TableSkeleton } from "@/app/components/skeletonLoader/commonSkeleton";
 import { adminTableBodyCellClass, adminTableClass, adminTableHeadCellClass, adminTableWrapClass } from "@/app/components/ui/adminTable";
 import Pagination from "@/app/components/Pagination";
-import { sendWebsiteContact } from "@/app/services/websiteContact";
+import { getWebsiteContact } from "@/app/services/websiteContact";
 
 
 export default function WebsiteContacts() {
@@ -17,12 +17,16 @@ export default function WebsiteContacts() {
 
     useEffect(() => {
         const fetchWebContactData = async () => {
-            const res = await sendWebsiteContact()
-            setWebContactData(res)
-        }
-        fetchWebContactData()
-    }, []);
+            try {
+                const res = await getWebsiteContact();
+                setWebContactData(res);
+            } catch (error) {
+                console.error("Data fetch karne me error aayi:", error);
+            }
+        };
 
+        fetchWebContactData();
+    }, []);
     console.log("webcontactdata", webcontactdata)
 
 
