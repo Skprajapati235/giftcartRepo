@@ -8,6 +8,11 @@ export default function WebsiteContactPage() {
     return (
         <ProtectedRoute>
             <AdminMain>
+                <div className="mb-6 lg:mb-8">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 sm:text-sm">
+                        Website Contact Management
+                    </p>
+                </div>
                 <WebsiteContacts />
             </AdminMain>
         </ProtectedRoute>
