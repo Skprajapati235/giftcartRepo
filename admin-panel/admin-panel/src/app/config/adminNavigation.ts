@@ -14,6 +14,7 @@ import {
   Ticket,
   Pipette,
   FileText,
+  Phone,
 } from "lucide-react";
 
 export type NavChild = {
@@ -54,6 +55,7 @@ export const adminNavigation: NavItem[] = [
     children: [{ key: "coupons", href: "/coupons", label: "Coupons", icon: Ticket }],
   },
   { key: "users", href: "/users", label: "Users", icon: Users },
+  { key: "websitecontact", href: "/websitecontact", label: "Website Contact", icon: Phone },
   {
     key: "admin",
     label: "Admin",

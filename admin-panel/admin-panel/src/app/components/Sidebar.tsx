@@ -78,11 +78,10 @@ function DesktopSidebar() {
                       <button
                         type="button"
                         onClick={() => handlePanelOpen(item)}
-                        className={`flex h-12 w-14 items-center justify-center rounded-2xl transition-all xl:h-14 xl:w-16 ${
-                          active
-                            ? "bg-primary text-white shadow-lg ring-2 ring-primary/20"
-                            : "text-slate-400 hover:bg-hover-theme hover:text-foreground"
-                        }`}
+                        className={`flex h-12 w-14 items-center justify-center rounded-2xl transition-all xl:h-14 xl:w-16 ${active
+                          ? "bg-primary text-white shadow-lg ring-1 ring-primary/20"
+                          : "text-slate-400 hover:bg-hover-theme hover:text-foreground"
+                          }`}
                       >
                         <Icon className="h-6 w-6 xl:h-7 xl:w-7" />
                       </button>
@@ -90,19 +89,17 @@ function DesktopSidebar() {
                       <Link
                         href={item.href!}
                         onClick={() => handlePanelOpen(item)}
-                        className={`flex h-12 w-14 items-center justify-center rounded-2xl transition-all xl:h-14 xl:w-16 ${
-                          active
-                            ? "bg-primary text-white shadow-lg ring-2 ring-primary/20"
-                            : "text-slate-400 hover:bg-hover-theme hover:text-foreground"
-                        }`}
+                        className={`flex h-12 w-14 items-center justify-center rounded-2xl transition-all xl:h-14 xl:w-16 ${active
+                          ? "bg-primary text-white shadow-lg ring-2 ring-primary/20"
+                          : "text-slate-400 hover:bg-hover-theme hover:text-foreground"
+                          }`}
                       >
                         <Icon className="h-6 w-6 xl:h-7 xl:w-7" />
                       </Link>
                     )}
                     <span
-                      className={`mt-1 max-w-full truncate px-0.5 text-center text-[9px] font-bold uppercase tracking-wide xl:text-[10px] ${
-                        active ? "text-foreground" : "text-slate-500"
-                      }`}
+                      className={`mt-1 max-w-full truncate px-0.5 text-center text-[6px] font-bold uppercase tracking-wide xl:text-[10px] ${active ? "text-foreground" : "text-slate-500"
+                        }`}
                     >
                       {item.label}
                     </span>
@@ -124,9 +121,8 @@ function DesktopSidebar() {
             <button
               type="button"
               onClick={() => handlePanelOpen(adminItem)}
-              className={`flex h-10 w-full items-center justify-center rounded-2xl border border-border-theme bg-card text-foreground shadow-sm transition hover:bg-hover-theme ${
-                activePanel === "admin" ? "bg-primary text-white" : ""
-              }`}
+              className={`flex h-10 w-full items-center justify-center rounded-2xl border border-border-theme bg-card text-foreground shadow-sm transition hover:bg-hover-theme ${activePanel === "admin" ? "bg-primary text-white" : ""
+                }`}
               aria-label="Admin menu"
             >
               <Settings className="h-5 w-5" />
@@ -136,9 +132,8 @@ function DesktopSidebar() {
       </aside>
 
       <div
-        className={`sticky top-0 h-screen shrink-0 overflow-hidden border-r border-border-theme bg-card transition-all duration-300 ${
-          activeGroup ? "w-64 opacity-100" : "w-0 opacity-0 pointer-events-none"
-        }`}
+        className={`sticky top-0 h-screen shrink-0 overflow-hidden border-r border-border-theme bg-card transition-all duration-300 ${activeGroup ? "w-64 opacity-100" : "w-0 opacity-0 pointer-events-none"
+          }`}
       >
         {activeGroup && (
           <div className="flex h-full flex-col justify-between p-4 xl:p-5">
@@ -166,16 +161,14 @@ function DesktopSidebar() {
                     <Link
                       key={child.key}
                       href={child.href}
-                      className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-sm font-bold transition ${
-                        childActive
-                          ? "border-primary bg-primary text-white shadow-lg"
-                          : "border-transparent bg-background text-slate-500 hover:border-border-theme hover:bg-hover-theme hover:text-foreground"
-                      }`}
+                      className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-sm font-bold transition ${childActive
+                        ? "border-primary bg-primary text-white shadow-lg"
+                        : "border-transparent bg-background text-slate-500 hover:border-border-theme hover:bg-hover-theme hover:text-foreground"
+                        }`}
                     >
                       <div
-                        className={`rounded-lg p-1.5 ${
-                          childActive ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
-                        }`}
+                        className={`rounded-lg p-1.5 ${childActive ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
+                          }`}
                       >
                         <ChildIcon className="h-4 w-4" />
                       </div>
@@ -221,13 +214,11 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
-        indent ? "ml-3" : ""
-      } ${
-        active
+      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${indent ? "ml-3" : ""
+        } ${active
           ? "bg-primary text-white"
           : "text-slate-600 hover:bg-hover-theme hover:text-foreground dark:text-slate-300"
-      }`}
+        }`}
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span>{label}</span>
@@ -294,11 +285,10 @@ function MobileSidebar() {
                   <button
                     type="button"
                     onClick={() => toggleGroup(item.key)}
-                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
-                      groupActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground hover:bg-hover-theme"
-                    }`}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition ${groupActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-hover-theme"
+                      }`}
                   >
                     <span className="flex items-center gap-3">
                       <Icon className="h-4 w-4" />
