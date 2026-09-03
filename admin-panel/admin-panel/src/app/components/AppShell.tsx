@@ -7,6 +7,7 @@ import MobileHeader from "./MobileHeader";
 import { ThemeProvider } from "../context/ThemeContext";
 import { SidebarProvider } from "../context/SidebarContext";
 import NotificationManager from "./NotificationManager";
+import AIChat from "./aichat/AIChat";
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -19,6 +20,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
       ) : (
         <SidebarProvider>
           <NotificationManager />
+          <AIChat />
           <div className="flex h-screen overflow-hidden bg-background">
             <Sidebar aria-label="Sidebar for administration functions" />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">

@@ -130,7 +130,7 @@ app.post("/api/ask-agent", authMiddleware, async (req, res) => {
     }
 
     const response = await axios.post(
-      `${PYTHON_AI_URL}/api/chat`,
+      `${PYTHON_AI_URL}/api/ai/chat`,
       { message, history: history || [] },
       {
         headers: {
