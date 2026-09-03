@@ -15,6 +15,7 @@ import {
   Pipette,
   FileText,
   Phone,
+  Bot,
 } from "lucide-react";
 
 export type NavChild = {
@@ -34,6 +35,7 @@ export type NavItem = {
 
 export const adminNavigation: NavItem[] = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: Home },
+  { key: "chat", href: "/chat", label: "AI Chat", icon: Bot },
   {
     key: "shop",
     label: "Shop",

@@ -58,17 +58,17 @@ function DesktopSidebar() {
 
   return (
     <div className="hidden h-screen shrink-0 lg:flex">
-      <aside className="sticky top-0 h-screen w-24 border-r border-border-theme bg-background xl:w-28">
-        <div className="flex h-full flex-col justify-between px-2 py-3 xl:px-3">
-          <div className="space-y-4">
+      <aside className="sticky top-0 h-screen w-20 shrink-0 border-r border-border-theme bg-background xl:w-24">
+        <div className="flex h-full flex-col justify-between px-1.5 py-3 xl:px-2">
+          <div className="space-y-3">
             <div className="pb-2 pt-2">
               <img
                 src="/images/GiftorawithText2.png"
                 alt="Giftora"
-                className="mx-auto h-8 object-contain"
+                className="mx-auto h-7 max-w-full object-contain"
               />
             </div>
-            <nav className="space-y-3">
+            <nav className="space-y-2">
               {mainNav.map((item) => {
                 const active = isPathActive(pathname, item.href, item.children);
                 const Icon = item.icon;
@@ -78,27 +78,27 @@ function DesktopSidebar() {
                       <button
                         type="button"
                         onClick={() => handlePanelOpen(item)}
-                        className={`flex h-12 w-14 items-center justify-center rounded-2xl transition-all xl:h-14 xl:w-16 ${active
+                        className={`mx-auto flex h-10 w-11 items-center justify-center rounded-xl transition-all xl:h-11 xl:w-12 ${active
                           ? "bg-primary text-white shadow-lg ring-1 ring-primary/20"
                           : "text-slate-400 hover:bg-hover-theme hover:text-foreground"
                           }`}
                       >
-                        <Icon className="h-6 w-6 xl:h-7 xl:w-7" />
+                        <Icon className="h-5 w-5 xl:h-5 xl:w-5" />
                       </button>
                     ) : (
                       <Link
                         href={item.href!}
                         onClick={() => handlePanelOpen(item)}
-                        className={`flex h-12 w-14 items-center justify-center rounded-2xl transition-all xl:h-14 xl:w-16 ${active
+                        className={`mx-auto flex h-10 w-11 items-center justify-center rounded-xl transition-all xl:h-11 xl:w-12 ${active
                           ? "bg-primary text-white shadow-lg ring-2 ring-primary/20"
                           : "text-slate-400 hover:bg-hover-theme hover:text-foreground"
                           }`}
                       >
-                        <Icon className="h-6 w-6 xl:h-7 xl:w-7" />
+                        <Icon className="h-5 w-5 xl:h-5 xl:w-5" />
                       </Link>
                     )}
                     <span
-                      className={`mt-1 max-w-full truncate px-0.5 text-center text-[6px] font-bold uppercase tracking-wide xl:text-[10px] ${active ? "text-foreground" : "text-slate-500"
+                      className={`mx-auto mt-1 block max-w-full truncate px-0.5 text-center text-[8px] font-bold uppercase tracking-tight xl:text-[9px] ${active ? "text-foreground" : "text-slate-500"
                         }`}
                     >
                       {item.label}
