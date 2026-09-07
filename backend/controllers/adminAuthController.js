@@ -46,3 +46,21 @@ exports.googleLogin = async (req, res) => {
     res.status(400).json({ message: "Invalid Google Token or Server Error" });
   }
 };
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    await authService.requestPasswordReset({ ...req.body, accountType: "admin" });
+    res.json({ message: "If an account exists for this email, an OTP has been sent" });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    await authService.resetPassword({ ...req.body, accountType: "admin" });
+    res.json({ message: "Password reset successfully. You can now log in" });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+};

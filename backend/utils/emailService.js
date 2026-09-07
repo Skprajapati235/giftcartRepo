@@ -45,3 +45,13 @@ exports.sendOrderNotification = async (order, user) => {
     console.error("Error sending order notification email:", error);
   }
 };
+
+exports.sendPasswordResetOtp = async ({ email, name, otp }) => {
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Giftcart password reset OTP",
+    text: `Hi ${name || "there"}, your Giftcart password reset OTP is ${otp}. It expires in 10 minutes. If you did not request this, you can ignore this email.`,
+    html: `<p>Hi ${name || "there"},</p><p>Your Giftcart password reset OTP is:</p><h2>${otp}</h2><p>This OTP expires in 10 minutes. If you did not request this, you can ignore this email.</p>`,
+  });
+};

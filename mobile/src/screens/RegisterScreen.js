@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { SafeScreen } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import { isStrongPassword, isValidEmail } from '../utils/authValidation';
 
 export default function RegisterScreen({ navigation }) {
   const { signUp } = useContext(AuthContext);
@@ -17,6 +18,14 @@ export default function RegisterScreen({ navigation }) {
   const onRegister = async () => {
     if (!name || !email || !password) {
       showToast('Enter name, email and password.', 'warning');
+      return;
+    }
+    if (!isValidEmail(email.trim())) {
+      showToast('Enter a valid email address.', 'warning');
+      return;
+    }
+    if (!isStrongPassword(password)) {
+      showToast('Password needs 8+ characters, uppercase, lowercase, digit and symbol.', 'warning');
       return;
     }
 

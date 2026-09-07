@@ -15,6 +15,8 @@ const adminSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    resetOtpHash: { type: String, select: false },
+    resetOtpExpiresAt: { type: Date, select: false },
     city: {
       type: String,
     },

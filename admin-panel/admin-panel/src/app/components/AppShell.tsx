@@ -10,7 +10,7 @@ import NotificationManager from "./NotificationManager";
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const hideSidebar = ["/", "/register"].includes(pathname || "");
+  const hideSidebar = ["/", "/register", "/forgot-password"].includes(pathname || "");
 
   return (
     <ThemeProvider>

@@ -2,13 +2,20 @@ const User = require("../models/User");
 const Admin = require("../models/Admin");
 const bcrypt = require("bcryptjs");
 const whatsappService = require("../utils/whatsappService");
+const emailService = require("../utils/emailService");
+const { validateEmail, validatePassword } = require("../utils/authValidation");
+const { createOtp, hashOtp } = require("../utils/passwordReset");
 
 function isTruthyEnv(value) {
   return String(value || "").toLowerCase() === "true";
 }
 
 exports.registerUser = async (data) => {
-  const { name, email, password } = data;
+  const { name, password } = data;
+  const email = validateEmail(data.email);
+  validatePassword(password);
+
+  if (!String(name || "").trim()) throw new Error("Name is required");
 
   const userExists = await User.findOne({ email });
   if (userExists) throw new Error("User already exists");
@@ -19,9 +26,11 @@ exports.registerUser = async (data) => {
 };
 
 exports.loginUser = async (data) => {
-  const { email, password } = data;
+  const { password } = data;
+  const email = validateEmail(data.email);
+  if (!password) throw new Error("Email and password are required");
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: { $regex: `^${escapeRegex(email)}$`, $options: "i" } });
   if (!user) throw new Error("User not found");
 
   const isMatch = await bcrypt.compare(password, user.password);
@@ -77,7 +86,11 @@ exports.updateUserProfile = async (userId, data) => {
 };
 
 exports.registerAdmin = async (data) => {
-  const { name, email, password } = data;
+  const { name, password } = data;
+  const email = validateEmail(data.email);
+  validatePassword(password);
+
+  if (!String(name || "").trim()) throw new Error("Name is required");
 
   const adminExists = await Admin.findOne({ email });
   if (adminExists) throw new Error("Admin already exists");
@@ -88,13 +101,55 @@ exports.registerAdmin = async (data) => {
 };
 
 exports.loginAdmin = async (data) => {
-  const { email, password } = data;
+  const { password } = data;
+  const email = validateEmail(data.email);
+  if (!password) throw new Error("Email and password are required");
 
-  const admin = await Admin.findOne({ email });
+  const admin = await Admin.findOne({ email: { $regex: `^${escapeRegex(email)}$`, $options: "i" } });
   if (!admin) throw new Error("Admin not found");
 
   const isMatch = await bcrypt.compare(password, admin.password);
   if (!isMatch) throw new Error("Invalid credentials");
 
   return admin;
+};
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+async function findAccountByEmail(Model, email) {
+  return Model.findOne({ email: { $regex: `^${escapeRegex(email)}$`, $options: "i" } }).select("+resetOtpHash +resetOtpExpiresAt");
+}
+
+exports.requestPasswordReset = async ({ email, accountType }) => {
+  const normalizedEmail = validateEmail(email);
+  const Model = accountType === "admin" ? Admin : User;
+  const account = await findAccountByEmail(Model, normalizedEmail);
+
+  if (!account) return;
+
+  const otp = createOtp();
+  account.resetOtpHash = hashOtp(otp);
+  account.resetOtpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await account.save();
+  await emailService.sendPasswordResetOtp({ email: account.email, name: account.name, otp });
+};
+
+exports.resetPassword = async ({ email, otp, newPassword, accountType }) => {
+  const normalizedEmail = validateEmail(email);
+  validatePassword(newPassword);
+  if (!/^\d{6}$/.test(String(otp || ""))) throw new Error("Please enter the 6-digit OTP");
+
+  const Model = accountType === "admin" ? Admin : User;
+  const account = await findAccountByEmail(Model, normalizedEmail);
+  if (!account || !account.resetOtpHash || !account.resetOtpExpiresAt || account.resetOtpExpiresAt < new Date()) {
+    throw new Error("OTP is invalid or expired");
+  }
+  if (account.resetOtpHash !== hashOtp(otp)) throw new Error("OTP is invalid or expired");
+
+  account.password = await bcrypt.hash(newPassword, 10);
+  account.resetOtpHash = undefined;
+  account.resetOtpExpiresAt = undefined;
+  await account.save();
 };

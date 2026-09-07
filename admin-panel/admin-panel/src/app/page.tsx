@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
 import { Mail, Lock, Gift, Loader } from "lucide-react";
 import { useAuth } from "./context/AuthContext";
+import { isValidEmail } from "./utils/authValidation";
 
 
 export default function Home() {
@@ -32,6 +33,11 @@ export default function Home() {
     event.preventDefault();
 
     setSubmitError("");
+
+    if (!isValidEmail(form.email.trim()) || !form.password) {
+      setSubmitError("Enter a valid email and password");
+      return;
+    }
 
     try {
       await login(form);
@@ -188,6 +194,11 @@ export default function Home() {
                 : "Login"}
             </button>
           </form>
+          <div className="mt-4 text-center text-sm">
+            <Link href="/forgot-password" className="font-semibold text-primary hover:text-secondary">
+              Forgot password?
+            </Link>
+          </div>
           <div className="mt-8 text-center text-sm text-foreground/70">
             Don't have an account?
             <Link

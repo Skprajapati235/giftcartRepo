@@ -35,6 +35,20 @@ export const registerAdmin = async (payload: {
   return response.data;
 };
 
+export const requestAdminPasswordReset = async (email: string) => {
+  const response = await api.post("/admin/auth/forgot-password", { email });
+  return response.data;
+};
+
+export const resetAdminPassword = async (payload: {
+  email: string;
+  otp: string;
+  newPassword: string;
+}) => {
+  const response = await api.post("/admin/auth/reset-password", payload);
+  return response.data;
+};
+
 export const getProducts = async (params?: { page?: number; limit?: number; search?: string }) => {
   const response = await authApi(getAuthToken()).get("/product", { params });
   return response.data;

@@ -34,6 +34,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (form.password.length < 8 || !/[A-Z]/.test(form.password) || !/[a-z]/.test(form.password) || !/\d/.test(form.password) || !/[^A-Za-z0-9\s]/.test(form.password)) {
+      setSubmitError("Password must be 8+ characters with uppercase, lowercase, digit, and special character");
+      return;
+    }
+
     try {
       await register({
         name: form.name,

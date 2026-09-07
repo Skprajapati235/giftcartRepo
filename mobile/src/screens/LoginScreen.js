@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { SafeScreen } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import { isValidEmail } from '../utils/authValidation';
 
 export default function LoginScreen({ navigation }) {
   const { signIn } = useContext(AuthContext);
@@ -14,8 +15,8 @@ export default function LoginScreen({ navigation }) {
   const { bottom } = useLayoutInsets();
 
   const onLogin = async () => {
-    if (!email || !password) {
-      showToast('Enter email and password.', 'warning');
+    if (!isValidEmail(email.trim()) || !password) {
+      showToast('Enter a valid email and password.', 'warning');
       return;
     }
 
@@ -73,6 +74,10 @@ export default function LoginScreen({ navigation }) {
 
           <TouchableOpacity style={styles.button} onPress={onLogin} disabled={loading}>
             <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Login'}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')} style={styles.forgotButton}>
+            <Text style={styles.link}>Forgot password?</Text>
           </TouchableOpacity>
 
           <View style={styles.footer}>
@@ -156,6 +161,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
   },
+  forgotButton: { alignItems: 'center', marginTop: 16 },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
