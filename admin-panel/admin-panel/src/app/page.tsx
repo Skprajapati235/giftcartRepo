@@ -94,26 +94,26 @@ export default function Home() {
   return (
     <div className="relative min-h-screen overflow-hidden auth-bg flex items-center justify-center px-4">
       <div className="relative z-10 w-full max-w-md">
-        <div className="bg-card border border-border-theme rounded-3xl p-8 shadow-2xl shadow-black/10 dark:shadow-black/30">
+        <div className="bg-card border border-border-theme rounded-2xl p-5 shadow-2xl shadow-black/10 dark:shadow-black/30 sm:p-6">
           {/* Logo */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-5">
 
-            <div className="mx-auto flex h-18 w-18 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 shadow-xl">
-              <Gift className="h-10 w-10 text-white" />
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 shadow-xl">
+              <Gift className="h-7 w-7 text-white" />
             </div>
 
-            <h1 className="mt-6 text-4xl font-black text-foreground">
+            <h1 className="mt-4 text-2xl font-black text-foreground">
               Giftora
             </h1>
 
-            <p className="mt-2 text-foreground/70">
+            <p className="mt-1 text-sm text-foreground/70">
               Welcome back to your admin dashboard
             </p>
 
           </div>
 
           {/* Google Login */}
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-4">
 
             <GoogleLogin
               onSuccess={handleGoogleLoginSuccess}
@@ -127,7 +127,7 @@ export default function Home() {
           {/* Form */}
           <form
             onSubmit={handleSubmit}
-            className="space-y-5"
+            className="space-y-3"
           >
             {/* Email */}
 
@@ -145,7 +145,7 @@ export default function Home() {
                     email: e.target.value,
                   })
                 }
-                className="w-full h-14 rounded-2xl bg-background border border-border-theme pl-12 pr-4 text-foreground placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
+                className="w-full h-11 rounded-xl bg-background border border-border-theme pl-11 pr-3 text-sm text-foreground placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
               />
 
             </div>
@@ -166,7 +166,7 @@ export default function Home() {
                     password: e.target.value,
                   })
                 }
-                className="w-full h-14 rounded-2xl bg-background border border-border-theme pl-12 pr-4 text-foreground placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
+                className="w-full h-11 rounded-xl bg-background border border-border-theme pl-11 pr-3 text-sm text-foreground placeholder:text-slate-500 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition"
               />
 
             </div>
@@ -182,7 +182,7 @@ export default function Home() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-14 rounded-2xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-600 text-white font-bold text-lg shadow-xl hover:scale-[1.02] hover:shadow-pink-500/40 transition-all duration-300 disabled:opacity-60"
+              className="w-full h-11 rounded-xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-600 text-white font-semibold text-sm shadow-xl hover:shadow-pink-500/40 transition-all duration-300 disabled:opacity-60"
             >
               {loading
                 ? <>
@@ -199,7 +199,7 @@ export default function Home() {
               Forgot password?
             </Link>
           </div>
-          <div className="mt-8 text-center text-sm text-foreground/70">
+          <div className="mt-5 text-center text-sm text-foreground/70">
             Don't have an account?
             <Link
               href="/register"

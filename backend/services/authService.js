@@ -130,10 +130,10 @@ exports.requestPasswordReset = async ({ email, accountType }) => {
   if (!account) return;
 
   const otp = createOtp();
+  await emailService.sendPasswordResetOtp({ email: account.email, name: account.name, otp });
   account.resetOtpHash = hashOtp(otp);
   account.resetOtpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
   await account.save();
-  await emailService.sendPasswordResetOtp({ email: account.email, name: account.name, otp });
 };
 
 exports.resetPassword = async ({ email, otp, newPassword, accountType }) => {

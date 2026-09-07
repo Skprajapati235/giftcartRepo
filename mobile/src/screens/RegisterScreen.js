@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#fff',
-    padding: 24,
+    padding: 18,
     justifyContent: 'center',
   },
   inner: {
@@ -126,8 +126,8 @@ const styles = StyleSheet.create({
   },
   box: {
     backgroundColor: '#fff',
-    padding: 24,
-    borderRadius: 16,
+    padding: 18,
+    borderRadius: 14,
     boxShadow: "0 0 10px #f13687ff"
   },
   titleContainer: {
@@ -137,9 +137,9 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#ef0f87ff',
-    fontSize: 32,
+    fontSize: 25,
     fontWeight: '900',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   subtitleContainer: {
     display: 'flex',
@@ -148,21 +148,22 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: '#f86eaeff',
-    fontSize: 15,
-    marginBottom: 30,
+    fontSize: 13,
+    marginBottom: 22,
   },
   inputGroup: {
-    marginBottom: 18,
+      marginBottom: 12,
   },
   label: {
     color: '#000',
-    marginBottom: 8,
+    marginBottom: 5,
     fontWeight: '700',
   },
   input: {
     backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 11,
+      paddingVertical: 11,
+      paddingHorizontal: 12,
     color: '#000',
     borderWidth: 1,
     borderColor: '#f13687ff',
@@ -170,20 +171,20 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#ff5ea0',
-    paddingVertical: 16,
-    borderRadius: 16,
+      paddingVertical: 12,
+      borderRadius: 12,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 6,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '800',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 28,
+    marginTop: 19,
   },
   footerText: {
     color: '#888',

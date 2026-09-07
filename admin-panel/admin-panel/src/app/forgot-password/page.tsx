@@ -45,23 +45,23 @@ export default function ForgotPasswordPage() {
   return (
     <div className="relative min-h-screen overflow-hidden auth-bg flex items-center justify-center px-4">
       <div className="relative z-10 w-full max-w-md">
-        <div className="bg-card border border-border-theme rounded-3xl p-8 shadow-2xl shadow-black/10">
-          <div className="text-center mb-8">
-            <div className="mx-auto flex h-18 w-18 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 shadow-xl"><Gift className="h-10 w-10 text-white" /></div>
-            <h1 className="mt-6 text-3xl font-black text-foreground">Reset Password</h1>
-            <p className="mt-2 text-foreground/70">{sent ? "Enter the OTP from your email" : "We will send a one-time password"}</p>
+        <div className="bg-card border border-border-theme rounded-2xl p-5 shadow-2xl shadow-black/10 sm:p-6">
+          <div className="text-center mb-5">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-pink-500 via-fuchsia-500 to-purple-600 shadow-xl"><Gift className="h-7 w-7 text-white" /></div>
+            <h1 className="mt-4 text-2xl font-black text-foreground">Reset Password</h1>
+            <p className="mt-1 text-sm text-foreground/70">{sent ? "Enter the OTP from your email" : "We will send a one-time password"}</p>
           </div>
-          <form onSubmit={submit} className="space-y-5">
-            <div className="relative"><Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" /><input type="email" required placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full h-14 rounded-2xl bg-background border border-border-theme pl-12 pr-4 text-foreground outline-none focus:border-primary" /></div>
+          <form onSubmit={submit} className="space-y-3">
+            <div className="relative"><Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><input type="email" required placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full h-11 rounded-xl bg-background border border-border-theme pl-10 pr-3 text-sm text-foreground outline-none focus:border-primary" /></div>
             {sent && <>
-              <input inputMode="numeric" maxLength={6} required placeholder="6-digit OTP" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} className="w-full h-14 rounded-2xl bg-background border border-border-theme px-4 text-foreground outline-none focus:border-primary" />
-              <div className="relative"><Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" /><input type="password" required placeholder="New strong password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full h-14 rounded-2xl bg-background border border-border-theme pl-12 pr-4 text-foreground outline-none focus:border-primary" /></div>
-              <input type="password" required placeholder="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full h-14 rounded-2xl bg-background border border-border-theme px-4 text-foreground outline-none focus:border-primary" />
+              <input inputMode="numeric" maxLength={6} required placeholder="6-digit OTP" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))} className="w-full h-11 rounded-xl bg-background border border-border-theme px-3 text-sm text-foreground outline-none focus:border-primary" />
+              <div className="relative"><Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" /><input type="password" required placeholder="New strong password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full h-11 rounded-xl bg-background border border-border-theme pl-10 pr-3 text-sm text-foreground outline-none focus:border-primary" /></div>
+              <input type="password" required placeholder="Confirm new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full h-11 rounded-xl bg-background border border-border-theme px-3 text-sm text-foreground outline-none focus:border-primary" />
             </>}
             {(error || message) && <div className={`rounded-xl p-3 text-sm ${error ? "border border-red-400/20 bg-red-500/10 text-red-300" : "border border-emerald-400/20 bg-emerald-500/10 text-emerald-500"}`}>{error || message}</div>}
-            <button type="submit" disabled={loading} className="w-full h-14 rounded-2xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-600 text-white font-bold text-lg disabled:opacity-60">{loading ? "Please wait..." : sent ? "Reset Password" : "Send OTP"}</button>
+            <button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-gradient-to-r from-pink-500 via-fuchsia-500 to-violet-600 text-white font-semibold text-sm disabled:opacity-60">{loading ? "Please wait..." : sent ? "Reset Password" : "Send OTP"}</button>
           </form>
-          <div className="mt-8 text-center text-sm text-foreground/70"><Link href="/" className="font-semibold text-primary hover:text-secondary">Back to login</Link></div>
+          <div className="mt-5 text-center text-sm text-foreground/70"><Link href="/" className="font-semibold text-primary hover:text-secondary">Back to login</Link></div>
         </div>
       </div>
     </div>
