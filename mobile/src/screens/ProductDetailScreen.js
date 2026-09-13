@@ -41,6 +41,18 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   const [isEggless, setIsEggless] = useState(false);
 
+  // Multiple weight (cakes) / flower-count (bouquets) variants, each with
+  // its own price/salePrice set by the admin — same data the web app uses.
+  const weightOptions = product.weightOptions || [];
+  const flowerCountOptions = product.flowerCountOptions || [];
+  const [selectedWeightOption, setSelectedWeightOption] = useState(
+    weightOptions.length > 0 ? weightOptions[0] : null
+  );
+  const [selectedFlowerCountOption, setSelectedFlowerCountOption] = useState(
+    flowerCountOptions.length > 0 ? flowerCountOptions[0] : null
+  );
+  const activeVariantOption = selectedWeightOption || selectedFlowerCountOption;
+
   const hasEgglessOption = productHasEgglessOption(product);
 
   // Image Gallery
@@ -53,12 +65,14 @@ export default function ProductDetailScreen({ route, navigation }) {
     ? Number(product.salePrice)
     : baseMRP;
 
-  // Variant overrides: use variant's salePrice if set, else variant's price
-  let variantMRP = baseMRP;
-  let variantSalePrice = globalSalePrice;
-
-  const unitMRP = baseMRP;
-  let unitSalePrice = globalSalePrice;
+  // Variant overrides: use the SELECTED weight/flower-count option's own
+  // price & salePrice when one exists, else fall back to the product's
+  // root pricing. Nothing here is calculated — these numbers come straight
+  // from what the admin typed in for that option.
+  const unitMRP = activeVariantOption ? Number(activeVariantOption.price || 0) : baseMRP;
+  let unitSalePrice = activeVariantOption
+    ? Number(activeVariantOption.salePrice ?? activeVariantOption.price ?? 0)
+    : globalSalePrice;
 
   if (hasEgglessOption && isEggless) unitSalePrice += EGGLESS_SURCHARGE;
 
@@ -129,8 +143,8 @@ export default function ProductDetailScreen({ route, navigation }) {
     // We only tell it which product, how many, and which variant.
     await addToCartContext(product, quantity, {
       isEggless: hasEgglessOption ? isEggless : false,
-      weight: product?.weight,
-      flowerCount: product?.flowerCount,
+      weight: selectedWeightOption?.weight || product?.weight,
+      flowerCount: selectedFlowerCountOption?.flowerCount || product?.flowerCount,
     });
     setAdded(true);
   };
@@ -270,6 +284,62 @@ export default function ProductDetailScreen({ route, navigation }) {
                   </Text>
                   <Text style={styles.eggChipExtra}>+₹{EGGLESS_SURCHARGE}</Text>
                 </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {/* Weight variants (cakes) — each chip has its own price */}
+          {weightOptions.length > 0 && (
+            <View style={styles.variantSection}>
+              <Text style={styles.variantSectionTitle}>Select Weight</Text>
+              <View style={styles.variantRow}>
+                {weightOptions.map((opt, idx) => {
+                  const isActive = selectedWeightOption?._id === opt._id;
+                  const optSalePrice = opt.salePrice ?? opt.price;
+                  const hasOptDiscount = opt.salePrice != null && opt.price > opt.salePrice;
+                  return (
+                    <TouchableOpacity
+                      key={opt._id || idx}
+                      style={[styles.variantChip, isActive && styles.variantChipActive]}
+                      onPress={() => setSelectedWeightOption(opt)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.variantChipLabel, isActive && styles.variantChipLabelActive]}>{opt.weight}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{optSalePrice}</Text>
+                        {hasOptDiscount && <Text style={styles.variantChipPriceStrike}>₹{opt.price}</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Flower-count variants (bouquets) — each chip has its own price */}
+          {flowerCountOptions.length > 0 && (
+            <View style={styles.variantSection}>
+              <Text style={styles.variantSectionTitle}>Select Flower Count</Text>
+              <View style={styles.variantRow}>
+                {flowerCountOptions.map((opt, idx) => {
+                  const isActive = selectedFlowerCountOption?._id === opt._id;
+                  const optSalePrice = opt.salePrice ?? opt.price;
+                  const hasOptDiscount = opt.salePrice != null && opt.price > opt.salePrice;
+                  return (
+                    <TouchableOpacity
+                      key={opt._id || idx}
+                      style={[styles.variantChip, isActive && styles.variantChipActive]}
+                      onPress={() => setSelectedFlowerCountOption(opt)}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={[styles.variantChipLabel, isActive && styles.variantChipLabelActive]}>{opt.flowerCount}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{optSalePrice}</Text>
+                        {hasOptDiscount && <Text style={styles.variantChipPriceStrike}>₹{opt.price}</Text>}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
           )}
@@ -622,6 +692,27 @@ const styles = StyleSheet.create({
   eggChipText: { fontSize: 12, fontWeight: '700', color: '#64748B' },
   eggChipTextActive: { color: '#D82B76' },
   eggChipExtra: { fontSize: 10, fontWeight: '600', color: '#94A3B8', marginLeft: 2 },
+
+  variantSection: { marginBottom: 16 },
+  variantSectionTitle: { fontSize: 13, fontWeight: '700', color: '#1a1a1a', marginBottom: 8 },
+  variantRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  variantChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFF',
+    minWidth: 72,
+  },
+  variantChipActive: {
+    borderColor: '#741343',
+    backgroundColor: '#741343',
+  },
+  variantChipLabel: { fontSize: 12, fontWeight: '800', color: '#1a1a1a' },
+  variantChipLabelActive: { color: '#FFF' },
+  variantChipPrice: { fontSize: 11, fontWeight: '700', color: '#64748B' },
+  variantChipPriceStrike: { fontSize: 9, fontWeight: '600', color: '#94A3B8', textDecorationLine: 'line-through' },
 
   featuresGrid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 25 },
   featureCard: { width: (width - 40 - 30) / 4, backgroundColor: '#FFF', borderRadius: 16, padding: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#F8FAFC' },

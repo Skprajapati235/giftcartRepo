@@ -11,6 +11,27 @@ interface AddEditProductProps {
   onClose: () => void;
 }
 
+type VariantRow = {
+  label: string; // weight text ("500g") or flower count text ("10 Roses")
+  price: string;
+  salePrice: string;
+  discount: string;
+  tax: string;
+  shippingCost: string;
+};
+
+const emptyVariantRow = (label = ""): VariantRow => ({
+  label,
+  price: "",
+  salePrice: "",
+  discount: "0",
+  tax: "0",
+  shippingCost: "0",
+});
+
+const WEIGHT_PRESETS = ["500g", "1kg", "1.5kg", "2kg", "3kg"];
+const FLOWER_COUNT_PRESETS = ["10", "20", "25", "30", "50"];
+
 export default function AddEditProduct({ product, onClose }: AddEditProductProps) {
   const { categories, flavors, cities, createProduct, updateProduct } = useAdmin();
   const { showToast } = useToast();
@@ -19,25 +40,61 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
 
   const [form, setForm] = useState({
     name: product?.name || "",
-    price: product?.price ? String(product.price) : "",
-    salePrice: product?.salePrice ? String(product.salePrice) : "",
     description: product?.description || "",
     image: product?.image || "",
     images: product?.images || [],
     category: product?.category?._id || product?.category || "",
     isCodAvailable: product?.isCodAvailable !== undefined ? product.isCodAvailable : true,
     hasEgglessOption: product?.hasEgglessOption || false,
-    shippingCost: product?.shippingCost !== undefined ? String(product.shippingCost) : "0",
-    discount: product?.discount !== undefined ? String(product.discount) : "0",
-    tax: product?.tax !== undefined ? String(product.tax) : "0",
-    // isCodAvailable: product?.isCodAvailable !== undefined ? product.isCodAvailable : true,
     deliveryTime: product?.deliveryTime || "3-5",
     expectedDeliveryDate: product?.expectedDeliveryDate || "Monday, 20 Oct",
     flavor: product?.flavor?._id || product?.flavor || "",
-    weight: product?.weight || "",
-    flowerCount: product?.flowerCount || "",
     availableCities: product?.availableCities || [],
+    // Generic (non flower/non cake) pricing — used only when the selected
+    // category is neither of those two.
+    price: product?.price ? String(product.price) : "",
+    salePrice: product?.salePrice ? String(product.salePrice) : "",
+    discount: product?.discount !== undefined ? String(product.discount) : "0",
+    tax: product?.tax !== undefined ? String(product.tax) : "0",
+    shippingCost: product?.shippingCost !== undefined ? String(product.shippingCost) : "0",
   });
+
+  // Multiple weight variants (Cakes) — each with its own price/sale price/
+  // discount/tax/shipping. Nothing here is auto-calculated; whatever the
+  // admin types in is exactly what gets saved and used.
+  const [weightOptions, setWeightOptions] = useState<VariantRow[]>(
+    product?.weightOptions?.length
+      ? product.weightOptions.map((w: any) => ({
+          label: w.weight || "",
+          price: w.price !== undefined ? String(w.price) : "",
+          salePrice: w.salePrice !== undefined && w.salePrice !== null ? String(w.salePrice) : "",
+          discount: w.discount !== undefined ? String(w.discount) : "0",
+          tax: w.tax !== undefined ? String(w.tax) : "0",
+          shippingCost: w.shippingCost !== undefined ? String(w.shippingCost) : "0",
+        }))
+      : []
+  );
+
+  // Multiple flower-count variants (Flowers) — same idea, own price set
+  // per count (10, 20, 25, 30, 50 ... whatever the admin adds).
+  const [flowerCountOptions, setFlowerCountOptions] = useState<VariantRow[]>(
+    product?.flowerCountOptions?.length
+      ? product.flowerCountOptions.map((f: any) => ({
+          label: f.flowerCount || "",
+          price: f.price !== undefined ? String(f.price) : "",
+          salePrice: f.salePrice !== undefined && f.salePrice !== null ? String(f.salePrice) : "",
+          discount: f.discount !== undefined ? String(f.discount) : "0",
+          tax: f.tax !== undefined ? String(f.tax) : "0",
+          shippingCost: f.shippingCost !== undefined ? String(f.shippingCost) : "0",
+        }))
+      : []
+  );
+
+  const selectedCategory = categories.find((c: any) => c._id === form.category);
+  const categoryName = (selectedCategory?.name || "").toLowerCase();
+  const isCakeCategory = categoryName.includes("cake");
+  const isFlowerCategory = categoryName.includes("flower");
+  const isGenericCategory = !isCakeCategory && !isFlowerCategory;
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, isMain: boolean = false) => {
     if (!event.target.files?.[0]) return;
@@ -75,18 +132,126 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     }
   };
 
+  // ── Variant row helpers (shared shape for weight & flower-count lists) ──
+  const addVariantRow = (setter: React.Dispatch<React.SetStateAction<VariantRow[]>>, label = "") => {
+    setter((current) => [...current, emptyVariantRow(label)]);
+  };
+
+  const updateVariantRow = (
+    setter: React.Dispatch<React.SetStateAction<VariantRow[]>>,
+    index: number,
+    field: keyof VariantRow,
+    value: string
+  ) => {
+    setter((current) => {
+      const next = [...current];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const removeVariantRow = (setter: React.Dispatch<React.SetStateAction<VariantRow[]>>, index: number) => {
+    setter((current) => current.filter((_, i) => i !== index));
+  };
+
+  const addPreset = (
+    setter: React.Dispatch<React.SetStateAction<VariantRow[]>>,
+    rows: VariantRow[],
+    preset: string
+  ) => {
+    if (rows.some((r) => r.label === preset)) return; // don't add the same option twice
+    setter((current) => [...current, emptyVariantRow(preset)]);
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const cleanedWeightOptions = weightOptions
+      .filter((v) => v.label.trim() && v.price !== "")
+      .map((v) => ({
+        weight: v.label.trim(),
+        price: Number(v.price) || 0,
+        salePrice: v.salePrice !== "" ? Number(v.salePrice) : undefined,
+        discount: Number(v.discount) || 0,
+        tax: Number(v.tax) || 0,
+        shippingCost: Number(v.shippingCost) || 0,
+      }));
+
+    const cleanedFlowerCountOptions = flowerCountOptions
+      .filter((v) => v.label.trim() && v.price !== "")
+      .map((v) => ({
+        flowerCount: v.label.trim(),
+        price: Number(v.price) || 0,
+        salePrice: v.salePrice !== "" ? Number(v.salePrice) : undefined,
+        discount: Number(v.discount) || 0,
+        tax: Number(v.tax) || 0,
+        shippingCost: Number(v.shippingCost) || 0,
+      }));
+
+    if (isCakeCategory && cleanedWeightOptions.length === 0) {
+      showToast("Add at least one weight variant with a price", "error");
+      return;
+    }
+    if (isFlowerCategory && cleanedFlowerCountOptions.length === 0) {
+      showToast("Add at least one flower-count variant with a price", "error");
+      return;
+    }
+    if (isGenericCategory && !form.price) {
+      showToast("List Price is required", "error");
+      return;
+    }
+
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        price: Number(form.price) || 0,
-        salePrice: form.salePrice ? Number(form.salePrice) : undefined,
-        shippingCost: form.shippingCost ? Number(form.shippingCost) : 0,
-        discount: form.discount ? Number(form.discount) : 0,
-        tax: form.tax ? Number(form.tax) : 0,
+      // Root-level price fields stay in sync with the cheapest variant so
+      // listing/search pages (which show a single "from ₹X") keep working —
+      // but the actual cart/checkout price always comes from the specific
+      // variant the buyer picks.
+      let rootPrice = Number(form.price) || 0;
+      let rootSalePrice: number | undefined = form.salePrice ? Number(form.salePrice) : undefined;
+      let rootDiscount = Number(form.discount) || 0;
+      let rootTax = Number(form.tax) || 0;
+      let rootShippingCost = Number(form.shippingCost) || 0;
+
+      if (isCakeCategory) {
+        const cheapest = [...cleanedWeightOptions].sort(
+          (a, b) => (a.salePrice ?? a.price) - (b.salePrice ?? b.price)
+        )[0];
+        rootPrice = cheapest.price;
+        rootSalePrice = cheapest.salePrice;
+        rootDiscount = cheapest.discount;
+        rootTax = cheapest.tax;
+        rootShippingCost = cheapest.shippingCost;
+      } else if (isFlowerCategory) {
+        const cheapest = [...cleanedFlowerCountOptions].sort(
+          (a, b) => (a.salePrice ?? a.price) - (b.salePrice ?? b.price)
+        )[0];
+        rootPrice = cheapest.price;
+        rootSalePrice = cheapest.salePrice;
+        rootDiscount = cheapest.discount;
+        rootTax = cheapest.tax;
+        rootShippingCost = cheapest.shippingCost;
+      }
+
+      const payload: any = {
+        name: form.name,
+        description: form.description,
+        image: form.image,
+        images: form.images,
+        category: form.category,
         isCodAvailable: form.isCodAvailable,
+        hasEgglessOption: isCakeCategory ? form.hasEgglessOption : false,
+        flavor: isCakeCategory ? (form.flavor || undefined) : undefined,
+        deliveryTime: form.deliveryTime,
+        expectedDeliveryDate: form.expectedDeliveryDate,
+        availableCities: form.availableCities,
+        price: rootPrice,
+        salePrice: rootSalePrice,
+        discount: rootDiscount,
+        tax: rootTax,
+        shippingCost: rootShippingCost,
+        weightOptions: isCakeCategory ? cleanedWeightOptions : [],
+        flowerCountOptions: isFlowerCategory ? cleanedFlowerCountOptions : [],
       };
 
       if (product?._id) {
@@ -104,7 +269,82 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     }
   };
 
-
+  // Renders one editable variant row (weight or flower-count) — the row's
+  // own price/salePrice/discount/tax/shippingCost, fully independent of
+  // every other row.
+  const renderVariantRow = (
+    row: VariantRow,
+    index: number,
+    setter: React.Dispatch<React.SetStateAction<VariantRow[]>>,
+    labelPlaceholder: string
+  ) => (
+    <div key={index} className="rounded-xl border border-border-theme p-4 mb-3 bg-hover-theme/20">
+      <div className="flex items-center justify-between mb-3">
+        <input
+          value={row.label}
+          onChange={(e) => updateVariantRow(setter, index, "label", e.target.value)}
+          placeholder={labelPlaceholder}
+          className="w-1/2 rounded-lg border border-border-theme bg-background px-3 py-2 text-sm font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+        />
+        <button
+          type="button"
+          onClick={() => removeVariantRow(setter, index)}
+          className="text-red-400 hover:text-red-600 transition"
+        >
+          <Trash2 size={18} />
+        </button>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div>
+          <label className="block text-xs font-bold text-slate-500 mb-1">List Price (₹)</label>
+          <input
+            value={row.price}
+            onChange={(e) => updateVariantRow(setter, index, "price", e.target.value)}
+            type="number"
+            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            placeholder="e.g. 999"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 mb-1">Sale Price (₹)</label>
+          <input
+            value={row.salePrice}
+            onChange={(e) => updateVariantRow(setter, index, "salePrice", e.target.value)}
+            type="number"
+            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            placeholder="e.g. 799"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 mb-1">Discount (%)</label>
+          <input
+            value={row.discount}
+            onChange={(e) => updateVariantRow(setter, index, "discount", e.target.value)}
+            type="number"
+            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 mb-1">Tax (%)</label>
+          <input
+            value={row.tax}
+            onChange={(e) => updateVariantRow(setter, index, "tax", e.target.value)}
+            type="number"
+            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-slate-500 mb-1">Shipping (₹)</label>
+          <input
+            value={row.shippingCost}
+            onChange={(e) => updateVariantRow(setter, index, "shippingCost", e.target.value)}
+            type="number"
+            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <section className="bg-card rounded-[1.2rem] border border-border-theme shadow-1xl mx-auto overflow-hidden animate-in zoom-in-95 duration-200 w-full flex flex-col">
@@ -151,20 +391,29 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 required
               >
                 <option value="">Select Category</option>
-                {categories.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+                {categories.map((c: any) => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
+              <p className="text-xs text-slate-400 mt-1">
+                {isCakeCategory && "Cake fields (weight variants, flavor, eggless) will show below."}
+                {isFlowerCategory && "Flower fields (flower-count variants) will show below."}
+                {isGenericCategory && form.category && "Simple single-price form will show below."}
+              </p>
             </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-500 mb-2">Cake Flavor (Optional)</label>
-              <select
-                value={form.flavor}
-                onChange={(e) => setForm({ ...form, flavor: e.target.value })}
-                className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="">Select Flavor</option>
-                {flavors.map((f: any) => <option key={f._id} value={f._id}>{f.name}</option>)}
-              </select>
-            </div>
+
+            {isCakeCategory && (
+              <div>
+                <label className="block text-sm font-bold text-slate-500 mb-2">Cake Flavor (Optional)</label>
+                <select
+                  value={form.flavor}
+                  onChange={(e) => setForm({ ...form, flavor: e.target.value })}
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">Select Flavor</option>
+                  {flavors.map((f: any) => <option key={f._id} value={f._id}>{f.name}</option>)}
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-bold text-slate-500 mb-2">
                 Available Cities <span className="font-normal text-slate-400">(leave empty = available everywhere)</span>
@@ -201,72 +450,145 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Weight (for Cakes)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 500g, 1kg"
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  value={form.weight}
-                  onChange={(e) => setForm({ ...form, weight: e.target.value })}
-                />
+
+            {/* ── Category-specific pricing ── */}
+            {isCakeCategory && (
+              <div className="border-t border-border-theme pt-4 mt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-md font-bold text-foreground">Weight Variants (Cakes)</h3>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {WEIGHT_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => addPreset(setWeightOptions, weightOptions, preset)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold border border-dashed border-primary text-primary hover:bg-primary/10 transition"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+
+                {weightOptions.length === 0 && (
+                  <p className="text-xs text-slate-400 italic mb-3">No weight variants yet — click a preset above or "Add Weight" below.</p>
+                )}
+                {weightOptions.map((row, idx) => renderVariantRow(row, idx, setWeightOptions, "e.g. 500g, 1kg"))}
+
+                <button
+                  type="button"
+                  onClick={() => addVariantRow(setWeightOptions)}
+                  className="flex items-center gap-2 text-sm font-bold text-primary hover:opacity-80 transition"
+                >
+                  <Plus size={16} /> Add Weight Variant
+                </button>
+
+                <div className="flex items-center gap-3 mt-6">
+                  <input
+                    type="checkbox"
+                    id="hasEgglessOption"
+                    checked={form.hasEgglessOption}
+                    onChange={(e) => setForm({ ...form, hasEgglessOption: e.target.checked })}
+                    className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
+                  />
+                  <label htmlFor="hasEgglessOption" className="text-sm font-bold text-slate-700">Has Eggless Option</label>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Flower Count (Bouquet)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 10 Roses, 24 Lilies"
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  value={form.flowerCount}
-                  onChange={(e) => setForm({ ...form, flowerCount: e.target.value })}
-                />
+            )}
+
+            {isFlowerCategory && (
+              <div className="border-t border-border-theme pt-4 mt-4">
+                <h3 className="text-md font-bold text-foreground mb-3">Flower Count Variants</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {FLOWER_COUNT_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => addPreset(setFlowerCountOptions, flowerCountOptions, preset)}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold border border-dashed border-primary text-primary hover:bg-primary/10 transition"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+
+                {flowerCountOptions.length === 0 && (
+                  <p className="text-xs text-slate-400 italic mb-3">No flower-count variants yet — click a preset above or "Add Flower Count" below.</p>
+                )}
+                {flowerCountOptions.map((row, idx) => renderVariantRow(row, idx, setFlowerCountOptions, "e.g. 10 Roses, 20 Roses"))}
+
+                <button
+                  type="button"
+                  onClick={() => addVariantRow(setFlowerCountOptions)}
+                  className="flex items-center gap-2 text-sm font-bold text-primary hover:opacity-80 transition"
+                >
+                  <Plus size={16} /> Add Flower Count Variant
+                </button>
               </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">List Price (MRP ₹)</label>
-                <input
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  type="number"
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 999"
-                  required
-                />
+            )}
+
+            {isGenericCategory && (
+              <div className="border-t border-border-theme pt-4 mt-4">
+                <h3 className="text-md font-bold text-foreground mb-4">Pricing</h3>
+                <div className="grid gap-4 sm:grid-cols-2 mb-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 mb-2">List Price (MRP ₹)</label>
+                    <input
+                      value={form.price}
+                      onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 999"
+                      required={isGenericCategory}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 mb-2">Sale Price (Offer ₹)</label>
+                    <input
+                      value={form.salePrice}
+                      onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 799"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 mb-2">Discount (%)</label>
+                    <input
+                      value={form.discount}
+                      onChange={(e) => setForm({ ...form, discount: e.target.value })}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 10"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 mb-2">Tax (%)</label>
+                    <input
+                      value={form.tax}
+                      onChange={(e) => setForm({ ...form, tax: e.target.value })}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 18"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-500 mb-2">Shipping Cost (₹)</label>
+                    <input
+                      value={form.shippingCost}
+                      onChange={(e) => setForm({ ...form, shippingCost: e.target.value })}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 50"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Sale Price (Offer ₹)</label>
-                <input
-                  value={form.salePrice}
-                  onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
-                  type="number"
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 799"
-                  required
-                />
-              </div>
-            </div>
+            )}
 
-            <div className="border-t border-border-theme pt-4 mt-4">
-              <h3 className="text-md font-bold text-foreground mb-4">Product Variations</h3>
-
-              <div className="flex items-center gap-3 mb-6">
-                <input
-                  type="checkbox"
-                  id="hasEgglessOption"
-                  checked={form.hasEgglessOption}
-                  onChange={(e) => setForm({ ...form, hasEgglessOption: e.target.checked })}
-                  className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
-                />
-                <label htmlFor="hasEgglessOption" className="text-sm font-bold text-slate-700">Has Eggless Option (Cakes)</label>
-              </div>
-
-
-
-            </div>
-
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 border-t border-border-theme pt-4">
               <input
                 type="checkbox"
                 id="isCodAvailable"
@@ -307,7 +629,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-bold text-slate-700 uppercase tracking-tighter mb-2">Gallery Images (Optional)</label>
+              <label className="block text-sm font-bold text-slate-700 uppercase tracking-tighter mb-2">Gallery Images (Optional, multiple)</label>
               <div className="flex flex-wrap gap-4">
                 {form.images.map((img: any, i: any) => (
                   <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-border-theme group">
@@ -328,39 +650,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3 border-t border-border-theme pt-6">
-              <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Shipping Cost (₹)</label>
-                <input
-                  value={form.shippingCost}
-                  onChange={(e) => setForm({ ...form, shippingCost: e.target.value })}
-                  type="number"
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Discount (%)</label>
-                <input
-                  value={form.discount}
-                  onChange={(e) => setForm({ ...form, discount: e.target.value })}
-                  type="number"
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 10"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Tax (%)</label>
-                <input
-                  value={form.tax}
-                  onChange={(e) => setForm({ ...form, tax: e.target.value })}
-                  type="number"
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="e.g. 18"
-                />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4 sm:grid-cols-2 border-t border-border-theme pt-6">
               <div>
                 <label className="block text-sm font-bold text-slate-500 mb-2">Delivery Time (Hours)</label>
                 <input

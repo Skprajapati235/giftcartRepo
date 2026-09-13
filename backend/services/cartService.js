@@ -1,6 +1,6 @@
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
-const { calculateItemPricing, calculateCartTotals } = require("../utils/priceCalculator");
+const { calculateItemPricing, calculateCartTotals, resolveVariantPricing } = require("../utils/priceCalculator");
 
 function buildVariantKey({ productId, weight, flowerCount, flavor, isEggless }) {
   return [
@@ -29,12 +29,12 @@ async function serializeCart(cartDoc) {
 
   const items = validItems.map((item) => {
     const product = item.product;
+    const variantPricing = resolveVariantPricing(product, {
+      weight: item.weight,
+      flowerCount: item.flowerCount,
+    });
     const pricing = calculateItemPricing({
-      price: product.price,
-      salePrice: product.salePrice,
-      discount: product.discount,
-      tax: product.tax,
-      shippingCost: product.shippingCost,
+      ...variantPricing,
       quantity: item.quantity,
     });
 
@@ -59,6 +59,8 @@ async function serializeCart(cartDoc) {
       discount: pricing.discount,
       tax: pricing.tax,
       shippingCost: pricing.shippingCost,
+      discountAmount: pricing.discountAmount,
+      taxAmount: pricing.taxAmount,
       unitFinalPrice: pricing.unitFinalPrice,
       itemTotal: pricing.itemTotal,
     };
@@ -168,12 +170,12 @@ exports.getGuestQuote = async (rawItems = []) => {
     const product = await Product.findById(productId);
     if (!product) continue; // deleted/unavailable product silently dropped
 
+    const variantPricing = resolveVariantPricing(product, {
+      weight: rawItem.weight,
+      flowerCount: rawItem.flowerCount,
+    });
     const pricing = calculateItemPricing({
-      price: product.price,
-      salePrice: product.salePrice,
-      discount: product.discount,
-      tax: product.tax,
-      shippingCost: product.shippingCost,
+      ...variantPricing,
       quantity: rawItem.quantity,
     });
 
@@ -203,6 +205,8 @@ exports.getGuestQuote = async (rawItems = []) => {
       discount: pricing.discount,
       tax: pricing.tax,
       shippingCost: pricing.shippingCost,
+      discountAmount: pricing.discountAmount,
+      taxAmount: pricing.taxAmount,
       unitFinalPrice: pricing.unitFinalPrice,
       itemTotal: pricing.itemTotal,
     });

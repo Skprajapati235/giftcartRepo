@@ -3,6 +3,7 @@ const Coupon = require("../models/Coupon");
 const Order = require("../models/Order");
 const orderService = require("../services/orderService");
 const paymentService = require("../services/paymentService");
+const { calculateItemPricing } = require("../utils/priceCalculator");
 
 function normalizeCouponCode(couponCode) {
   if (!couponCode) return "";
@@ -18,15 +19,20 @@ exports.createOrder = async (req, res) => {
     const couponCode = normalizeCouponCode(rawCouponCode);
     const userId = req.user.id;
 
+    // Same formula/rounding used everywhere else (cart, checkout, order
+    // saving) — quantity only multiplies the price, tax/discount/shipping
+    // are flat per line, so the coupon's "minOrderAmount" check and the
+    // Razorpay amount always match what the user actually gets charged.
     const sampleTotal = items.reduce((sum, item) => {
-      const quantity = Number(item.quantity || 1);
-      const salePrice = item.salePrice !== undefined && item.salePrice !== null ? Number(item.salePrice) : Number(item.price || 0);
-      const discount = Number(item.discount || 0);
-      const tax = Number(item.tax || 0);
-      const shippingCost = Number(item.shippingCost || 0);
-      const discountedPrice = salePrice * (1 - discount / 100);
-      const taxedPrice = discountedPrice * (1 + tax / 100);
-      return sum + (taxedPrice + shippingCost) * quantity;
+      const pricing = calculateItemPricing({
+        price: item.price,
+        salePrice: item.salePrice,
+        discount: item.discount,
+        tax: item.tax,
+        shippingCost: item.shippingCost,
+        quantity: item.quantity,
+      });
+      return sum + pricing.itemTotal;
     }, 0);
 
     let totalAfterCoupon = sampleTotal;

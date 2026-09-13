@@ -122,6 +122,8 @@ export const createProduct = async (payload: {
   flavor?: string;
   weight?: string;
   flowerCount?: string;
+  weightOptions?: Array<{ weight: string; price: number; salePrice?: number; discount?: number; tax?: number; shippingCost?: number }>;
+  flowerCountOptions?: Array<{ flowerCount: string; price: number; salePrice?: number; discount?: number; tax?: number; shippingCost?: number }>;
 }) => {
   const response = await authApi(getAuthToken()).post("/product", payload);
   return response.data;
@@ -147,6 +149,8 @@ export const updateProduct = async (
     flavor?: string;
     weight?: string;
     flowerCount?: string;
+    weightOptions?: Array<{ weight: string; price: number; salePrice?: number; discount?: number; tax?: number; shippingCost?: number }>;
+    flowerCountOptions?: Array<{ flowerCount: string; price: number; salePrice?: number; discount?: number; tax?: number; shippingCost?: number }>;
   }
 ) => {
   const response = await authApi(getAuthToken()).put(`/product/${id}`, payload);

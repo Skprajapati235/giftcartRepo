@@ -35,13 +35,15 @@ export default function CartScreen({ navigation }) {
   const selectedItems = cart.filter((item) => selectedKeys.includes(getKey(item)));
 
   // Pure aggregation of numbers the backend already calculated per line —
-  // nothing about price/tax/discount is recomputed here.
+  // nothing about price/tax/discount is recomputed here. Discount, tax and
+  // shipping are flat per line (NOT multiplied by quantity) — only the
+  // price itself scales with quantity, matching how the backend prices it.
   const selectedTotals = selectedItems.reduce(
     (acc, item) => ({
-      subTotal: acc.subTotal + Number(item.price || 0) * Number(item.quantity || 0),
-      totalDiscount: acc.totalDiscount + Math.max(0, (Number(item.price || 0) - Number(item.salePrice ?? item.price ?? 0)) * Number(item.quantity || 0)),
-      totalTax: acc.totalTax + (Number(item.itemTotal || 0) - Number(item.salePrice ?? item.price ?? 0) * Number(item.quantity || 0) - Number(item.shippingCost || 0) * Number(item.quantity || 0)),
-      totalShipping: acc.totalShipping + Number(item.shippingCost || 0) * Number(item.quantity || 0),
+      subTotal: acc.subTotal + Number(item.salePrice ?? item.price ?? 0) * Number(item.quantity || 0),
+      totalDiscount: acc.totalDiscount + Number(item.discountAmount || 0),
+      totalTax: acc.totalTax + Number(item.taxAmount || 0),
+      totalShipping: acc.totalShipping + Number(item.shippingCost || 0),
       grandTotal: acc.grandTotal + Number(item.itemTotal || 0),
       totalQuantity: acc.totalQuantity + Number(item.quantity || 0),
     }),
