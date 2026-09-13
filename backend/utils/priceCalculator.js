@@ -38,7 +38,7 @@ function calculateItemPricing({ price, salePrice, discount, tax, shippingCost, q
   const priceAfterDiscount = effectiveSalePrice - discountAmount;
   const taxAmount = round2(priceAfterDiscount * (taxPct / 100));
 
-  // Only the price itself scales with quantity.
+  // Only the price itself scales with quantities.
   const priceForQuantity = round2(effectiveSalePrice * qty);
 
   const itemTotal = round2(priceForQuantity - discountAmount + taxAmount + shipping);
