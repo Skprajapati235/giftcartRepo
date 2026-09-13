@@ -115,6 +115,7 @@ app.use("/api/admin/users", adminMiddleware, require("./routes/userRoutes"));
 app.use("/api/coupons", require("./routes/couponRoutes"));
 app.use("/api/flavor", require("./routes/flavorRoutes"));
 app.use("/api/website", require("./routes/werbsiteContactRoutes"));
+app.use("/api/cart", require("./routes/cartRoutes"));
 
 // AI Chat endpoint for Admin Panel
 const PYTHON_AI_URL = process.env.PYTHON_AI_URL || "http://localhost:8001";

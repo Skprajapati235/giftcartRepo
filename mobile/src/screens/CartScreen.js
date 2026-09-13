@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,95 +6,66 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useToast } from '../context/ToastContext';
+import { useCart } from '../context/CartContext';
 import { SafeScreen, ScreenHeader, StickyBottomBar } from '../components/layout';
 
 export default function CartScreen({ navigation }) {
-  const { showToast } = useToast();
-  const [cartItems, setCartItems] = useState([]);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [total, setTotal] = useState(0);
+  const { cart, cartLoading, removeFromCart, updateQuantity, refreshCart } = useCart();
+  const [selectedKeys, setSelectedKeys] = useState([]);
 
-  const getId = (item) => item.cartItemId || item._id;
+  const getKey = (item) => item.variantKey || item._id;
 
-  const loadCart = async () => {
-    try {
-      const raw = await AsyncStorage.getItem('@giftcart_cart');
-      const items = raw ? JSON.parse(raw) : [];
-      setCartItems(items);
-      // Default select all on load
-      const ids = items.map(i => getId(i));
-      setSelectedItems(ids);
-      calculateTotal(items, ids);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const calculateTotal = (items, selectedIds) => {
-    const sum = items
-      .filter(item => selectedIds.includes(getId(item)))
-      .reduce((acc, item) => {
-        const qty = Number(item.quantity || 1);
-        const sp = Number(item.salePrice !== undefined && item.salePrice !== null ? item.salePrice : item.price || 0);
-        return acc + (sp * qty);
-      }, 0);
-    setTotal(sum);
-  };
-
-  const toggleSelection = (id) => {
-    let next;
-    if (selectedItems.includes(id)) {
-      next = selectedItems.filter(i => i !== id);
-    } else {
-      next = [...selectedItems, id];
-    }
-    setSelectedItems(next);
-    calculateTotal(cartItems, next);
-  };
+  // Refresh from the backend every time this screen comes into focus, and
+  // default-select every line so "Checkout Now" works the way it used to.
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', refreshCart);
+    return unsubscribe;
+  }, [navigation, refreshCart]);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', loadCart);
-    return unsubscribe;
-  }, [navigation]);
+    setSelectedKeys(cart.map(getKey));
+  }, [cart.length]);
 
-  const removeItem = async (id) => {
-    try {
-      const nextItems = cartItems.filter(item => getId(item) !== id);
-      const nextSelected = selectedItems.filter(i => i !== id);
-      await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(nextItems));
-      setCartItems(nextItems);
-      setSelectedItems(nextSelected);
-      calculateTotal(nextItems, nextSelected);
-      showToast('Item removed from cart', 'success');
-    } catch (err) {
-      showToast('Could not remove item', 'error');
-    }
+  const toggleSelection = (key) => {
+    setSelectedKeys((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
+  const selectedItems = cart.filter((item) => selectedKeys.includes(getKey(item)));
+
+  // Pure aggregation of numbers the backend already calculated per line —
+  // nothing about price/tax/discount is recomputed here.
+  const selectedTotals = selectedItems.reduce(
+    (acc, item) => ({
+      subTotal: acc.subTotal + Number(item.price || 0) * Number(item.quantity || 0),
+      totalDiscount: acc.totalDiscount + Math.max(0, (Number(item.price || 0) - Number(item.salePrice ?? item.price ?? 0)) * Number(item.quantity || 0)),
+      totalTax: acc.totalTax + (Number(item.itemTotal || 0) - Number(item.salePrice ?? item.price ?? 0) * Number(item.quantity || 0) - Number(item.shippingCost || 0) * Number(item.quantity || 0)),
+      totalShipping: acc.totalShipping + Number(item.shippingCost || 0) * Number(item.quantity || 0),
+      grandTotal: acc.grandTotal + Number(item.itemTotal || 0),
+      totalQuantity: acc.totalQuantity + Number(item.quantity || 0),
+    }),
+    { subTotal: 0, totalDiscount: 0, totalTax: 0, totalShipping: 0, grandTotal: 0, totalQuantity: 0 }
+  );
+
   const handleCheckout = () => {
-    const itemsToOrder = cartItems.filter(item => selectedItems.includes(getId(item)));
-    if (itemsToOrder.length === 0) {
-      showToast('Please select items to checkout', 'warning');
+    if (selectedItems.length === 0) {
       return;
     }
-    navigation.navigate('Checkout', { cartItems: itemsToOrder, total });
+    navigation.navigate('Checkout', { cartItems: selectedItems, totals: selectedTotals });
   };
 
   const renderItem = ({ item }) => {
-    const id = getId(item);
-    const isSelected = selectedItems.includes(id);
-    const salePrice = Number(item.salePrice !== undefined && item.salePrice !== null ? item.salePrice : item.price || 0);
+    const key = getKey(item);
+    const isSelected = selectedKeys.includes(key);
+    const salePrice = Number(item.salePrice ?? item.price ?? 0);
     const mrpPrice = Number(item.price || 0);
     const hasSaving = mrpPrice > salePrice;
     const qty = Number(item.quantity || 1);
+
     return (
       <View style={styles.card}>
-        <TouchableOpacity onPress={() => toggleSelection(id)} style={styles.checkbox}>
+        <TouchableOpacity onPress={() => toggleSelection(key)} style={styles.checkbox}>
           <Ionicons
             name={isSelected ? "checkbox" : "square-outline"}
             size={24}
@@ -117,9 +88,21 @@ export default function CartScreen({ navigation }) {
               </Text>
             </View>
           )}
-          {qty > 1 && <Text style={styles.qtyText}>Qty: {qty}</Text>}
+
+          {/* Quantity stepper — every tap calls the backend, which
+              recalculates itemTotal and the cart totals. */}
+          <View style={styles.qtyRow}>
+            <TouchableOpacity style={styles.qtyBtn} onPress={() => updateQuantity(item, qty - 1)}>
+              <Feather name="minus" size={14} color="#741343" />
+            </TouchableOpacity>
+            <Text style={styles.qtyText}>{qty}</Text>
+            <TouchableOpacity style={styles.qtyBtn} onPress={() => updateQuantity(item, qty + 1)}>
+              <Feather name="plus" size={14} color="#741343" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.lineTotal}>Item total: ₹{item.itemTotal}</Text>
         </View>
-        <TouchableOpacity onPress={() => removeItem(id)} style={styles.removeBtn}>
+        <TouchableOpacity onPress={() => removeFromCart(item)} style={styles.removeBtn}>
           <Feather name="trash-2" size={20} color="#FF6A3D" />
         </TouchableOpacity>
       </View>
@@ -131,27 +114,31 @@ export default function CartScreen({ navigation }) {
       <ScreenHeader title="My Cart" onBack={() => navigation.goBack()} border />
 
       <FlatList
-        data={cartItems}
-        keyExtractor={item => getId(item)}
+        data={cart}
+        keyExtractor={getKey}
         renderItem={renderItem}
+        refreshing={cartLoading}
+        onRefresh={refreshCart}
         style={styles.listFlex}
         contentContainerStyle={styles.list}
         ListEmptyComponent={() => (
-          <View style={styles.empty}>
-            <Feather name="shopping-cart" size={60} color="#DDD" />
-            <Text style={styles.emptyText}>Your cart is empty</Text>
-            <TouchableOpacity style={styles.shopBtn} onPress={() => navigation.navigate('Home')}>
-              <Text style={styles.shopText}>Shop Now</Text>
-            </TouchableOpacity>
-          </View>
+          !cartLoading && (
+            <View style={styles.empty}>
+              <Feather name="shopping-cart" size={60} color="#DDD" />
+              <Text style={styles.emptyText}>Your cart is empty</Text>
+              <TouchableOpacity style={styles.shopBtn} onPress={() => navigation.navigate('Home')}>
+                <Text style={styles.shopText}>Shop Now</Text>
+              </TouchableOpacity>
+            </View>
+          )
         )}
       />
 
-      {cartItems.length > 0 && (
+      {cart.length > 0 && (
         <StickyBottomBar>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total Amount:</Text>
-            <Text style={styles.totalVal}>₹{total.toFixed(0)}</Text>
+            <Text style={styles.totalVal}>₹{selectedTotals.grandTotal.toFixed(0)}</Text>
           </View>
           <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
             <Text style={styles.checkoutText}>Checkout Now</Text>
@@ -173,7 +160,10 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '600', color: '#333' },
   price: { fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginTop: 5 },
   mrpText: { fontSize: 13, color: '#CBD5E1', textDecorationLine: 'line-through', fontWeight: '600' },
-  qtyText: { fontSize: 12, color: '#888', fontWeight: '600', marginTop: 2 },
+  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
+  qtyBtn: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: '#ead6c5', alignItems: 'center', justifyContent: 'center' },
+  qtyText: { fontSize: 14, fontWeight: '700', color: '#333', minWidth: 18, textAlign: 'center' },
+  lineTotal: { fontSize: 12, color: '#741343', fontWeight: '700', marginTop: 6 },
   removeBtn: { padding: 10, justifyContent: 'center' },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
   totalLabel: { fontSize: 18, fontWeight: '600', color: '#555' },

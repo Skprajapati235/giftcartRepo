@@ -12,7 +12,7 @@ interface AddEditProductProps {
 }
 
 export default function AddEditProduct({ product, onClose }: AddEditProductProps) {
-  const { categories, flavors, createProduct, updateProduct } = useAdmin();
+  const { categories, flavors, cities, createProduct, updateProduct } = useAdmin();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -36,6 +36,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     flavor: product?.flavor?._id || product?.flavor || "",
     weight: product?.weight || "",
     flowerCount: product?.flowerCount || "",
+    availableCities: product?.availableCities || [],
   });
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, isMain: boolean = false) => {
@@ -109,7 +110,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     <section className="bg-card rounded-[1.2rem] border border-border-theme shadow-1xl mx-auto overflow-hidden animate-in zoom-in-95 duration-200 w-full flex flex-col">
       <div className="p-6 border-b border-border-theme flex justify-between items-center bg-hover-theme/50 flex-shrink-0">
         <h2 className="text-lg font-bold text-foreground">
-          {product ? "Edit Product" : "Add New Product"}
+          {product?._id ? "Edit Product" : "Add New Product"}
         </h2>
         <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
           <X size={20} />
@@ -163,6 +164,42 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 <option value="">Select Flavor</option>
                 {flavors.map((f: any) => <option key={f._id} value={f._id}>{f.name}</option>)}
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-500 mb-2">
+                Available Cities <span className="font-normal text-slate-400">(leave empty = available everywhere)</span>
+              </label>
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
+                {cities.length === 0 && (
+                  <span className="text-xs text-slate-400 italic">No cities added yet — add some from the Cities section.</span>
+                )}
+                {cities.flatMap((entry: any) =>
+                  (entry.cities || []).map((cityName: string) => {
+                    const active = form.availableCities.includes(cityName);
+                    return (
+                      <button
+                        key={`${entry._id}-${cityName}`}
+                        type="button"
+                        onClick={() =>
+                          setForm((current) => ({
+                            ...current,
+                            availableCities: active
+                              ? current.availableCities.filter((c: string) => c !== cityName)
+                              : [...current.availableCities, cityName],
+                          }))
+                        }
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                          active
+                            ? "bg-primary text-white border-primary"
+                            : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
+                        }`}
+                      >
+                        {cityName}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

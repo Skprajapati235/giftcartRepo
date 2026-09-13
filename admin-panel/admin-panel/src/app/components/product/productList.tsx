@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { Search, LayoutGrid, List, MoreHorizontal, Trash2, Edit3, Box, Eye } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton, CardGridSkeleton } from "../skeletonLoader/commonSkeleton";
-import CategoryDropdown from "./categoryDropdown";
 import {
   adminTableWrapClass,
   adminTableWideClass,
@@ -74,11 +73,6 @@ export default function ProductList({
               className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-hover-theme text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
-
-          <CategoryDropdown
-            selectedCategory={selectedCategory}
-            onCategoryChange={onCategoryChange}
-          />
         </div>
 
         <div className="flex items-center gap-2">

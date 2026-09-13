@@ -6,7 +6,7 @@ import { SafeScreen } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
 import { isValidEmail } from '../utils/authValidation';
 
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen({ navigation, route }) {
   const { signIn } = useContext(AuthContext);
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
@@ -23,6 +23,15 @@ export default function LoginScreen({ navigation }) {
     setLoading(true);
     try {
       await signIn(email.trim(), password);
+      // Browsing as a guest never required login — this screen is only
+      // reached when the person tried to do something that does
+      // (checkout, profile, ...), or opened it directly from the tab bar.
+      const redirectTo = route?.params?.redirectTo;
+      if (redirectTo) {
+        navigation.replace(redirectTo, route?.params?.redirectParams);
+      } else {
+        navigation.goBack();
+      }
     } catch {
       // handled in AuthContext
     } finally {

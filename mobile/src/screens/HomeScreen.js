@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { Feather, Ionicons, FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRoute, useFocusEffect } from '@react-navigation/native';
 import categoryService from '../services/categoryService';
@@ -44,6 +45,7 @@ export default function HomeScreen({ navigation }) {
   const productCardWidth = Math.floor((screenWidth - GRID_H_PADDING * 2 - GRID_GAP) / 2);
   const route = useRoute();
   const { signOut, user, updateUser } = useContext(AuthContext);
+  const { cart, addToCart: addToCartContext } = useCart();
   const { showToast } = useToast();
 
   const [categories, setCategories] = useState([]);
@@ -54,10 +56,30 @@ export default function HomeScreen({ navigation }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
-  const [showLocationModal, setShowLocationModal] = useState(!user?.state || !user?.city);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const userLocation = user?.state && user?.city ? `${user.state}, ${user.city}` : 'Set your location';
   const { tabBarHeight } = useLayoutInsets();
+
+  // Ask for a delivery location the moment the app opens, for every
+  // visitor — logged in (profile has no state/city yet) or guest (nothing
+  // saved on this device yet). Never waits on login.
+  useEffect(() => {
+    const checkLocation = async () => {
+      if (user) {
+        setShowLocationModal(!user?.state || !user?.city);
+        return;
+      }
+      try {
+        const raw = await AsyncStorage.getItem('@giftcart_guest_location');
+        setShowLocationModal(!raw);
+      } catch {
+        setShowLocationModal(true);
+      }
+    };
+    checkLocation();
+  }, [user?.state, user?.city]);
+
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -98,17 +120,12 @@ export default function HomeScreen({ navigation }) {
     }
   }, [route.params?.categoryId]);
 
-  // Reload cart count every time screen is focused (e.g. after checkout)
+  // Cart count now comes straight from the backend-driven CartContext —
+  // no more reading/parsing AsyncStorage by hand.
   useFocusEffect(
     useCallback(() => {
-      const syncCartCount = async () => {
-        try {
-          const raw = await AsyncStorage.getItem('@giftcart_cart');
-          setCartCount(raw ? JSON.parse(raw).length : 0);
-        } catch (e) { }
-      };
-      syncCartCount();
-    }, [])
+      setCartCount(cart.length);
+    }, [cart.length])
   );
 
   const loadData = useCallback(async (isInitial = true) => {
@@ -121,7 +138,7 @@ export default function HomeScreen({ navigation }) {
     try {
       const currentPage = isInitial ? 1 : page;
 
-      const [categoriesData, prodResp, couponsData, cartRes] = await Promise.all([
+      const [categoriesData, prodResp, couponsData] = await Promise.all([
         categoryService.getCategories({ limit: 50 }).catch(() => ({ data: [] })),
         productService.getProducts({
           page: currentPage,
@@ -130,7 +147,6 @@ export default function HomeScreen({ navigation }) {
           category: selectedCategory === 'all' ? null : selectedCategory
         }),
         couponService.getActiveCoupons({ limit: 20 }).catch(() => ({ data: [] })),
-        AsyncStorage.getItem('@giftcart_cart'),
       ]);
 
       const newProducts = prodResp.data || [];
@@ -138,7 +154,6 @@ export default function HomeScreen({ navigation }) {
         setProducts(newProducts);
         setCategories(categoriesData?.data || []);
         setActiveCoupons(couponsData?.data || []);
-        setCartCount(cartRes ? JSON.parse(cartRes).length : 0);
         setPage(2);
       } else {
         setProducts(prev => [...prev, ...newProducts]);
@@ -171,30 +186,21 @@ export default function HomeScreen({ navigation }) {
   };
 
   const addToCart = async (product) => {
-    try {
-      const raw = await AsyncStorage.getItem('@giftcart_cart');
-      const items = raw ? JSON.parse(raw) : [];
-      if (items.some(i => i._id === product._id)) {
-        showToast('Product already in cart.', 'info');
-        return;
-      }
-      const next = [...items, product];
-      await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(next));
-      setCartCount(next.length);
-      showToast('Product added to cart!', 'success');
-    } catch (err) {
-      showToast('Could not add to cart.', 'error');
-    }
+    await addToCartContext(product);
   };
 
   const handleLocationSelect = async (state, city) => {
     setLocationLoading(true);
     try {
-      const updatedUser = await userService.updateProfile({
-        state,
-        city,
-      });
-      await updateUser(updatedUser);
+      if (user) {
+        const updatedUser = await userService.updateProfile({ state, city });
+        await updateUser(updatedUser);
+      } else {
+        // Guest: no account to save to yet — keep it on this device so the
+        // popup doesn't ask again, and it gets folded into the profile
+        // automatically once they do log in (see AuthContext.saveSession).
+        await AsyncStorage.setItem('@giftcart_guest_location', JSON.stringify({ state, city }));
+      }
       setShowLocationModal(false);
       showToast('Location saved successfully!', 'success');
     } catch (error) {

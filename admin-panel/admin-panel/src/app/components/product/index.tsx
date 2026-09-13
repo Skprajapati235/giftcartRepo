@@ -5,29 +5,33 @@ import { Plus } from "lucide-react";
 import ProductList from "./productList";
 import AddEditProduct from "./addeditProduct";
 import ProductDetailDialogue from "./productDetailDialogue";
+import CategoryTabs from "./categoryTabs";
 import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
 
 export default function ProductView() {
-  const { 
-    data: products, 
-    loading, 
-    error, 
-    total, 
-    totalPages, 
-    params, 
-    onPageChange, 
-    onSearchChange, 
+  const {
+    data: products,
+    loading,
+    error,
+    total,
+    totalPages,
+    params,
+    onPageChange,
+    onSearchChange,
     onCategoryChange,
-    refresh 
+    refresh
   } = useResource<any>(service.getProducts, "products");
 
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [viewingProduct, setViewingProduct] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
 
+  // "Add Product" always creates the product inside whichever category tab
+  // is currently open (Cake tab -> new product starts as a Cake, etc.)
+  // instead of one shared form with no category context.
   const openForm = () => {
-    setEditingProduct(null);
+    setEditingProduct(params.category ? { category: params.category } : null);
     setShowForm(true);
   };
 
@@ -53,7 +57,7 @@ export default function ProductView() {
 
   return (
     <>
-      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-foreground sm:text-2xl">Products</h1>
         {!showForm && (
           <button
@@ -65,6 +69,12 @@ export default function ProductView() {
           </button>
         )}
       </div>
+
+      {!showForm && (
+        <div className="mb-6">
+          <CategoryTabs activeCategory={params.category} onChange={onCategoryChange} />
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-3xl bg-rose-50 p-6 text-rose-700 font-bold border border-rose-200">

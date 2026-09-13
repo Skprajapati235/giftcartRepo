@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Alert, Dim
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { getProductReviews, deleteReview, likeReview, dislikeReview } from '../services/reviewService';
 import { toggleWishlist, getWishlist } from '../services/wishlistService';
 import { useToast } from '../context/ToastContext';
@@ -28,6 +29,7 @@ function buildEggCartItemId(productId, hasEggOption, isEggless) {
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params;
   const { user } = useContext(AuthContext);
+  const { cart, addToCart: addToCartContext } = useCart();
   const { showToast } = useToast();
   const [added, setAdded] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -67,26 +69,17 @@ export default function ProductDetailScreen({ route, navigation }) {
   const footerBarHeight = 88 + stickyFooterPadding;
 
   useEffect(() => {
-    const checkCart = async () => {
-      try {
-        const raw = await AsyncStorage.getItem('@giftcart_cart');
-        const cart = raw ? JSON.parse(raw) : [];
-        const cartItemId = buildEggCartItemId(product._id, hasEgglessOption, isEggless);
-        setAdded(
-          cart.some(
-            (item) =>
-              item.cartItemId === cartItemId ||
-              (!hasEgglessOption && item._id === product._id && !item.cartItemId)
-          )
-        );
-      } catch (err) { }
-    };
-    checkCart();
+    // "Already in cart" check now reads the backend-driven cart from
+    // CartContext instead of parsing AsyncStorage by hand.
+    const inCart = cart.some(
+      (item) => item.product === product._id && Boolean(item.isEggless) === Boolean(hasEgglessOption && isEggless)
+    );
+    setAdded(inCart);
     fetchReviews();
     if (user) {
       checkWishlistStatus();
     }
-  }, [product, user, isEggless, hasEgglessOption]);
+  }, [product, user, isEggless, hasEgglessOption, cart]);
 
   const checkWishlistStatus = async () => {
     try {
@@ -127,32 +120,19 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   const addToCart = async () => {
-    try {
-      const raw = await AsyncStorage.getItem('@giftcart_cart');
-      const cart = raw ? JSON.parse(raw) : [];
-
-      const cartItemId = buildEggCartItemId(product._id, hasEgglessOption, isEggless);
-
-      if (cart.some((i) => i.cartItemId === cartItemId)) {
-        navigation.navigate('Cart');
-        return;
-      }
-
-      const cartItem = {
-        ...product,
-        cartItemId,
-        quantity,
-        price: unitMRP,
-        salePrice: unitSalePrice,
-        discount: 0,
-        isEggless: hasEgglessOption ? isEggless : false,
-      };
-
-      cart.push(cartItem);
-      await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(cart));
-      setAdded(true);
-      showToast('Added to cart', 'success');
-    } catch (err) { showToast('Could not add to cart.', 'error'); }
+    if (added) {
+      navigation.navigate('Cart');
+      return;
+    }
+    // Price is never sent from here — the backend looks up the product
+    // itself and computes price/discount/tax/shipping/itemTotal fresh.
+    // We only tell it which product, how many, and which variant.
+    await addToCartContext(product, quantity, {
+      isEggless: hasEgglessOption ? isEggless : false,
+      weight: product?.weight,
+      flowerCount: product?.flowerCount,
+    });
+    setAdded(true);
   };
 
   const handleScroll = (event) => {

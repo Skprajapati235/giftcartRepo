@@ -14,6 +14,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import orderService from '../services/orderService';
 import couponService from '../services/couponService';
 import * as Location from 'expo-location';
@@ -23,8 +24,12 @@ import { SafeScreen, ScreenHeader, StickyBottomBar } from '../components/layout'
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
 
 export default function CheckoutScreen({ navigation, route }) {
-  const { cartItems, total } = route.params;
+  // cartItems + totals come straight from the backend cart (see
+  // CartScreen) — nothing here recalculates price, tax, shipping or
+  // discount, it only reads what the backend already computed.
+  const { cartItems, totals: cartTotals } = route.params;
   const { user } = useContext(AuthContext);
+  const { removeFromCart } = useCart();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
@@ -137,30 +142,13 @@ export default function CheckoutScreen({ navigation, route }) {
     }
   }, [allItemsCodAvailable, paymentMethod]);
 
-  const orderSummary = cartItems.reduce(
-    (summary, item) => {
-      const quantity = Number(item.quantity || 1);
-      const mrp = Number(item.price || 0);                          // original MRP
-      const salePrice = Number(
-        item.salePrice !== undefined && item.salePrice !== null
-          ? item.salePrice
-          : item.price || 0
-      );                                                             // actual offer price
-      const tax = Number(item.tax || 0);                            // product tax %
-      const shippingCost = Number(item.shippingCost || 0);          // shipping per item
-      const taxAmount = salePrice * (tax / 100);                    // tax on sale price
-      const itemTotal = (salePrice + taxAmount + shippingCost) * quantity;
-
-      return {
-        subtotal: summary.subtotal + mrp * quantity,       // show full MRP sum
-        savingsTotal: summary.savingsTotal + (mrp - salePrice) * quantity, // savings from MRP
-        taxTotal: summary.taxTotal + taxAmount * quantity,
-        shippingTotal: summary.shippingTotal + shippingCost * quantity,
-        grandTotal: summary.grandTotal + itemTotal,
-      };
-    },
-    { subtotal: 0, savingsTotal: 0, taxTotal: 0, shippingTotal: 0, grandTotal: 0 }
-  );
+  const orderSummary = {
+    subtotal: cartTotals.subTotal,
+    savingsTotal: cartTotals.totalDiscount,
+    taxTotal: cartTotals.totalTax,
+    shippingTotal: cartTotals.totalShipping,
+    grandTotal: cartTotals.grandTotal,
+  };
 
   const displayTotal = Number(orderSummary.grandTotal.toFixed(2));
   const finalTotal = Number((displayTotal - couponDiscount).toFixed(2));
@@ -212,7 +200,28 @@ export default function CheckoutScreen({ navigation, route }) {
     setLoading(true);
     try {
       const orderData = {
-        items: cartItems,
+        // Backend recalculates price/discount/tax/shipping/itemTotal from
+        // live product data (see orderService.createOrder on the
+        // backend) — this is just which product+variant+quantity was
+        // ordered, so the charged amount always matches what the cart
+        // already showed.
+        items: cartItems.map((item) => ({
+          _id: item.product,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          salePrice: item.salePrice ?? item.price,
+          tax: item.tax || 0,
+          shippingCost: item.shippingCost || 0,
+          discount: item.discount || 0,
+          isCodAvailable: item.isCodAvailable,
+          isEggless: item.isEggless || false,
+          deliveryTime: item.deliveryTime,
+          expectedDeliveryDate: item.expectedDeliveryDate,
+          flavor: item.flavor,
+          weight: item.weight,
+          flowerCount: item.flowerCount,
+        })),
         totalAmount: finalTotal,
         shippingAddress: finalShippingInfo,
         paymentMethod,
@@ -224,11 +233,7 @@ export default function CheckoutScreen({ navigation, route }) {
 
       if (paymentMethod === 'COD') {
         // For COD, directly mark as success
-        const raw = await AsyncStorage.getItem('@giftcart_cart');
-        const cart = raw ? JSON.parse(raw) : [];
-        const orderedIds = cartItems.map(i => i._id);
-        const nextCart = cart.filter(i => !orderedIds.includes(i._id));
-        await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(nextCart));
+        await Promise.all(cartItems.map((item) => removeFromCart(item)));
 
         showToast('Order placed successfully with COD!', 'success');
         setTimeout(() => navigation.navigate('Home'), 1500);
@@ -281,11 +286,7 @@ export default function CheckoutScreen({ navigation, route }) {
           razorpay_signature: data.razorpay_signature,
         });
 
-        const raw = await AsyncStorage.getItem('@giftcart_cart');
-        const cart = raw ? JSON.parse(raw) : [];
-        const orderedIds = cartItems.map(i => i._id);
-        const nextCart = cart.filter(i => !orderedIds.includes(i._id));
-        await AsyncStorage.setItem('@giftcart_cart', JSON.stringify(nextCart));
+        await Promise.all(cartItems.map((item) => removeFromCart(item)));
 
         showToast('Order placed successfully!', 'success');
         setTimeout(() => navigation.navigate('Home'), 1500);
@@ -594,18 +595,17 @@ export default function CheckoutScreen({ navigation, route }) {
             {cartItems.map((item, idx) => {
               const quantity = Number(item.quantity || 1);
               const mrp = Number(item.price || 0);
-              const salePrice = Number(
-                item.salePrice !== undefined && item.salePrice !== null
-                  ? item.salePrice : item.price || 0
-              );
+              const salePrice = Number(item.salePrice ?? item.price ?? 0);
               const tax = Number(item.tax || 0);
               const shippingCost = Number(item.shippingCost || 0);
+              // Every number below (including itemTotal) came straight
+              // from the backend cart response — nothing recomputed here.
               const taxAmount = Number((salePrice * (tax / 100)).toFixed(2));
-              const itemTotal = Number(((salePrice + taxAmount + shippingCost) * quantity).toFixed(2));
+              const itemTotal = item.itemTotal;
               const hasSaving = mrp > salePrice;
 
               return (
-                <View key={item._id + idx} style={styles.orderItem}>
+                <View key={item.variantKey || item._id || idx} style={styles.orderItem}>
                   <View style={styles.orderItemLeft}>
                     <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
                     <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', marginTop: 2, marginBottom: 4, flexWrap: 'wrap' }}>

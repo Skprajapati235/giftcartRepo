@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthContext } from '../context/AuthContext';
+import withAuthGuard from './withAuthGuard';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
@@ -24,8 +25,20 @@ import DeveloperScreen from '../screens/DeveloperScreen';
 
 const Stack = createNativeStackNavigator();
 
+// Screens that need a logged-in user. Everything not in this list is
+// browsable as a guest — Home, product pages, categories, offers, cart.
+const ProtectedCheckout = withAuthGuard(CheckoutScreen, 'Checkout');
+const ProtectedProfile = withAuthGuard(ProfileScreen, 'Profile');
+const ProtectedEditProfile = withAuthGuard(UserEditProfileScreen, 'EditProfile');
+const ProtectedWishlist = withAuthGuard(WishlistScreen, 'Wishlist');
+const ProtectedMyOrders = withAuthGuard(MyOrdersScreen, 'MyOrders');
+const ProtectedOrderDetail = withAuthGuard(OrderDetailScreen, 'OrderDetail');
+const ProtectedAddReview = withAuthGuard(AddReviewScreen, 'AddReview');
+const ProtectedSavedAddresses = withAuthGuard(SavedAddressesScreen, 'SavedAddresses');
+const ProtectedManagePayments = withAuthGuard(ManagePaymentsScreen, 'ManagePayments');
+
 export default function AppNavigator() {
-  const { user, loading } = useContext(AuthContext);
+  const { loading } = useContext(AuthContext);
 
   if (loading) {
     return (
@@ -35,41 +48,40 @@ export default function AppNavigator() {
     );
   }
 
+  // One single stack for everyone — logged in or not. Login is only
+  // required at the moment someone opens a protected screen (see
+  // withAuthGuard), never just to look around the app.
   return (
     <Stack.Navigator
-      initialRouteName={user ? 'Home' : 'Login'}
+      initialRouteName="Home"
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: '#FAFAFA' },
       }}
     >
-      {!user ? (
-        <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
-          <Stack.Screen name="Offers" component={OffersScreen} />
-          <Stack.Screen name="Cart" component={CartScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
-          <Stack.Screen name="EditProfile" component={UserEditProfileScreen} />
-          <Stack.Screen name="Wishlist" component={WishlistScreen} />
-          <Stack.Screen name="Collections" component={CollectionsScreen} />
-          <Stack.Screen name="Checkout" component={CheckoutScreen} />
-          <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
-          <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
-          <Stack.Screen name="AddReview" component={AddReviewScreen} />
-          <Stack.Screen name="Developer" component={DeveloperScreen} />
-          <Stack.Screen name="SavedAddresses" component={SavedAddressesScreen} />
-          <Stack.Screen name="ManagePayments" component={ManagePaymentsScreen} />
-          <Stack.Screen name="TermsPolicy" component={TermsPolicyScreen} />
-        </>
-      )}
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+      <Stack.Screen name="Offers" component={OffersScreen} />
+      <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="Collections" component={CollectionsScreen} />
+      <Stack.Screen name="TermsPolicy" component={TermsPolicyScreen} />
+      <Stack.Screen name="Developer" component={DeveloperScreen} />
+
+      {/* Guest-only entry points */}
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+
+      {/* Login required */}
+      <Stack.Screen name="Checkout" component={ProtectedCheckout} />
+      <Stack.Screen name="Profile" component={ProtectedProfile} />
+      <Stack.Screen name="EditProfile" component={ProtectedEditProfile} />
+      <Stack.Screen name="Wishlist" component={ProtectedWishlist} />
+      <Stack.Screen name="MyOrders" component={ProtectedMyOrders} />
+      <Stack.Screen name="OrderDetail" component={ProtectedOrderDetail} />
+      <Stack.Screen name="AddReview" component={ProtectedAddReview} />
+      <Stack.Screen name="SavedAddresses" component={ProtectedSavedAddresses} />
+      <Stack.Screen name="ManagePayments" component={ProtectedManagePayments} />
     </Stack.Navigator>
   );
 }
-

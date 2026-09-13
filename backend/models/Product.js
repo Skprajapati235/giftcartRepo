@@ -28,7 +28,14 @@ const productSchema = new mongoose.Schema({
     ref: "Flavor"
   },
   weight: { type: String }, // e.g., "500g", "1kg"
-  flowerCount: { type: String } // e.g., "10 Roses", "24 Lilies"
+  flowerCount: { type: String }, // e.g., "10 Roses", "24 Lilies"
+  // Product schema ke andar, existing fields ke sath (before closing }):
+  // weight: { type: String }, // e.g., "500g", "1kg"
+  flowerCount: { type: String }, // e.g., "10 Roses", "24 Lilies"
+  // Which cities this product can be delivered to. Empty/undefined array
+  // means "available everywhere" so existing products keep working exactly
+  // as before this field was added — nothing becomes invisible by default.
+  availableCities: [{ type: String }]
 }, { timestamps: true });
 
 module.exports = mongoose.model("Product", productSchema);
