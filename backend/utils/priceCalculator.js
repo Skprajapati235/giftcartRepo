@@ -28,17 +28,21 @@ function round2(value) {
 function calculateItemPricing({ price, salePrice, discount, tax, shippingCost, quantity }) {
   const qty = Math.max(1, Number(quantity || 1));
   const basePrice = Number(price || 0);
-  const effectiveSalePrice =
-    salePrice !== undefined && salePrice !== null && salePrice !== ""
-      ? Number(salePrice)
-      : basePrice;
   const discountPct = Number(discount || 0);
   const taxPct = Number(tax || 0);
   const shipping = round2(Number(shippingCost || 0));
 
+  // The salePrice field represents the post-discount price (List Price - Discount Amount).
+  // If salePrice is explicitly provided, we trust it as the post-discount price.
+  // Otherwise, we calculate it from basePrice and discountPct.
+  const calcSalePrice = basePrice - (basePrice * (discountPct / 100));
+  const effectiveSalePrice = salePrice !== undefined && salePrice !== null && salePrice !== "" 
+      ? Number(salePrice) 
+      : calcSalePrice;
+
   // Per-unit figures first...
-  const unitDiscountAmount = basePrice * (discountPct / 100);
-  const unitPriceAfterDiscount = effectiveSalePrice - unitDiscountAmount;
+  const unitDiscountAmount = basePrice - effectiveSalePrice;
+  const unitPriceAfterDiscount = effectiveSalePrice;
   const unitTaxAmount = unitPriceAfterDiscount * (taxPct / 100);
 
   // ...then scaled by quantity, same as the price itself.

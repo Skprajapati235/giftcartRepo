@@ -135,7 +135,13 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
 
   // ── Variant row helpers (shared shape for weight & flower-count lists) ──
   const addVariantRow = (setter: React.Dispatch<React.SetStateAction<VariantRow[]>>, label = "") => {
-    setter((current) => [...current, emptyVariantRow(label)]);
+    setter((current) => {
+      if (current.length > 0) {
+        const first = current[0];
+        return [...current, { ...first, label }];
+      }
+      return [...current, emptyVariantRow(label)];
+    });
   };
 
   const updateVariantRow = (
@@ -147,6 +153,17 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     setter((current) => {
       const next = [...current];
       next[index] = { ...next[index], [field]: value };
+      
+      // Auto-calculate salePrice if pricing fields change
+      if (["price", "discount"].includes(field)) {
+        const row = next[index];
+        const p = Number(row.price) || 0;
+        const d = Number(row.discount) || 0;
+        const discAmt = p * (d / 100);
+        const sale = Math.round(p - discAmt);
+        next[index].salePrice = String(sale);
+      }
+      
       return next;
     });
   };
@@ -161,7 +178,23 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     preset: string
   ) => {
     if (rows.some((r) => r.label === preset)) return; // don't add the same option twice
-    setter((current) => [...current, emptyVariantRow(preset)]);
+    addVariantRow(setter, preset);
+  };
+
+  const handleGenericPricingChange = (field: string, value: string) => {
+    setForm(current => {
+      const next = { ...current, [field]: value };
+      
+      if (["price", "discount"].includes(field)) {
+        const p = Number(next.price) || 0;
+        const d = Number(next.discount) || 0;
+        const discAmt = p * (d / 100);
+        const sale = Math.round(p - discAmt);
+        next.salePrice = String(sale);
+      }
+      
+      return next;
+    });
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -572,7 +605,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                     <label className="block text-sm font-bold text-slate-500 mb-2">List Price (MRP ₹)</label>
                     <input
                       value={form.price}
-                      onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      onChange={(e) => handleGenericPricingChange("price", e.target.value)}
                       type="number"
                       className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
                       placeholder="e.g. 999"
@@ -595,7 +628,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                     <label className="block text-sm font-bold text-slate-500 mb-2">Discount (%)</label>
                     <input
                       value={form.discount}
-                      onChange={(e) => setForm({ ...form, discount: e.target.value })}
+                      onChange={(e) => handleGenericPricingChange("discount", e.target.value)}
                       type="number"
                       className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
                       placeholder="e.g. 10"
@@ -605,7 +638,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                     <label className="block text-sm font-bold text-slate-500 mb-2">Tax (%)</label>
                     <input
                       value={form.tax}
-                      onChange={(e) => setForm({ ...form, tax: e.target.value })}
+                      onChange={(e) => handleGenericPricingChange("tax", e.target.value)}
                       type="number"
                       className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
                       placeholder="e.g. 18"
@@ -615,7 +648,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                     <label className="block text-sm font-bold text-slate-500 mb-2">Shipping Cost (₹)</label>
                     <input
                       value={form.shippingCost}
-                      onChange={(e) => setForm({ ...form, shippingCost: e.target.value })}
+                      onChange={(e) => handleGenericPricingChange("shippingCost", e.target.value)}
                       type="number"
                       className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
                       placeholder="e.g. 50"
