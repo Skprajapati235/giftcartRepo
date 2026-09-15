@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getAllOrders, updateOrderStatus as updateOrderStatusApi } from "../../services/adminService";
+import { getAllOrders, updateOrderStatus as updateOrderStatusApi, deleteOrder as deleteOrderApi } from "../../services/adminService";
 import { useResource } from "../../hooks/useResource";
 import OrderList from "./orderList";
+import ConfirmDialog from "../ui/ConfirmDialog";
 
 interface OrderItem {
   product: string;
@@ -42,6 +43,9 @@ export default function OrdersView() {
     refresh
   } = useResource<Order>(getAllOrders, "orders");
 
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const updateStatus = async (orderId: string, newStatus: string) => {
     try {
       await updateOrderStatusApi(orderId, newStatus);
@@ -49,6 +53,24 @@ export default function OrdersView() {
     } catch (error) {
       alert("Failed to update status");
     }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      await deleteOrderApi(deleteId);
+      refresh();
+      setDeleteId(null);
+    } catch (error) {
+      alert("Failed to delete order");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
   };
 
   return (
@@ -66,6 +88,16 @@ export default function OrdersView() {
         onPageChange={onPageChange}
         onSearchChange={onSearchChange}
         onUpdateStatus={updateStatus}
+        onDelete={handleDelete}
+      />
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        title="Delete Order"
+        message="Are you sure you want to delete this order? This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        isLoading={isDeleting}
       />
     </>
   );

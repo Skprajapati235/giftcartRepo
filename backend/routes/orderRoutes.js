@@ -7,6 +7,7 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 router.post("/create", authMiddleware, controller.createOrder);
 router.post("/verify", authMiddleware, controller.verifyPayment);
 router.get("/user", authMiddleware, controller.getUserOrders);
+router.delete("/user/:id", authMiddleware, controller.deleteUserOrder);
 
 // Public customer tracking (token-based)
 router.get("/public/:token", controller.getPublicOrderByToken);

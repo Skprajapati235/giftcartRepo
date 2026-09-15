@@ -60,10 +60,12 @@ export default function CartScreen({ navigation }) {
   const renderItem = ({ item }) => {
     const key = getKey(item);
     const isSelected = selectedKeys.includes(key);
-    const salePrice = Number(item.salePrice ?? item.price ?? 0);
-    const mrpPrice = Number(item.price || 0);
-    const hasSaving = mrpPrice > salePrice;
+    const baseSalePrice = Number(item.salePrice ?? item.price ?? 0);
     const qty = Number(item.quantity || 1);
+    const unitDiscount = Number(item.discountAmount || 0) / qty;
+    const finalSalePrice = Math.max(0, baseSalePrice - unitDiscount);
+    const mrpPrice = Number(item.price || 0);
+    const hasSaving = mrpPrice > finalSalePrice;
 
     return (
       <View style={styles.card}>
@@ -78,7 +80,7 @@ export default function CartScreen({ navigation }) {
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 }}>
-            <Text style={styles.price}>₹{salePrice}</Text>
+            <Text style={styles.price}>₹{finalSalePrice}</Text>
             {hasSaving && (
               <Text style={styles.mrpText}>₹{mrpPrice}</Text>
             )}

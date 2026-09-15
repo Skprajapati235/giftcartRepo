@@ -37,7 +37,7 @@ function calculateItemPricing({ price, salePrice, discount, tax, shippingCost, q
   const shipping = round2(Number(shippingCost || 0));
 
   // Per-unit figures first...
-  const unitDiscountAmount = effectiveSalePrice * (discountPct / 100);
+  const unitDiscountAmount = basePrice * (discountPct / 100);
   const unitPriceAfterDiscount = effectiveSalePrice - unitDiscountAmount;
   const unitTaxAmount = unitPriceAfterDiscount * (taxPct / 100);
 

@@ -28,7 +28,8 @@ async function sendOtp(mobileNumber) {
   const apiKey = getApiKey();
   const phone = toE164Local(mobileNumber);
 
-  const url = `${BASE_URL}/${apiKey}/SMS/${phone}/AUTOGEN`;
+  // Request SMS using the default OTP1 template
+  const url = `${BASE_URL}/${apiKey}/SMS/${phone}/AUTOGEN/OTP1`;
   const { data } = await axios.get(url, { timeout: 15000 });
 
   if (!data || data.Status !== "Success" || !data.Details) {

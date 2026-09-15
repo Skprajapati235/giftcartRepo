@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Admin = require("../models/Admin");
+const Order = require("../models/Order");
 
 exports.getUsers = async ({ page = 1, limit = 10, search = "" } = {}) => {
   const skip = (page - 1) * limit;
@@ -14,7 +15,12 @@ exports.getUsers = async ({ page = 1, limit = 10, search = "" } = {}) => {
     .select("name email city state mobileNumber profilePic createdAt")
     .sort({ createdAt: -1 })
     .skip(skip)
-    .limit(limit);
+    .limit(limit)
+    .lean();
+
+  for (let user of users) {
+    user.ordersCount = await Order.countDocuments({ user: user._id });
+  }
 
   const total = await User.countDocuments(query);
 

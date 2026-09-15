@@ -6,6 +6,7 @@ import * as service from "../../services/adminService";
 import UserList from "./userList";
 import UserDetailDialogue from "./userDetailDialogue";
 import UserWishlistDialogue from "./userWishlistDialogue";
+import ConfirmDialog from "../ui/ConfirmDialog";
 
 export default function UsersView() {
   const {
@@ -22,16 +23,25 @@ export default function UsersView() {
 
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedWishlistUser, setSelectedWishlistUser] = useState<any>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this user?")) {
-      try {
-        await service.deleteUser(id);
-        refresh();
-      } catch (err: any) {
-        alert("Failed to delete user");
-      }
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      await service.deleteUser(deleteId);
+      refresh();
+      setDeleteId(null);
+    } catch (err: any) {
+      alert("Failed to delete user");
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
   };
 
   return (
@@ -70,6 +80,16 @@ export default function UsersView() {
           onClose={() => setSelectedWishlistUser(null)}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        title="Delete User"
+        message="Are you sure you want to delete this user? This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        isLoading={isDeleting}
+      />
     </>
   );
 }

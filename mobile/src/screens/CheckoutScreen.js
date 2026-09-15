@@ -595,7 +595,10 @@ export default function CheckoutScreen({ navigation, route }) {
             {cartItems.map((item, idx) => {
               const quantity = Number(item.quantity || 1);
               const mrp = Number(item.price || 0);
-              const salePrice = Number(item.salePrice ?? item.price ?? 0);
+              const baseSalePrice = Number(item.salePrice ?? item.price ?? 0);
+              const qty = Number(item.quantity || 1);
+              const unitDiscount = Number(item.discountAmount || 0) / qty;
+              const salePrice = Math.max(0, baseSalePrice - unitDiscount);
               const tax = Number(item.tax || 0);
               const shippingCost = Number(item.shippingCost || 0);
               // Every number below (including itemTotal) came straight

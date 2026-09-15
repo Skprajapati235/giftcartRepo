@@ -70,15 +70,20 @@ export default function ProductDetailScreen({ route, navigation }) {
   // root pricing. Nothing here is calculated — these numbers come straight
   // from what the admin typed in for that option.
   const unitMRP = activeVariantOption ? Number(activeVariantOption.price || 0) : baseMRP;
-  let unitSalePrice = activeVariantOption
+  const baseSalePrice = activeVariantOption
     ? Number(activeVariantOption.salePrice ?? activeVariantOption.price ?? 0)
     : globalSalePrice;
+  const unitDiscountPct = activeVariantOption ? Number(activeVariantOption.discount || 0) : Number(product.discount || 0);
+
+  const discountAmount = unitMRP * (unitDiscountPct / 100);
+  let unitSalePrice = Math.max(0, baseSalePrice - discountAmount);
 
   if (hasEgglessOption && isEggless) unitSalePrice += EGGLESS_SURCHARGE;
 
   const savingsAmount = unitMRP > unitSalePrice ? unitMRP - unitSalePrice : 0;
   const savingsPercent = unitMRP > 0 && savingsAmount > 0 ? Math.round((savingsAmount / unitMRP) * 100) : 0;
-  const discountPercent = product?.discount || savingsPercent;
+  const displayDiscountPercent = unitDiscountPct > 0 ? unitDiscountPct : savingsPercent;
+  
   const { top, stickyFooterPadding } = useLayoutInsets();
   const footerBarHeight = 88 + stickyFooterPadding;
 
@@ -202,9 +207,9 @@ export default function ProductDetailScreen({ route, navigation }) {
             </View>
           )}
 
-          {discountPercent > 0 && (
+          {displayDiscountPercent > 0 && (
             <View style={styles.offBadge}>
-              <Text style={styles.offText}>{discountPercent}% OFF</Text>
+              <Text style={styles.offText}>{displayDiscountPercent}% OFF</Text>
             </View>
           )}
         </View>
@@ -306,8 +311,8 @@ export default function ProductDetailScreen({ route, navigation }) {
                     >
                       <Text style={[styles.variantChipLabel, isActive && styles.variantChipLabelActive]}>{opt.weight}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{optSalePrice}</Text>
-                        {hasOptDiscount && <Text style={styles.variantChipPriceStrike}>₹{opt.price}</Text>}
+                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{Math.max(0, optSalePrice - (opt.price * ((opt.discount||0) / 100)))}</Text>
+                        {(hasOptDiscount || opt.discount > 0) && <Text style={styles.variantChipPriceStrike}>₹{opt.price}</Text>}
                       </View>
                     </TouchableOpacity>
                   );
@@ -334,8 +339,8 @@ export default function ProductDetailScreen({ route, navigation }) {
                     >
                       <Text style={[styles.variantChipLabel, isActive && styles.variantChipLabelActive]}>{opt.flowerCount}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{optSalePrice}</Text>
-                        {hasOptDiscount && <Text style={styles.variantChipPriceStrike}>₹{opt.price}</Text>}
+                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{Math.max(0, optSalePrice - (opt.price * ((opt.discount||0) / 100)))}</Text>
+                        {(hasOptDiscount || opt.discount > 0) && <Text style={styles.variantChipPriceStrike}>₹{opt.price}</Text>}
                       </View>
                     </TouchableOpacity>
                   );

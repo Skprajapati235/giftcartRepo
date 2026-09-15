@@ -18,6 +18,7 @@ interface OrderListProps {
   onPageChange: (page: number) => void;
   onSearchChange: (search: string) => void;
   onUpdateStatus: (id: string, newStatus: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export default function OrderList({ 
@@ -29,10 +30,16 @@ export default function OrderList({
   searchTerm,
   onPageChange,
   onSearchChange,
-  onUpdateStatus 
+  onUpdateStatus,
+  onDelete
 }: OrderListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   useRowActionMenu(openMenuId, setOpenMenuId);
+
+  const handleDelete = (id: string) => {
+    setOpenMenuId(null);
+    onDelete(id);
+  };
 
   return (
     <div className="bg-card rounded-3xl border border-border-theme shadow-sm overflow-hidden min-h-[600px]">
@@ -187,6 +194,13 @@ export default function OrderList({
                           onClick={() => alert("Printing functionality coming soon!")}
                         >
                           Print Invoice
+                        </button>
+                        <div className="mx-2 my-1 border-t border-slate-100" />
+                        <button
+                          className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 transition"
+                          onClick={() => handleDelete(order._id)}
+                        >
+                          Delete Order
                         </button>
                       </div>
                     )}

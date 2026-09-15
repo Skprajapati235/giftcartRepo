@@ -6,6 +6,7 @@ import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
 import AddEditOccasion from "./addEditOccasion";
 import OccasionList from "./occasionList";
+import ConfirmDialog from "../ui/ConfirmDialog";
 
 export default function OccasionView() {
   const {
@@ -21,6 +22,8 @@ export default function OccasionView() {
 
   const [editingOccasion, setEditingOccasion] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const openForm = () => {
     setEditingOccasion(null);
@@ -38,15 +41,22 @@ export default function OccasionView() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this occasion?")) {
-      try {
-        await service.deleteOccasion(id);
-        refresh();
-      } catch (error) {
-        alert("Failed to delete occasion");
-      }
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      await service.deleteOccasion(deleteId);
+      refresh();
+      setDeleteId(null);
+    } catch (error) {
+      alert("Failed to delete occasion");
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
   };
 
   return (
@@ -80,6 +90,16 @@ export default function OccasionView() {
           onDelete={handleDelete}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        title="Delete Occasion"
+        message="Are you sure you want to delete this occasion? This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        isLoading={isDeleting}
+      />
     </>
   );
 }

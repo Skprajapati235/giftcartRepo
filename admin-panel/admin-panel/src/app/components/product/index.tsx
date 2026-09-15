@@ -6,6 +6,7 @@ import ProductList from "./productList";
 import AddEditProduct from "./addeditProduct";
 import ProductDetailDialogue from "./productDetailDialogue";
 import CategoryTabs from "./categoryTabs";
+import ConfirmDialog from "../ui/ConfirmDialog";
 import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
 
@@ -26,6 +27,8 @@ export default function ProductView() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [viewingProduct, setViewingProduct] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // "Add Product" always creates the product inside whichever category tab
   // is currently open (Cake tab -> new product starts as a Cake, etc.)
@@ -46,13 +49,22 @@ export default function ProductView() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
     try {
-      await service.deleteProduct(id);
+      await service.deleteProduct(deleteId);
       refresh();
+      setDeleteId(null);
     } catch (err: any) {
       alert(err.message || "Failed to delete product");
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
   };
 
   return (
@@ -111,6 +123,16 @@ export default function ProductView() {
       {viewingProduct && (
         <ProductDetailDialogue product={viewingProduct} onClose={() => setViewingProduct(null)} />
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        isLoading={isDeleting}
+      />
     </>
   );
 }

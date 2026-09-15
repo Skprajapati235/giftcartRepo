@@ -181,6 +181,17 @@ exports.getUserOrders = async (req, res) => {
   }
 };
 
+// DELETE /api/order/user/:id
+exports.deleteUserOrder = async (req, res) => {
+  try {
+    await orderService.deleteUserOrder(req.user.id, req.params.id);
+    res.json({ success: true, message: "Order deleted successfully" });
+  } catch (error) {
+    console.error("Delete User Order Error:", error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || "Error deleting order" });
+  }
+};
+
 // GET /api/order/admin/all
 exports.getAllOrders = async (req, res) => {
   try {

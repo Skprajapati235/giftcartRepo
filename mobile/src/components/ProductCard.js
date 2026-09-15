@@ -2,11 +2,24 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 
 export default function ProductCard({ product, onPress, onAddToCart, onBuyNow }) {
+  const basePrice = product.price || 0;
+  const effectiveSalePrice = product.salePrice || basePrice;
+  const discountPct = product.discount || 0;
+  const discountAmount = basePrice * (discountPct / 100);
+  const finalPrice = Math.max(0, effectiveSalePrice - discountAmount);
+  
+  const hasDiscount = discountPct > 0 || basePrice > finalPrice;
+  const displayDiscount = discountPct > 0 ? discountPct : (hasDiscount ? Math.round(((basePrice - finalPrice) / basePrice) * 100) : 0);
 
   return (
     <TouchableOpacity activeOpacity={0.85} style={styles.card} onPress={onPress}>
       <View style={styles.imageWrapper}>
         <Image source={{ uri: product.image }} style={styles.image} resizeMode="cover" />
+        {hasDiscount && displayDiscount > 0 && (
+          <View style={styles.discountBadge}>
+            <Text style={styles.discountText}>{displayDiscount}% OFF</Text>
+          </View>
+        )}
       </View>
       <View style={styles.info}>
         <Text numberOfLines={2} style={styles.name}>{product.name}</Text>
@@ -28,7 +41,14 @@ export default function ProductCard({ product, onPress, onAddToCart, onBuyNow })
             </View>
           )}
         </View>
-        <Text style={styles.price}>₹{product.price?.toFixed(0)}</Text>
+        
+        <View style={styles.priceContainer}>
+          <Text style={styles.price}>₹{finalPrice.toFixed(0)}</Text>
+          {hasDiscount && (
+            <Text style={styles.originalPrice}>₹{basePrice.toFixed(0)}</Text>
+          )}
+        </View>
+        
         <View style={styles.actionsRow}>
           <TouchableOpacity style={[styles.actionButton, styles.buyButton]} onPress={onBuyNow}>
             <Text style={styles.actionText}>Buy</Text>
@@ -144,5 +164,31 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: '#ff5ea0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  discountText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 6,
+    marginBottom: 12,
+  },
+  originalPrice: {
+    color: '#666',
+    fontSize: 14,
+    textDecorationLine: 'line-through',
+    fontWeight: '600',
   },
 });

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { getAllReviews, adminReplyReview, adminDeleteReview, updateReviewStatus } from "../../services/reviewService";
 import ReviewList from "./reviewList";
+import ConfirmDialog from "../ui/ConfirmDialog";
 import { useToast } from "../../../context/ToastContext";
 import { useResource } from "../../hooks/useResource";
 
@@ -36,16 +37,26 @@ export default function ReviewsView() {
 
   const { showToast } = useToast();
 
-  const handleDelete = async (reviewId: string) => {
-    if (window.confirm("Are you sure you want to delete this review?")) {
-      try {
-        await adminDeleteReview(reviewId);
-        showToast("Review deleted successfully!", "success");
-        refresh();
-      } catch (error) {
-        showToast("Failed to delete review", "error");
-      }
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      await adminDeleteReview(deleteId);
+      showToast("Review deleted successfully!", "success");
+      refresh();
+      setDeleteId(null);
+    } catch (error) {
+      showToast("Failed to delete review", "error");
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
   };
 
   const handleStatusUpdate = async (reviewId: string, status: string) => {

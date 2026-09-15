@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import CouponList from "./couponList";
 import AddEditCoupon from "./addEditCoupon";
+import ConfirmDialog from "../ui/ConfirmDialog";
 import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/couponService";
 
@@ -21,6 +22,8 @@ export default function CouponView() {
 
   const [editingCoupon, setEditingCoupon] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const openForm = () => {
     setEditingCoupon(null);
@@ -38,14 +41,22 @@ export default function CouponView() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure?")) return;
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
     try {
-      await service.deleteCoupon(id);
+      await service.deleteCoupon(deleteId);
       refresh();
+      setDeleteId(null);
     } catch (err) {
       console.error(err);
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
   };
 
   return (
@@ -79,6 +90,16 @@ export default function CouponView() {
           onDelete={handleDelete}
         />
       )}
+
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        title="Delete Coupon"
+        message="Are you sure you want to delete this coupon? This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        isLoading={isDeleting}
+      />
     </>
   );
 }

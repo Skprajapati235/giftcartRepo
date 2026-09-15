@@ -40,10 +40,8 @@ export default function UserList({
   useRowActionMenu(openMenuId, setOpenMenuId);
 
   const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
-      setOpenMenuId(null);
-      onDelete(id);
-    }
+    setOpenMenuId(null);
+    onDelete(id);
   };
 
   return (
@@ -78,6 +76,7 @@ export default function UserList({
               <tr className="bg-th-bg border-b border-border-theme">
                 <th className={adminTableHeadCellClass}>Customer</th>
                 <th className={adminTableHeadCellClass}>Email Address</th>
+                <th className={adminTableHeadCellClass}>Status</th>
                 <th className={adminTableHeadCellClass}>Location</th>
                 <th className={adminTableHeadCellClass}>Joined</th>
                 <th className={`${adminTableHeadCellClass} text-right`}>Actions</th>
@@ -107,6 +106,19 @@ export default function UserList({
                     <div className="flex items-center gap-2 text-slate-500 text-sm">
                       <Mail size={14} className="text-slate-300" />
                       {user.email}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-2 text-slate-400 text-xs font-bold whitespace-nowrap">
+                      {user.ordersCount > 0 ? (
+                        <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-[10px] uppercase tracking-wider">
+                          Returning ({user.ordersCount})
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-lg text-[10px] uppercase tracking-wider">
+                          New
+                        </span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-5 text-slate-500 text-sm capitalize">

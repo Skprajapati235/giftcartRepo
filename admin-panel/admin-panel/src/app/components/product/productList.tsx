@@ -48,10 +48,8 @@ export default function ProductList({
   useRowActionMenu(openMenuId, setOpenMenuId);
 
   const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this product?")) {
-      setOpenMenuId(null);
-      onDelete(id);
-    }
+    setOpenMenuId(null);
+    onDelete(id);
   };
 
   const handleEditClick = (p: any) => {
@@ -154,7 +152,7 @@ export default function ProductList({
                   </td>
                   <td className="px-6 py-5">
                     <span className="bg-hover-theme text-foreground/80 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap">
-                      ₹{p.salePrice || 0}
+                      ₹{Math.max(0, (p.salePrice ?? p.price ?? 0) - ((p.price || 0) * (p.discount || 0) / 100))}
                     </span>
                   </td>
                   <td className="px-6 py-5">
@@ -226,10 +224,10 @@ export default function ProductList({
 
                 {/* Price Section */}
                 <div className="mt-4 flex items-center gap-2">
-                  {p.salePrice && p.salePrice < p.price ? (
+                  {p.discount > 0 || (p.salePrice && p.salePrice < p.price) ? (
                     <>
                       <span className="text-slate-400 line-through font-bold">₹{p.price}</span>
-                      <span className="text-primary font-extrabold">₹{p.salePrice}</span>
+                      <span className="text-primary font-extrabold">₹{Math.max(0, (p.salePrice ?? p.price ?? 0) - ((p.price || 0) * (p.discount || 0) / 100))}</span>
                     </>
                   ) : (
                     <span className="text-primary font-extrabold">₹{p.price || 0}</span>

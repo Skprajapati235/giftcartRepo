@@ -33,7 +33,7 @@ const WEIGHT_PRESETS = ["500g", "1kg", "1.5kg", "2kg", "3kg"];
 const FLOWER_COUNT_PRESETS = ["10", "20", "25", "30", "50"];
 
 export default function AddEditProduct({ product, onClose }: AddEditProductProps) {
-  const { categories, flavors, cities, createProduct, updateProduct } = useAdmin();
+  const { categories, flavors, cities, occasions, createProduct, updateProduct } = useAdmin();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -57,6 +57,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     discount: product?.discount !== undefined ? String(product.discount) : "0",
     tax: product?.tax !== undefined ? String(product.tax) : "0",
     shippingCost: product?.shippingCost !== undefined ? String(product.shippingCost) : "0",
+    occasions: (product?.occasions || []).map((o: any) => o?._id || o),
   });
 
   // Multiple weight variants (Cakes) — each with its own price/sale price/
@@ -250,6 +251,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
         discount: rootDiscount,
         tax: rootTax,
         shippingCost: rootShippingCost,
+        occasions: form.occasions,
         weightOptions: isCakeCategory ? cleanedWeightOptions : [],
         flowerCountOptions: isFlowerCategory ? cleanedFlowerCountOptions : [],
       };
@@ -448,6 +450,41 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                     );
                   })
                 )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-slate-500 mb-2">
+                Occasions <span className="font-normal text-slate-400">(optional)</span>
+              </label>
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
+                {occasions.length === 0 && (
+                  <span className="text-xs text-slate-400 italic">No occasions added yet.</span>
+                )}
+                {occasions.map((o: any) => {
+                  const active = form.occasions.includes(o._id);
+                  return (
+                    <button
+                      key={o._id}
+                      type="button"
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          occasions: active
+                            ? current.occasions.filter((id: string) => id !== o._id)
+                            : [...current.occasions, o._id],
+                        }))
+                      }
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                        active
+                          ? "bg-primary text-white border-primary"
+                          : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
+                      }`}
+                    >
+                      {o.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

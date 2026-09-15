@@ -616,9 +616,7 @@ exports.updateOrderStatus = async (id, status) => {
   return updated;
 };
 
-// Delete order (admin) — only allowed once the order has reached a final
-// state (Delivered or Cancelled), so an active/in-progress order can never
-// be deleted by mistake.
+// Delete order (admin) — unrestricted, admin can delete at any time
 exports.deleteOrder = async (id) => {
   const order = await Order.findById(id);
   if (!order) {
@@ -626,8 +624,20 @@ exports.deleteOrder = async (id) => {
     error.statusCode = 404;
     throw error;
   }
-  if (!["Delivered", "Cancelled"].includes(order.status)) {
-    const error = new Error("Only Delivered or Cancelled orders can be deleted");
+  await order.deleteOne();
+  return { success: true };
+};
+
+// Delete order (user) — strictly allowed only when Delivered
+exports.deleteUserOrder = async (userId, orderId) => {
+  const order = await Order.findOne({ _id: orderId, user: userId });
+  if (!order) {
+    const error = new Error("Order not found");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (order.status !== "Delivered") {
+    const error = new Error("You can only delete an order after it has been delivered successfully.");
     error.statusCode = 400;
     throw error;
   }

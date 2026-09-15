@@ -59,7 +59,7 @@ export default function ProductDetailDialogue({ product, onClose }: ProductDetai
               <p className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5 mb-2">
                  <IndianRupee size={12} className="text-primary" /> Offer Price
               </p>
-              <p className="text-xl font-extrabold text-primary">₹{product.salePrice || product.price}</p>
+              <p className="text-xl font-extrabold text-primary">₹{Math.max(0, (product.salePrice ?? product.price ?? 0) - ((product.price || 0) * (product.discount || 0) / 100))}</p>
             </div>
           </div>
 
