@@ -142,7 +142,7 @@ export default function UserWishlistDialogue({ user, onClose }: UserWishlistDial
                         {product.category?.name || "Uncategorized"}
                       </p>
                       <div className="flex items-center justify-between mt-auto">
-                        <span className="font-black text-primary">₹{Math.max(0, (product.salePrice ?? product.price ?? 0) - ((product.price || 0) * (product.discount || 0) / 100))}</span>
+                        <span className="font-black text-primary">₹{product.salePrice ?? product.price ?? 0}</span>
                         <span className="text-xs text-slate-400 font-semibold bg-hover-theme px-2 py-1 rounded-lg">
                           Added {new Date(item.createdAt).toLocaleDateString()}
                         </span>

@@ -33,24 +33,29 @@ function calculateItemPricing({ price, salePrice, discount, tax, shippingCost, q
   const shipping = round2(Number(shippingCost || 0));
 
   // The salePrice field represents the post-discount price (List Price - Discount Amount).
-  // If salePrice is explicitly provided, we trust it as the post-discount price.
-  // Otherwise, we calculate it from basePrice and discountPct.
-  const calcSalePrice = basePrice - (basePrice * (discountPct / 100));
-  const effectiveSalePrice = salePrice !== undefined && salePrice !== null && salePrice !== "" 
-      ? Number(salePrice) 
-      : calcSalePrice;
+  // If discount percentage is given (> 0), calculate sale price directly from base price (List Price).
+  // Otherwise, use provided salePrice or fallback to basePrice.
+  let effectiveSalePrice;
+  if (discountPct > 0 && basePrice > 0) {
+    effectiveSalePrice = round2(basePrice - (basePrice * (discountPct / 100)));
+  } else if (salePrice !== undefined && salePrice !== null && salePrice !== "") {
+    effectiveSalePrice = Number(salePrice);
+  } else {
+    effectiveSalePrice = basePrice;
+  }
 
-  // Per-unit figures first...
-  const unitDiscountAmount = basePrice - effectiveSalePrice;
+  // Per-unit figures
+  const unitDiscountAmount = Math.max(0, round2(basePrice - effectiveSalePrice));
   const unitPriceAfterDiscount = effectiveSalePrice;
-  const unitTaxAmount = unitPriceAfterDiscount * (taxPct / 100);
+  const unitTaxAmount = round2(unitPriceAfterDiscount * (taxPct / 100));
 
-  // ...then scaled by quantity, same as the price itself.
+  // Multiplied by quantity
   const discountAmount = round2(unitDiscountAmount * qty);
   const taxAmount = round2(unitTaxAmount * qty);
   const priceForQuantity = round2(effectiveSalePrice * qty);
 
-  const itemTotal = round2(priceForQuantity - discountAmount + taxAmount + shipping);
+  // Total amount: (sale price * quantity) + shipping cost (+ tax if any)
+  const itemTotal = round2(priceForQuantity + taxAmount + shipping);
   // Informational "per unit" figure (what one unit alone would cost, shipping included).
   const unitFinalPrice = round2(unitPriceAfterDiscount + unitTaxAmount + shipping);
 
@@ -71,12 +76,14 @@ function calculateItemPricing({ price, salePrice, discount, tax, shippingCost, q
 // Totals across a whole cart/order. Every item passed in is expected to
 // already carry the fields calculateItemPricing() returns (discountAmount,
 // taxAmount, shippingCost, itemTotal, price, salePrice, quantity) — this
-// function only sums them up, it never re-derives tax/discount/shipping
-// from percentages itself, so it can never re-introduce the
-// scales-with-quantity bug.
+// function only sums them up.
 function calculateCartTotals(items) {
+  // Items subTotal = sum of (salePrice * quantity)
   const subTotal = round2(
     items.reduce((sum, item) => sum + Number(item.salePrice ?? item.price ?? 0) * Number(item.quantity || 0), 0)
+  );
+  const mrpTotal = round2(
+    items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0)
   );
   const totalDiscount = round2(items.reduce((sum, item) => sum + Number(item.discountAmount || 0), 0));
   const totalTax = round2(items.reduce((sum, item) => sum + Number(item.taxAmount || 0), 0));
@@ -84,7 +91,7 @@ function calculateCartTotals(items) {
   const grandTotal = round2(items.reduce((sum, item) => sum + Number(item.itemTotal || 0), 0));
   const totalQuantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
-  return { subTotal, totalDiscount, totalTax, totalShipping, grandTotal, totalQuantity };
+  return { subTotal, mrpTotal, totalDiscount, totalTax, totalShipping, grandTotal, totalQuantity };
 }
 
 // Picks the right price/discount/tax/shipping numbers for a cart/order line:

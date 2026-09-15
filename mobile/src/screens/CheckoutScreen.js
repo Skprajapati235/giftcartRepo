@@ -595,15 +595,12 @@ export default function CheckoutScreen({ navigation, route }) {
             {cartItems.map((item, idx) => {
               const quantity = Number(item.quantity || 1);
               const mrp = Number(item.price || 0);
-              const baseSalePrice = Number(item.salePrice ?? item.price ?? 0);
-              const qty = Number(item.quantity || 1);
-              const unitDiscount = Number(item.discountAmount || 0) / qty;
-              const salePrice = Math.max(0, baseSalePrice - unitDiscount);
+              const salePrice = Number(item.salePrice ?? item.price ?? 0);
               const tax = Number(item.tax || 0);
               const shippingCost = Number(item.shippingCost || 0);
               // Every number below (including itemTotal) came straight
               // from the backend cart response — nothing recomputed here.
-              const taxAmount = Number((salePrice * (tax / 100)).toFixed(2));
+              const taxAmount = Number(item.taxAmount || 0);
               const itemTotal = item.itemTotal;
               const hasSaving = mrp > salePrice;
 
@@ -646,22 +643,18 @@ export default function CheckoutScreen({ navigation, route }) {
             })}
             <View style={styles.divider} />
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>MRP Total</Text>
+              <Text style={styles.summaryLabel}>Items Total</Text>
               <Text style={styles.summaryValue}>₹{orderSummary.subtotal.toFixed(2)}</Text>
             </View>
-            {orderSummary.savingsTotal > 0 && (
+            {orderSummary.taxTotal > 0 && (
               <View style={styles.summaryRow}>
-                <Text style={[styles.summaryLabel, { color: '#16A34A' }]}>Savings (Sale Price)</Text>
-                <Text style={[styles.summaryValue, { color: '#16A34A' }]}>-₹{orderSummary.savingsTotal.toFixed(2)}</Text>
+                <Text style={styles.summaryLabel}>Tax</Text>
+                <Text style={styles.summaryValue}>₹{orderSummary.taxTotal.toFixed(2)}</Text>
               </View>
             )}
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Tax</Text>
-              <Text style={styles.summaryValue}>₹{orderSummary.taxTotal.toFixed(2)}</Text>
-            </View>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Shipping</Text>
-              <Text style={styles.summaryValue}>₹{orderSummary.shippingTotal.toFixed(2)}</Text>
+              <Text style={styles.summaryLabel}>Shipping Cost</Text>
+              <Text style={styles.summaryValue}>{orderSummary.shippingTotal > 0 ? `₹${orderSummary.shippingTotal.toFixed(2)}` : 'FREE'}</Text>
             </View>
             {couponDiscount > 0 && (
               <View style={styles.summaryRow}>
@@ -671,7 +664,7 @@ export default function CheckoutScreen({ navigation, route }) {
             )}
             <View style={styles.divider} />
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Grand Total</Text>
+              <Text style={styles.totalLabel}>Total Amount</Text>
               <Text style={styles.totalPrice}>₹{finalTotal}</Text>
             </View>
           </View>

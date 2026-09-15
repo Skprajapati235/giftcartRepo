@@ -152,7 +152,7 @@ export default function ProductList({
                   </td>
                   <td className="px-6 py-5">
                     <span className="bg-hover-theme text-foreground/80 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap">
-                      ₹{Math.max(0, (p.salePrice ?? p.price ?? 0) - ((p.price || 0) * (p.discount || 0) / 100))}
+                      ₹{p.salePrice ?? p.price ?? 0}
                     </span>
                   </td>
                   <td className="px-6 py-5">
@@ -227,7 +227,7 @@ export default function ProductList({
                   {p.discount > 0 || (p.salePrice && p.salePrice < p.price) ? (
                     <>
                       <span className="text-slate-400 line-through font-bold">₹{p.price}</span>
-                      <span className="text-primary font-extrabold">₹{Math.max(0, (p.salePrice ?? p.price ?? 0) - ((p.price || 0) * (p.discount || 0) / 100))}</span>
+                      <span className="text-primary font-extrabold">₹{p.salePrice ?? p.price ?? 0}</span>
                     </>
                   ) : (
                     <span className="text-primary font-extrabold">₹{p.price || 0}</span>

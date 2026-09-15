@@ -76,7 +76,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   const unitDiscountPct = activeVariantOption ? Number(activeVariantOption.discount || 0) : Number(product.discount || 0);
 
   const discountAmount = unitMRP * (unitDiscountPct / 100);
-  let unitSalePrice = Math.max(0, baseSalePrice - discountAmount);
+  let unitSalePrice = baseSalePrice;
 
   if (hasEgglessOption && isEggless) unitSalePrice += EGGLESS_SURCHARGE;
 
@@ -311,7 +311,7 @@ export default function ProductDetailScreen({ route, navigation }) {
                     >
                       <Text style={[styles.variantChipLabel, isActive && styles.variantChipLabelActive]}>{opt.weight}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{Math.max(0, optSalePrice - (opt.price * ((opt.discount||0) / 100)))}</Text>
+                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{optSalePrice}</Text>
                         {(hasOptDiscount || opt.discount > 0) && <Text style={styles.variantChipPriceStrike}>₹{opt.price}</Text>}
                       </View>
                     </TouchableOpacity>
@@ -339,7 +339,7 @@ export default function ProductDetailScreen({ route, navigation }) {
                     >
                       <Text style={[styles.variantChipLabel, isActive && styles.variantChipLabelActive]}>{opt.flowerCount}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{Math.max(0, optSalePrice - (opt.price * ((opt.discount||0) / 100)))}</Text>
+                        <Text style={[styles.variantChipPrice, isActive && styles.variantChipLabelActive]}>₹{optSalePrice}</Text>
                         {(hasOptDiscount || opt.discount > 0) && <Text style={styles.variantChipPriceStrike}>₹{opt.price}</Text>}
                       </View>
                     </TouchableOpacity>
