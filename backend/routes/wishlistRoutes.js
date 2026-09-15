@@ -13,5 +13,6 @@ router.delete("/:id", authMiddleware, controller.deleteWishlistItem); // Delete
 
 // Admin routes
 router.get("/admin/user/:userId", authMiddleware, adminMiddleware, controller.getAdminUserWishlist);
+router.delete("/admin/:id", authMiddleware, adminMiddleware, controller.deleteAdminWishlistItem);
 
 module.exports = router;

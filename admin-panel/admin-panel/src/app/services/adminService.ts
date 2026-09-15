@@ -219,6 +219,11 @@ export const deleteOrder = async (id: string) => {
   return response.data;
 };
 
+export const deleteMultipleOrders = async (ids: string[]) => {
+  const response = await authApi(getAuthToken()).post(`/order/admin/bulk-delete`, { ids });
+  return response.data;
+};
+
 export const getUnviewedOrders = async () => {
   const response = await authApi(getAuthToken()).get("/order/admin/unviewed");
   return response.data;
@@ -231,6 +236,11 @@ export const markOrderAsViewed = async (id: string) => {
 
 export const getUserWishlist = async (userId: string, params?: { page?: number; limit?: number; filter?: string }) => {
   const response = await authApi(getAuthToken()).get(`/wishlist/admin/user/${userId}`, { params });
+  return response.data;
+};
+
+export const deleteUserWishlist = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/wishlist/admin/${id}`);
   return response.data;
 };
 

@@ -19,6 +19,8 @@ interface OrderListProps {
   onSearchChange: (search: string) => void;
   onUpdateStatus: (id: string, newStatus: string) => void;
   onDelete: (id: string) => void;
+  selectedIds: string[];
+  onSelectChange: (ids: string[]) => void;
 }
 
 export default function OrderList({ 
@@ -31,7 +33,9 @@ export default function OrderList({
   onPageChange,
   onSearchChange,
   onUpdateStatus,
-  onDelete
+  onDelete,
+  selectedIds = [],
+  onSelectChange
 }: OrderListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   useRowActionMenu(openMenuId, setOpenMenuId);
@@ -40,6 +44,24 @@ export default function OrderList({
     setOpenMenuId(null);
     onDelete(id);
   };
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      onSelectChange(orders.map(o => o._id));
+    } else {
+      onSelectChange([]);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    if (selectedIds.includes(id)) {
+      onSelectChange(selectedIds.filter(selectedId => selectedId !== id));
+    } else {
+      onSelectChange([...selectedIds, id]);
+    }
+  };
+
+  const isAllSelected = orders.length > 0 && selectedIds.length === orders.length;
 
   return (
     <div className="bg-card rounded-3xl border border-border-theme shadow-sm overflow-hidden min-h-[600px]">
@@ -67,6 +89,14 @@ export default function OrderList({
           <table className={adminTableWideClass}>
             <thead>
               <tr className="bg-th-bg border-b border-border-theme">
+                <th className={`${adminTableHeadCellClass} w-10 text-center pl-6`}>
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={handleSelectAll}
+                    className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30 cursor-pointer"
+                  />
+                </th>
                 <th className={adminTableHeadCellClass}>Order ID</th>
                 <th className={adminTableHeadCellClass}>Customer</th>
                 <th className={adminTableHeadCellClass}>Total Amount</th>
@@ -79,6 +109,14 @@ export default function OrderList({
             <tbody className="divide-y divide-border-theme">
               {orders.map((order) => (
                 <tr key={order._id} className="hover:bg-hover-theme transition-all duration-300 group border-b border-border-theme/50">
+                  <td className={`${adminTableBodyCellClass} w-10 text-center pl-6`}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(order._id)}
+                      onChange={() => toggleSelect(order._id)}
+                      className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30 cursor-pointer"
+                    />
+                  </td>
                   <td className="px-6 py-5 w-[20%]">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg shrink-0">

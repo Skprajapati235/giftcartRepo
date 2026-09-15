@@ -54,3 +54,12 @@ exports.getAdminUserWishlist = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+exports.deleteAdminWishlistItem = async (req, res) => {
+  try {
+    await service.deleteAdminWishlistItem(req.params.id);
+    res.json({ message: "Wishlist item deleted successfully by admin" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};

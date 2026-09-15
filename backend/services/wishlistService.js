@@ -78,3 +78,9 @@ exports.getAdminUserWishlist = async (userId, page = 1, limit = 10, filter = "")
     totalPages: Math.ceil(total / limit)
   };
 };
+
+exports.deleteAdminWishlistItem = async (id) => {
+  const item = await Wishlist.findByIdAndDelete(id);
+  if (!item) throw new Error("Wishlist item not found");
+  return item;
+};

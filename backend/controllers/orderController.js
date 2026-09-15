@@ -243,6 +243,18 @@ exports.deleteOrder = async (req, res) => {
   }
 };
 
+// POST /api/order/admin/bulk-delete
+exports.deleteMultipleOrders = async (req, res) => {
+  try {
+    const { ids } = req.body;
+    const result = await orderService.deleteMultipleOrders(ids);
+    res.json({ success: true, message: `${result.deletedCount} orders deleted`, deletedCount: result.deletedCount });
+  } catch (error) {
+    console.error("Bulk Delete Order Error:", error);
+    res.status(500).json({ success: false, message: error.message || "Error deleting orders" });
+  }
+};
+
 // PUT /api/order/admin/:id/viewed
 exports.markOrderAsViewed = async (req, res) => {
   try {

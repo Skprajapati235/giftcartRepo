@@ -48,10 +48,13 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
           }
         }
 
-        // Filter orders by user email or user ID
-        const userOrders = allOrdersArray.filter(
-          (o: any) => o?.user?.email === user?.email || (o?.user?._id && user?._id && String(o.user._id) === String(user._id))
-        );
+        // Filter orders by user ID, mobileNumber, or email (avoiding undefined matches)
+        const userOrders = allOrdersArray.filter((o: any) => {
+          if (o?.user?._id && user?._id && String(o.user._id) === String(user._id)) return true;
+          if (o?.user?.mobileNumber && user?.mobileNumber && String(o.user.mobileNumber) === String(user.mobileNumber)) return true;
+          if (o?.user?.email && user?.email && String(o.user.email) === String(user.email)) return true;
+          return false;
+        });
 
         setOrders(userOrders);
         setTotalOrders(userOrders.length);

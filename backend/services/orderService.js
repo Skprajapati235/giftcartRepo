@@ -650,3 +650,12 @@ exports.getUnviewedOrders = async () => {
   return await Order.find({ isAdminViewed: false, $or: [{ paymentMethod: 'COD' }, { paymentStatus: 'Success' }] })
     .populate("user", "name email");
 };
+
+// Delete multiple orders (admin) — unrestricted bulk delete
+exports.deleteMultipleOrders = async (ids) => {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new Error("No order IDs provided");
+  }
+  const result = await Order.deleteMany({ _id: { $in: ids } });
+  return { success: true, deletedCount: result.deletedCount };
+};

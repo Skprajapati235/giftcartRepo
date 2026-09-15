@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { X, Search, Heart, Package } from "lucide-react";
 import * as service from "../../services/adminService";
 import Pagination from "../Pagination";
+import ConfirmDialog from "../ui/ConfirmDialog";
 
 interface UserWishlistDialogueProps {
   user: any;
@@ -18,6 +19,8 @@ export default function UserWishlistDialogue({ user, onClose }: UserWishlistDial
   const [filter, setFilter] = useState("");
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchWishlist = async () => {
     setLoading(true);
@@ -40,6 +43,20 @@ export default function UserWishlistDialogue({ user, onClose }: UserWishlistDial
     }, 300);
     return () => clearTimeout(timer);
   }, [user._id, page, filter]);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      await service.deleteUserWishlist(deleteId);
+      await fetchWishlist();
+      setDeleteId(null);
+    } catch (error) {
+      alert("Failed to delete wishlist item");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -112,8 +129,15 @@ export default function UserWishlistDialogue({ user, onClose }: UserWishlistDial
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 flex flex-col justify-center">
-                      <h3 className="font-bold text-foreground text-sm line-clamp-2 mb-1">{product.name}</h3>
+                    <div className="flex-1 flex flex-col justify-center relative">
+                      <button
+                        onClick={() => setDeleteId(item._id)}
+                        className="absolute top-0 right-0 p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition"
+                        title="Remove from wishlist"
+                      >
+                        <X size={16} />
+                      </button>
+                      <h3 className="font-bold text-foreground text-sm line-clamp-2 mb-1 pr-6">{product.name}</h3>
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                         {product.category?.name || "Uncategorized"}
                       </p>
@@ -141,6 +165,15 @@ export default function UserWishlistDialogue({ user, onClose }: UserWishlistDial
           </div>
         )}
       </div>
+      <ConfirmDialog
+        isOpen={!!deleteId}
+        title="Remove Item"
+        message="Are you sure you want to remove this item from the user's wishlist?"
+        confirmText="Remove"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
