@@ -72,7 +72,7 @@ export default function PaymentList({ payments, loading }: PaymentListProps) {
                   </td>
                   <td className="px-6 py-5">
                     <div className="font-bold text-foreground truncate">{payment.user?.name}</div>
-                    <div className="text-xs text-slate-400 truncate">{payment.user?.email}</div>
+                    <div className="text-xs text-slate-400 truncate">{payment.user?.mobileNumber || "N/A"}</div>
                   </td>
                   <td className="px-6 py-5">
                     <span className="bg-hover-theme text-foreground/80 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap">

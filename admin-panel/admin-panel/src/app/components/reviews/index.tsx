@@ -10,7 +10,7 @@ import { useResource } from "../../hooks/useResource";
 export interface Review {
   _id: string;
   product: { name: string; image: string; price: number } | null;
-  user: { name: string; email: string; profilePic?: string };
+  user: { name: string; mobileNumber?: string; profilePic?: string };
   rating: number;
   comment: string;
   images: string[];

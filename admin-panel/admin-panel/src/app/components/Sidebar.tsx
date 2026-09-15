@@ -140,8 +140,8 @@ function DesktopSidebar() {
             <div>
               <div className="mb-5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <activeGroup.icon className="h-5 w-5 text-foreground" />
-                  <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                  <activeGroup.icon className="h-4 w-4 text-foreground" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
                     {activeGroup.label}
                   </p>
                 </div>
@@ -161,16 +161,16 @@ function DesktopSidebar() {
                     <Link
                       key={child.key}
                       href={child.href}
-                      className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-sm font-bold transition ${childActive
-                        ? "border-primary bg-primary text-white shadow-lg"
+                      className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-[13px] font-semibold transition ${childActive
+                        ? "border-primary bg-primary text-white shadow-md"
                         : "border-transparent bg-background text-slate-500 hover:border-border-theme hover:bg-hover-theme hover:text-foreground"
                         }`}
                     >
                       <div
-                        className={`rounded-lg p-1.5 ${childActive ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
+                        className={`rounded-md p-1 ${childActive ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
                           }`}
                       >
-                        <ChildIcon className="h-4 w-4" />
+                        <ChildIcon className="h-3.5 w-3.5" />
                       </div>
                       <span>{child.label}</span>
                     </Link>
@@ -214,13 +214,13 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition ${indent ? "ml-3" : ""
+      className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition ${indent ? "ml-3" : ""
         } ${active
           ? "bg-primary text-white"
           : "text-slate-600 hover:bg-hover-theme hover:text-foreground dark:text-slate-300"
         }`}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className="h-3.5 w-3.5 shrink-0" />
       <span>{label}</span>
     </Link>
   );

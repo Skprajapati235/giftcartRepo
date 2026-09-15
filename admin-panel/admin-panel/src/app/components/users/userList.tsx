@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, Users, MoreHorizontal, Trash2, Mail, MapPin, Calendar, Heart } from "lucide-react";
+import { Search, Users, MoreHorizontal, Trash2, Phone, MapPin, Calendar, Heart } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 import { adminTableWrapClass, adminTableClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
@@ -52,7 +52,7 @@ export default function UserList({
           <input
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search name, email or city..."
+            placeholder="Search name, mobile or city..."
             className="w-full pl-12 pr-4 py-3 rounded-2xl border border-border-theme bg-hover-theme text-sm text-foreground outline-none transition focus:ring-2 focus:ring-primary/20"
           />
         </div>
@@ -75,7 +75,7 @@ export default function UserList({
             <thead>
               <tr className="bg-th-bg border-b border-border-theme">
                 <th className={adminTableHeadCellClass}>Customer</th>
-                <th className={adminTableHeadCellClass}>Email Address</th>
+                <th className={adminTableHeadCellClass}>Mobile Number</th>
                 <th className={adminTableHeadCellClass}>Status</th>
                 <th className={adminTableHeadCellClass}>Location</th>
                 <th className={adminTableHeadCellClass}>Joined</th>
@@ -104,8 +104,8 @@ export default function UserList({
                   </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-2 text-slate-500 text-sm">
-                      <Mail size={14} className="text-slate-300" />
-                      {user.email}
+                      <Phone size={14} className="text-slate-300" />
+                      {user.mobileNumber || "N/A"}
                     </div>
                   </td>
                   <td className="px-6 py-5">

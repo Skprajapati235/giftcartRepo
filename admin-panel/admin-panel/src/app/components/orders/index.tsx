@@ -15,7 +15,7 @@ interface OrderItem {
 
 interface Order {
   _id: string;
-  user: { name: string; email: string };
+  user: { name: string; mobileNumber?: string };
   items: OrderItem[];
   totalAmount: number;
   status: string;

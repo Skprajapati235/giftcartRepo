@@ -29,7 +29,7 @@ interface OrderItem {
 
 interface OrderDetailData {
   _id: string;
-  user: { name: string; email: string; mobileNumber?: string };
+  user: { name: string; mobileNumber?: string };
   totalAmount: number;
   status: string;
   paymentStatus: string;
@@ -315,15 +315,9 @@ export default function OrderDetailView() {
                   <span className="font-bold">{order.user?.name}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Email</span>
-                  <span className="font-bold text-xs truncate max-w-[150px]">{order.user?.email}</span>
+                  <span className="text-slate-400">Phone</span>
+                  <span className="font-bold">{order.user?.mobileNumber || "N/A"}</span>
                 </div>
-                {order.user?.mobileNumber && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Phone</span>
-                    <span className="font-bold">{order.user.mobileNumber}</span>
-                  </div>
-                )}
               </div>
             </div>
 

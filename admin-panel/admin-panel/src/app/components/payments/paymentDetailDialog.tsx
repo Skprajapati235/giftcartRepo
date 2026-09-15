@@ -59,7 +59,7 @@ export default function PaymentDetailDialog({ payment, onClose }: { payment: Pay
             <div className="flex-1 p-4 rounded-lg bg-card/60 border border-border-theme">
               <h4 className="text-sm font-bold text-foreground mb-2">Customer</h4>
               <div className="text-lg font-semibold text-foreground">{payment.user?.name}</div>
-              <div className="text-xs text-slate-400">{payment.user?.email}</div>
+              <div className="text-xs text-slate-400">{payment.user?.mobileNumber || "N/A"}</div>
             </div>
 
             <div className="w-48 p-4 rounded-lg bg-card/60 border border-border-theme flex flex-col items-end justify-between">

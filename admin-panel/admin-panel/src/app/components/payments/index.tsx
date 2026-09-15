@@ -6,7 +6,7 @@ import PaymentList from "./paymentList";
 
 interface Payment {
   _id: string;
-  user: { name: string; email: string };
+  user: { name: string; mobileNumber?: string };
   totalAmount: number;
   razorpayPaymentId: string;
   createdAt: string;

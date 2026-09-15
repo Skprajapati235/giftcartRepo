@@ -133,7 +133,7 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
               {user.name} <CheckCircle2 className="text-blue-500" size={18} />
             </h3>
             <div className="flex items-center gap-4 text-xs font-bold text-slate-500 mt-2">
-              <span className="flex items-center gap-1"><Mail size={14} /> {user.email}</span>
+              <span className="flex items-center gap-1"><Phone size={14} /> {user.mobileNumber || "N/A"}</span>
               <span className="flex items-center gap-1"><Calendar size={14} /> {new Date(user.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
@@ -146,12 +146,7 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
               </p>
               <p className="font-bold text-sm text-foreground truncate">{user.name}</p>
             </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 flex items-center gap-1 mb-1">
-                <Mail size={12} className="text-blue-500" /> EMAIL
-              </p>
-              <p className="font-bold text-sm text-foreground truncate">{user.email}</p>
-            </div>
+
             <div>
               <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 flex items-center gap-1 mb-1">
                 <Phone size={12} className="text-blue-500" /> PHONE NO

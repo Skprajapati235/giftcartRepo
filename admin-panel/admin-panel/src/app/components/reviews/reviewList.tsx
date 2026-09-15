@@ -125,7 +125,7 @@ export default function ReviewList({
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-foreground truncate">{review.user?.name || "Anonymous"}</p>
-                        <p className="text-[10px] text-slate-500 font-medium truncate">{review.user?.email}</p>
+                        <p className="text-[10px] text-slate-500 font-medium truncate">{review.user?.mobileNumber || "N/A"}</p>
                       </div>
                     </div>
                   </td>

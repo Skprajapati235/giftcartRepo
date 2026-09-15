@@ -74,7 +74,7 @@ export default function ReplyReviewView() {
                </div>
                <div>
                   <p className="font-bold text-slate-900">{review.user.name}</p>
-                  <p className="text-xs text-slate-500">{review.user.email}</p>
+                  <p className="text-xs text-slate-500">{review.user.mobileNumber || "N/A"}</p>
                </div>
             </div>
           </div>
