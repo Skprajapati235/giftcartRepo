@@ -43,9 +43,8 @@ export default function ProfileScreen({ navigation }) {
             </View>
           )}
           <Text style={styles.name}>{user?.name || 'Shopper'}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
+          {user?.mobileNumber ? <Text style={styles.mobile}>+91 {user.mobileNumber}</Text> : null}
           {userLocation ? <Text style={styles.location}>{userLocation}</Text> : null}
-          {user?.mobileNumber && <Text style={styles.mobile}>{user.mobileNumber}</Text>}
           <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile')}>
             <Text style={styles.editBtnText}>Edit Profile</Text>
           </TouchableOpacity>

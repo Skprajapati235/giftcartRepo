@@ -1,22 +1,32 @@
 const authService = require("../services/authService");
 const generateToken = require("../utils/generateToken");
 
-exports.register = async (req, res) => {
+// Customers (website + mobile app) sign in with mobile OTP only — see
+// requestLoginOtp / verifyLoginOtp in services/authService.js. Email +
+// password login was removed for users; Admin login is untouched and
+// lives in adminAuthController.js / routes/admin/authRoutes.js.
+
+exports.sendOtp = async (req, res) => {
   try {
-    const user = await authService.registerUser({ ...req.body, role: "user" });
-    res.json({ user, token: generateToken(user._id, user.role) });
+    const { name, mobileNumber } = req.body;
+    const result = await authService.requestLoginOtp({ name, mobileNumber });
+    res.json({ success: true, message: "OTP sent successfully", ...result });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ success: false, message: err.message });
   }
 };
 
-exports.login = async (req, res) => {
+exports.verifyOtp = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await authService.loginUser({ email, password });
-    res.json({ user, token: generateToken(user._id, user.role) });
+    const { mobileNumber, otp } = req.body;
+    const user = await authService.verifyLoginOtp({ mobileNumber, otp });
+    res.json({
+      success: true,
+      user,
+      token: generateToken(user._id, user.role),
+    });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    res.status(400).json({ success: false, message: err.message });
   }
 };
 
@@ -25,24 +35,6 @@ exports.updateProfile = async (req, res) => {
     const userId = req.user.id;
     const user = await authService.updateUserProfile(userId, req.body);
     res.json(user);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
-
-exports.forgotPassword = async (req, res) => {
-  try {
-    await authService.requestPasswordReset({ ...req.body, accountType: "user" });
-    res.json({ message: "If an account exists for this email, an OTP has been sent" });
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
-
-exports.resetPassword = async (req, res) => {
-  try {
-    await authService.resetPassword({ ...req.body, accountType: "user" });
-    res.json({ message: "Password reset successfully. You can now log in" });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }

@@ -75,7 +75,6 @@ export default function UserEditProfileScreen({ navigation }) {
 
       const updatedUser = await userService.updateProfile({
         name: name.trim(),
-        mobileNumber: mobileNumber.trim(),
         profilePic: imageUrl,
       });
 
@@ -121,14 +120,10 @@ export default function UserEditProfileScreen({ navigation }) {
         />
 
         <Text style={styles.label}>Mobile Number</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your mobile number"
-          value={mobileNumber}
-          onChangeText={setMobileNumber}
-          placeholderTextColor="#999"
-          keyboardType="phone-pad"
-        />
+        <View style={styles.readOnlyField}>
+          <Text style={styles.readOnlyText}>{mobileNumber ? `+91 ${mobileNumber}` : 'Not set'}</Text>
+        </View>
+        <Text style={styles.helperText}>This is your login number and can't be changed here.</Text>
 
         <Text style={styles.label}>State</Text>
         <View style={styles.readOnlyField}>
@@ -227,6 +222,11 @@ const styles = StyleSheet.create({
   readOnlyText: {
     fontSize: 14,
     color: '#666',
+  },
+  helperText: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 6,
   },
   button: {
     backgroundColor: '#D82B76',

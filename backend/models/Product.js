@@ -58,6 +58,13 @@ const productSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Flavor"
   },
+  // A product can belong to more than one occasion (e.g. a cake works for
+  // both Birthday and Anniversary) — used for the navbar occasion list
+  // and product filtering.
+  occasions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Occasion"
+  }],
   weight: { type: String }, // e.g., "500g", "1kg" — used only when no weightOptions are set
   flowerCount: { type: String }, // e.g., "10 Roses", "24 Lilies" — used only when no flowerCountOptions are set
   // Multiple weight variants (cakes etc.), each with its own price/sale

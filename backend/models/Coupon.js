@@ -44,6 +44,25 @@ const couponSchema = new mongoose.Schema({
   image: {
     type: String,
   },
+  // ── Targeting (who/what this offer applies to) ──────────────────────
+  // Only ever usable by a mobile number that has never placed a
+  // successful order before — checked at validate() time.
+  isNewUserOnly: {
+    type: Boolean,
+    default: false,
+  },
+  // Empty array = applies to every product. Non-empty = cart must only
+  // contain products from this list for the coupon to apply.
+  applicableProducts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+  }],
+  // Empty array = applies regardless of occasion. Non-empty = every
+  // product in the cart must belong to at least one of these occasions.
+  applicableOccasions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Occasion",
+  }],
 }, { timestamps: true });
 
 module.exports = mongoose.model("Coupon", couponSchema);

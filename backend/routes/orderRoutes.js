@@ -16,6 +16,7 @@ router.get("/admin/all", authMiddleware, adminMiddleware, controller.getAllOrder
 router.get("/admin/unviewed", authMiddleware, adminMiddleware, controller.getUnviewedOrders);
 router.get("/admin/detail/:id", authMiddleware, adminMiddleware, controller.getOrderById);
 router.put("/admin/:id/status", authMiddleware, adminMiddleware, controller.updateOrderStatus);
+router.delete("/admin/:id", authMiddleware, adminMiddleware, controller.deleteOrder);
 router.put("/admin/:id/viewed", authMiddleware, adminMiddleware, controller.markOrderAsViewed);
 router.get("/admin/payments", authMiddleware, adminMiddleware, controller.getPaymentHistory);
 

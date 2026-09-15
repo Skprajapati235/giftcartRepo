@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Calendar, Percent, IndianRupee, ShieldCheck, ShieldAlert, Zap, Upload } from "lucide-react";
+import { X, Calendar, Percent, IndianRupee, ShieldCheck, ShieldAlert, Zap, Upload, Sparkles } from "lucide-react";
 import * as service from "../../services/couponService";
 import * as adminService from "../../services/adminService";
+import { useAdmin } from "../../context/AdminContext";
 import { useToast } from "../../../context/ToastContext";
 
 interface AddEditCouponProps {
@@ -13,6 +14,7 @@ interface AddEditCouponProps {
 
 export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
   const { showToast } = useToast();
+  const { products, occasions } = useAdmin();
   const [formData, setFormData] = useState({
     code: coupon?.code || "",
     discountType: coupon?.discountType || "percentage",
@@ -23,9 +25,21 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
     usageLimit: coupon?.usageLimit || 100,
     isActive: coupon?.isActive !== undefined ? coupon.isActive : true,
     image: coupon?.image || "",
+    isNewUserOnly: coupon?.isNewUserOnly || false,
+    applicableProducts: (coupon?.applicableProducts || []).map((p: any) => p?._id || p),
+    applicableOccasions: (coupon?.applicableOccasions || []).map((o: any) => o?._id || o),
   });
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  const toggleInList = (field: "applicableProducts" | "applicableOccasions", id: string) => {
+    setFormData((prev) => {
+      const list = prev[field].includes(id)
+        ? prev[field].filter((x: string) => x !== id)
+        : [...prev[field], id];
+      return { ...prev, [field]: list };
+    });
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files?.[0]) return;
@@ -198,6 +212,62 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
                 className="w-full bg-background border border-border-theme rounded-2xl px-5 py-4 font-bold text-foreground outline-none focus:ring-4 focus:ring-primary/10 transition-all [color-scheme:dark]"
               />
             </div>
+          </div>
+
+          <div className="bg-hover-theme/30 p-6 rounded-3xl border border-border-theme space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                   <p className="text-sm font-black text-foreground flex items-center gap-2"><Sparkles size={14} className="text-primary" /> New Users Only</p>
+                   <p className="text-[11px] text-slate-500 font-medium font-sans">Only usable by an account with no prior orders</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, isNewUserOnly: !formData.isNewUserOnly })}
+                  className={`w-14 h-8 rounded-full transition-all flex items-center px-1 shrink-0 ${formData.isNewUserOnly ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-slate-300 dark:bg-slate-700'}`}
+                >
+                   <div className={`w-6 h-6 rounded-full bg-white shadow-md transition-all ${formData.isNewUserOnly ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Limit to Products (optional)</p>
+                <div className="max-h-36 overflow-y-auto rounded-2xl border border-border-theme bg-background p-3 space-y-1.5">
+                  {products.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic px-1">No products yet</p>
+                  ) : products.map((p: any) => (
+                    <label key={p._id} className="flex items-center gap-2 text-xs font-semibold text-foreground px-1 py-1 rounded-lg hover:bg-hover-theme cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.applicableProducts.includes(p._id)}
+                        onChange={() => toggleInList("applicableProducts", p._id)}
+                        className="accent-primary"
+                      />
+                      {p.name}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Leave empty to apply to every product.</p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Limit to Occasions (optional)</p>
+                <div className="max-h-36 overflow-y-auto rounded-2xl border border-border-theme bg-background p-3 space-y-1.5">
+                  {occasions.length === 0 ? (
+                    <p className="text-xs text-slate-400 italic px-1">No occasions yet</p>
+                  ) : occasions.map((o: any) => (
+                    <label key={o._id} className="flex items-center gap-2 text-xs font-semibold text-foreground px-1 py-1 rounded-lg hover:bg-hover-theme cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.applicableOccasions.includes(o._id)}
+                        onChange={() => toggleInList("applicableOccasions", o._id)}
+                        className="accent-primary"
+                      />
+                      {o.name}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">Leave empty to apply regardless of occasion.</p>
+              </div>
           </div>
 
           <div className="bg-hover-theme/30 p-6 rounded-3xl border border-border-theme">

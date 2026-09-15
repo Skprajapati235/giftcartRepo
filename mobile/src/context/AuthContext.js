@@ -1,5 +1,4 @@
 import React, { createContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setAuthToken, handleApiError } from '../api/apiClient';
 import authService from '../services/authService';
@@ -48,11 +47,10 @@ export const AuthProvider = ({ children }) => {
     setLocationSet(!!(userData?.state && userData?.city));
   };
 
-  const signIn = async (email, password) => {
+  // Step 1 of the mobile OTP flow — sends the OTP, doesn't log anyone in yet.
+  const sendOtp = async (name, mobileNumber) => {
     try {
-      const data = await authService.login(email, password);
-      await saveSession(data.token, data.user);
-      return data;
+      return await authService.sendOtp(name, mobileNumber);
     } catch (error) {
       const err = handleApiError(error);
       showToast(err.message, 'error');
@@ -60,9 +58,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signUp = async (name, email, password) => {
+  // Step 2 — verifying the OTP both logs an existing user in and creates a
+  // brand-new account on the fly if this mobile number hasn't been seen
+  // before. There's no separate "register" step anymore.
+  const verifyOtp = async (mobileNumber, otp) => {
     try {
-      const data = await authService.register(name, email, password);
+      const data = await authService.verifyOtp(mobileNumber, otp);
+      await saveSession(data.token, data.user);
       return data;
     } catch (error) {
       const err = handleApiError(error);
@@ -79,7 +81,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, locationSet, signIn, signUp, signOut, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, locationSet, sendOtp, verifyOtp, signOut, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

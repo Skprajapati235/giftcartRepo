@@ -50,7 +50,7 @@ exports.createProduct = async (data) => {
 // };
 
 
-exports.getProducts = async ({ page = 1, limit = 10, search = "", category = "", flavor = "", city = "" } = {}) => {
+exports.getProducts = async ({ page = 1, limit = 10, search = "", category = "", flavor = "", city = "", occasion = "" } = {}) => {
   const skip = (page - 1) * limit;
   const conditions = [];
 
@@ -68,6 +68,9 @@ exports.getProducts = async ({ page = 1, limit = 10, search = "", category = "",
   if (flavor && flavor !== "all" && flavor !== "null" && flavor !== "undefined") {
     conditions.push({ flavor });
   }
+  if (occasion && occasion !== "all" && occasion !== "null" && occasion !== "undefined") {
+    conditions.push({ occasions: occasion });
+  }
   if (city && city !== "all" && city !== "null" && city !== "undefined") {
     // A product with no availableCities set is available everywhere.
     conditions.push({
@@ -84,6 +87,7 @@ exports.getProducts = async ({ page = 1, limit = 10, search = "", category = "",
   const products = await Product.find(query)
     .populate("category")
     .populate("flavor")
+    .populate("occasions")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -98,7 +102,7 @@ exports.getProducts = async ({ page = 1, limit = 10, search = "", category = "",
   };
 };
 exports.getProductById = async (id) => {
-  return await Product.findById(id).populate("category").populate("flavor");
+  return await Product.findById(id).populate("category").populate("flavor").populate("occasions");
 };
 
 exports.updateProduct = async (id, data) => {

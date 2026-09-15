@@ -89,6 +89,9 @@ export default function CouponList({
                         )}
                       </div>
                       <span className="font-bold text-slate-900 tracking-tight trancate">{coupon.code}</span>
+                      {coupon.isNewUserOnly && (
+                        <span className="text-[9px] font-black uppercase tracking-tight bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-md">New users</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-5">

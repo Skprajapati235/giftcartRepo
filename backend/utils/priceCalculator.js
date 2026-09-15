@@ -2,20 +2,24 @@
 // Single source of truth for price / quantity calculation.
 // Used by cartService, orderService and orderController so that the cart
 // total shown to the user and the total actually charged on the order
-// always match.
+// always match — and so the admin panel's own math (order detail,
+// dashboards) always lands on the exact same number too.
 //
-// IMPORTANT RULE (as decided by the store owner):
-//   Increasing the quantity of an item ONLY multiplies the item's price.
-//   Discount, tax and shipping cost are fixed, one-time amounts for that
-//   line — they are calculated ONCE (from the selected variant / product)
-//   and do NOT get multiplied again by the quantity.
+// RULE: every per-unit figure (discount, tax) scales with quantity, same
+// as the price itself — buying 3 units gives 3x the discount and 3x the
+// tax, exactly like a real bill. Only shippingCost stays flat per cart
+// line (one shipment per line item, regardless of how many units are in
+// it), matching how shippingCost is configured per-product/variant.
 //
 // Formula:
-//   unitPrice       = salePrice (falls back to price)
-//   discountAmount  = unitPrice * (discount / 100)               [flat, once]
-//   taxAmount       = (unitPrice - discountAmount) * (tax / 100) [flat, once]
-//   priceForQty     = unitPrice * quantity                       [scales]
-//   itemTotal       = priceForQty - discountAmount + taxAmount + shippingCost
+//   unitPrice           = salePrice (falls back to price)
+//   unitDiscountAmount  = unitPrice * (discount / 100)
+//   unitPriceAfterDisc  = unitPrice - unitDiscountAmount
+//   unitTaxAmount       = unitPriceAfterDisc * (tax / 100)
+//   discountAmount      = unitDiscountAmount * quantity   [scales]
+//   taxAmount           = unitTaxAmount * quantity        [scales]
+//   priceForQty         = unitPrice * quantity             [scales]
+//   itemTotal           = priceForQty - discountAmount + taxAmount + shippingCost
 
 function round2(value) {
   return Number((Math.round(Number(value || 0) * 100) / 100).toFixed(2));
@@ -32,18 +36,19 @@ function calculateItemPricing({ price, salePrice, discount, tax, shippingCost, q
   const taxPct = Number(tax || 0);
   const shipping = round2(Number(shippingCost || 0));
 
-  // These three are FLAT — computed once off the unit price, never
-  // multiplied by quantity.
-  const discountAmount = round2(effectiveSalePrice * (discountPct / 100));
-  const priceAfterDiscount = effectiveSalePrice - discountAmount;
-  const taxAmount = round2(priceAfterDiscount * (taxPct / 100));
+  // Per-unit figures first...
+  const unitDiscountAmount = effectiveSalePrice * (discountPct / 100);
+  const unitPriceAfterDiscount = effectiveSalePrice - unitDiscountAmount;
+  const unitTaxAmount = unitPriceAfterDiscount * (taxPct / 100);
 
-  // Only the price itself scales with quantities.
+  // ...then scaled by quantity, same as the price itself.
+  const discountAmount = round2(unitDiscountAmount * qty);
+  const taxAmount = round2(unitTaxAmount * qty);
   const priceForQuantity = round2(effectiveSalePrice * qty);
 
   const itemTotal = round2(priceForQuantity - discountAmount + taxAmount + shipping);
-  // Informational "per unit" figure (what the line total would be at qty=1).
-  const unitFinalPrice = round2(effectiveSalePrice - discountAmount + taxAmount + shipping);
+  // Informational "per unit" figure (what one unit alone would cost, shipping included).
+  const unitFinalPrice = round2(unitPriceAfterDiscount + unitTaxAmount + shipping);
 
   return {
     quantity: qty,

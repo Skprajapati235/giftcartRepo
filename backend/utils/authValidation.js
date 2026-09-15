@@ -27,4 +27,19 @@ function validatePassword(password) {
   return value;
 }
 
-module.exports = { normalizeEmail, validateEmail, validatePassword };
+const MOBILE_PATTERN = /^[6-9]\d{9}$/;
+
+function validateMobileNumber(mobileNumber) {
+  const digits = String(mobileNumber || "").replace(/\D/g, "").slice(-10);
+  if (!MOBILE_PATTERN.test(digits)) {
+    throw new Error("Please enter a valid 10-digit mobile number");
+  }
+  return digits;
+}
+
+module.exports = {
+  normalizeEmail,
+  validateEmail,
+  validatePassword,
+  validateMobileNumber,
+};

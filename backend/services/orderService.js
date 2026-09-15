@@ -389,6 +389,8 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
       shippingCost: pricing.shippingCost,
       discount: pricing.discount,
       tax: pricing.tax,
+      discountAmount: pricing.discountAmount,
+      taxAmount: pricing.taxAmount,
       itemTotal: pricing.itemTotal,
       selectedVariant: item.selectedVariant || null,
       isEggless: item.isEggless || false,
@@ -614,9 +616,23 @@ exports.updateOrderStatus = async (id, status) => {
   return updated;
 };
 
-// Mark order as viewed by admin
-exports.markOrderAsViewed = async (id) => {
-  return await Order.findByIdAndUpdate(id, { isAdminViewed: true }, { new: true });
+// Delete order (admin) — only allowed once the order has reached a final
+// state (Delivered or Cancelled), so an active/in-progress order can never
+// be deleted by mistake.
+exports.deleteOrder = async (id) => {
+  const order = await Order.findById(id);
+  if (!order) {
+    const error = new Error("Order not found");
+    error.statusCode = 404;
+    throw error;
+  }
+  if (!["Delivered", "Cancelled"].includes(order.status)) {
+    const error = new Error("Only Delivered or Cancelled orders can be deleted");
+    error.statusCode = 400;
+    throw error;
+  }
+  await order.deleteOne();
+  return { success: true };
 };
 
 // Get unviewed orders (for alerts)

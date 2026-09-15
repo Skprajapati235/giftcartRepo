@@ -1,20 +1,12 @@
 import api from '../api/apiClient';
 
 const authService = {
-  login: async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
+  sendOtp: async (name, mobileNumber) => {
+    const response = await api.post('/auth/send-otp', { name, mobileNumber });
     return response.data;
   },
-  register: async (name, email, password) => {
-    const response = await api.post('/auth/register', { name, email, password });
-    return response.data;
-  },
-  requestPasswordReset: async (email) => {
-    const response = await api.post('/auth/forgot-password', { email });
-    return response.data;
-  },
-  resetPassword: async (email, otp, newPassword) => {
-    const response = await api.post('/auth/reset-password', { email, otp, newPassword });
+  verifyOtp: async (mobileNumber, otp) => {
+    const response = await api.post('/auth/verify-otp', { mobileNumber, otp });
     return response.data;
   },
 };

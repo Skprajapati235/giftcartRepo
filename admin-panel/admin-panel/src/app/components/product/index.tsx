@@ -59,7 +59,13 @@ export default function ProductView() {
     <>
       <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-xl font-bold text-foreground sm:text-2xl">Products</h1>
-        {!showForm && (
+        {!showForm && !params.category && (
+          <p className="text-xs font-semibold text-slate-400">Select a category tab below to add a product</p>
+        )}
+        {/* "Add Product" only makes sense once a specific category tab is
+            open — on "All", we don't know which category the new product
+            should be filed under, so the button is hidden there. */}
+        {!showForm && params.category && (
           <button
             onClick={openForm}
             className="flex w-full sm:w-auto items-center justify-center gap-2 bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-lg shadow-primary/20"

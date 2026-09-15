@@ -14,6 +14,8 @@ interface OrderItem {
   salePrice?: number;
   discount?: number;
   tax?: number;
+  discountAmount?: number;
+  taxAmount?: number;
   shippingCost?: number;
   itemTotal?: number;
   deliveryTime?: string;
@@ -109,23 +111,30 @@ export default function OrderDetailView() {
 
   if (!order) return <div className="p-20 text-center">Order not found.</div>;
 
-  // ─── Price Breakdown computed from items ───────────────────────────────────
+  // ─── Price Breakdown — uses the EXACT amounts stored on the order at
+  // checkout time (utils/priceCalculator.js on the backend), so this
+  // screen can never disagree with what the customer actually paid.
+  // Falls back to re-deriving them only for orders placed before these
+  // fields existed.
   const itemsBreakdown = order.items.map((item) => {
     const qty = Number(item.quantity || 1);
     const unitPrice = Number(item.salePrice ?? item.price ?? 0);
     const discount = Number(item.discount || 0);
     const tax = Number(item.tax || 0);
     const shipping = Number(item.shippingCost || 0);
-    const discounted = unitPrice * (1 - discount / 100);
-    const taxAmt = discounted * (tax / 100);
-    const total = item.itemTotal ?? Number(((discounted + taxAmt + shipping) * qty).toFixed(2));
-    return { qty, unitPrice, discount, tax, shipping, discounted, taxAmt, total };
+    const unitDiscount = unitPrice * (discount / 100);
+    const unitTax = (unitPrice - unitDiscount) * (tax / 100);
+    const discountAmt = item.discountAmount != null ? Number(item.discountAmount) : unitDiscount * qty;
+    const taxAmt = item.taxAmount != null ? Number(item.taxAmount) : unitTax * qty;
+    const total = item.itemTotal != null ? Number(item.itemTotal) : unitPrice * qty - discountAmt + taxAmt + shipping;
+    return { qty, unitPrice, discount, tax, shipping, discountAmt, taxAmt, total };
   });
 
   const subtotal = itemsBreakdown.reduce((s, b) => s + b.unitPrice * b.qty, 0);
-  const totalDiscount = itemsBreakdown.reduce((s, b) => s + (b.unitPrice - b.discounted) * b.qty, 0);
-  const totalTax = itemsBreakdown.reduce((s, b) => s + b.taxAmt * b.qty, 0);
-  const totalShipping = itemsBreakdown.reduce((s, b) => s + b.shipping * b.qty, 0);
+  const totalDiscount = itemsBreakdown.reduce((s, b) => s + b.discountAmt, 0);
+  const totalTax = itemsBreakdown.reduce((s, b) => s + b.taxAmt, 0);
+  // Shipping is a flat, one-time charge per cart line (not per unit).
+  const totalShipping = itemsBreakdown.reduce((s, b) => s + b.shipping, 0);
   const couponDiscount = Number(order.discountAmount || 0);
 
   return (

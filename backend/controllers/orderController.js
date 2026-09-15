@@ -12,6 +12,33 @@ function normalizeCouponCode(couponCode) {
   return "";
 }
 
+// Same eligibility rules as couponController.validate — re-checked here so
+// a coupon's new-user/product/occasion targeting can never be bypassed by
+// skipping the /coupons/validate call and going straight to order creation.
+async function isCouponEligible(coupon, { userId, items }) {
+  if (coupon.isNewUserOnly) {
+    const priorOrder = await Order.exists({ user: userId });
+    if (priorOrder) return false;
+  }
+
+  if (Array.isArray(coupon.applicableProducts) && coupon.applicableProducts.length > 0) {
+    const allowed = new Set(coupon.applicableProducts.map((p) => String(p)));
+    const productIds = (items || []).map((i) => String(i._id || i.product || ""));
+    if (productIds.length === 0 || !productIds.every((id) => allowed.has(id))) return false;
+  }
+
+  if (Array.isArray(coupon.applicableOccasions) && coupon.applicableOccasions.length > 0) {
+    const allowed = new Set(coupon.applicableOccasions.map((o) => String(o)));
+    const cartItems = items || [];
+    const allMatch =
+      cartItems.length > 0 &&
+      cartItems.every((i) => (i.occasions || []).some((occ) => allowed.has(String(occ?._id || occ))));
+    if (!allMatch) return false;
+  }
+
+  return true;
+}
+
 // POST /api/order/create
 exports.createOrder = async (req, res) => {
   try {
@@ -43,7 +70,11 @@ exports.createOrder = async (req, res) => {
       if (coupon) {
         // Re-validate on server
         const isExpiried = new Date() > new Date(coupon.expiryDate);
-        if (!isExpiried && coupon.usedCount < coupon.usageLimit && sampleTotal >= coupon.minOrderAmount) {
+        const eligible = !isExpiried
+          && coupon.usedCount < coupon.usageLimit
+          && sampleTotal >= coupon.minOrderAmount
+          && (await isCouponEligible(coupon, { userId, items }));
+        if (eligible) {
           if (coupon.discountType === "percentage") {
             finalDiscount = (sampleTotal * coupon.discountValue) / 100;
             if (coupon.maxDiscount > 0 && finalDiscount > coupon.maxDiscount) {
@@ -187,6 +218,17 @@ exports.updateOrderStatus = async (req, res) => {
   } catch (error) {
     console.error("Update Order Status Error:", error);
     res.status(500).json({ success: false, message: "Error updating order status" });
+  }
+};
+
+// DELETE /api/order/admin/:id
+exports.deleteOrder = async (req, res) => {
+  try {
+    await orderService.deleteOrder(req.params.id);
+    res.json({ success: true, message: "Order deleted" });
+  } catch (error) {
+    console.error("Delete Order Error:", error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || "Error deleting order" });
   }
 };
 

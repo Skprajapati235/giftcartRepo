@@ -45,6 +45,11 @@ const orderSchema = new mongoose.Schema({
       shippingCost: { type: Number, default: 0 },
       discount: { type: Number, default: 0 },
       tax: { type: Number, default: 0 },
+      // Exact rupee amounts computed at order time (utils/priceCalculator.js) —
+      // stored so every screen (website, admin panel) reads the SAME numbers
+      // instead of each re-deriving its own from the discount/tax percentages.
+      discountAmount: { type: Number, default: 0 },
+      taxAmount: { type: Number, default: 0 },
       itemTotal: { type: Number, required: true },
       deliveryTime: { type: String },
       expectedDeliveryDate: { type: String },

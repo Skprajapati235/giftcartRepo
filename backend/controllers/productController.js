@@ -27,15 +27,16 @@ exports.create = async (req, res) => {
 
 exports.getAll = async (req, res) => {
   try {
-    const { page, limit, search, category, flavor, city } = req.query;
-    console.log("Fetching products with filters:", { page, limit, search, category, flavor, city });
+    const { page, limit, search, category, flavor, city, occasion } = req.query;
+    console.log("Fetching products with filters:", { page, limit, search, category, flavor, city, occasion });
     const data = await service.getProducts({ 
       page: parseInt(page) || 1, 
       limit: parseInt(limit) || 10, 
       search: search || "",
       category: category || "",
       flavor: flavor || "",
-      city: city || ""
+      city: city || "",
+      occasion: occasion || ""
     });
     res.json(data);
   } catch (error) {

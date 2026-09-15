@@ -114,6 +114,7 @@ app.use("/api/upload", authMiddleware, require("./routes/uploadRoutes"));
 app.use("/api/admin/users", adminMiddleware, require("./routes/userRoutes"));
 app.use("/api/coupons", require("./routes/couponRoutes"));
 app.use("/api/flavor", require("./routes/flavorRoutes"));
+app.use("/api/occasion", require("./routes/occasionRoutes"));
 app.use("/api/website", require("./routes/werbsiteContactRoutes"));
 app.use("/api/cart", require("./routes/cartRoutes"));
 

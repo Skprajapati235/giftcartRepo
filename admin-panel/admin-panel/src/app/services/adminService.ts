@@ -213,6 +213,12 @@ export const updateOrderStatus = async (id: string, status: string) => {
   return response.data;
 };
 
+// Only allowed by the backend once an order is Delivered or Cancelled.
+export const deleteOrder = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/order/admin/${id}`);
+  return response.data;
+};
+
 export const getUnviewedOrders = async () => {
   const response = await authApi(getAuthToken()).get("/order/admin/unviewed");
   return response.data;
@@ -245,5 +251,25 @@ export const updateFlavor = async (id: string, payload: { name: string; image?: 
 
 export const deleteFlavor = async (id: string) => {
   const response = await authApi(getAuthToken()).delete(`/flavor/${id}`);
+  return response.data;
+};
+
+export const getOccasions = async (params?: { page?: number; limit?: number; search?: string; all?: boolean }) => {
+  const response = await authApi(getAuthToken()).get("/occasion", { params });
+  return response.data;
+};
+
+export const createOccasion = async (payload: { name: string; image?: string; isActive?: boolean }) => {
+  const response = await authApi(getAuthToken()).post("/occasion", payload);
+  return response.data;
+};
+
+export const updateOccasion = async (id: string, payload: { name?: string; image?: string; isActive?: boolean }) => {
+  const response = await authApi(getAuthToken()).put(`/occasion/${id}`, payload);
+  return response.data;
+};
+
+export const deleteOccasion = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/occasion/${id}`);
   return response.data;
 };

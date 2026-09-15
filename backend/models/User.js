@@ -2,11 +2,15 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
   name: String,
-  email: { type: String, unique: true },
+  // Optional now — mobile OTP is the primary way customers sign up/in.
+  // sparse so multiple users without an email don't collide on the
+  // unique index.
+  email: { type: String, unique: true, sparse: true },
   password: String,
   resetOtpHash: { type: String, select: false },
   resetOtpExpiresAt: { type: Date, select: false },
-  mobileNumber: String,
+  // Primary login identifier for customers (mobile OTP flow).
+  mobileNumber: { type: String, unique: true, sparse: true },
   profilePic: String,
   state: String,
   city: String,

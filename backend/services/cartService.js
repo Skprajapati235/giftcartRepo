@@ -50,7 +50,11 @@ async function serializeCart(cartDoc) {
       expectedDeliveryDate: product.expectedDeliveryDate,
       weight: item.weight || product.weight || null,
       flowerCount: item.flowerCount || product.flowerCount || null,
-      flavor: item.flavor || product.flavor || null,
+      // Product only ever has ONE flavor, so always show the real
+      // (populated) Flavor doc — {_id, name, image} — never the raw id
+      // that used to get stored/echoed back on the cart line.
+      flavor: product.flavor || null,
+      occasions: product.occasions || [],
       isEggless: item.isEggless || false,
       variantKey: item.variantKey,
       quantity: pricing.quantity,
@@ -79,14 +83,14 @@ async function getOrCreateCart(userId) {
 
 exports.getCart = async (userId) => {
   const cart = await getOrCreateCart(userId);
-  await cart.populate("items.product");
+  await cart.populate({ path: "items.product", populate: [{ path: "flavor" }, { path: "occasions" }] });
   return serializeCart(cart);
 };
 
 exports.addItem = async (userId, payload) => {
   const { productId, quantity = 1, weight, flowerCount, flavor, isEggless } = payload;
 
-  const product = await Product.findById(productId);
+  const product = await Product.findById(productId).populate("flavor").populate("occasions");
   if (!product) {
     const error = new Error("Product not found");
     error.statusCode = 404;
@@ -112,7 +116,7 @@ exports.addItem = async (userId, payload) => {
   }
 
   await cart.save();
-  await cart.populate("items.product");
+  await cart.populate({ path: "items.product", populate: [{ path: "flavor" }, { path: "occasions" }] });
   return serializeCart(cart);
 };
 
@@ -133,7 +137,7 @@ exports.updateItemQuantity = async (userId, itemId, quantity) => {
   }
 
   await cart.save();
-  await cart.populate("items.product");
+  await cart.populate({ path: "items.product", populate: [{ path: "flavor" }, { path: "occasions" }] });
   return serializeCart(cart);
 };
 
@@ -144,7 +148,7 @@ exports.removeItem = async (userId, itemId) => {
     item.deleteOne();
     await cart.save();
   }
-  await cart.populate("items.product");
+  await cart.populate({ path: "items.product", populate: [{ path: "flavor" }, { path: "occasions" }] });
   return serializeCart(cart);
 };
 
@@ -167,7 +171,7 @@ exports.getGuestQuote = async (rawItems = []) => {
     const productId = rawItem.productId || rawItem._id;
     if (!productId) continue;
 
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).populate("flavor").populate("occasions");
     if (!product) continue; // deleted/unavailable product silently dropped
 
     const variantPricing = resolveVariantPricing(product, {
@@ -190,7 +194,8 @@ exports.getGuestQuote = async (rawItems = []) => {
       expectedDeliveryDate: product.expectedDeliveryDate,
       weight: rawItem.weight || product.weight || null,
       flowerCount: rawItem.flowerCount || product.flowerCount || null,
-      flavor: rawItem.flavor?._id || rawItem.flavor || product.flavor || null,
+      flavor: product.flavor || null,
+      occasions: product.occasions || [],
       isEggless: Boolean(rawItem.isEggless),
       variantKey: buildVariantKey({
         productId,
@@ -224,7 +229,7 @@ exports.mergeGuestCart = async (userId, guestItems = []) => {
     const productId = guestItem.productId || guestItem._id;
     if (!productId) continue;
 
-    const product = await Product.findById(productId);
+    const product = await Product.findById(productId).populate("flavor").populate("occasions");
     if (!product) continue;
 
     const variantKey = buildVariantKey({
@@ -252,6 +257,6 @@ exports.mergeGuestCart = async (userId, guestItems = []) => {
   }
 
   await cart.save();
-  await cart.populate("items.product");
+  await cart.populate({ path: "items.product", populate: [{ path: "flavor" }, { path: "occasions" }] });
   return serializeCart(cart);
 };

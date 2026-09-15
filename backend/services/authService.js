@@ -1,54 +1,24 @@
 const User = require("../models/User");
 const Admin = require("../models/Admin");
+const OtpVerification = require("../models/OtpVerification");
 const bcrypt = require("bcryptjs");
 const whatsappService = require("../utils/whatsappService");
 const emailService = require("../utils/emailService");
-const { validateEmail, validatePassword } = require("../utils/authValidation");
+const otpService = require("../utils/otpService");
+const { validateEmail, validatePassword, validateMobileNumber } = require("../utils/authValidation");
 const { createOtp, hashOtp } = require("../utils/passwordReset");
+
+const OTP_RESEND_COOLDOWN_MS = 30 * 1000; // avoid burning 2Factor credits on rapid re-taps
+const OTP_SESSION_TTL_MS = 10 * 60 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
 
 function isTruthyEnv(value) {
   return String(value || "").toLowerCase() === "true";
 }
 
-exports.registerUser = async (data) => {
-  const { name, password } = data;
-  const email = validateEmail(data.email);
-  validatePassword(password);
-
-  if (!String(name || "").trim()) throw new Error("Name is required");
-
-  const userExists = await User.findOne({ email });
-  if (userExists) throw new Error("User already exists");
-
-  const hashed = await bcrypt.hash(password, 10);
-
-  return await User.create({ name, email, password: hashed });
-};
-
-exports.loginUser = async (data) => {
-  const { password } = data;
-  const email = validateEmail(data.email);
-  if (!password) throw new Error("Email and password are required");
-
-  const user = await User.findOne({ email: { $regex: `^${escapeRegex(email)}$`, $options: "i" } });
-  if (!user) throw new Error("User not found");
-
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error("Invalid credentials");
-
-  if (isTruthyEnv(process.env.WHATSAPP_SEND_ON_LOGIN)) {
-    try {
-      await whatsappService.sendWhatsAppMessage({
-        to: user?.mobileNumber,
-        body: whatsappService.formatLoginMessage({ user }),
-      });
-    } catch (err) {
-      console.warn("[whatsapp] login send failed:", err?.message || err);
-    }
-  }
-
-  return user;
-};
+// registerUser / loginUser (email+password) removed — customers only
+// sign in via mobile OTP now (requestLoginOtp / verifyLoginOtp below).
+// Admin login stays separate and untouched — see registerAdmin/loginAdmin.
 
 exports.googleLogin = async (data) => {
   const { email, name } = data;
@@ -79,10 +49,17 @@ exports.updateUserProfile = async (userId, data) => {
   if (state !== undefined) updateData.state = state;
   if (city !== undefined) updateData.city = city;
 
-  const user = await User.findByIdAndUpdate(userId, updateData, { new: true });
-  if (!user) throw new Error("User not found");
-
-  return user;
+  try {
+    const user = await User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true });
+    if (!user) throw new Error("User not found");
+    return user;
+  } catch (err) {
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern || { mobileNumber: 1 })[0];
+      throw new Error(`This ${field === "mobileNumber" ? "mobile number" : field} is already in use`);
+    }
+    throw err;
+  }
 };
 
 exports.registerAdmin = async (data) => {
@@ -112,6 +89,88 @@ exports.loginAdmin = async (data) => {
   if (!isMatch) throw new Error("Invalid credentials");
 
   return admin;
+};
+
+// ─────────────────────────────────────────────────────────────
+// Mobile OTP login / signup (customer-facing website)
+// ─────────────────────────────────────────────────────────────
+
+exports.requestLoginOtp = async ({ name, mobileNumber }) => {
+  const mobile = validateMobileNumber(mobileNumber);
+  const trimmedName = String(name || "").trim();
+  if (!trimmedName) throw new Error("Name is required");
+
+  const existing = await OtpVerification.findOne({ mobileNumber: mobile });
+  if (existing && Date.now() - new Date(existing.lastSentAt).getTime() < OTP_RESEND_COOLDOWN_MS) {
+    const waitSeconds = Math.ceil(
+      (OTP_RESEND_COOLDOWN_MS - (Date.now() - new Date(existing.lastSentAt).getTime())) / 1000
+    );
+    throw new Error(`Please wait ${waitSeconds}s before requesting another OTP`);
+  }
+
+  const { sessionId } = await otpService.sendOtp(mobile);
+
+  await OtpVerification.findOneAndUpdate(
+    { mobileNumber: mobile },
+    {
+      mobileNumber: mobile,
+      name: trimmedName,
+      sessionId,
+      attempts: 0,
+      lastSentAt: new Date(),
+      expiresAt: new Date(Date.now() + OTP_SESSION_TTL_MS),
+    },
+    { upsert: true, new: true }
+  );
+
+  return { mobileNumber: mobile };
+};
+
+exports.verifyLoginOtp = async ({ mobileNumber, otp }) => {
+  const mobile = validateMobileNumber(mobileNumber);
+  const code = String(otp || "").trim();
+  if (!/^\d{4,6}$/.test(code)) throw new Error("Please enter a valid OTP");
+
+  const record = await OtpVerification.findOne({ mobileNumber: mobile });
+  if (!record || record.expiresAt < new Date()) {
+    throw new Error("OTP has expired. Please request a new one");
+  }
+
+  if (record.attempts >= MAX_OTP_ATTEMPTS) {
+    await record.deleteOne();
+    throw new Error("Too many incorrect attempts. Please request a new OTP");
+  }
+
+  const isValid = await otpService.verifyOtp(record.sessionId, code);
+  if (!isValid) {
+    record.attempts += 1;
+    await record.save();
+    throw new Error("Incorrect OTP. Please try again");
+  }
+
+  let user = await User.findOne({ mobileNumber: mobile });
+  if (!user) {
+    user = await User.create({
+      name: record.name,
+      mobileNumber: mobile,
+      role: "user",
+    });
+  }
+
+  await record.deleteOne();
+
+  if (isTruthyEnv(process.env.WHATSAPP_SEND_ON_LOGIN)) {
+    try {
+      await whatsappService.sendWhatsAppMessage({
+        to: user?.mobileNumber,
+        body: whatsappService.formatLoginMessage({ user }),
+      });
+    } catch (err) {
+      console.warn("[whatsapp] login send failed:", err?.message || err);
+    }
+  }
+
+  return user;
 };
 
 function escapeRegex(value) {
