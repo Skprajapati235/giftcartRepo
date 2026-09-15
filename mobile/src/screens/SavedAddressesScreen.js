@@ -30,7 +30,9 @@ export default function SavedAddressesScreen({ navigation }) {
 
   useEffect(() => {
     loadAddresses();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', loadAddresses);
+    return unsubscribe;
+  }, [navigation]);
 
   const loadAddresses = async () => {
     try {

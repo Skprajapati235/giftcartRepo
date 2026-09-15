@@ -35,7 +35,9 @@ export default function MyOrdersScreen({ navigation }) {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', fetchOrders);
+    return unsubscribe;
+  }, [navigation]);
 
   const onRefresh = () => {
     setRefreshing(true);

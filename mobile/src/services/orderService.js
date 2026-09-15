@@ -16,6 +16,10 @@ const orderService = {
     }
     return response.data;
   },
+  getOrderById: async (orderId) => {
+    const response = await api.get(`/order/user/${orderId}`);
+    return response.data;
+  },
 };
 
 export default orderService;

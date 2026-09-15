@@ -50,10 +50,16 @@ export const AuthProvider = ({ children }) => {
   // Step 1 of the mobile OTP flow — sends the OTP, doesn't log anyone in yet.
   const sendOtp = async (name, mobileNumber) => {
     try {
-      return await authService.sendOtp(name, mobileNumber);
+      const response = await authService.sendOtp(name, mobileNumber);
+      if (response.isOldUser) {
+        await saveSession(response.token, response.user);
+      }
+      return response;
     } catch (error) {
       const err = handleApiError(error);
-      showToast(err.message, 'error');
+      if (err.message !== 'Name is required for new users') {
+        showToast(err.message, 'error');
+      }
       throw err;
     }
   };

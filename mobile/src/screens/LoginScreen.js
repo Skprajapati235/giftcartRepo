@@ -14,6 +14,7 @@ export default function LoginScreen({ navigation, route }) {
   const { bottom } = useLayoutInsets();
 
   const [step, setStep] = useState('details'); // 'details' | 'otp'
+  const [showNameField, setShowNameField] = useState(false);
   const [name, setName] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [otp, setOtp] = useState('');
@@ -43,7 +44,7 @@ export default function LoginScreen({ navigation, route }) {
   };
 
   const requestOtp = async () => {
-    if (name.trim().length < 2) {
+    if (showNameField && name.trim().length < 2) {
       showToast('Enter your name.', 'warning');
       return;
     }
@@ -54,14 +55,24 @@ export default function LoginScreen({ navigation, route }) {
 
     setSending(true);
     try {
-      await sendOtp(name.trim(), mobileNumber.trim());
+      const response = await sendOtp(showNameField ? name.trim() : '', mobileNumber.trim());
+      
+      if (response.isOldUser) {
+        showToast('Welcome back! 👋', 'success');
+        goAfterLogin();
+        return;
+      }
+
       showToast(`OTP sent to +91 ${mobileNumber.trim()}`, 'success');
       setStep('otp');
       setOtp('');
       setResendIn(RESEND_COOLDOWN_SECONDS);
       setTimeout(() => otpInputRef.current?.focus(), 100);
-    } catch {
-      // handled in AuthContext
+    } catch (err) {
+      if (err.message === 'Name is required for new users') {
+        showToast('Looks like you are new! Please tell us your name.', 'info');
+        setShowNameField(true);
+      }
     } finally {
       setSending(false);
     }
@@ -109,17 +120,19 @@ export default function LoginScreen({ navigation, route }) {
 
           {step === 'details' ? (
             <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Your Name</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter your full name"
-                  placeholderTextColor="#888"
-                  autoCapitalize="words"
-                  value={name}
-                  onChangeText={setName}
-                />
-              </View>
+              {showNameField && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Your Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your full name"
+                    placeholderTextColor="#888"
+                    autoCapitalize="words"
+                    value={name}
+                    onChangeText={setName}
+                  />
+                </View>
+              )}
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Mobile Number</Text>

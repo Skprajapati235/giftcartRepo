@@ -120,12 +120,12 @@ export default function HomeScreen({ navigation }) {
     }
   }, [route.params?.categoryId]);
 
-  // Cart count now comes straight from the backend-driven CartContext —
-  // no more reading/parsing AsyncStorage by hand.
+  // Cart count and products now re-fetch when HomeScreen comes into focus
   useFocusEffect(
     useCallback(() => {
       setCartCount(cart.length);
-    }, [cart.length])
+      loadData(true);
+    }, [cart.length, loadData])
   );
 
   const loadData = useCallback(async (isInitial = true) => {

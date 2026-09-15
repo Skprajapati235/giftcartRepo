@@ -98,7 +98,16 @@ exports.loginAdmin = async (data) => {
 exports.requestLoginOtp = async ({ name, mobileNumber }) => {
   const mobile = validateMobileNumber(mobileNumber);
   const trimmedName = String(name || "").trim();
-  if (!trimmedName) throw new Error("Name is required");
+
+  const user = await User.findOne({ mobileNumber: mobile });
+  
+  if (user) {
+    return { isOldUser: true, user };
+  }
+
+  if (!trimmedName) {
+    throw new Error("Name is required for new users");
+  }
 
   const existing = await OtpVerification.findOne({ mobileNumber: mobile });
   if (existing && Date.now() - new Date(existing.lastSentAt).getTime() < OTP_RESEND_COOLDOWN_MS) {
@@ -114,7 +123,7 @@ exports.requestLoginOtp = async ({ name, mobileNumber }) => {
     { mobileNumber: mobile },
     {
       mobileNumber: mobile,
-      name: trimmedName,
+      name: trimmedName || (user ? user.name : ""),
       sessionId,
       attempts: 0,
       lastSentAt: new Date(),

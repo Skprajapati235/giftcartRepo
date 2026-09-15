@@ -10,6 +10,17 @@ exports.sendOtp = async (req, res) => {
   try {
     const { name, mobileNumber } = req.body;
     const result = await authService.requestLoginOtp({ name, mobileNumber });
+    
+    if (result.isOldUser) {
+      return res.json({
+        success: true,
+        message: "Logged in successfully",
+        isOldUser: true,
+        user: result.user,
+        token: generateToken(result.user._id, result.user.role),
+      });
+    }
+
     res.json({ success: true, message: "OTP sent successfully", ...result });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });

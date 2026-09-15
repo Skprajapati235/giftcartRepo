@@ -1,11 +1,38 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, RefreshControl } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeScreen, ScreenHeader } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import orderService from '../services/orderService';
 
 export default function OrderDetailScreen({ route, navigation }) {
-  const { order } = route.params;
+  const [order, setOrder] = useState(route.params.order);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchLiveOrder = async () => {
+    if (!route.params?.order?._id) return;
+    try {
+      const updated = await orderService.getOrderById(route.params.order._id);
+      if (updated && updated._id) {
+        setOrder(updated);
+      }
+    } catch (err) {
+      // Keep existing order on error
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveOrder();
+    const unsubscribe = navigation.addListener('focus', fetchLiveOrder);
+    return unsubscribe;
+  }, [navigation, route.params?.order?._id]);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchLiveOrder();
+  };
 
   const getStatusConfig = (status) => {
     switch (status) {
@@ -29,6 +56,7 @@ export default function OrderDetailScreen({ route, navigation }) {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottom + 24 }]}
       >
 

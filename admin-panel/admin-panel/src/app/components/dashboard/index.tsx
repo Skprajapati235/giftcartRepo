@@ -36,7 +36,7 @@ interface Payment {
 }
 
 export default function DashboardView() {
-    const { totalProducts, totalUsers, loading: adminLoading } = useAdmin();
+    const { totalProducts, totalUsers, loading: adminLoading, refreshAll } = useAdmin();
     const { theme } = useTheme();
     const { token, authenticated } = useAuth();
     const [orders, setOrders] = useState<Order[]>([]);
@@ -49,7 +49,8 @@ export default function DashboardView() {
         try {
             const [ordRes, payRes] = await Promise.all([
                 getAllOrders({ limit: 50 }), // Get more for the charts
-                getOrderPayments()
+                getOrderPayments(),
+                refreshAll().catch(() => {}),
             ]);
             const ordersArray = ordRes.data || ordRes;
             setOrders(ordersArray);
