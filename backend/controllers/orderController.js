@@ -3,7 +3,6 @@ const Coupon = require("../models/Coupon");
 const Order = require("../models/Order");
 const orderService = require("../services/orderService");
 const paymentService = require("../services/paymentService");
-const couponService = require("../services/couponService");
 const { calculateItemPricing } = require("../utils/priceCalculator");
 const { generateInvoicePDF } = require("../utils/pdfGenerator");
 const mongoose = require("mongoose");
