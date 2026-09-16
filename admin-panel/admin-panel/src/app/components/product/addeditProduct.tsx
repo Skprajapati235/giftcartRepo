@@ -115,6 +115,72 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     setForm((current) => ({ ...current, images: newImages }));
   };
 
+  // ── Available Cities (Locations) Helpers ──
+  const allCities = React.useMemo(() => {
+    const list: string[] = [];
+    cities.forEach((entry: any) => {
+      if (Array.isArray(entry.cities)) {
+        entry.cities.forEach((c: string) => {
+          if (c && typeof c === "string" && !list.includes(c)) list.push(c);
+        });
+      } else if (typeof entry === "string" && !list.includes(entry)) {
+        list.push(entry);
+      } else if (entry?.name && typeof entry.name === "string" && !list.includes(entry.name)) {
+        list.push(entry.name);
+      }
+    });
+    return list;
+  }, [cities]);
+
+  const isAllCitiesSelected =
+    allCities.length > 0 && allCities.every((cityName) => form.availableCities.includes(cityName));
+
+  const handleToggleAllCities = () => {
+    setForm((current) => ({
+      ...current,
+      availableCities: isAllCitiesSelected ? [] : [...allCities],
+    }));
+  };
+
+  const handleToggleCity = (cityName: string) => {
+    setForm((current) => ({
+      ...current,
+      availableCities: current.availableCities.includes(cityName)
+        ? current.availableCities.filter((c: string) => c !== cityName)
+        : [...current.availableCities, cityName],
+    }));
+  };
+
+  // ── Occasions Helpers ──
+  const allOccasions = React.useMemo(() => {
+    return occasions.filter((o: any) => o && o._id);
+  }, [occasions]);
+
+  const isAllOccasionsSelected =
+    allOccasions.length > 0 &&
+    allOccasions.every((o: any) =>
+      form.occasions.some((id: any) => String(id) === String(o._id))
+    );
+
+  const handleToggleAllOccasions = () => {
+    setForm((current) => ({
+      ...current,
+      occasions: isAllOccasionsSelected
+        ? []
+        : allOccasions.map((o: any) => String(o._id)),
+    }));
+  };
+
+  const handleToggleOccasion = (id: string) => {
+    const stringId = String(id);
+    setForm((current) => ({
+      ...current,
+      occasions: current.occasions.some((item: any) => String(item) === stringId)
+        ? current.occasions.filter((item: any) => String(item) !== stringId)
+        : [...current.occasions, stringId],
+    }));
+  };
+
   // ── Variant row helpers (shared shape for weight & flower-count lists) ──
   const addVariantRow = (setter: React.Dispatch<React.SetStateAction<VariantRow[]>>, label = "") => {
     setter((current) => {
@@ -431,75 +497,124 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
               </div>
             )}
 
+            {/* ── Available Cities (Locations) ── */}
             <div>
-              <label className="block text-sm font-bold text-slate-500 mb-2">
-                Available Cities <span className="font-normal text-slate-400">(leave empty = available everywhere)</span>
-              </label>
-              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
-                {cities.length === 0 && (
-                  <span className="text-xs text-slate-400 italic">No cities added yet — add some from the Cities section.</span>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-bold text-slate-500">
+                  Available Cities / Locations{" "}
+                  <span className="font-normal text-slate-400 text-xs">
+                    (leave empty = available everywhere)
+                  </span>
+                </label>
+                {allCities.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-medium">
+                      {form.availableCities.length}/{allCities.length} selected
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleToggleAllCities}
+                      className="text-xs font-bold text-primary hover:underline transition cursor-pointer"
+                    >
+                      {isAllCitiesSelected ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
                 )}
-                {cities.flatMap((entry: any) =>
-                  (entry.cities || []).map((cityName: string) => {
-                    const active = form.availableCities.includes(cityName);
-                    return (
-                      <button
-                        key={`${entry._id}-${cityName}`}
-                        type="button"
-                        onClick={() =>
-                          setForm((current) => ({
-                            ...current,
-                            availableCities: active
-                              ? current.availableCities.filter((c: string) => c !== cityName)
-                              : [...current.availableCities, cityName],
-                          }))
-                        }
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
-                          active
-                            ? "bg-primary text-white border-primary"
-                            : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
-                        }`}
-                      >
-                        {cityName}
-                      </button>
-                    );
-                  })
+              </div>
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
+                {allCities.length === 0 ? (
+                  <span className="text-xs text-slate-400 italic">No cities added yet — add some from the Cities section.</span>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleToggleAllCities}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition flex items-center gap-1.5 ${
+                        isAllCitiesSelected
+                          ? "bg-primary text-white border-primary shadow-sm"
+                          : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
+                      }`}
+                    >
+                      <span>{isAllCitiesSelected ? "✓ All Selected" : "✓ Select All"}</span>
+                    </button>
+                    {allCities.map((cityName: string) => {
+                      const active = form.availableCities.includes(cityName);
+                      return (
+                        <button
+                          key={cityName}
+                          type="button"
+                          onClick={() => handleToggleCity(cityName)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                            active
+                              ? "bg-primary text-white border-primary shadow-sm"
+                              : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
+                          }`}
+                        >
+                          {cityName}
+                        </button>
+                      );
+                    })}
+                  </>
                 )}
               </div>
             </div>
 
+            {/* ── Occasions ── */}
             <div>
-              <label className="block text-sm font-bold text-slate-500 mb-2">
-                Occasions <span className="font-normal text-slate-400">(optional)</span>
-              </label>
-              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
-                {occasions.length === 0 && (
-                  <span className="text-xs text-slate-400 italic">No occasions added yet.</span>
-                )}
-                {occasions.map((o: any) => {
-                  const active = form.occasions.includes(o._id);
-                  return (
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-bold text-slate-500">
+                  Occasions <span className="font-normal text-slate-400 text-xs">(optional)</span>
+                </label>
+                {allOccasions.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400 font-medium">
+                      {form.occasions.length}/{allOccasions.length} selected
+                    </span>
                     <button
-                      key={o._id}
                       type="button"
-                      onClick={() =>
-                        setForm((current) => ({
-                          ...current,
-                          occasions: active
-                            ? current.occasions.filter((id: string) => id !== o._id)
-                            : [...current.occasions, o._id],
-                        }))
-                      }
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
-                        active
-                          ? "bg-primary text-white border-primary"
+                      onClick={handleToggleAllOccasions}
+                      className="text-xs font-bold text-primary hover:underline transition cursor-pointer"
+                    >
+                      {isAllOccasionsSelected ? "Deselect All" : "Select All"}
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
+                {allOccasions.length === 0 ? (
+                  <span className="text-xs text-slate-400 italic">No occasions added yet.</span>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleToggleAllOccasions}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition flex items-center gap-1.5 ${
+                        isAllOccasionsSelected
+                          ? "bg-primary text-white border-primary shadow-sm"
                           : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
                       }`}
                     >
-                      {o.name}
+                      <span>{isAllOccasionsSelected ? "✓ All Selected" : "✓ Select All"}</span>
                     </button>
-                  );
-                })}
+                    {allOccasions.map((o: any) => {
+                      const active = form.occasions.some((id: any) => String(id) === String(o._id));
+                      return (
+                        <button
+                          key={o._id}
+                          type="button"
+                          onClick={() => handleToggleOccasion(o._id)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
+                            active
+                              ? "bg-primary text-white border-primary shadow-sm"
+                              : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
+                          }`}
+                        >
+                          {o.name}
+                        </button>
+                      );
+                    })}
+                  </>
+                )}
               </div>
             </div>
 
