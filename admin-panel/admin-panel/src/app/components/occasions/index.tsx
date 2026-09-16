@@ -6,7 +6,8 @@ import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
 import AddEditOccasion from "./addEditOccasion";
 import OccasionList from "./occasionList";
-import ConfirmDialog from "../ui/ConfirmDialog";
+import DeleteModal from "../ui/DeleteModal";
+import { useToast } from "../../../context/ToastContext";
 
 export default function OccasionView() {
   const {
@@ -24,6 +25,7 @@ export default function OccasionView() {
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { showToast } = useToast();
 
   const openForm = () => {
     setEditingOccasion(null);
@@ -46,10 +48,11 @@ export default function OccasionView() {
     setIsDeleting(true);
     try {
       await service.deleteOccasion(deleteId);
+      showToast("Occasion deleted successfully", "success");
       refresh();
       setDeleteId(null);
     } catch (error) {
-      alert("Failed to delete occasion");
+      showToast("Failed to delete occasion", "error");
     } finally {
       setIsDeleting(false);
     }
@@ -91,13 +94,12 @@ export default function OccasionView() {
         />
       )}
 
-      <ConfirmDialog
+      <DeleteModal
         isOpen={!!deleteId}
         title="Delete Occasion"
-        message="Are you sure you want to delete this occasion? This action cannot be undone."
-        confirmText="Delete"
+        description="Are you sure you want to delete this occasion? This action cannot be undone."
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteId(null)}
+        onClose={() => setDeleteId(null)}
         isLoading={isDeleting}
       />
     </>

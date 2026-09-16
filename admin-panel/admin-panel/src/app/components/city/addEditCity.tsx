@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Upload, X, Plus, Trash2 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import * as service from "../../services/adminService";
+import MediaModal from "../ui/MediaModal";
 
 interface AddEditCityProps {
   city: any;
@@ -16,25 +17,7 @@ export default function AddEditCity({ city, onClose }: AddEditCityProps) {
   const [image, setImage] = useState(city?.image || "");
   const [cityInputs, setCityInputs] = useState<string[]>(city?.cities?.length ? city.cities : [""]);
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files?.[0]) return;
-    setUploadingImage(true);
-    try {
-      // Delete old image if exists
-      if (image) {
-        await service.deleteImage(image).catch(() => {});
-      }
-      const file = event.target.files[0];
-      const data = await service.uploadImage(file);
-      setImage(data.url);
-    } catch (err: any) {
-      console.error("Upload failed", err);
-    } finally {
-      setUploadingImage(false);
-    }
-  };
+  const [showMediaModal, setShowMediaModal] = useState(false);
 
   const handleCityChange = (index: number, value: string) => {
     setCityInputs((prev) => prev.map((item, idx) => (idx === index ? value : item)));
@@ -96,23 +79,16 @@ export default function AddEditCity({ city, onClose }: AddEditCityProps) {
                 <>
                   <img src={image} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <label className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold">
+                    <button type="button" onClick={() => setShowMediaModal(true)} className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold">
                       Change
-                      <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
-                    </label>
+                    </button>
                   </div>
                 </>
               ) : (
-                <label className="cursor-pointer flex flex-col items-center gap-2 text-slate-400">
+                <button type="button" onClick={() => setShowMediaModal(true)} className="cursor-pointer flex flex-col items-center gap-2 text-slate-400">
                   <Upload size={24} />
-                  <span className="text-xs font-bold text-blue-600">Upload Image</span>
-                  <input type="file" onChange={handleFileUpload} className="hidden" />
-                </label>
-              )}
-              {uploadingImage && (
-                <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                  <p className="text-xs font-bold text-blue-600">Uploading...</p>
-                </div>
+                  <span className="text-xs font-bold text-blue-600">Select Image</span>
+                </button>
               )}
             </div>
           </div>
@@ -159,13 +135,20 @@ export default function AddEditCity({ city, onClose }: AddEditCityProps) {
             Cancel
           </button>
           <button
-            disabled={saving || uploadingImage}
+            disabled={saving}
             className="w-full sm:flex-1 bg-primary text-white rounded-2xl py-4 font-bold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50"
           >
             {saving ? "Processing..." : city?._id ? "Update City Group" : "Create City Group"}
           </button>
         </div>
       </form>
+      {showMediaModal && (
+        <MediaModal
+          onClose={() => setShowMediaModal(false)}
+          onSelect={(url) => setImage(url as string)}
+          multiple={false}
+        />
+      )}
     </section>
   );
 }

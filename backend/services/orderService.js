@@ -645,6 +645,11 @@ exports.deleteUserOrder = async (userId, orderId) => {
   return { success: true };
 };
 
+// Mark order as viewed by admin
+exports.markOrderAsViewed = async (id) => {
+  return await Order.findByIdAndUpdate(id, { isAdminViewed: true }, { new: true });
+};
+
 // Get unviewed orders (for alerts)
 exports.getUnviewedOrders = async () => {
   return await Order.find({ isAdminViewed: false, $or: [{ paymentMethod: 'COD' }, { paymentStatus: 'Success' }] })

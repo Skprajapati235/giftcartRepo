@@ -4,9 +4,10 @@ import React, { useState } from "react";
 import { Plus } from "lucide-react";
 import CouponList from "./couponList";
 import AddEditCoupon from "./addEditCoupon";
-import ConfirmDialog from "../ui/ConfirmDialog";
+import DeleteModal from "../ui/DeleteModal";
 import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/couponService";
+import { useToast } from "../../../context/ToastContext";
 
 export default function CouponView() {
   const {
@@ -24,6 +25,7 @@ export default function CouponView() {
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { showToast } = useToast();
 
   const openForm = () => {
     setEditingCoupon(null);
@@ -46,10 +48,11 @@ export default function CouponView() {
     setIsDeleting(true);
     try {
       await service.deleteCoupon(deleteId);
+      showToast("Coupon deleted successfully", "success");
       refresh();
       setDeleteId(null);
     } catch (err) {
-      console.error(err);
+      showToast("Failed to delete coupon", "error");
     } finally {
       setIsDeleting(false);
     }
@@ -91,13 +94,12 @@ export default function CouponView() {
         />
       )}
 
-      <ConfirmDialog
+      <DeleteModal
         isOpen={!!deleteId}
         title="Delete Coupon"
-        message="Are you sure you want to delete this coupon? This action cannot be undone."
-        confirmText="Delete"
+        description="Are you sure you want to delete this coupon? This action cannot be undone."
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteId(null)}
+        onClose={() => setDeleteId(null)}
         isLoading={isDeleting}
       />
     </>

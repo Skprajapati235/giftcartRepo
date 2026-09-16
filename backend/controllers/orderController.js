@@ -3,7 +3,10 @@ const Coupon = require("../models/Coupon");
 const Order = require("../models/Order");
 const orderService = require("../services/orderService");
 const paymentService = require("../services/paymentService");
+const couponService = require("../services/couponService");
 const { calculateItemPricing } = require("../utils/priceCalculator");
+const { generateInvoicePDF } = require("../utils/pdfGenerator");
+const mongoose = require("mongoose");
 
 function normalizeCouponCode(couponCode) {
   if (!couponCode) return "";
@@ -274,6 +277,25 @@ exports.getUnviewedOrders = async (req, res) => {
   } catch (error) {
     console.error("Get Unviewed Orders Error:", error);
     res.status(500).json({ success: false, message: "Error fetching unviewed orders" });
+  }
+};
+
+// GET /api/order/admin/:id/invoice
+exports.downloadInvoice = async (req, res) => {
+  try {
+    const order = await orderService.getOrderById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=Invoice-${order.orderId || order._id}.pdf`);
+
+    // Stream the generated PDF directly to response
+    generateInvoicePDF(order, res);
+  } catch (error) {
+    console.error("Download Invoice Error:", error);
+    res.status(500).json({ success: false, message: "Error generating invoice" });
   }
 };
 

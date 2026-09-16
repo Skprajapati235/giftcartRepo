@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import { getAllOrders, updateOrderStatus as updateOrderStatusApi, deleteOrder as deleteOrderApi } from "../../services/adminService";
 import { useResource } from "../../hooks/useResource";
 import OrderList from "./orderList";
-import ConfirmDialog from "../ui/ConfirmDialog";
+import DeleteModal from "../ui/DeleteModal";
+import { useToast } from "../../../context/ToastContext";
 
 interface OrderItem {
   product: string;
@@ -48,6 +49,7 @@ export default function OrdersView() {
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const { showToast } = useToast();
 
   // Clear selections when page changes
   useEffect(() => {
@@ -68,11 +70,12 @@ export default function OrdersView() {
     setIsDeleting(true);
     try {
       await deleteOrderApi(deleteId);
+      showToast("Order deleted successfully", "success");
       refresh();
       setDeleteId(null);
       setSelectedIds(prev => prev.filter(id => id !== deleteId));
     } catch (error) {
-      alert("Failed to delete order");
+      showToast("Failed to delete order", "error");
     } finally {
       setIsDeleting(false);
     }
@@ -84,11 +87,12 @@ export default function OrdersView() {
     try {
       const { deleteMultipleOrders } = await import("../../services/adminService");
       await deleteMultipleOrders(selectedIds);
+      showToast(`${selectedIds.length} orders deleted`, "success");
       refresh();
       setIsBulkDeleting(false);
       setSelectedIds([]);
     } catch (error) {
-      alert("Failed to delete selected orders");
+      showToast("Failed to delete selected orders", "error");
     } finally {
       setIsDeleting(false);
     }
@@ -129,22 +133,20 @@ export default function OrdersView() {
         selectedIds={selectedIds}
         onSelectChange={setSelectedIds}
       />
-      <ConfirmDialog
+      <DeleteModal
         isOpen={!!deleteId}
         title="Delete Order"
-        message="Are you sure you want to delete this order? This action cannot be undone."
-        confirmText="Delete"
+        description="Are you sure you want to delete this order? This action cannot be undone."
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteId(null)}
+        onClose={() => setDeleteId(null)}
         isLoading={isDeleting}
       />
-      <ConfirmDialog
+      <DeleteModal
         isOpen={isBulkDeleting}
         title="Delete Selected Orders"
-        message={`Are you sure you want to delete ${selectedIds.length} selected order(s)? This action cannot be undone.`}
-        confirmText="Delete All"
+        description={`Are you sure you want to delete ${selectedIds.length} selected order(s)? This action cannot be undone.`}
         onConfirm={confirmBulkDelete}
-        onCancel={() => setIsBulkDeleting(false)}
+        onClose={() => setIsBulkDeleting(false)}
         isLoading={isDeleting}
       />
     </>

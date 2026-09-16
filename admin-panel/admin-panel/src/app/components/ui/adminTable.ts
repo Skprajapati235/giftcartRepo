@@ -1,7 +1,7 @@
 /** Shared admin list table classes — prevents row overlap on mobile */
 
 export const adminTableWrapClass =
-  "overflow-x-auto w-full max-w-full [-webkit-overflow-scrolling:touch]";
+  "overflow-x-auto w-full max-w-full [-webkit-overflow-scrolling:touch] min-h-[350px] pb-32";
 
 export const adminTableClass =
   "w-full min-w-[720px] text-left border-collapse";

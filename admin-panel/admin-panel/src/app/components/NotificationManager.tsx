@@ -46,9 +46,11 @@ export default function NotificationManager() {
   }, []); // Only run once on mount
 
   const handleDismiss = async (id: string) => {
+    // Optimistically remove the notification first so the UI responds instantly
+    setNewOrders((prev) => prev.filter((o) => o._id !== id));
+    
     try {
       await markOrderAsViewed(id);
-      setNewOrders((prev) => prev.filter((o) => o._id !== id));
     } catch (error) {
       console.error("Failed to mark order as viewed", error);
     }

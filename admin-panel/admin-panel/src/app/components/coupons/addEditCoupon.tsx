@@ -6,6 +6,7 @@ import * as service from "../../services/couponService";
 import * as adminService from "../../services/adminService";
 import { useAdmin } from "../../context/AdminContext";
 import { useToast } from "../../../context/ToastContext";
+import MediaModal from "../ui/MediaModal";
 
 interface AddEditCouponProps {
   coupon?: any;
@@ -30,7 +31,7 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
     applicableOccasions: (coupon?.applicableOccasions || []).map((o: any) => o?._id || o),
   });
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
 
   const toggleInList = (field: "applicableProducts" | "applicableOccasions", id: string) => {
     setFormData((prev) => {
@@ -41,26 +42,7 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
     });
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files?.[0]) return;
-    setUploadingImage(true);
-    try {
-      // Delete old image if exists
-      if (formData.image) {
-        await adminService.deleteImage(formData.image).catch(() => {});
-      }
-      const file = event.target.files[0];
-      const data = await adminService.uploadImage(file);
-      setFormData({ ...formData, image: data.url });
-      showToast("Coupon ad image uploaded!", "success");
-    } catch (err: any) {
-      showToast("Upload failed", "error");
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formData.code || !formData.discountValue || !formData.expiryDate) {
       showToast("Please fill all required fields", "warning");
@@ -115,26 +97,16 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
                 <>
                   <img src={formData.image} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <label className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-lg">
+                    <button type="button" onClick={() => setShowMediaModal(true)} className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-lg">
                       Change Image
-                      <input type="file" onChange={handleFileUpload} className="hidden" accept="image/*" />
-                    </label>
+                    </button>
                   </div>
                 </>
               ) : (
-                <label className="cursor-pointer flex flex-col items-center gap-2">
+                <button type="button" onClick={() => setShowMediaModal(true)} className="cursor-pointer flex flex-col items-center gap-2">
                   <Upload size={24} className="text-slate-300" />
-                  <span className="text-xs font-bold text-blue-600">Upload Ad Banner</span>
-                  <input type="file" onChange={handleFileUpload} className="hidden" />
-                </label>
-              )}
-              {uploadingImage && (
-                <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <p className="text-[10px] font-black uppercase text-primary">Uploading...</p>
-                  </div>
-                </div>
+                  <span className="text-xs font-bold text-blue-600">Select Ad Banner</span>
+                </button>
               )}
             </div>
           </div>
@@ -297,13 +269,20 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
           </button>
           <button
             type="submit"
-            disabled={saving || uploadingImage}
+            disabled={saving}
             className="flex-[2] px-8 py-5 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
           >
             {saving ? "Processing..." : coupon?._id ? "Save Changes" : "Create Coupon Now"}
           </button>
         </div>
       </form>
+      {showMediaModal && (
+        <MediaModal
+          onClose={() => setShowMediaModal(false)}
+          onSelect={(url) => setFormData({ ...formData, image: url as string })}
+          multiple={false}
+        />
+      )}
     </div>
   );
 }

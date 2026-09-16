@@ -6,6 +6,8 @@ import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
 import AddEditFlavor from "./addEditFlavor";
 import FlavorList from "./flavorList";
+import DeleteModal from "../ui/DeleteModal";
+import { useToast } from "../../../context/ToastContext";
 
 export default function FlavorView() {
   const {
@@ -21,6 +23,10 @@ export default function FlavorView() {
 
   const [editingFlavor, setEditingFlavor] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [flavorToDelete, setFlavorToDelete] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { showToast } = useToast();
 
   const openForm = () => {
     setEditingFlavor(null);
@@ -38,14 +44,23 @@ export default function FlavorView() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this flavor?")) {
-      try {
-        await service.deleteFlavor(id);
-        refresh();
-      } catch (error) {
-        alert("Failed to delete flavor");
-      }
+  const triggerDelete = (flavor: any) => {
+    setFlavorToDelete(flavor);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!flavorToDelete) return;
+    setDeleting(true);
+    try {
+      await service.deleteFlavor(flavorToDelete._id);
+      showToast("Flavor deleted successfully", "success");
+      refresh();
+      setDeleteModalOpen(false);
+    } catch (error) {
+      showToast("Failed to delete flavor", "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -77,9 +92,18 @@ export default function FlavorView() {
           onPageChange={onPageChange}
           onSearchChange={onSearchChange}
           onEdit={handleEdit}
-          onDelete={handleDelete}
+          onDelete={triggerDelete}
         />
       )}
+
+      <DeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Flavor"
+        itemName={flavorToDelete?.name}
+        isLoading={deleting}
+      />
     </>
   );
 }

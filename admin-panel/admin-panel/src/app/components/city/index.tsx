@@ -6,6 +6,8 @@ import CityList from "./cityList";
 import AddEditCity from "./addEditCity";
 import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
+import DeleteModal from "../ui/DeleteModal";
+import { useToast } from "../../../context/ToastContext";
 
 export default function CityView() {
   const {
@@ -21,6 +23,10 @@ export default function CityView() {
 
   const [editingCity, setEditingCity] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [cityToDelete, setCityToDelete] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { showToast } = useToast();
 
   const openForm = () => {
     setEditingCity(null);
@@ -38,14 +44,23 @@ export default function CityView() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this city group?")) {
-      try {
-        await service.deleteCity(id);
-        refresh();
-      } catch (err) {
-        alert("Failed to delete city group");
-      }
+  const triggerDelete = (city: any) => {
+    setCityToDelete(city);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!cityToDelete) return;
+    setDeleting(true);
+    try {
+      await service.deleteCity(cityToDelete._id);
+      showToast("City group deleted successfully", "success");
+      refresh();
+      setDeleteModalOpen(false);
+    } catch (error) {
+      showToast("Failed to delete city group", "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -77,9 +92,18 @@ export default function CityView() {
           onPageChange={onPageChange}
           onSearchChange={onSearchChange}
           onEdit={handleEdit}
-          onDelete={handleDelete}
+          onDelete={triggerDelete}
         />
       )}
+
+      <DeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete City Group"
+        itemName={cityToDelete?.state}
+        isLoading={deleting}
+      />
     </>
   );
 }

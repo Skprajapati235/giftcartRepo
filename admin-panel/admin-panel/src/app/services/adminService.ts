@@ -178,6 +178,65 @@ export const deleteImage = async (url: string) => {
   return response.data;
 };
 
+export const getMediaList = async (params?: { page?: number; limit?: number; search?: string; folderId?: string | null }) => {
+  const response = await authApi(getAuthToken()).get("/upload", { params });
+  return response.data;
+};
+
+export const uploadMediaFiles = async (files: File[], folderId?: string | null) => {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("files", file));
+  if (folderId) formData.append("folderId", folderId);
+
+  const response = await authApi(getAuthToken()).post("/upload", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const updateMedia = async (id: string, file?: File, name?: string) => {
+  const formData = new FormData();
+  if (file) formData.append("file", file);
+  if (name) formData.append("name", name);
+
+  const response = await authApi(getAuthToken()).put(`/upload/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const deleteMediaById = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/upload/${id}`);
+  return response.data;
+};
+
+export const syncCloudinaryMedia = async () => {
+  const response = await authApi(getAuthToken()).post("/upload/sync");
+  return response.data;
+};
+
+// --- MEDIA FOLDERS ---
+
+export const getMediaFolders = async () => {
+  const response = await authApi(getAuthToken()).get("/upload/folders");
+  return response.data;
+};
+
+export const createMediaFolder = async (name: string) => {
+  const response = await authApi(getAuthToken()).post("/upload/folders", { name });
+  return response.data;
+};
+
+export const updateMediaFolder = async (id: string, name: string) => {
+  const response = await authApi(getAuthToken()).put(`/upload/folders/${id}`, { name });
+  return response.data;
+};
+
+export const deleteMediaFolder = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/upload/folders/${id}`);
+  return response.data;
+};
+
 export const deleteUser = async (id: string) => {
   const response = await authApi(getAuthToken()).delete(`/admin/users/${id}`);
   return response.data;

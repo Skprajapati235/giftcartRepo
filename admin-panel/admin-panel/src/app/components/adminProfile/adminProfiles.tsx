@@ -11,6 +11,8 @@ import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
 import { adminTableWrapClass, adminTableClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
 import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
+import DeleteModal from "../ui/DeleteModal";
+import { useToast } from "../../../context/ToastContext";
 
 export default function AdminsPage() {
     const {
@@ -29,18 +31,31 @@ export default function AdminsPage() {
     const activeAdminId = user?._id || null;
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [adminToDelete, setAdminToDelete] = useState<any>(null);
+    const [deleting, setDeleting] = useState(false);
+    const { showToast } = useToast();
     const router = useRouter();
 
     useRowActionMenu(openMenuId, setOpenMenuId);
 
-    const deleteAdmin = async (id: string) => {
-        if (window.confirm("Are you sure you want to delete this admin?")) {
-            try {
-                await service.deleteAdmin(id);
-                refresh();
-            } catch (err) {
-                alert("Failed to delete admin");
-            }
+    const triggerDelete = (admin: any) => {
+        setAdminToDelete(admin);
+        setDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!adminToDelete) return;
+        setDeleting(true);
+        try {
+            await service.deleteAdmin(adminToDelete._id);
+            showToast("Admin deleted successfully", "success");
+            refresh();
+            setDeleteModalOpen(false);
+        } catch (err) {
+            showToast("Failed to delete admin", "error");
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -132,8 +147,8 @@ export default function AdminsPage() {
                                                     Edit
                                                 </button>
                                                 <button
-                                                    className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-50 transition"
-                                                    onClick={() => deleteAdmin(admin._id)}
+                                                    className="w-full text-left px-3 py-2 text-sm text-red-600 font-bold hover:bg-red-50 flex items-center gap-2 transition"
+                                                    onClick={() => triggerDelete(admin)}
                                                 >
                                                     <Trash2 size={16} />
                                                     Delete
@@ -156,6 +171,15 @@ export default function AdminsPage() {
                 </div>
                 <Pagination currentPage={params.page} totalPages={totalPages} onPageChange={onPageChange} />
             </div>
+
+            <DeleteModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Delete Admin Profile"
+                itemName={adminToDelete?.name}
+                isLoading={deleting}
+            />
         </div>
     );
 }

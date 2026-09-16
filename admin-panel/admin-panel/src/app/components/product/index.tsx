@@ -6,6 +6,8 @@ import ProductList from "./productList";
 import AddEditProduct from "./addeditProduct";
 import ProductDetailDialogue from "./productDetailDialogue";
 import CategoryTabs from "./categoryTabs";
+import DeleteModal from "../ui/DeleteModal";
+import { useToast } from "../../../context/ToastContext";
 import ConfirmDialog from "../ui/ConfirmDialog";
 import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
@@ -29,6 +31,7 @@ export default function ProductView() {
   const [showForm, setShowForm] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { showToast } = useToast();
 
   // "Add Product" always creates the product inside whichever category tab
   // is currently open (Cake tab -> new product starts as a Cake, etc.)
@@ -54,10 +57,11 @@ export default function ProductView() {
     setIsDeleting(true);
     try {
       await service.deleteProduct(deleteId);
+      showToast("Product deleted successfully", "success");
       refresh();
       setDeleteId(null);
     } catch (err: any) {
-      alert(err.message || "Failed to delete product");
+      showToast(err.message || "Failed to delete product", "error");
     } finally {
       setIsDeleting(false);
     }
@@ -124,13 +128,12 @@ export default function ProductView() {
         <ProductDetailDialogue product={viewingProduct} onClose={() => setViewingProduct(null)} />
       )}
 
-      <ConfirmDialog
+      <DeleteModal
         isOpen={!!deleteId}
         title="Delete Product"
-        message="Are you sure you want to delete this product? This action cannot be undone."
-        confirmText="Delete"
+        description="Are you sure you want to delete this product? This action cannot be undone."
         onConfirm={confirmDelete}
-        onCancel={() => setDeleteId(null)}
+        onClose={() => setDeleteId(null)}
         isLoading={isDeleting}
       />
     </>

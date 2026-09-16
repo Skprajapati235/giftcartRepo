@@ -5,6 +5,7 @@ import { X, Upload, Plus, Trash2 } from "lucide-react";
 import * as service from "../../services/adminService";
 import { useAdmin } from "../../context/AdminContext";
 import { useToast } from "../../../context/ToastContext";
+import MediaModal from "../ui/MediaModal";
 
 interface AddEditProductProps {
   product: any; // null if adding
@@ -36,7 +37,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
   const { categories, flavors, cities, occasions, createProduct, updateProduct } = useAdmin();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState<"main" | "gallery" | false>(false);
 
   const [form, setForm] = useState({
     name: product?.name || "",
@@ -97,40 +98,21 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
   const isFlowerCategory = categoryName.includes("flower");
   const isGenericCategory = !isCakeCategory && !isFlowerCategory;
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, isMain: boolean = false) => {
-    if (!event.target.files?.[0]) return;
-    setUploadingImage(true);
-    try {
-      const file = event.target.files[0];
-      const data = await service.uploadImage(file);
-
-      if (isMain) {
-        if (form.image) {
-          await service.deleteImage(form.image).catch(() => { });
-        }
-        setForm((current) => ({ ...current, image: data.url }));
-      } else {
-        setForm((current) => ({ ...current, images: [...current.images, data.url] }));
-      }
-
-      showToast("Image uploaded successfully!", "success");
-    } catch (err: any) {
-      showToast("Image upload failed", "error");
-    } finally {
-      setUploadingImage(false);
+  const handleMediaSelect = (urls: string | string[]) => {
+    if (showMediaModal === "main") {
+      setForm((current) => ({ ...current, image: urls as string }));
+    } else if (showMediaModal === "gallery") {
+      setForm((current) => ({
+        ...current,
+        images: Array.isArray(urls) ? [...current.images, ...urls] : [...current.images, urls],
+      }));
     }
   };
 
-  const removeGalleryImage = async (index: number) => {
-    const url = form.images[index];
-    try {
-      await service.deleteImage(url).catch(() => { });
-      const newImages = [...form.images];
-      newImages.splice(index, 1);
-      setForm((current) => ({ ...current, images: newImages }));
-    } catch (e) {
-      console.error(e);
-    }
+  const removeGalleryImage = (index: number) => {
+    const newImages = [...form.images];
+    newImages.splice(index, 1);
+    setForm((current) => ({ ...current, images: newImages }));
   };
 
   // ── Variant row helpers (shared shape for weight & flower-count lists) ──
@@ -678,14 +660,13 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 <>
                   <img src={form.image} className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <label className="cursor-pointer bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg text-sm">
+                    <button type="button" onClick={() => setShowMediaModal("main")} className="cursor-pointer bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg text-sm">
                       Update Main Image
-                      <input type="file" onChange={(e) => handleFileUpload(e, true)} className="hidden" accept="image/*" />
-                    </label>
+                    </button>
                   </div>
                 </>
               ) : (
-                <label className="cursor-pointer flex flex-col items-center gap-4">
+                <button type="button" onClick={() => setShowMediaModal("main")} className="cursor-pointer flex flex-col items-center gap-4">
                   <div className="p-4 bg-primary/10 text-primary rounded-2xl shadow-sm">
                     <Upload size={32} />
                   </div>
@@ -693,8 +674,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                     <span className="text-primary font-bold">Select Main Image</span>
                     <p className="text-xs text-slate-400 font-medium mt-1 uppercase tracking-widest">JPG, PNG allowed</p>
                   </div>
-                  <input type="file" onChange={(e) => handleFileUpload(e, true)} className="hidden" />
-                </label>
+                </button>
               )}
             </div>
 
@@ -713,10 +693,9 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                     </button>
                   </div>
                 ))}
-                <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border-theme flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary cursor-pointer transition">
+                <button type="button" onClick={() => setShowMediaModal("gallery")} className="w-24 h-24 rounded-xl border-2 border-dashed border-border-theme flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary cursor-pointer transition">
                   <Plus size={24} />
-                  <input type="file" onChange={(e) => handleFileUpload(e, false)} className="hidden" accept="image/*" />
-                </label>
+                </button>
               </div>
             </div>
 
@@ -752,13 +731,20 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
             Cancel
           </button>
           <button
-            disabled={saving || uploadingImage}
+            disabled={saving}
             className="w-full sm:w-auto bg-primary text-white px-16 py-4 rounded-2xl font-bold hover:opacity-90 transition shadow-xl shadow-primary/20 disabled:opacity-50"
           >
             {saving ? "Saving..." : product?._id ? "Update Product" : "Save Product"}
           </button>
         </div>
       </form>
+      {showMediaModal && (
+        <MediaModal
+          onClose={() => setShowMediaModal(false)}
+          onSelect={handleMediaSelect}
+          multiple={showMediaModal === "gallery"}
+        />
+      )}
     </section>
   );
 }

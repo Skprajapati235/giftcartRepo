@@ -6,6 +6,8 @@ import CategoryList from "./categoryList";
 import AddEditCategory from "./addEditCategory";
 import { useResource } from "../../hooks/useResource";
 import * as service from "../../services/adminService";
+import DeleteModal from "../ui/DeleteModal";
+import { useToast } from "../../../context/ToastContext";
 
 export default function CategoryView() {
   const {
@@ -21,6 +23,10 @@ export default function CategoryView() {
 
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { showToast } = useToast();
 
   const openForm = () => {
     setEditingCategory(null);
@@ -38,14 +44,23 @@ export default function CategoryView() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Are you sure you want to delete this category?")) {
-      try {
-        await service.deleteCategory(id);
-        refresh();
-      } catch (error) {
-        alert("Failed to delete category");
-      }
+  const triggerDelete = (category: any) => {
+    setCategoryToDelete(category);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!categoryToDelete) return;
+    setDeleting(true);
+    try {
+      await service.deleteCategory(categoryToDelete._id);
+      showToast("Category deleted successfully", "success");
+      refresh();
+      setDeleteModalOpen(false);
+    } catch (error) {
+      showToast("Failed to delete category", "error");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -77,9 +92,18 @@ export default function CategoryView() {
           onPageChange={onPageChange}
           onSearchChange={onSearchChange}
           onEdit={handleEdit}
-          onDelete={handleDelete}
+          onDelete={triggerDelete}
         />
       )}
+
+      <DeleteModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title="Delete Category"
+        itemName={categoryToDelete?.name}
+        isLoading={deleting}
+      />
     </>
   );
 }

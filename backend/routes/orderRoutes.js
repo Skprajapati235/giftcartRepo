@@ -22,5 +22,6 @@ router.post("/admin/bulk-delete", authMiddleware, adminMiddleware, controller.de
 router.delete("/admin/:id", authMiddleware, adminMiddleware, controller.deleteOrder);
 router.put("/admin/:id/viewed", authMiddleware, adminMiddleware, controller.markOrderAsViewed);
 router.get("/admin/payments", authMiddleware, adminMiddleware, controller.getPaymentHistory);
+router.get("/admin/:id/invoice", authMiddleware, adminMiddleware, controller.downloadInvoice);
 
 module.exports = router;

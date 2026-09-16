@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ShoppingCart, MoreHorizontal, Eye } from "lucide-react";
+import { Search, ShoppingCart, MoreHorizontal, Eye, Download } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 import { adminTableWrapClass, adminTableWideClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
@@ -43,6 +43,30 @@ export default function OrderList({
   const handleDelete = (id: string) => {
     setOpenMenuId(null);
     onDelete(id);
+  };
+
+  const handleDownloadInvoice = async (id: string) => {
+    try {
+      const token = localStorage.getItem("giftcartAdminToken") || "";
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/order/admin/${id}/invoice`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error("Failed to generate invoice");
+      
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Invoice-${id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert("Failed to download invoice.");
+    }
   };
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,9 +253,10 @@ export default function OrderList({
                         <div className="mx-2 my-1 border-t border-slate-100" />
                         <button
                           className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
-                          onClick={() => alert("Printing functionality coming soon!")}
+                          onClick={() => handleDownloadInvoice(order._id)}
                         >
-                          Print Invoice
+                          <Download size={16} className="text-slate-400" />
+                          Download Invoice
                         </button>
                         <div className="mx-2 my-1 border-t border-slate-100" />
                         <button
