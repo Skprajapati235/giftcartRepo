@@ -386,74 +386,91 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
   // Renders one editable variant row (weight or flower-count) — the row's
   // own price/salePrice/discount/tax/shippingCost, fully independent of
   // every other row.
+  // Renders one editable variant card (weight or flower-count) in a 2-column responsive grid
   const renderVariantRow = (
     row: VariantRow,
     index: number,
     setter: React.Dispatch<React.SetStateAction<VariantRow[]>>,
     labelPlaceholder: string
   ) => (
-    <div key={index} className="rounded-xl border border-border-theme p-4 mb-3 bg-hover-theme/20">
-      <div className="flex items-center justify-between mb-3">
-        <input
-          value={row.label}
-          onChange={(e) => updateVariantRow(setter, index, "label", e.target.value)}
-          placeholder={labelPlaceholder}
-          className="w-1/2 rounded-lg border border-border-theme bg-background px-3 py-2 text-sm font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-        />
+    <div
+      key={index}
+      className="rounded-2xl border border-border-theme p-4 bg-card/80 hover:border-primary/50 transition-all shadow-sm space-y-3"
+    >
+      <div className="flex items-center justify-between gap-3 pb-2.5 border-b border-border-theme/60">
+        <div className="flex items-center gap-2 flex-1">
+          <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">
+            #{index + 1}
+          </span>
+          <input
+            value={row.label}
+            onChange={(e) => updateVariantRow(setter, index, "label", e.target.value)}
+            placeholder={labelPlaceholder}
+            className="flex-1 rounded-xl border border-border-theme bg-background px-3 py-1.5 text-sm font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+          />
+        </div>
         <button
           type="button"
           onClick={() => removeVariantRow(setter, index)}
-          className="text-red-400 hover:text-red-600 transition"
+          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer flex-shrink-0"
+          title="Remove variant"
         >
-          <Trash2 size={18} />
+          <Trash2 size={16} />
         </button>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+
+      <div className="grid grid-cols-2 gap-2.5">
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">List Price (₹)</label>
+          <label className="block text-[11px] font-bold text-slate-500 mb-1">List MRP (₹)</label>
           <input
             value={row.price}
             onChange={(e) => updateVariantRow(setter, index, "price", e.target.value)}
             type="number"
-            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-xl border border-border-theme bg-background px-3 py-1.5 text-sm font-semibold text-foreground outline-none focus:ring-2 focus:ring-primary/20"
             placeholder="e.g. 999"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">Sale Price (₹)</label>
+          <label className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mb-1">Sale Offer (₹)</label>
           <input
             value={row.salePrice}
             onChange={(e) => updateVariantRow(setter, index, "salePrice", e.target.value)}
             type="number"
-            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-xl border border-border-theme bg-background px-3 py-1.5 text-sm font-semibold text-foreground outline-none focus:ring-2 focus:ring-primary/20"
             placeholder="e.g. 799"
           />
         </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">Discount (%)</label>
+          <label className="block text-[11px] font-bold text-slate-500 mb-1">Discount (%)</label>
           <input
             value={row.discount}
             onChange={(e) => updateVariantRow(setter, index, "discount", e.target.value)}
             type="number"
-            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-xl border border-border-theme bg-background px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            placeholder="0"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">Tax (%)</label>
+          <label className="block text-[11px] font-bold text-slate-500 mb-1">Tax (%)</label>
           <input
             value={row.tax}
             onChange={(e) => updateVariantRow(setter, index, "tax", e.target.value)}
             type="number"
-            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-xl border border-border-theme bg-background px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            placeholder="0"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-slate-500 mb-1">Shipping (₹)</label>
+          <label className="block text-[11px] font-bold text-slate-500 mb-1">Shipping (₹)</label>
           <input
             value={row.shippingCost}
             onChange={(e) => updateVariantRow(setter, index, "shippingCost", e.target.value)}
             type="number"
-            className="w-full rounded-lg border border-border-theme bg-background px-2 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-xl border border-border-theme bg-background px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+            placeholder="0"
           />
         </div>
       </div>
@@ -466,17 +483,20 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
         <h2 className="text-lg font-bold text-foreground">
           {product?._id ? "Edit Product" : "Add New Product"}
         </h2>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition">
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition cursor-pointer">
           <X size={20} />
         </button>
       </div>
 
-      <form className="p-8 flex-1 overflow-y-auto" onSubmit={handleSubmit}>
-        <div className="grid gap-10 lg:grid-cols-2">
-          {/* Left Side: Inputs */}
-          <div className="space-y-6">
+      <form className="p-8 flex-1 overflow-y-auto space-y-8" onSubmit={handleSubmit}>
+        {/* Section 1: Basic Information & Media / Inventory (Balanced 2-Column Grid) */}
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* Left Column: Essential Details */}
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Product Name</label>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                Product Name <span className="text-rose-500">*</span>
+              </label>
               <input
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -485,42 +505,36 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 required
               />
             </div>
+
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="Write a brief description..."
-                rows={4}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-500 mb-2">Category</label>
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                Category <span className="text-rose-500">*</span>
+              </label>
               <select
                 value={form.category}
                 onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                 required
               >
                 <option value="">Select Category</option>
                 {categories.map((c: any) => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
               <p className="text-xs text-slate-400 mt-1">
-                {isCakeCategory && "Cake fields (weight variants, flavor, eggless) will show below."}
-                {isFlowerCategory && "Bouquet & Flower fields (flower count, bouquet variants) will show below."}
-                {isGenericCategory && form.category && "Simple single-price form will show below."}
+                {isCakeCategory && "🎂 Cake pricing & weight options will configure below."}
+                {isFlowerCategory && "🌸 Flower count & bouquet variant options will configure below."}
+                {isGenericCategory && form.category && "Standard single-price options will configure below."}
               </p>
             </div>
 
             {isCakeCategory && (
               <div>
-                <label className="block text-sm font-bold text-slate-500 mb-2">Cake Flavor (Optional)</label>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Cake Flavor (Optional)
+                </label>
                 <select
                   value={form.flavor}
                   onChange={(e) => setForm({ ...form, flavor: e.target.value })}
-                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                 >
                   <option value="">Select Flavor</option>
                   {flavors.map((f: any) => <option key={f._id} value={f._id}>{f.name}</option>)}
@@ -528,437 +542,21 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
               </div>
             )}
 
-            {/* ── Available Cities (Locations) ── */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-bold text-slate-500">
-                  Available Cities / Locations{" "}
-                  <span className="font-normal text-slate-400 text-xs">
-                    (leave empty = available everywhere)
-                  </span>
-                </label>
-                {allCities.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400 font-medium">
-                      {form.availableCities.length}/{allCities.length} selected
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleToggleAllCities}
-                      className="text-xs font-bold text-primary hover:underline transition cursor-pointer"
-                    >
-                      {isAllCitiesSelected ? "Deselect All" : "Select All"}
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
-                {allCities.length === 0 ? (
-                  <span className="text-xs text-slate-400 italic">No cities added yet — add some from the Cities section.</span>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleToggleAllCities}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition flex items-center gap-1.5 ${
-                        isAllCitiesSelected
-                          ? "bg-primary text-white border-primary shadow-sm"
-                          : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
-                      }`}
-                    >
-                      <span>{isAllCitiesSelected ? "✓ All Selected" : "✓ Select All"}</span>
-                    </button>
-                    {allCities.map((cityName: string) => {
-                      const active = form.availableCities.includes(cityName);
-                      return (
-                        <button
-                          key={cityName}
-                          type="button"
-                          onClick={() => handleToggleCity(cityName)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
-                            active
-                              ? "bg-primary text-white border-primary shadow-sm"
-                              : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
-                          }`}
-                        >
-                          {cityName}
-                        </button>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* ── Occasions ── */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-bold text-slate-500">
-                  Occasions <span className="font-normal text-slate-400 text-xs">(optional)</span>
-                </label>
-                {allOccasions.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400 font-medium">
-                      {form.occasions.length}/{allOccasions.length} selected
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleToggleAllOccasions}
-                      className="text-xs font-bold text-primary hover:underline transition cursor-pointer"
-                    >
-                      {isAllOccasionsSelected ? "Deselect All" : "Select All"}
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
-                {allOccasions.length === 0 ? (
-                  <span className="text-xs text-slate-400 italic">No occasions added yet.</span>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleToggleAllOccasions}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition flex items-center gap-1.5 ${
-                        isAllOccasionsSelected
-                          ? "bg-primary text-white border-primary shadow-sm"
-                          : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
-                      }`}
-                    >
-                      <span>{isAllOccasionsSelected ? "✓ All Selected" : "✓ Select All"}</span>
-                    </button>
-                    {allOccasions.map((o: any) => {
-                      const active = form.occasions.some((id: any) => String(id) === String(o._id));
-                      return (
-                        <button
-                          key={o._id}
-                          type="button"
-                          onClick={() => handleToggleOccasion(o._id)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition ${
-                            active
-                              ? "bg-primary text-white border-primary shadow-sm"
-                              : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
-                          }`}
-                        >
-                          {o.name}
-                        </button>
-                      );
-                    })}
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* ── Category-specific pricing ── */}
-            {isCakeCategory && (
-              <div className="border-t border-border-theme pt-4 mt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-md font-bold text-foreground">Weight Variants (Cakes)</h3>
-                </div>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {WEIGHT_PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => addPreset(setWeightOptions, weightOptions, preset)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold border border-dashed border-primary text-primary hover:bg-primary/10 transition"
-                    >
-                      + {preset}
-                    </button>
-                  ))}
-                </div>
-
-                {weightOptions.length === 0 && (
-                  <p className="text-xs text-slate-400 italic mb-3">No weight variants yet — click a preset above or "Add Weight" below.</p>
-                )}
-                {weightOptions.map((row, idx) => renderVariantRow(row, idx, setWeightOptions, "e.g. 500g, 1kg"))}
-
-                <button
-                  type="button"
-                  onClick={() => addVariantRow(setWeightOptions)}
-                  className="flex items-center gap-2 text-sm font-bold text-primary hover:opacity-80 transition"
-                >
-                  <Plus size={16} /> Add Weight Variant
-                </button>
-
-                <div className="flex items-center gap-3 mt-6">
-                  <input
-                    type="checkbox"
-                    id="hasEgglessOption"
-                    checked={form.hasEgglessOption}
-                    onChange={(e) => setForm({ ...form, hasEgglessOption: e.target.checked })}
-                    className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
-                  />
-                  <label htmlFor="hasEgglessOption" className="text-sm font-bold text-slate-700">Has Eggless Option</label>
-                </div>
-              </div>
-            )}
-
-            {isFlowerCategory && (
-              <div className="border-t border-border-theme pt-4 mt-4 space-y-5">
-                <div>
-                  <h3 className="text-md font-bold text-foreground flex items-center gap-2">
-                    🌸 Bouquet Flower Count & Details
-                  </h3>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    Specify the number of flowers / stems in this bouquet (e.g. 10 Roses, 12 Flowers, or 20).
-                  </p>
-                </div>
-
-                {/* Primary Flower Count field */}
-                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-border-theme space-y-3">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Flower Count / Number of Stems
-                    </label>
-                    <input
-                      value={form.flowerCount}
-                      onChange={(e) => setForm({ ...form, flowerCount: e.target.value })}
-                      type="text"
-                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. 10 Roses, 12 Flowers, 24 Lilies"
-                    />
-                  </div>
-
-                  {/* Preset quick chips */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</span>
-                    {FLOWER_COUNT_NAME_PRESETS.map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setForm({ ...form, flowerCount: preset })}
-                        className={`px-3 py-1 rounded-lg text-xs font-bold border transition ${
-                          form.flowerCount === preset
-                            ? "bg-primary text-white border-primary"
-                            : "border-border-theme bg-background hover:border-primary/50 text-foreground"
-                        }`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Pricing: If no variants are added, show standard pricing so single bouquet can be priced */}
-                {flowerCountOptions.length === 0 && (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-border-theme space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-foreground">Bouquet Pricing</h4>
-                      <span className="text-xs text-slate-400">Single Price (No size variants)</span>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div>
-                        <label className="block text-sm font-bold text-slate-500 mb-2">List Price (MRP ₹)</label>
-                        <input
-                          value={form.price}
-                          onChange={(e) => handleGenericPricingChange("price", e.target.value)}
-                          type="number"
-                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                          placeholder="e.g. 999"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-slate-500 mb-2">Sale Price (Offer ₹)</label>
-                        <input
-                          value={form.salePrice}
-                          onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
-                          type="number"
-                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                          placeholder="e.g. 799"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <div>
-                        <label className="block text-sm font-bold text-slate-500 mb-2">Discount (%)</label>
-                        <input
-                          value={form.discount}
-                          onChange={(e) => handleGenericPricingChange("discount", e.target.value)}
-                          type="number"
-                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                          placeholder="e.g. 10"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-slate-500 mb-2">Tax (%)</label>
-                        <input
-                          value={form.tax}
-                          onChange={(e) => handleGenericPricingChange("tax", e.target.value)}
-                          type="number"
-                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                          placeholder="e.g. 18"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-slate-500 mb-2">Shipping Cost (₹)</label>
-                        <input
-                          value={form.shippingCost}
-                          onChange={(e) => handleGenericPricingChange("shippingCost", e.target.value)}
-                          type="number"
-                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                          placeholder="e.g. 50"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Multi-Size Flower Count Variants (Optional) */}
-                <div className="border-t border-border-theme/70 pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-bold text-foreground">
-                      Multi-Size Variants (Optional)
-                    </h4>
-                    <span className="text-xs text-slate-400">Add if bouquet comes in multiple selectable sizes</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {FLOWER_COUNT_PRESETS.map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => addPreset(setFlowerCountOptions, flowerCountOptions, `${preset} Roses`)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold border border-dashed border-primary text-primary hover:bg-primary/10 transition"
-                      >
-                        + {preset} Roses
-                      </button>
-                    ))}
-                  </div>
-
-                  {flowerCountOptions.map((row, idx) => renderVariantRow(row, idx, setFlowerCountOptions, "e.g. 10 Roses, 20 Roses"))}
-
-                  <button
-                    type="button"
-                    onClick={() => addVariantRow(setFlowerCountOptions)}
-                    className="flex items-center gap-2 text-sm font-bold text-primary hover:opacity-80 transition mt-2"
-                  >
-                    <Plus size={16} /> Add Flower Count Variant
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {isGenericCategory && (
-              <div className="border-t border-border-theme pt-4 mt-4">
-                <h3 className="text-md font-bold text-foreground mb-4">Pricing</h3>
-                <div className="grid gap-4 sm:grid-cols-2 mb-4">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-2">List Price (MRP ₹)</label>
-                    <input
-                      value={form.price}
-                      onChange={(e) => handleGenericPricingChange("price", e.target.value)}
-                      type="number"
-                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. 999"
-                      required={isGenericCategory}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-2">Sale Price (Offer ₹)</label>
-                    <input
-                      value={form.salePrice}
-                      onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
-                      type="number"
-                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. 799"
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-2">Discount (%)</label>
-                    <input
-                      value={form.discount}
-                      onChange={(e) => handleGenericPricingChange("discount", e.target.value)}
-                      type="number"
-                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. 10"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-2">Tax (%)</label>
-                    <input
-                      value={form.tax}
-                      onChange={(e) => handleGenericPricingChange("tax", e.target.value)}
-                      type="number"
-                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. 18"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-500 mb-2">Shipping Cost (₹)</label>
-                    <input
-                      value={form.shippingCost}
-                      onChange={(e) => handleGenericPricingChange("shippingCost", e.target.value)}
-                      type="number"
-                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
-                      placeholder="e.g. 50"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-3 border-t border-border-theme pt-4">
-              <input
-                type="checkbox"
-                id="isCodAvailable"
-                checked={form.isCodAvailable}
-                onChange={(e) => setForm({ ...form, isCodAvailable: e.target.checked })}
-                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary"
+              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                Description <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 resize-y"
+                placeholder="Write a brief description..."
+                rows={4}
+                required
               />
-              <label htmlFor="isCodAvailable" className="text-sm font-bold text-slate-700">Cash on Delivery Available</label>
-            </div>
-          </div>
-
-          {/* Right Side: Image Upload & Other details */}
-          <div className="space-y-6">
-            <label className="block text-sm font-bold text-slate-700 uppercase tracking-tighter">Main Image</label>
-            <div className="relative aspect-square w-full h-64 rounded-3xl border-2 border-dashed border-border-theme bg-hover-theme/30 flex flex-col items-center justify-center overflow-hidden group mb-6">
-              {form.image ? (
-                <>
-                  <img src={form.image} className="h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                    <button type="button" onClick={() => setShowMediaModal("main")} className="cursor-pointer bg-white text-slate-900 px-6 py-2 rounded-xl font-bold shadow-lg text-sm">
-                      Update Main Image
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <button type="button" onClick={() => setShowMediaModal("main")} className="cursor-pointer flex flex-col items-center gap-4">
-                  <div className="p-4 bg-primary/10 text-primary rounded-2xl shadow-sm">
-                    <Upload size={32} />
-                  </div>
-                  <div className="text-center">
-                    <span className="text-primary font-bold">Select Main Image</span>
-                    <p className="text-xs text-slate-400 font-medium mt-1 uppercase tracking-widest">JPG, PNG allowed</p>
-                  </div>
-                </button>
-              )}
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm font-bold text-slate-700 uppercase tracking-tighter mb-2">Gallery Images (Optional, multiple)</label>
-              <div className="flex flex-wrap gap-4">
-                {form.images.map((img: any, i: any) => (
-                  <div key={i} className="relative w-24 h-24 rounded-xl overflow-hidden border border-border-theme group">
-                    <img src={img} className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => removeGalleryImage(i)}
-                      className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-                    >
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
-                ))}
-                <button type="button" onClick={() => setShowMediaModal("gallery")} className="w-24 h-24 rounded-xl border-2 border-dashed border-border-theme flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary cursor-pointer transition">
-                  <Plus size={24} />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 border-t border-border-theme pt-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm font-bold text-slate-500 mb-2">Delivery Time (Hours)</label>
                 <input
@@ -979,10 +577,90 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
               </div>
             </div>
 
-            {/* ── Inventory & Stock Tracking ── */}
-            <div className="rounded-2xl border border-border-theme bg-background/50 p-4 space-y-4">
+            <div className="flex items-center gap-3 pt-2">
+              <input
+                type="checkbox"
+                id="isCodAvailable"
+                checked={form.isCodAvailable}
+                onChange={(e) => setForm({ ...form, isCodAvailable: e.target.checked })}
+                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary cursor-pointer"
+              />
+              <label htmlFor="isCodAvailable" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                Cash on Delivery (COD) Available
+              </label>
+            </div>
+          </div>
+
+          {/* Right Column: Media & Inventory */}
+          <div className="space-y-5">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Main Image <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative aspect-video w-full rounded-2xl border-2 border-dashed border-border-theme bg-hover-theme/30 flex flex-col items-center justify-center overflow-hidden group">
+                {form.image ? (
+                  <>
+                    <img src={form.image} className="h-full w-full object-cover" alt="Main product" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setShowMediaModal("main")}
+                        className="cursor-pointer bg-white text-slate-900 px-5 py-2 rounded-xl font-bold shadow-lg text-xs hover:bg-slate-100 transition"
+                      >
+                        Change Main Image
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowMediaModal("main")}
+                    className="cursor-pointer flex flex-col items-center gap-3 p-6 text-center"
+                  >
+                    <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+                      <Upload size={26} />
+                    </div>
+                    <div>
+                      <span className="text-primary font-bold text-sm">Select Main Image</span>
+                      <p className="text-[11px] text-slate-400 font-medium mt-0.5 uppercase tracking-widest">JPG, PNG allowed</p>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                Gallery Images (Optional, multiple)
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {form.images.map((img: any, i: any) => (
+                  <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-border-theme group">
+                    <img src={img} className="w-full h-full object-cover" alt={`Gallery ${i + 1}`} />
+                    <button
+                      type="button"
+                      onClick={() => removeGalleryImage(i)}
+                      className="absolute inset-0 bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setShowMediaModal("gallery")}
+                  className="w-20 h-20 rounded-xl border-2 border-dashed border-border-theme flex flex-col items-center justify-center text-slate-400 hover:text-primary hover:border-primary cursor-pointer transition gap-1"
+                >
+                  <Plus size={20} />
+                  <span className="text-[10px] font-bold">Add</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Inventory & Stock Tracking */}
+            <div className="rounded-2xl border border-border-theme bg-card/60 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
                   <span>📦</span>
                   <span>Inventory & Stock Control</span>
                 </h4>
@@ -1035,17 +713,419 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
           </div>
         </div>
 
-        <div className="mt-12 pt-8 border-t border-border-theme flex flex-col sm:flex-row justify-end gap-4 flex-shrink-0">
+        {/* Section 2: Pricing & Variants (FULL WIDTH - Spans evenly across both columns) */}
+        {isCakeCategory && (
+          <div className="rounded-3xl border border-border-theme bg-card/60 p-6 space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <span>🎂</span>
+                  <span>Weight Variants & Pricing (Cakes)</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Set prices per cake weight (e.g. 500g, 1kg). Cards are arranged in a balanced 2-column grid.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => addVariantRow(setWeightOptions)}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition shadow-sm self-start sm:self-auto cursor-pointer"
+              >
+                <Plus size={15} /> Add Custom Weight
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</span>
+              {WEIGHT_PRESETS.map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => addPreset(setWeightOptions, weightOptions, preset)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold border border-dashed border-primary/60 text-primary hover:bg-primary/10 transition cursor-pointer"
+                >
+                  + {preset}
+                </button>
+              ))}
+            </div>
+
+            {weightOptions.length === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed border-border-theme p-8 text-center bg-background/50">
+                <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">No weight variants added yet</p>
+                <p className="text-xs text-slate-400 mt-1">Click a preset above (e.g. + 500g, + 1kg) or click "Add Custom Weight".</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {weightOptions.map((row, idx) => renderVariantRow(row, idx, setWeightOptions, "e.g. 500g, 1kg"))}
+              </div>
+            )}
+
+            {weightOptions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => addVariantRow(setWeightOptions)}
+                className="w-full py-3 border-2 border-dashed border-primary/40 hover:border-primary text-primary hover:bg-primary/5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <Plus size={16} /> Add Another Weight Variant
+              </button>
+            )}
+
+            <div className="flex items-center gap-3 pt-4 border-t border-border-theme">
+              <input
+                type="checkbox"
+                id="hasEgglessOption"
+                checked={form.hasEgglessOption}
+                onChange={(e) => setForm({ ...form, hasEgglessOption: e.target.checked })}
+                className="w-4 h-4 text-primary bg-gray-100 border-gray-300 rounded focus:ring-primary cursor-pointer"
+              />
+              <label htmlFor="hasEgglessOption" className="text-sm font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                Has Eggless Option Available
+              </label>
+            </div>
+          </div>
+        )}
+
+        {isFlowerCategory && (
+          <div className="rounded-3xl border border-border-theme bg-card/60 p-6 space-y-6">
+            <div>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <span>🌸</span>
+                <span>Bouquet Flower Count & Pricing</span>
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Specify flower stems count and set pricing. Variants are laid out evenly in a 2-column grid.
+              </p>
+            </div>
+
+            {/* Primary Flower Count field */}
+            <div className="bg-background rounded-2xl border border-border-theme p-4 space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Primary Flower Count / Number of Stems
+                </label>
+                <input
+                  value={form.flowerCount}
+                  onChange={(e) => setForm({ ...form, flowerCount: e.target.value })}
+                  type="text"
+                  className="w-full rounded-xl border border-border-theme bg-card px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 10 Roses, 12 Flowers, 24 Lilies"
+                />
+              </div>
+
+              {/* Preset quick chips */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</span>
+                {FLOWER_COUNT_NAME_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setForm({ ...form, flowerCount: preset })}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                      form.flowerCount === preset
+                        ? "bg-primary text-white border-primary shadow-sm"
+                        : "border-border-theme bg-card hover:border-primary/50 text-foreground"
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Pricing: If no variants are added, show standard bouquet pricing */}
+            {flowerCountOptions.length === 0 && (
+              <div className="bg-background rounded-2xl border border-border-theme p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-foreground">Standard Bouquet Pricing</h4>
+                  <span className="text-xs text-slate-400">Single Price (No size variants)</span>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5">List Price (MRP ₹)</label>
+                    <input
+                      value={form.price}
+                      onChange={(e) => handleGenericPricingChange("price", e.target.value)}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 999"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1.5">Sale Price (Offer ₹)</label>
+                    <input
+                      value={form.salePrice}
+                      onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 799"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5">Discount (%)</label>
+                    <input
+                      value={form.discount}
+                      onChange={(e) => handleGenericPricingChange("discount", e.target.value)}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 10"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5">Tax (%)</label>
+                    <input
+                      value={form.tax}
+                      onChange={(e) => handleGenericPricingChange("tax", e.target.value)}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 18"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-1.5">Shipping Cost (₹)</label>
+                    <input
+                      value={form.shippingCost}
+                      onChange={(e) => handleGenericPricingChange("shippingCost", e.target.value)}
+                      type="number"
+                      className="w-full rounded-xl border border-border-theme bg-card px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 50"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Multi-Size Bouquet Variants */}
+            <div className="space-y-4 pt-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-foreground">
+                    Multi-Size Bouquet Variants (Optional)
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Add if bouquet comes in multiple selectable sizes. Cards are organized across both columns.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => addVariantRow(setFlowerCountOptions)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition shadow-sm self-start sm:self-auto cursor-pointer"
+                >
+                  <Plus size={15} /> Add Bouquet Variant
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</span>
+                {FLOWER_COUNT_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => addPreset(setFlowerCountOptions, flowerCountOptions, `${preset} Roses`)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold border border-dashed border-primary/60 text-primary hover:bg-primary/10 transition cursor-pointer"
+                  >
+                    + {preset} Roses
+                  </button>
+                ))}
+              </div>
+
+              {flowerCountOptions.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {flowerCountOptions.map((row, idx) => renderVariantRow(row, idx, setFlowerCountOptions, "e.g. 10 Roses, 20 Roses"))}
+                </div>
+              )}
+
+              {flowerCountOptions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => addVariantRow(setFlowerCountOptions)}
+                  className="w-full py-3 border-2 border-dashed border-primary/40 hover:border-primary text-primary hover:bg-primary/5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                >
+                  <Plus size={16} /> Add Another Bouquet Variant
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {isGenericCategory && (
+          <div className="rounded-3xl border border-border-theme bg-card/60 p-6 space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-foreground">Pricing & Charges</h3>
+              <p className="text-xs text-slate-400">Set base price, discount, taxes and shipping.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5">List Price (MRP ₹) *</label>
+                <input
+                  value={form.price}
+                  onChange={(e) => handleGenericPricingChange("price", e.target.value)}
+                  type="number"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 999"
+                  required={isGenericCategory}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1.5">Sale Price (Offer ₹)</label>
+                <input
+                  value={form.salePrice}
+                  onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
+                  type="number"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 799"
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5">Discount (%)</label>
+                <input
+                  value={form.discount}
+                  onChange={(e) => handleGenericPricingChange("discount", e.target.value)}
+                  type="number"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 10"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5">Tax (%)</label>
+                <input
+                  value={form.tax}
+                  onChange={(e) => handleGenericPricingChange("tax", e.target.value)}
+                  type="number"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 18"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5">Shipping Cost (₹)</label>
+                <input
+                  value={form.shippingCost}
+                  onChange={(e) => handleGenericPricingChange("shippingCost", e.target.value)}
+                  type="number"
+                  className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  placeholder="e.g. 50"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 3: Availability & Occasions (Balanced 2-Column Grid) */}
+        <div className="grid gap-6 lg:grid-cols-2 border-t border-border-theme pt-6">
+          {/* Available Cities */}
+          <div className="rounded-2xl border border-border-theme bg-card/40 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-bold text-foreground">
+                  Available Cities / Locations
+                </label>
+                <p className="text-xs text-slate-400">Leave empty = available in all cities</p>
+              </div>
+              {allCities.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 font-medium">
+                    {form.availableCities.length}/{allCities.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleToggleAllCities}
+                    className="text-xs font-bold text-primary hover:underline transition cursor-pointer"
+                  >
+                    {isAllCitiesSelected ? "Deselect All" : "Select All"}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
+              {allCities.length === 0 ? (
+                <span className="text-xs text-slate-400 italic">No cities added yet — add some from the Cities section.</span>
+              ) : (
+                allCities.map((cityName: string) => {
+                  const active = form.availableCities.includes(cityName);
+                  return (
+                    <button
+                      key={cityName}
+                      type="button"
+                      onClick={() => handleToggleCity(cityName)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                        active
+                          ? "bg-primary text-white border-primary shadow-sm"
+                          : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
+                      }`}
+                    >
+                      {cityName}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Occasions */}
+          <div className="rounded-2xl border border-border-theme bg-card/40 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-bold text-foreground">
+                  Occasions <span className="font-normal text-slate-400 text-xs">(optional)</span>
+                </label>
+                <p className="text-xs text-slate-400">Tag occasions for better discovery</p>
+              </div>
+              {allOccasions.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 font-medium">
+                    {form.occasions.length}/{allOccasions.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleToggleAllOccasions}
+                    className="text-xs font-bold text-primary hover:underline transition cursor-pointer"
+                  >
+                    {isAllOccasionsSelected ? "Deselect All" : "Select All"}
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto rounded-xl border border-border-theme bg-background p-3">
+              {allOccasions.length === 0 ? (
+                <span className="text-xs text-slate-400 italic">No occasions added yet.</span>
+              ) : (
+                allOccasions.map((o: any) => {
+                  const active = form.occasions.some((id: any) => String(id) === String(o._id));
+                  return (
+                    <button
+                      key={o._id}
+                      type="button"
+                      onClick={() => handleToggleOccasion(o._id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition cursor-pointer ${
+                        active
+                          ? "bg-primary text-white border-primary shadow-sm"
+                          : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
+                      }`}
+                    >
+                      {o.name}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Form Actions */}
+        <div className="pt-6 border-t border-border-theme flex flex-col sm:flex-row justify-end gap-4 flex-shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto border border-border-theme text-slate-700 rounded-2xl px-6 py-4 font-bold hover:bg-hover-theme transition"
+            className="w-full sm:w-auto border border-border-theme text-slate-700 dark:text-slate-300 rounded-2xl px-6 py-3.5 font-bold hover:bg-hover-theme transition cursor-pointer"
           >
             Cancel
           </button>
           <button
             disabled={saving}
-            className="w-full sm:w-auto bg-primary text-white px-16 py-4 rounded-2xl font-bold hover:opacity-90 transition shadow-xl shadow-primary/20 disabled:opacity-50"
+            className="w-full sm:w-auto bg-primary text-white px-12 py-3.5 rounded-2xl font-bold hover:opacity-90 transition shadow-xl shadow-primary/20 disabled:opacity-50 cursor-pointer"
           >
             {saving ? "Saving..." : product?._id ? "Update Product" : "Save Product"}
           </button>

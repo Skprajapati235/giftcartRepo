@@ -97,33 +97,60 @@ export default function AddEditCity({ city, onClose }: AddEditCityProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-bold text-slate-900">City list</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white">
+                City list ({cityInputs.length})
+              </p>
               <p className="text-xs text-slate-500">Add one or more cities for this state.</p>
             </div>
-            <button type="button" onClick={addCityField} className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition">
+            <button
+              type="button"
+              onClick={addCityField}
+              className="inline-flex items-center gap-2 rounded-2xl bg-primary px-4 py-2 text-sm font-bold text-white hover:opacity-90 transition shadow-sm cursor-pointer"
+            >
               <Plus size={16} />
-              Add more
+              Add City
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {cityInputs.map((value, index) => (
-              <div key={index} className="flex gap-3 items-center">
+              <div
+                key={index}
+                className="flex items-center gap-2 rounded-2xl border border-border-theme bg-background p-2 focus-within:ring-2 focus-within:ring-primary/20 transition"
+              >
+                <span className="flex-shrink-0 w-7 h-7 rounded-xl bg-hover-theme flex items-center justify-center text-xs font-bold text-slate-500">
+                  {index + 1}
+                </span>
                 <input
                   value={value}
                   onChange={(e) => handleCityChange(index, e.target.value)}
-                  placeholder={`City ${index + 1}`}
-                  className="flex-1 rounded-2xl border border-border-theme bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition"
+                  placeholder={`City name...`}
+                  className="flex-1 bg-transparent px-2 py-1 text-sm outline-none font-medium"
                   required
                 />
                 {cityInputs.length > 1 && (
-                  <button type="button" onClick={() => removeCityField(index)} className="rounded-full border border-border-theme bg-white p-3 text-slate-500 hover:text-rose-600 transition">
-                    <Trash2 size={16} />
+                  <button
+                    type="button"
+                    onClick={() => removeCityField(index)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition flex-shrink-0 cursor-pointer"
+                    title="Remove city"
+                  >
+                    <Trash2 size={15} />
                   </button>
                 )}
               </div>
             ))}
           </div>
+
+          {/* Dedicated bottom Add button so user never has to scroll up */}
+          <button
+            type="button"
+            onClick={addCityField}
+            className="w-full py-3.5 border-2 border-dashed border-primary/40 hover:border-primary text-primary hover:bg-primary/5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition cursor-pointer"
+          >
+            <Plus size={18} />
+            <span>Add Another City</span>
+          </button>
         </div>
 
         <div className="pt-4 flex flex-col sm:flex-row items-center gap-4">
