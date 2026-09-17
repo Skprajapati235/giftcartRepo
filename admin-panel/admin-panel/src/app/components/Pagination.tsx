@@ -1,5 +1,8 @@
 "use client";
 
+import React from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -7,44 +10,76 @@ interface PaginationProps {
 }
 
 export default function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
-  if (totalPages <= 1) return null;
+  const safeTotalPages = Math.max(1, totalPages || 1);
+  const safeCurrentPage = Math.max(1, Math.min(currentPage || 1, safeTotalPages));
 
-  const createPageButton = (page: number) => (
-    <button
-      key={page}
-      type="button"
-      onClick={() => onPageChange(page)}
-      className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${page === currentPage ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
-    >
-      {page}
-    </button>
-  );
+  // Generate page numbers with windowing if many pages
+  const getPageNumbers = () => {
+    if (safeTotalPages <= 5) {
+      return Array.from({ length: safeTotalPages }, (_, i) => i + 1);
+    }
+    if (safeCurrentPage <= 3) {
+      return [1, 2, 3, 4, safeTotalPages];
+    }
+    if (safeCurrentPage >= safeTotalPages - 2) {
+      return [1, safeTotalPages - 3, safeTotalPages - 2, safeTotalPages - 1, safeTotalPages];
+    }
+    return [1, safeCurrentPage - 1, safeCurrentPage, safeCurrentPage + 1, safeTotalPages];
+  };
 
-  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+  const pageNumbers = getPageNumbers();
 
   return (
-    <div className="mt-6 flex items-center justify-between border-t border-border-theme pt-6">
-      <div className="text-sm font-bold text-slate-400 uppercase tracking-widest font-sans">
-        Page {currentPage} of {totalPages}
+    <div className="flex items-center gap-1.5 sm:gap-2">
+      <span className="text-xs font-bold text-slate-400 mr-2 hidden md:inline">
+        Page {safeCurrentPage} of {safeTotalPages}
+      </span>
+
+      <button
+        type="button"
+        onClick={() => onPageChange(safeCurrentPage - 1)}
+        disabled={safeCurrentPage <= 1}
+        className="flex items-center gap-1 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold border border-border-theme bg-hover-theme text-foreground hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        title="Previous Page"
+      >
+        <ChevronLeft size={14} />
+        <span className="hidden sm:inline">Previous</span>
+      </button>
+
+      <div className="flex items-center gap-1">
+        {pageNumbers.map((p, idx) => {
+          const showEllipsisBefore = idx > 0 && p - pageNumbers[idx - 1] > 1;
+          return (
+            <React.Fragment key={p}>
+              {showEllipsisBefore && (
+                <span className="px-1 text-slate-400 text-xs font-bold">...</span>
+              )}
+              <button
+                type="button"
+                onClick={() => onPageChange(p)}
+                className={`min-w-[32px] h-8 px-2.5 rounded-xl text-xs font-bold transition ${
+                  p === safeCurrentPage
+                    ? "bg-primary text-white shadow-md shadow-primary/20"
+                    : "bg-hover-theme text-foreground hover:bg-slate-200 dark:hover:bg-slate-800 border border-border-theme"
+                }`}
+              >
+                {p}
+              </button>
+            </React.Fragment>
+          );
+        })}
       </div>
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-          disabled={currentPage === 1}
-          className="flex items-center gap-2 rounded-xl bg-hover-theme px-5 py-2.5 text-sm font-bold text-foreground transition hover:opacity-80 disabled:opacity-30 border border-border-theme"
-        >
-          Previous
-        </button>
-        <button
-          type="button"
-          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-          disabled={currentPage === totalPages}
-          className="flex items-center gap-2 rounded-xl bg-hover-theme px-5 py-2.5 text-sm font-bold text-foreground transition hover:opacity-80 disabled:opacity-30 border border-border-theme"
-        >
-          Next
-        </button>
-      </div>
+
+      <button
+        type="button"
+        onClick={() => onPageChange(safeCurrentPage + 1)}
+        disabled={safeCurrentPage >= safeTotalPages}
+        className="flex items-center gap-1 px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold border border-border-theme bg-hover-theme text-foreground hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+        title="Next Page"
+      >
+        <span className="hidden sm:inline">Next</span>
+        <ChevronRight size={14} />
+      </button>
     </div>
   );
 }

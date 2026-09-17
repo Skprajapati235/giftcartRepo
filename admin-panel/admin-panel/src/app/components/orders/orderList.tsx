@@ -278,7 +278,7 @@ export default function OrderList({
 
       <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
-          Showing {(currentPage - 1) * 10 + Math.min(1, orders.length)}-{Math.min(currentPage * 10, total)} of {total}
+          {total === 0 ? "Showing 0 of 0" : `Showing ${(currentPage - 1) * 10 + 1}-${Math.min(currentPage * 10, total)} of ${total}`}
         </div>
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>

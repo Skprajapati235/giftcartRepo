@@ -98,6 +98,20 @@ export default function ProductDetailDialogue({ product, onClose }: ProductDetai
                   <span className="font-bold text-foreground text-sm">{product.flowerCount}</span>
                </div>
              )}
+             {product.flowerCountOptions && product.flowerCountOptions.length > 0 && (
+               <div className="border border-border-theme rounded-xl px-5 py-4 bg-card space-y-2">
+                  <span className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                    <Flower2 size={12} /> Flower Count Variants
+                  </span>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {product.flowerCountOptions.map((opt: any, idx: number) => (
+                      <span key={idx} className="px-3 py-1.5 rounded-lg bg-hover-theme text-xs font-bold text-foreground border border-border-theme">
+                        {opt.flowerCount} • ₹{opt.salePrice ?? opt.price}
+                      </span>
+                    ))}
+                  </div>
+               </div>
+             )}
 
           </div>
 

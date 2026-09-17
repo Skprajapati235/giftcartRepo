@@ -39,11 +39,8 @@ export default function NotificationManager() {
   };
 
   useEffect(() => {
-    // Check immediately and then every 30 seconds
-    checkOrders();
-    const interval = setInterval(checkOrders, 30000);
-    return () => clearInterval(interval);
-  }, []); // Only run once on mount
+    // Automatic recurring background polling disabled to prevent continuous hits to /api/order/admin/unviewed
+  }, []);
 
   const handleDismiss = async (id: string) => {
     // Optimistically remove the notification first so the UI responds instantly

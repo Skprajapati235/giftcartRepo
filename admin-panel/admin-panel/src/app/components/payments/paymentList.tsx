@@ -155,7 +155,7 @@ export default function PaymentList({ payments, loading, onDelete, selectedIds =
 
       <div className="p-6 border-t border-border-theme bg-card flex items-center justify-between">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
-          Showing {(currentPage - 1) * 10 + Math.min(1, filteredPayments.length)}-{Math.min(currentPage * 10, filteredPayments.length)} of {filteredPayments.length}
+          {filteredPayments.length === 0 ? "Showing 0 of 0" : `Showing ${(currentPage - 1) * 10 + 1}-${Math.min(currentPage * 10, filteredPayments.length)} of ${filteredPayments.length}`}
         </div>
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       </div>

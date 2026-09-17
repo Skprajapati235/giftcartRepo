@@ -32,6 +32,7 @@ const emptyVariantRow = (label = ""): VariantRow => ({
 
 const WEIGHT_PRESETS = ["500g", "1kg", "1.5kg", "2kg", "3kg"];
 const FLOWER_COUNT_PRESETS = ["10", "20", "25", "30", "50"];
+const FLOWER_COUNT_NAME_PRESETS = ["10 Roses", "12 Flowers", "15 Roses", "20 Flowers", "24 Lilies", "30 Flowers", "50 Roses"];
 
 export default function AddEditProduct({ product, onClose }: AddEditProductProps) {
   const { categories, flavors, cities, occasions, createProduct, updateProduct } = useAdmin();
@@ -50,7 +51,11 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     deliveryTime: product?.deliveryTime || "3-5",
     expectedDeliveryDate: product?.expectedDeliveryDate || "Monday, 20 Oct",
     flavor: product?.flavor?._id || product?.flavor || "",
+    flowerCount: product?.flowerCount || "",
     availableCities: product?.availableCities || [],
+    stock: product?.stock !== undefined ? String(product.stock) : "25",
+    sku: product?.sku || "",
+    lowStockThreshold: product?.lowStockThreshold !== undefined ? String(product.lowStockThreshold) : "5",
     // Generic (non flower/non cake) pricing — used only when the selected
     // category is neither of those two.
     price: product?.price ? String(product.price) : "",
@@ -77,7 +82,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
       : []
   );
 
-  // Multiple flower-count variants (Flowers) — same idea, own price set
+  // Multiple flower-count variants (Flowers / Bouquets) — same idea, own price set
   // per count (10, 20, 25, 30, 50 ... whatever the admin adds).
   const [flowerCountOptions, setFlowerCountOptions] = useState<VariantRow[]>(
     product?.flowerCountOptions?.length
@@ -94,8 +99,16 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
 
   const selectedCategory = categories.find((c: any) => c._id === form.category);
   const categoryName = (selectedCategory?.name || "").toLowerCase();
-  const isCakeCategory = categoryName.includes("cake");
-  const isFlowerCategory = categoryName.includes("flower");
+  const isCakeCategory = categoryName.includes("cake") || categoryName.includes("pastry");
+  const isFlowerCategory =
+    categoryName.includes("flower") ||
+    categoryName.includes("bookey") ||
+    categoryName.includes("bouquet") ||
+    categoryName.includes("bouq") ||
+    categoryName.includes("buke") ||
+    categoryName.includes("rose") ||
+    categoryName.includes("bunch") ||
+    categoryName.includes("floral");
   const isGenericCategory = !isCakeCategory && !isFlowerCategory;
 
   const handleMediaSelect = (urls: string | string[]) => {
@@ -274,8 +287,12 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
       showToast("Add at least one weight variant with a price", "error");
       return;
     }
-    if (isFlowerCategory && cleanedFlowerCountOptions.length === 0) {
-      showToast("Add at least one flower-count variant with a price", "error");
+    if (isFlowerCategory && cleanedFlowerCountOptions.length === 0 && !form.flowerCount?.trim()) {
+      showToast("Please enter a flower count or add at least one flower-count variant", "error");
+      return;
+    }
+    if (isFlowerCategory && cleanedFlowerCountOptions.length === 0 && !form.price) {
+      showToast("List Price is required when not using variants", "error");
       return;
     }
     if (isGenericCategory && !form.price) {
@@ -305,14 +322,22 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
         rootTax = cheapest.tax;
         rootShippingCost = cheapest.shippingCost;
       } else if (isFlowerCategory) {
-        const cheapest = [...cleanedFlowerCountOptions].sort(
-          (a, b) => (a.salePrice ?? a.price) - (b.salePrice ?? b.price)
-        )[0];
-        rootPrice = cheapest.price;
-        rootSalePrice = cheapest.salePrice;
-        rootDiscount = cheapest.discount;
-        rootTax = cheapest.tax;
-        rootShippingCost = cheapest.shippingCost;
+        if (cleanedFlowerCountOptions.length > 0) {
+          const cheapest = [...cleanedFlowerCountOptions].sort(
+            (a, b) => (a.salePrice ?? a.price) - (b.salePrice ?? b.price)
+          )[0];
+          rootPrice = cheapest.price;
+          rootSalePrice = cheapest.salePrice;
+          rootDiscount = cheapest.discount;
+          rootTax = cheapest.tax;
+          rootShippingCost = cheapest.shippingCost;
+        } else {
+          rootPrice = Number(form.price) || 0;
+          rootSalePrice = form.salePrice ? Number(form.salePrice) : undefined;
+          rootDiscount = Number(form.discount) || 0;
+          rootTax = Number(form.tax) || 0;
+          rootShippingCost = Number(form.shippingCost) || 0;
+        }
       }
 
       const payload: any = {
@@ -334,7 +359,13 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
         shippingCost: rootShippingCost,
         occasions: form.occasions,
         weightOptions: isCakeCategory ? cleanedWeightOptions : [],
+        flowerCount: isFlowerCategory
+          ? (form.flowerCount?.trim() || (cleanedFlowerCountOptions[0]?.flowerCount || undefined))
+          : undefined,
         flowerCountOptions: isFlowerCategory ? cleanedFlowerCountOptions : [],
+        stock: Math.max(0, parseInt(form.stock, 10) || 0),
+        sku: form.sku.trim() || undefined,
+        lowStockThreshold: Math.max(0, parseInt(form.lowStockThreshold, 10) || 5),
       };
 
       if (product?._id) {
@@ -478,7 +509,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
               </select>
               <p className="text-xs text-slate-400 mt-1">
                 {isCakeCategory && "Cake fields (weight variants, flavor, eggless) will show below."}
-                {isFlowerCategory && "Flower fields (flower-count variants) will show below."}
+                {isFlowerCategory && "Bouquet & Flower fields (flower count, bouquet variants) will show below."}
                 {isGenericCategory && form.category && "Simple single-price form will show below."}
               </p>
             </div>
@@ -664,33 +695,146 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
             )}
 
             {isFlowerCategory && (
-              <div className="border-t border-border-theme pt-4 mt-4">
-                <h3 className="text-md font-bold text-foreground mb-3">Flower Count Variants</h3>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {FLOWER_COUNT_PRESETS.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => addPreset(setFlowerCountOptions, flowerCountOptions, preset)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold border border-dashed border-primary text-primary hover:bg-primary/10 transition"
-                    >
-                      + {preset}
-                    </button>
-                  ))}
+              <div className="border-t border-border-theme pt-4 mt-4 space-y-5">
+                <div>
+                  <h3 className="text-md font-bold text-foreground flex items-center gap-2">
+                    🌸 Bouquet Flower Count & Details
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Specify the number of flowers / stems in this bouquet (e.g. 10 Roses, 12 Flowers, or 20).
+                  </p>
                 </div>
 
-                {flowerCountOptions.length === 0 && (
-                  <p className="text-xs text-slate-400 italic mb-3">No flower-count variants yet — click a preset above or "Add Flower Count" below.</p>
-                )}
-                {flowerCountOptions.map((row, idx) => renderVariantRow(row, idx, setFlowerCountOptions, "e.g. 10 Roses, 20 Roses"))}
+                {/* Primary Flower Count field */}
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-border-theme space-y-3">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Flower Count / Number of Stems
+                    </label>
+                    <input
+                      value={form.flowerCount}
+                      onChange={(e) => setForm({ ...form, flowerCount: e.target.value })}
+                      type="text"
+                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="e.g. 10 Roses, 12 Flowers, 24 Lilies"
+                    />
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => addVariantRow(setFlowerCountOptions)}
-                  className="flex items-center gap-2 text-sm font-bold text-primary hover:opacity-80 transition"
-                >
-                  <Plus size={16} /> Add Flower Count Variant
-                </button>
+                  {/* Preset quick chips */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Presets:</span>
+                    {FLOWER_COUNT_NAME_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => setForm({ ...form, flowerCount: preset })}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                          form.flowerCount === preset
+                            ? "bg-primary text-white border-primary"
+                            : "border-border-theme bg-background hover:border-primary/50 text-foreground"
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pricing: If no variants are added, show standard pricing so single bouquet can be priced */}
+                {flowerCountOptions.length === 0 && (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-border-theme space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-foreground">Bouquet Pricing</h4>
+                      <span className="text-xs text-slate-400">Single Price (No size variants)</span>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-500 mb-2">List Price (MRP ₹)</label>
+                        <input
+                          value={form.price}
+                          onChange={(e) => handleGenericPricingChange("price", e.target.value)}
+                          type="number"
+                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="e.g. 999"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-500 mb-2">Sale Price (Offer ₹)</label>
+                        <input
+                          value={form.salePrice}
+                          onChange={(e) => setForm({ ...form, salePrice: e.target.value })}
+                          type="number"
+                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="e.g. 799"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-500 mb-2">Discount (%)</label>
+                        <input
+                          value={form.discount}
+                          onChange={(e) => handleGenericPricingChange("discount", e.target.value)}
+                          type="number"
+                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="e.g. 10"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-500 mb-2">Tax (%)</label>
+                        <input
+                          value={form.tax}
+                          onChange={(e) => handleGenericPricingChange("tax", e.target.value)}
+                          type="number"
+                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="e.g. 18"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-slate-500 mb-2">Shipping Cost (₹)</label>
+                        <input
+                          value={form.shippingCost}
+                          onChange={(e) => handleGenericPricingChange("shippingCost", e.target.value)}
+                          type="number"
+                          className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                          placeholder="e.g. 50"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Multi-Size Flower Count Variants (Optional) */}
+                <div className="border-t border-border-theme/70 pt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-bold text-foreground">
+                      Multi-Size Variants (Optional)
+                    </h4>
+                    <span className="text-xs text-slate-400">Add if bouquet comes in multiple selectable sizes</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {FLOWER_COUNT_PRESETS.map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => addPreset(setFlowerCountOptions, flowerCountOptions, `${preset} Roses`)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-bold border border-dashed border-primary text-primary hover:bg-primary/10 transition"
+                      >
+                        + {preset} Roses
+                      </button>
+                    ))}
+                  </div>
+
+                  {flowerCountOptions.map((row, idx) => renderVariantRow(row, idx, setFlowerCountOptions, "e.g. 10 Roses, 20 Roses"))}
+
+                  <button
+                    type="button"
+                    onClick={() => addVariantRow(setFlowerCountOptions)}
+                    className="flex items-center gap-2 text-sm font-bold text-primary hover:opacity-80 transition mt-2"
+                  >
+                    <Plus size={16} /> Add Flower Count Variant
+                  </button>
+                </div>
               </div>
             )}
 
@@ -832,6 +976,60 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                   className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
                   placeholder="e.g. 2 Hours"
                 />
+              </div>
+            </div>
+
+            {/* ── Inventory & Stock Tracking ── */}
+            <div className="rounded-2xl border border-border-theme bg-background/50 p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                  <span>📦</span>
+                  <span>Inventory & Stock Control</span>
+                </h4>
+                <span className="text-[11px] font-semibold text-primary">Warehouse Tracking</span>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">
+                    Stock Units <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.stock}
+                    onChange={(e) => setForm({ ...form, stock: e.target.value })}
+                    className="w-full rounded-xl border border-border-theme bg-background px-3 py-2 text-sm font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="e.g. 50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">
+                    Low Stock Alert
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.lowStockThreshold}
+                    onChange={(e) => setForm({ ...form, lowStockThreshold: e.target.value })}
+                    className="w-full rounded-xl border border-border-theme bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="e.g. 5"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 mb-1">
+                    SKU Code
+                  </label>
+                  <input
+                    type="text"
+                    value={form.sku}
+                    onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                    className="w-full rounded-xl border border-border-theme bg-background px-3 py-2 text-sm font-mono text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                    placeholder="e.g. GC-CAK-001"
+                  />
+                </div>
               </div>
             </div>
           </div>

@@ -117,6 +117,9 @@ app.use("/api/flavor", require("./routes/flavorRoutes"));
 app.use("/api/occasion", require("./routes/occasionRoutes"));
 app.use("/api/website", require("./routes/werbsiteContactRoutes"));
 app.use("/api/cart", require("./routes/cartRoutes"));
+app.use("/api/inventory", require("./routes/inventoryRoutes"));
+app.use("/api/support", require("./routes/supportRoutes"));
+app.use("/api/store-settings", require("./routes/storeSettingsRoutes"));
 
 // AI Chat endpoint for Admin Panel
 const PYTHON_AI_URL = process.env.PYTHON_AI_URL || "http://localhost:8001";

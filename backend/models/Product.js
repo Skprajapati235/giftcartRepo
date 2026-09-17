@@ -15,6 +15,8 @@ const weightOptionSchema = new mongoose.Schema(
     discount: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
     shippingCost: { type: Number, default: 0 },
+    stock: { type: Number, default: 0, min: 0 },
+    sku: { type: String, trim: true },
   },
   { _id: true }
 );
@@ -27,6 +29,8 @@ const flowerCountOptionSchema = new mongoose.Schema(
     discount: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
     shippingCost: { type: Number, default: 0 },
+    stock: { type: Number, default: 0, min: 0 },
+    sku: { type: String, trim: true },
   },
   { _id: true }
 );
@@ -44,6 +48,9 @@ const productSchema = new mongoose.Schema({
   shippingCost: { type: Number, default: 0 },
   discount: { type: Number, default: 0 },
   tax: { type: Number, default: 0 },
+  stock: { type: Number, default: 0, min: 0 },
+  sku: { type: String, trim: true },
+  lowStockThreshold: { type: Number, default: 5, min: 0 },
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",

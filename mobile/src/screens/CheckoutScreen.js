@@ -12,7 +12,7 @@ import {
   Image,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import orderService from '../services/orderService';
@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../context/ToastContext';
 import { SafeScreen, ScreenHeader, StickyBottomBar } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import useDeliveryHours from '../hooks/useDeliveryHours';
 
 export default function CheckoutScreen({ navigation, route }) {
   // cartItems + totals come straight from the backend cart (see
@@ -31,6 +32,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const { user } = useContext(AuthContext);
   const { removeFromCart } = useCart();
   const { showToast } = useToast();
+  const deliveryHours = useDeliveryHours();
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
@@ -178,6 +180,15 @@ export default function CheckoutScreen({ navigation, route }) {
   };
 
   const handleCheckout = async () => {
+    if (deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders) {
+      Alert.alert(
+        '🌙 Night Delivery Paused',
+        deliveryHours.message || `Orders cannot be placed right now. Delivery will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     // Validate Form
     // Validation is handled below after resolving active address
 
@@ -258,7 +269,8 @@ export default function CheckoutScreen({ navigation, route }) {
         setShowWebView(true);
       }
     } catch (error) {
-      showToast('Could not place order', 'error');
+      const errorMsg = error?.message || 'Could not place order';
+      showToast(errorMsg, 'error');
     } finally {
       setLoading(false);
     }
@@ -372,6 +384,18 @@ export default function CheckoutScreen({ navigation, route }) {
   return (
     <SafeScreen style={styles.container}>
       <ScreenHeader title="Checkout" onBack={() => navigation.goBack()} border />
+
+      {deliveryHours.isCurrentlyRestricted && (
+        <View style={styles.checkoutWarningBanner}>
+          <Feather name="moon" size={16} color="#991B1B" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.checkoutWarningTitle}>Night Delivery Paused</Text>
+            <Text style={styles.checkoutWarningDesc}>
+              {deliveryHours.message || `Orders will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}.`}
+            </Text>
+          </View>
+        </View>
+      )}
 
       <ScrollView style={styles.scrollFlex} contentContainerStyle={[styles.content, { paddingBottom: bottom + 100 }]}>
         <View style={styles.section}>
@@ -702,7 +726,11 @@ export default function CheckoutScreen({ navigation, route }) {
 
       <StickyBottomBar>
         <TouchableOpacity
-          style={[styles.payBtn, loading && { opacity: 0.7 }]}
+          style={[
+            styles.payBtn,
+            loading && { opacity: 0.7 },
+            deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders && styles.payBtnPaused,
+          ]}
           onPress={handleCheckout}
           disabled={loading}
         >
@@ -710,7 +738,9 @@ export default function CheckoutScreen({ navigation, route }) {
             <ActivityIndicator color="#FFF" />
           ) : (
             <Text style={styles.payBtnText}>
-              {paymentMethod === 'COD' ? 'Place Order (Cash on Delivery)' : 'Pay Now ₹' + finalTotal}
+              {deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders
+                ? `Delivery Paused (Resumes ${deliveryHours.formattedEnd || '7:00 AM'})`
+                : (paymentMethod === 'COD' ? 'Place Order (Cash on Delivery)' : 'Pay Now ₹' + finalTotal)}
             </Text>
           )}
         </TouchableOpacity>
@@ -843,4 +873,32 @@ const styles = StyleSheet.create({
   savedPhone: { fontSize: 13, color: '#555', fontWeight: '600', marginBottom: 6 },
   savedAddr: { fontSize: 13, color: '#333', lineHeight: 20 },
   savedPin: { fontSize: 12, color: '#555', fontWeight: '700', marginTop: 4 },
+  payBtnPaused: {
+    backgroundColor: '#475569',
+  },
+  checkoutWarningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginHorizontal: 15,
+    marginTop: 10,
+    marginBottom: 4,
+    gap: 10,
+  },
+  checkoutWarningTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#991B1B',
+  },
+  checkoutWarningDesc: {
+    fontSize: 11,
+    color: '#B91C1C',
+    marginTop: 2,
+    lineHeight: 16,
+  },
 });

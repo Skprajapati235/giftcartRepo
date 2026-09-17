@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Search, LayoutGrid, List, MoreHorizontal, Trash2, Edit3, Box, Eye } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Search, LayoutGrid, List, MoreHorizontal, Trash2, Edit3, Box, Eye, Moon, Clock } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton, CardGridSkeleton } from "../skeletonLoader/commonSkeleton";
 import {
@@ -11,6 +11,7 @@ import {
   adminTableBodyCellClass,
 } from "../ui/adminTable";
 import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
+import { getDeliveryHours, DeliveryHoursStatus } from "../../services/deliveryHoursService";
 
 interface ProductListProps {
   products: any[];
@@ -45,7 +46,12 @@ export default function ProductList({
 }: ProductListProps) {
   const [viewMode, setViewMode] = useState<"card" | "list">("card");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deliveryStatus, setDeliveryStatus] = useState<DeliveryHoursStatus | null>(null);
   useRowActionMenu(openMenuId, setOpenMenuId);
+
+  useEffect(() => {
+    getDeliveryHours().then((status) => setDeliveryStatus(status)).catch(() => {});
+  }, []);
 
   const handleDelete = (id: string) => {
     setOpenMenuId(null);
@@ -93,6 +99,29 @@ export default function ProductList({
         </div>
       </div>
 
+      {/* Night Delivery Restriction Notice Banner */}
+      {deliveryStatus?.isCurrentlyRestricted && (
+        <div className="mx-6 my-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-rose-700 dark:text-rose-300 shadow-sm animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-xl bg-rose-500/20 p-2 text-rose-600 dark:text-rose-300">
+              <Moon className="h-4 w-4" />
+            </div>
+            <div>
+              <span className="font-bold">Night Delivery Paused (Restriction Active):</span> Products are currently marked unavailable for delivery.
+              <span className="block text-[11px] text-rose-600/80 dark:text-rose-400/80 font-medium">
+                {deliveryStatus.message || `Delivery services resume at ${deliveryStatus.nextAvailableTime || "7:00 AM"}.`}
+              </span>
+            </div>
+          </div>
+          <a
+            href="/delivery-hours"
+            className="font-bold text-rose-700 dark:text-rose-300 hover:underline shrink-0 text-xs px-3 py-1.5 rounded-xl border border-rose-500/20 bg-card/60"
+          >
+            Manage Operating Hours →
+          </a>
+        </div>
+      )}
+
       {loading ? (
         viewMode === "list" ? (
           <TableSkeleton rows={8} cols={5} />
@@ -127,6 +156,16 @@ export default function ProductList({
                         <div className="font-bold text-foreground truncate">{p.name}</div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{p.category?.name || 'No Category'}</span>
+                          {p.flowerCount && (
+                            <span className="text-[8px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-500/20">
+                              🌸 {p.flowerCount}
+                            </span>
+                          )}
+                          {!p.flowerCount && p.flowerCountOptions?.length > 0 && (
+                            <span className="text-[8px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-500/20">
+                              🌸 {p.flowerCountOptions.length} Sizes
+                            </span>
+                          )}
                           {p.deliveryTime && (
                             <span className="text-[8px] font-black text-primary bg-primary/5 px-1 rounded border border-primary/10">
                               {p.deliveryTime} Hours
@@ -210,13 +249,52 @@ export default function ProductList({
 
         <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 sm:gap-6 sm:p-6 lg:grid-cols-3 xl:grid-cols-3 bg-background/50">
           {products.map((p) => (
-            <div key={p._id} className="bg-card rounded-3xl border border-border-theme shadow-lg hover:shadow-primary/10 transition relative isolate">
-              <div className="h-65 w-full rounded-2xl overflow-hidden bg-background border border-border-theme mb-4">
+            <div key={p._id} className="bg-card rounded-3xl border border-border-theme shadow-lg hover:shadow-primary/10 transition relative isolate group">
+              <div className="h-65 w-full rounded-2xl overflow-hidden bg-background border border-border-theme mb-4 relative">
                 {p.image ? <img src={p.image} className="h-full w-full object-cover" /> : <Box className="p-10 text-slate-200" />}
+
+                {/* Night restriction indicator badge */}
+                {deliveryStatus?.isCurrentlyRestricted && (
+                  <div className="absolute top-3 left-3 z-10 flex items-center gap-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-rose-500/30 px-2.5 py-1 text-[10px] font-bold text-rose-400 shadow-md">
+                    <Moon className="h-3 w-3 text-rose-400" />
+                    <span>Night Paused</span>
+                  </div>
+                )}
+
+                {/* Hover overlay: Currently Unavailable & Available After [Time] */}
+                {deliveryStatus?.isCurrentlyRestricted && (
+                  <div className="absolute inset-0 z-20 bg-slate-950/85 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center p-4 text-center pointer-events-none">
+                    <span className="rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-1 text-[11px] font-black uppercase tracking-wider mb-2 flex items-center gap-1.5 shadow-sm">
+                      <Moon className="h-3.5 w-3.5" />
+                      Currently Unavailable
+                    </span>
+                    <p className="text-xs font-bold text-white leading-snug max-w-[210px]">
+                      Will be available for delivery after{" "}
+                      <span className="text-amber-400 font-extrabold underline decoration-amber-400/50">
+                        {deliveryStatus.nextAvailableTime || deliveryStatus.formattedEnd || "7:00 AM"}
+                      </span>
+                    </p>
+                    <span className="text-[10px] text-slate-400 mt-2 font-medium">
+                      Night delivery paused
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="p-4">
                 <h4 className="font-bold text-foreground truncate">{p.name}</h4>
-                <p className="text-xs text-slate-400 mt-1 uppercase font-bold tracking-widest">{p.category?.name || "No Category"}</p>
+                <div className="flex flex-wrap items-center gap-2 mt-1">
+                  <p className="text-xs text-slate-400 uppercase font-bold tracking-widest">{p.category?.name || "No Category"}</p>
+                  {p.flowerCount && (
+                    <span className="text-[9px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-500/20">
+                      🌸 {p.flowerCount}
+                    </span>
+                  )}
+                  {!p.flowerCount && p.flowerCountOptions?.length > 0 && (
+                    <span className="text-[9px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-500/20">
+                      🌸 {p.flowerCountOptions.length} Sizes
+                    </span>
+                  )}
+                </div>
                 {/* <p className="text-sm text-slate-500 mt-2">{p.description}</p> */}
                 <p className="text-sm text-slate-500 mt-2 line-clamp-2">
                   {p.description}

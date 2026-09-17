@@ -284,8 +284,14 @@ export const deleteMultipleOrders = async (ids: string[]) => {
 };
 
 export const getUnviewedOrders = async () => {
-  const response = await authApi(getAuthToken()).get("/order/admin/unviewed");
-  return response.data;
+  const token = getAuthToken();
+  if (!token) return [];
+  try {
+    const response = await authApi(token).get("/order/admin/unviewed");
+    return response.data;
+  } catch (error) {
+    return [];
+  }
 };
 
 export const markOrderAsViewed = async (id: string) => {

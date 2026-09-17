@@ -17,6 +17,10 @@ import {
   FileText,
   Phone,
   Bot,
+  Boxes,
+  Clock,
+  LifeBuoy,
+  Mail,
 } from "lucide-react";
 
 export type NavChild = {
@@ -43,6 +47,8 @@ export const adminNavigation: NavItem[] = [
     icon: ShoppingBag,
     children: [
       { key: "products", href: "/products", label: "Products", icon: Box },
+      { key: "inventory", href: "/inventory", label: "Inventory", icon: Boxes },
+      { key: "deliveryHours", href: "/delivery-hours", label: "Operating Hours", icon: Clock },
       { key: "cities", href: "/cities", label: "Cities", icon: MapPin },
       { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
       { key: "payments", href: "/payments", label: "Payments", icon: CreditCard },
@@ -59,7 +65,15 @@ export const adminNavigation: NavItem[] = [
     children: [{ key: "coupons", href: "/coupons", label: "Coupons", icon: Ticket }],
   },
   { key: "users", href: "/users", label: "Users", icon: Users },
-  { key: "websitecontact", href: "/websitecontact", label: "Website Contact", icon: Phone },
+  {
+    key: "websitecontact",
+    label: "Website Contact",
+    icon: Phone,
+    children: [
+      { key: "websiteContacts", href: "/websitecontact", label: "Website Contacts", icon: Mail },
+      { key: "customerSupport", href: "/support", label: "Customer Support", icon: LifeBuoy },
+    ],
+  },
   {
     key: "admin",
     label: "Admin",

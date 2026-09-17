@@ -29,6 +29,7 @@ import { useToast } from '../context/ToastContext';
 import { ProductCardSkeleton, CategorySkeleton, BannerSkeleton, SearchBarSkeleton } from '../components/Skeleton';
 import { SafeScreen, BottomTabBar } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import useDeliveryHours from '../hooks/useDeliveryHours';
 
 const { width } = Dimensions.get('window');
 const GRID_H_PADDING = 16;
@@ -60,6 +61,7 @@ export default function HomeScreen({ navigation }) {
   const [locationLoading, setLocationLoading] = useState(false);
   const userLocation = user?.state && user?.city ? `${user.state}, ${user.city}` : 'Set your location';
   const { tabBarHeight } = useLayoutInsets();
+  const deliveryHours = useDeliveryHours();
 
   // Ask for a delivery location the moment the app opens, for every
   // visitor — logged in (profile has no state/city yet) or guest (nothing
@@ -186,6 +188,14 @@ export default function HomeScreen({ navigation }) {
   };
 
   const addToCart = async (product) => {
+    if (deliveryHours.isCurrentlyRestricted) {
+      Alert.alert(
+        '🌙 Night Delivery Paused',
+        deliveryHours.message || `Deliveries are currently paused. Orders will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     await addToCartContext(product);
   };
 
@@ -237,6 +247,11 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.ratingTextSmall}>{item.ratings?.toFixed(1) || '4.2'}</Text>
           </View>
         </View>
+        {deliveryHours.isCurrentlyRestricted && (
+          <View style={styles.restrictedHomeBadge}>
+            <Text style={styles.restrictedHomeBadgeText}>🌙 Paused • After {deliveryHours.formattedEnd || '7:00 AM'}</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.prodInfo}>
@@ -282,10 +297,10 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.productSubHome}>Special Gift Case</Text>
           </View>
           <TouchableOpacity
-            style={styles.addBtnGrid}
+            style={[styles.addBtnGrid, deliveryHours.isCurrentlyRestricted && styles.addBtnGridRestricted]}
             onPress={() => addToCart(item)}
           >
-            <Ionicons name="cart-outline" size={18} color="#FFF" />
+            <Ionicons name={deliveryHours.isCurrentlyRestricted ? "moon-outline" : "cart-outline"} size={18} color="#FFF" />
           </TouchableOpacity>
         </View>
       </View>
@@ -350,6 +365,17 @@ export default function HomeScreen({ navigation }) {
               </View>
             ) : (
               <>
+                {deliveryHours.isCurrentlyRestricted && (
+                  <View style={styles.deliveryWarningBanner}>
+                    <Feather name="moon" size={16} color="#991B1B" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.deliveryWarningTitle}>Night Delivery Paused</Text>
+                      <Text style={styles.deliveryWarningDesc}>
+                        {deliveryHours.message || `Orders are currently paused. Delivery will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}.`}
+                      </Text>
+                    </View>
+                  </View>
+                )}
                 <View style={styles.searchSection}>
                   <Feather name="search" size={18} color="#999" />
                   <TextInput
@@ -526,12 +552,13 @@ export default function HomeScreen({ navigation }) {
           )}
         />
 
-        {/* Floating WhatsApp */}
+        {/* Floating Support Button */}
         <TouchableOpacity
           style={[styles.fab, { bottom: tabBarHeight + 16 }]}
-          onPress={() => Alert.alert('WhatsApp', 'Opening support...')}
+          onPress={() => navigation.navigate('CustomerSupport')}
+          activeOpacity={0.85}
         >
-          <FontAwesome name="whatsapp" size={32} color="#FFF" />
+          <MaterialCommunityIcons name="headset" size={26} color="#FFF" />
         </TouchableOpacity>
 
         {/* Drawer */}
@@ -563,6 +590,9 @@ export default function HomeScreen({ navigation }) {
               </TouchableOpacity>
               <TouchableOpacity style={styles.drawerItem} onPress={() => { setIsDrawerOpen(false); navigation.navigate('Wishlist'); }}>
                 <Feather name="heart" size={20} color="#111" /><Text style={styles.drawerItemText}>Wishlist</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.drawerItem} onPress={() => { setIsDrawerOpen(false); navigation.navigate('CustomerSupport'); }}>
+                <Feather name="headphones" size={20} color="#111" /><Text style={styles.drawerItemText}>Customer Support</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.drawerItem} onPress={signOut}>
                 <Feather name="log-out" size={20} color="#D82B76" /><Text style={[styles.drawerItemText, { color: '#D82B76' }]}>Logout</Text>
@@ -811,5 +841,50 @@ const styles = StyleSheet.create({
     width: 100,
     height: 50,
     resizeMode: 'contain',
+  },
+  deliveryWarningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginHorizontal: 15,
+    marginTop: 10,
+    marginBottom: 6,
+    gap: 10,
+  },
+  deliveryWarningTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#991B1B',
+  },
+  deliveryWarningDesc: {
+    fontSize: 11,
+    color: '#B91C1C',
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  restrictedHomeBadge: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    right: 6,
+    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+    borderRadius: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+  },
+  restrictedHomeBadgeText: {
+    color: '#F87171',
+    fontSize: 8,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  addBtnGridRestricted: {
+    backgroundColor: '#64748B',
   },
 });

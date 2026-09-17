@@ -234,6 +234,24 @@ export default function OrderDetailScreen({ route, navigation }) {
           </View>
         </View>
 
+        {/* Customer Support Help Card */}
+        <TouchableOpacity
+          style={styles.supportHelpCard}
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('CustomerSupport', { orderId: order.orderId || order._id })}
+        >
+          <View style={styles.supportHelpLeft}>
+            <View style={styles.supportIconBox}>
+              <Feather name="headphones" size={20} color="#D82B76" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.supportHelpTitle}>Need Help with this Order?</Text>
+              <Text style={styles.supportHelpSub}>Reach support for delivery, items, or refund</Text>
+            </View>
+          </View>
+          <Feather name="chevron-right" size={20} color="#94A3B8" />
+        </TouchableOpacity>
+
       </ScrollView>
     </SafeScreen>
   );
@@ -306,4 +324,42 @@ const styles = StyleSheet.create({
 
   totalPrice: { fontSize: 24, fontWeight: '900', color: '#1A1A1A', marginTop: 2 },
   couponSaved: { fontSize: 11, color: '#16A34A', fontWeight: '700', marginTop: 4 },
+
+  supportHelpCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1.5,
+    borderColor: '#FCE7F3',
+    elevation: 1,
+  },
+  supportHelpLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  supportIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#FFF0F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supportHelpTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 2,
+  },
+  supportHelpSub: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
 });

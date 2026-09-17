@@ -4,6 +4,25 @@ exports.createProduct = async (data) => {
   if (data.flavor === "" || data.flavor === "null" || data.flavor === "undefined") {
     data.flavor = undefined;
   }
+  if (data.flowerCount === "" || data.flowerCount === "null" || data.flowerCount === "undefined") {
+    data.flowerCount = undefined;
+  } else if (typeof data.flowerCount === "string") {
+    data.flowerCount = data.flowerCount.trim();
+  }
+  if (data.weight === "" || data.weight === "null" || data.weight === "undefined") {
+    data.weight = undefined;
+  } else if (typeof data.weight === "string") {
+    data.weight = data.weight.trim();
+  }
+  if (data.sku !== undefined && typeof data.sku === "string") {
+    data.sku = data.sku.trim();
+  }
+  if (data.stock !== undefined) {
+    data.stock = Math.max(0, parseInt(data.stock, 10) || 0);
+  }
+  if (data.lowStockThreshold !== undefined) {
+    data.lowStockThreshold = Math.max(0, parseInt(data.lowStockThreshold, 10) || 5);
+  }
   console.log("Creating Product with cleaned data:", data);
   try {
     const product = await Product.create(data);
@@ -108,6 +127,25 @@ exports.getProductById = async (id) => {
 exports.updateProduct = async (id, data) => {
   if (data.flavor === "" || data.flavor === "null" || data.flavor === "undefined") {
     data.flavor = null;
+  }
+  if (data.flowerCount === "" || data.flowerCount === "null" || data.flowerCount === "undefined") {
+    data.flowerCount = null;
+  } else if (typeof data.flowerCount === "string") {
+    data.flowerCount = data.flowerCount.trim();
+  }
+  if (data.weight === "" || data.weight === "null" || data.weight === "undefined") {
+    data.weight = null;
+  } else if (typeof data.weight === "string") {
+    data.weight = data.weight.trim();
+  }
+  if (data.sku !== undefined && typeof data.sku === "string") {
+    data.sku = data.sku.trim();
+  }
+  if (data.stock !== undefined) {
+    data.stock = Math.max(0, parseInt(data.stock, 10) || 0);
+  }
+  if (data.lowStockThreshold !== undefined) {
+    data.lowStockThreshold = Math.max(0, parseInt(data.lowStockThreshold, 10) || 5);
   }
   try {
     return await Product.findByIdAndUpdate(id, data, { new: true });

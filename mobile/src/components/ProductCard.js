@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 
-export default function ProductCard({ product, onPress, onAddToCart, onBuyNow }) {
+export default function ProductCard({ product, onPress, onAddToCart, onBuyNow, deliveryStatus }) {
   const basePrice = product.price || 0;
   const effectiveSalePrice = product.salePrice || basePrice;
   const discountPct = product.discount || 0;
@@ -11,6 +11,22 @@ export default function ProductCard({ product, onPress, onAddToCart, onBuyNow })
   const hasDiscount = discountPct > 0 || basePrice > finalPrice;
   const displayDiscount = discountPct > 0 ? discountPct : (hasDiscount ? Math.round(((basePrice - finalPrice) / basePrice) * 100) : 0);
 
+  const isRestricted = deliveryStatus?.isCurrentlyRestricted;
+  const nextTime = deliveryStatus?.nextAvailableTime || '7:00 AM';
+
+  const handleRestrictedAction = (actionName) => {
+    if (isRestricted) {
+      Alert.alert(
+        '🌙 Night Delivery Paused',
+        deliveryStatus?.message || `Deliveries are currently paused. Orders will resume after ${nextTime}.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    if (actionName === 'buy' && onBuyNow) onBuyNow();
+    if (actionName === 'cart' && onAddToCart) onAddToCart();
+  };
+
   return (
     <TouchableOpacity activeOpacity={0.85} style={styles.card} onPress={onPress}>
       <View style={styles.imageWrapper}>
@@ -18,6 +34,11 @@ export default function ProductCard({ product, onPress, onAddToCart, onBuyNow })
         {hasDiscount && displayDiscount > 0 && (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>{displayDiscount}% OFF</Text>
+          </View>
+        )}
+        {isRestricted && (
+          <View style={styles.restrictedBadge}>
+            <Text style={styles.restrictedBadgeText}>🌙 Unavailable • After {nextTime}</Text>
           </View>
         )}
       </View>
@@ -50,11 +71,17 @@ export default function ProductCard({ product, onPress, onAddToCart, onBuyNow })
         </View>
         
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={[styles.actionButton, styles.buyButton]} onPress={onBuyNow}>
-            <Text style={styles.actionText}>Buy</Text>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.buyButton, isRestricted && styles.disabledButton]}
+            onPress={() => handleRestrictedAction('buy')}
+          >
+            <Text style={styles.actionText}>{isRestricted ? 'Paused' : 'Buy'}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.cartButton]} onPress={onAddToCart}>
-            <Text style={styles.actionText}>Cart</Text>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.cartButton, isRestricted && styles.disabledButton]}
+            onPress={() => handleRestrictedAction('cart')}
+          >
+            <Text style={styles.actionText}>{isRestricted ? 'Wait' : 'Cart'}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -190,5 +217,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textDecorationLine: 'line-through',
     fontWeight: '600',
+  },
+  restrictedBadge: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    right: 8,
+    backgroundColor: 'rgba(15, 23, 42, 0.88)',
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#334155',
+    alignItems: 'center',
+  },
+  restrictedBadgeText: {
+    color: '#F87171',
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#334155',
+    borderColor: '#475569',
+    opacity: 0.8,
   },
 });

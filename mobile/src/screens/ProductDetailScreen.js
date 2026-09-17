@@ -9,6 +9,7 @@ import { toggleWishlist, getWishlist } from '../services/wishlistService';
 import { useToast } from '../context/ToastContext';
 import { SafeScreen, StickyBottomBar } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import useDeliveryHours from '../hooks/useDeliveryHours';
 
 const { width } = Dimensions.get('window');
 const ITEM_HEIGHT = 450;
@@ -31,6 +32,7 @@ export default function ProductDetailScreen({ route, navigation }) {
   const { user } = useContext(AuthContext);
   const { cart, addToCart: addToCartContext } = useCart();
   const { showToast } = useToast();
+  const deliveryHours = useDeliveryHours();
   const [added, setAdded] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [reviews, setReviews] = useState([]);
@@ -139,6 +141,14 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   const addToCart = async () => {
+    if (deliveryHours.isCurrentlyRestricted) {
+      Alert.alert(
+        '🌙 Night Delivery Paused',
+        deliveryHours.message || `Deliveries are currently paused. Orders will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     if (added) {
       navigation.navigate('Cart');
       return;
@@ -217,6 +227,20 @@ export default function ProductDetailScreen({ route, navigation }) {
         {/* Content Details */}
         <View style={styles.contentBox}>
           <View style={styles.dragHandle} />
+
+          {deliveryHours.isCurrentlyRestricted && (
+            <View style={styles.detailRestrictedNotice}>
+              <View style={styles.detailRestrictedIcon}>
+                <Feather name="moon" size={18} color="#991B1B" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.detailRestrictedTitle}>Night Delivery Currently Paused</Text>
+                <Text style={styles.detailRestrictedDesc}>
+                  {deliveryHours.message || `Delivery will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}. You can browse all items.`}
+                </Text>
+              </View>
+            </View>
+          )}
 
           <View style={styles.topInfo}>
             <View style={styles.categoryInfo}>
@@ -586,12 +610,20 @@ export default function ProductDetailScreen({ route, navigation }) {
           </View>
           <View style={styles.footerDivider} />
           <TouchableOpacity
-            style={[styles.mainBtn, added && styles.addedBtn]}
+            style={[
+              styles.mainBtn,
+              added && styles.addedBtn,
+              deliveryHours.isCurrentlyRestricted && styles.restrictedBtn,
+            ]}
             activeOpacity={0.8}
             onPress={addToCart}
           >
-            <Feather name="shopping-bag" size={20} color="#FFF" />
-            <Text style={styles.btnText}>{added ? 'IN BAG' : 'ADD TO BAG'}</Text>
+            <Feather name={deliveryHours.isCurrentlyRestricted ? "moon" : "shopping-bag"} size={20} color="#FFF" />
+            <Text style={styles.btnText}>
+              {deliveryHours.isCurrentlyRestricted
+                ? `PAUSED (RESUMES ${deliveryHours.formattedEnd || '7:00 AM'})`
+                : (added ? 'IN BAG' : 'ADD TO BAG')}
+            </Text>
           </TouchableOpacity>
         </View>
       </StickyBottomBar>
@@ -790,8 +822,39 @@ const styles = StyleSheet.create({
     shadowColor: '#F43F5E', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6
   },
   addedBtn: { backgroundColor: '#1E293B', shadowColor: '#1E293B' },
-  btnText: { color: '#FFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.5 },
+  restrictedBtn: { backgroundColor: '#475569', shadowColor: '#475569' },
+  btnText: { color: '#FFF', fontSize: 14, fontWeight: '800', letterSpacing: 0.5 },
   modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' },
   modalCloseBtn: { position: 'absolute', right: 25, zIndex: 10 },
-  fullImage: { width: width, height: width * 1.5 }
+  fullImage: { width: width, height: width * 1.5 },
+  detailRestrictedNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    gap: 12,
+  },
+  detailRestrictedIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detailRestrictedTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#991B1B',
+  },
+  detailRestrictedDesc: {
+    fontSize: 11,
+    color: '#B91C1C',
+    marginTop: 2,
+    lineHeight: 16,
+  },
 });

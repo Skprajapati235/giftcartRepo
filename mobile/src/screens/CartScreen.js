@@ -6,14 +6,17 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useCart } from '../context/CartContext';
 import { SafeScreen, ScreenHeader, StickyBottomBar } from '../components/layout';
+import useDeliveryHours from '../hooks/useDeliveryHours';
 
 export default function CartScreen({ navigation }) {
   const { cart, cartLoading, removeFromCart, updateQuantity, refreshCart } = useCart();
   const [selectedKeys, setSelectedKeys] = useState([]);
+  const deliveryHours = useDeliveryHours();
 
   const getKey = (item) => item.variantKey || item._id;
 
@@ -51,6 +54,14 @@ export default function CartScreen({ navigation }) {
   );
 
   const handleCheckout = () => {
+    if (deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders) {
+      Alert.alert(
+        '🌙 Night Delivery Paused',
+        deliveryHours.message || `Orders cannot be placed during night hours. Delivery will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
     if (selectedItems.length === 0) {
       return;
     }
@@ -115,6 +126,18 @@ export default function CartScreen({ navigation }) {
     <SafeScreen style={styles.container}>
       <ScreenHeader title="My Cart" onBack={() => navigation.goBack()} border />
 
+      {deliveryHours.isCurrentlyRestricted && (
+        <View style={styles.cartWarningBanner}>
+          <Feather name="moon" size={16} color="#991B1B" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.cartWarningTitle}>Night Delivery Paused</Text>
+            <Text style={styles.cartWarningDesc}>
+              {deliveryHours.message || `Orders will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}. You can review your bag.`}
+            </Text>
+          </View>
+        </View>
+      )}
+
       <FlatList
         data={cart}
         keyExtractor={getKey}
@@ -142,8 +165,18 @@ export default function CartScreen({ navigation }) {
             <Text style={styles.totalLabel}>Total Amount:</Text>
             <Text style={styles.totalVal}>₹{selectedTotals.grandTotal.toFixed(0)}</Text>
           </View>
-          <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout}>
-            <Text style={styles.checkoutText}>Checkout Now</Text>
+          <TouchableOpacity
+            style={[
+              styles.checkoutBtn,
+              deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders && styles.checkoutBtnPaused,
+            ]}
+            onPress={handleCheckout}
+          >
+            <Text style={styles.checkoutText}>
+              {deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders
+                ? `Delivery Paused (After ${deliveryHours.formattedEnd || '7:00 AM'})`
+                : 'Checkout Now'}
+            </Text>
           </TouchableOpacity>
         </StickyBottomBar>
       )}
@@ -171,9 +204,35 @@ const styles = StyleSheet.create({
   totalLabel: { fontSize: 18, fontWeight: '600', color: '#555' },
   totalVal: { fontSize: 22, fontWeight: '800', color: '#000' },
   checkoutBtn: { backgroundColor: '#D82B76', borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
-  checkoutText: { color: '#FFF', fontSize: 18, fontWeight: '800' },
+  checkoutBtnPaused: { backgroundColor: '#475569' },
+  checkoutText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 100 },
   emptyText: { fontSize: 18, color: '#999', marginVertical: 20 },
   shopBtn: { paddingHorizontal: 30, paddingVertical: 12, borderWidth: 2, borderColor: '#D82B76', borderRadius: 10 },
   shopText: { color: '#D82B76', fontWeight: '800' },
+  cartWarningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginHorizontal: 15,
+    marginTop: 10,
+    marginBottom: 6,
+    gap: 10,
+  },
+  cartWarningTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#991B1B',
+  },
+  cartWarningDesc: {
+    fontSize: 11,
+    color: '#B91C1C',
+    marginTop: 2,
+    lineHeight: 16,
+  },
 });

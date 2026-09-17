@@ -31,6 +31,11 @@ export const adminDeleteReview = async (reviewId: string) => {
   return response.data;
 };
 
+export const adminBulkDeleteReviews = async (ids: string[]) => {
+  const response = await authApi(getAuthToken()).post("/review/admin/bulk-delete", { ids });
+  return response.data;
+};
+
 export const getReviewById = async (reviewId: string) => {
   const response = await authApi(getAuthToken()).get(`/review/admin/${reviewId}`);
   return response.data;

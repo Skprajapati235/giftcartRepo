@@ -97,17 +97,19 @@ exports.deleteReview = async (reviewId, userId) => {
   await Review.findByIdAndDelete(reviewId);
 
   // Update Product stats (only approved)
-  const product = await Product.findById(productId);
-  if (product) {
-    const reviews = await Review.find({ product: productId, status: "approved" });
-    if (reviews.length > 0) {
-      product.numReviews = reviews.length;
-      product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
-    } else {
-      product.numReviews = 0;
-      product.ratings = 0;
+  if (productId) {
+    const product = await Product.findById(productId);
+    if (product) {
+      const reviews = await Review.find({ product: productId, status: "approved" });
+      if (reviews.length > 0) {
+        product.numReviews = reviews.length;
+        product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+      } else {
+        product.numReviews = 0;
+        product.ratings = 0;
+      }
+      await product.save();
     }
-    await product.save();
   }
 
   return { message: "Review deleted" };
@@ -179,19 +181,56 @@ exports.adminDeleteReview = async (reviewId) => {
   await Review.findByIdAndDelete(reviewId);
 
   // Update Product stats (only approved)
-  const product = await Product.findById(productId);
-  if (product) {
-    const reviews = await Review.find({ product: productId, status: "approved" });
-    if (reviews.length > 0) {
-      product.numReviews = reviews.length;
-      product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
-    } else {
-      product.numReviews = 0;
-      product.ratings = 0;
+  if (productId) {
+    const product = await Product.findById(productId);
+    if (product) {
+      const reviews = await Review.find({ product: productId, status: "approved" });
+      if (reviews.length > 0) {
+        product.numReviews = reviews.length;
+        product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+      } else {
+        product.numReviews = 0;
+        product.ratings = 0;
+      }
+      await product.save();
     }
-    await product.save();
   }
   return { message: "Review deleted by admin" };
+};
+
+exports.adminBulkDeleteReviews = async (reviewIds) => {
+  if (!Array.isArray(reviewIds) || reviewIds.length === 0) {
+    return { success: true, deletedCount: 0, message: "No review IDs provided" };
+  }
+
+  // Find reviews to identify all affected products
+  const reviews = await Review.find({ _id: { $in: reviewIds } }).select("product");
+  const affectedProductIds = [...new Set(reviews.map((r) => r.product?.toString()).filter(Boolean))];
+
+  // Bulk delete reviews
+  const result = await Review.deleteMany({ _id: { $in: reviewIds } });
+
+  // Recalculate stats for each affected product
+  for (const prodId of affectedProductIds) {
+    const product = await Product.findById(prodId);
+    if (product) {
+      const approvedReviews = await Review.find({ product: prodId, status: "approved" });
+      if (approvedReviews.length > 0) {
+        product.numReviews = approvedReviews.length;
+        product.ratings = approvedReviews.reduce((acc, item) => item.rating + acc, 0) / approvedReviews.length;
+      } else {
+        product.numReviews = 0;
+        product.ratings = 0;
+      }
+      await product.save();
+    }
+  }
+
+  return {
+    success: true,
+    deletedCount: result.deletedCount,
+    message: `${result.deletedCount} reviews deleted successfully by admin`
+  };
 };
 
 exports.toggleLike = async (reviewId, userId) => {

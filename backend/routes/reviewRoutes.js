@@ -13,6 +13,7 @@ router.delete("/:id", authMiddleware, controller.deleteReview);
 
 // Admin routes
 router.get("/admin/all", adminMiddleware, controller.getAllReviews);
+router.post("/admin/bulk-delete", adminMiddleware, controller.adminBulkDeleteReviews);
 router.get("/admin/:id", adminMiddleware, controller.getReviewById);
 router.post("/admin/reply/:id", adminMiddleware, controller.adminReplyReview);
 router.put("/admin/status/:id", adminMiddleware, controller.updateReviewStatus);

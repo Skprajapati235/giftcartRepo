@@ -20,6 +20,8 @@ interface ReviewListProps {
   onSearchChange: (search: string) => void;
   onDelete: (id: string) => void;
   onStatusUpdate: (id: string, status: string) => void;
+  selectedIds?: string[];
+  onSelectChange?: (ids: string[]) => void;
 }
 
 export default function ReviewList({ 
@@ -32,7 +34,9 @@ export default function ReviewList({
   onPageChange,
   onSearchChange,
   onDelete, 
-  onStatusUpdate 
+  onStatusUpdate,
+  selectedIds = [],
+  onSelectChange
 }: ReviewListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   useRowActionMenu(openMenuId, setOpenMenuId);
@@ -40,6 +44,26 @@ export default function ReviewList({
   
   // Track collapsed state (true means hidden)
   const [collapsedReplies, setCollapsedReplies] = useState<Record<string, boolean>>({});
+
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!onSelectChange) return;
+    if (e.target.checked) {
+      onSelectChange(reviews.map((r) => r._id));
+    } else {
+      onSelectChange([]);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    if (!onSelectChange) return;
+    if (selectedIds.includes(id)) {
+      onSelectChange(selectedIds.filter((selectedId) => selectedId !== id));
+    } else {
+      onSelectChange([...selectedIds, id]);
+    }
+  };
+
+  const isAllSelected = reviews.length > 0 && selectedIds.length === reviews.length;
 
   const toggleReply = (id: string) => {
     setCollapsedReplies(prev => ({ ...prev, [id]: !prev[id] }));
@@ -75,6 +99,14 @@ export default function ReviewList({
         <table className={adminTableWideClass}>
           <thead>
             <tr className="bg-th-bg border-b border-border-theme">
+              <th className={`${adminTableHeadCellClass} w-10 text-center pl-6`}>
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30 cursor-pointer"
+                />
+              </th>
               <th className={adminTableHeadCellClass}>Product</th>
               <th className={adminTableHeadCellClass}>Customer</th>
               <th className={adminTableHeadCellClass}>Rating</th>
@@ -90,6 +122,14 @@ export default function ReviewList({
               return (
               <React.Fragment key={review._id}>
                 <tr className="hover:bg-hover-theme transition-colors group">
+                  <td className={`${adminTableBodyCellClass} w-10 text-center pl-6`} onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(review._id)}
+                      onChange={() => toggleSelect(review._id)}
+                      className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30 cursor-pointer"
+                    />
+                  </td>
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-2xl border border-border-theme bg-hover-theme overflow-hidden shrink-0 shadow-sm transition-transform group-hover:scale-105">
@@ -258,7 +298,7 @@ export default function ReviewList({
                 {/* Premium Sleek Reply Row */}
                 {review.reply && !itemIsCollapsed && (
                   <tr className="bg-slate-100/20 dark:bg-white/[0.02] animate-in fade-in slide-in-from-top-2 duration-500">
-                    <td colSpan={6} className="px-14 py-4 pb-6">
+                    <td colSpan={7} className="px-14 py-4 pb-6">
                        <div className="flex items-start gap-5">
                           <div className="shrink-0 mt-1">
                              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 shadow-sm shadow-primary/5">
@@ -298,7 +338,7 @@ export default function ReviewList({
 
       <div className="p-6 border-t border-border-theme bg-card flex items-center justify-between">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
-          Showing {(currentPage - 1) * 10 + Math.min(1, reviews.length)}-{Math.min(currentPage * 10, total)} of {total}
+          {total === 0 ? "Showing 0 of 0" : `Showing ${(currentPage - 1) * 10 + 1}-${Math.min(currentPage * 10, total)} of ${total}`}
         </div>
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>

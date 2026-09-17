@@ -6,6 +6,7 @@ const paymentService = require("../services/paymentService");
 const { calculateItemPricing } = require("../utils/priceCalculator");
 const { generateInvoicePDF } = require("../utils/pdfGenerator");
 const mongoose = require("mongoose");
+const deliveryHoursService = require("../services/deliveryHoursService");
 
 function normalizeCouponCode(couponCode) {
   if (!couponCode) return "";
@@ -44,6 +45,17 @@ async function isCouponEligible(coupon, { userId, items }) {
 // POST /api/order/create
 exports.createOrder = async (req, res) => {
   try {
+    // Check if delivery operating hours restriction is currently active
+    const deliveryStatus = await deliveryHoursService.getDeliveryHoursStatus();
+    if (deliveryStatus.isCurrentlyRestricted && deliveryStatus.blockOrders) {
+      return res.status(403).json({
+        success: false,
+        message: deliveryStatus.message || `Night delivery is currently paused. Deliveries resume at ${deliveryStatus.nextAvailableTime}.`,
+        isDeliveryRestricted: true,
+        nextAvailableTime: deliveryStatus.nextAvailableTime,
+      });
+    }
+
     const { items, shippingAddress, paymentMethod = 'Online', couponCode: rawCouponCode } = req.body;
     const couponCode = normalizeCouponCode(rawCouponCode);
     const userId = req.user.id;
