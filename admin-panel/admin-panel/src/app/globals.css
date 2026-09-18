@@ -210,3 +210,54 @@ html[data-theme='dark'] .shadow-sm {
 .auth-bg {
   background: linear-gradient(135deg, var(--auth-grad-start) 0%, var(--auth-grad-end) 100%);
 }
+
+/* Modern Auth Dot Matrix Pattern */
+.auth-dot-pattern {
+  background-image: radial-gradient(rgba(148, 163, 184, 0.35) 1.2px, transparent 1.2px);
+  background-size: 28px 28px;
+}
+
+html.dark .auth-dot-pattern {
+  background-image: radial-gradient(rgba(99, 102, 241, 0.28) 1.2px, transparent 1.2px);
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 35s linear infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.03);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 7s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.8s infinite;
+}
