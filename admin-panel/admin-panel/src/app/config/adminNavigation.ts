@@ -21,6 +21,8 @@ import {
   Clock,
   LifeBuoy,
   Mail,
+  Lightbulb,
+  UserPlus,
 } from "lucide-react";
 
 export type NavChild = {
@@ -65,6 +67,15 @@ export const adminNavigation: NavItem[] = [
     children: [{ key: "coupons", href: "/coupons", label: "Coupons", icon: Ticket }],
   },
   { key: "users", href: "/users", label: "Users", icon: Users },
+  {
+    key: "insight",
+    label: "Insight",
+    icon: Lightbulb,
+    children: [
+      { key: "leads", href: "/leads", label: "Leads", icon: UserPlus },
+      { key: "crm", href: "/crm", label: "CRM Contacts", icon: Users },
+    ],
+  },
   {
     key: "websitecontact",
     label: "Website Contact",

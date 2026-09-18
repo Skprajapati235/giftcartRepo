@@ -108,7 +108,7 @@ export default function SupportTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-border-theme bg-th-bg/60 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <tr className="border-b border-border-theme bg-th-bg/60 text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               <th className="py-3.5 px-4 w-10">
                 <input
                   type="checkbox"
@@ -195,15 +195,15 @@ export default function SupportTable({
                           {initials}
                         </div>
                         <div className="min-w-0 max-w-[200px]">
-                          <div className="font-bold text-slate-900 dark:text-white truncate">
+                          <div className="font-bold text-slate-950 dark:text-white truncate">
                             {t.name}
                           </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
-                            <Mail className="h-3 w-3 shrink-0 text-slate-400" />
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 font-medium truncate">
+                            <Mail className="h-3 w-3 shrink-0 text-slate-500 dark:text-slate-400" />
                             <span className="truncate">{t.email}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                            <Phone className="h-3 w-3 shrink-0 text-slate-400" />
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-700 dark:text-slate-300 font-medium">
+                            <Phone className="h-3 w-3 shrink-0 text-slate-500 dark:text-slate-400" />
                             <span>{t.mobileNumber}</span>
                           </div>
                         </div>
@@ -215,7 +215,7 @@ export default function SupportTable({
                       <div className="font-semibold text-slate-900 dark:text-white truncate">
                         {t.subject}
                       </div>
-                      <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
+                      <p className="text-xs text-slate-700 dark:text-slate-300 font-medium line-clamp-1 mt-0.5">
                         {t.message}
                       </p>
                       {t.adminReply && (
@@ -229,12 +229,12 @@ export default function SupportTable({
                     {/* Order Reference */}
                     <td className="py-3.5 px-4">
                       {t.orderId ? (
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-border-theme px-2 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-300">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-border-theme px-2 py-1 text-xs font-mono font-bold text-slate-800 dark:text-slate-200">
                           <ShoppingBag className="h-3 w-3 text-primary" />
                           {t.orderId}
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-400 italic">General Query</span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400 font-medium italic">General Query</span>
                       )}
                     </td>
 
@@ -246,13 +246,13 @@ export default function SupportTable({
 
                     {/* Submitted Date */}
                     <td className="py-3.5 px-4">
-                      <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">
+                      <div className="text-xs text-slate-800 dark:text-slate-200 font-semibold">
                         {new Date(t.createdAt).toLocaleDateString("en-IN", {
                           day: "2-digit",
                           month: "short",
                         })}
                       </div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
                         {new Date(t.createdAt).toLocaleTimeString("en-IN", {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -288,7 +288,7 @@ export default function SupportTable({
 
       {/* Pagination Footer */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border-theme bg-card">
-        <div className="text-xs text-slate-500 dark:text-slate-400">
+        <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">
           Showing{" "}
           <span className="font-semibold text-slate-900 dark:text-white">
             {total === 0 ? 0 : (currentPage - 1) * limit + 1}

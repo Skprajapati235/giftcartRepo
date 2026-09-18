@@ -106,7 +106,7 @@ export default function DeliveryHoursSettings() {
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               Delivery Operating Hours & Night Restriction
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
+            <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">
               Control when deliveries are paused at night. During closed hours, products stay visible but orders are paused with an unavailable notice.
             </p>
           </div>
@@ -145,7 +145,7 @@ export default function DeliveryHoursSettings() {
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-400">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   Current Store Status
                 </span>
                 <span
@@ -183,7 +183,7 @@ export default function DeliveryHoursSettings() {
               </h3>
 
               {isRestricted && (
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mt-1">
                   Configured Window: Daily pause from{" "}
                   <strong className="text-slate-900 dark:text-white font-mono">{dailyStart}</strong> to{" "}
                   <strong className="text-slate-900 dark:text-white font-mono">{dailyEnd}</strong>
@@ -204,7 +204,7 @@ export default function DeliveryHoursSettings() {
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
                   Night Delivery Restriction Settings
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">
                   Set the exact times when deliveries stop and resume each day.
                 </p>
               </div>
@@ -226,11 +226,11 @@ export default function DeliveryHoursSettings() {
               {/* Pause Start Time */}
               <div className="rounded-2xl border border-border-theme bg-background p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <label className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                     <Moon className="h-4 w-4 text-primary" />
                     <span>Stop Deliveries / Pause Orders At</span>
                   </label>
-                  <span className="text-[11px] font-mono font-semibold text-slate-400">
+                  <span className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">
                     (24h format)
                   </span>
                 </div>
@@ -241,7 +241,7 @@ export default function DeliveryHoursSettings() {
                   onChange={(e) => setDailyStart(e.target.value)}
                   className="w-full rounded-xl border border-border-theme bg-card px-4 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:border-primary focus:outline-none"
                 />
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[12px] text-slate-700 dark:text-slate-300 font-medium">
                   Default: 23:00 (11:00 PM). Orders are stopped starting from this time.
                 </p>
               </div>
@@ -249,11 +249,11 @@ export default function DeliveryHoursSettings() {
               {/* Resume Time */}
               <div className="rounded-2xl border border-border-theme bg-background p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <label className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
                     <Sun className="h-4 w-4 text-amber-500" />
                     <span>Resume Deliveries / Open Orders At</span>
                   </label>
-                  <span className="text-[11px] font-mono font-semibold text-slate-400">
+                  <span className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">
                     (24h format)
                   </span>
                 </div>
@@ -264,7 +264,7 @@ export default function DeliveryHoursSettings() {
                   onChange={(e) => setDailyEnd(e.target.value)}
                   className="w-full rounded-xl border border-border-theme bg-card px-4 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:border-primary focus:outline-none"
                 />
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[12px] text-slate-700 dark:text-slate-300 font-medium">
                   Default: 07:00 (07:00 AM). Delivery services reopen from this time.
                 </p>
               </div>
@@ -272,7 +272,7 @@ export default function DeliveryHoursSettings() {
 
             {/* Announcement Message */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label className="block text-xs font-bold text-slate-900 dark:text-slate-100">
                 Custom Unavailable Message Shown on Product Cards & Checkout:
               </label>
               <input
@@ -280,9 +280,9 @@ export default function DeliveryHoursSettings() {
                 value={customMessage}
                 onChange={(e) => setCustomMessage(e.target.value)}
                 placeholder="e.g. Night delivery is currently paused. Available for delivery after 7:00 AM."
-                className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm text-slate-900 dark:text-white focus:border-primary focus:outline-none"
+                className="w-full rounded-xl border border-border-theme bg-background px-4 py-3 text-sm font-medium text-slate-900 dark:text-white focus:border-primary focus:outline-none"
               />
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[12px] text-slate-700 dark:text-slate-300 font-medium">
                 This message appears when customers hover over product cards and when viewing product details.
               </p>
             </div>
@@ -296,7 +296,7 @@ export default function DeliveryHoursSettings() {
                 onChange={(e) => setBlockOrders(e.target.checked)}
                 className="h-4 w-4 rounded border-border-theme text-primary focus:ring-primary cursor-pointer"
               />
-              <label htmlFor="blockOrders" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+              <label htmlFor="blockOrders" className="text-xs font-semibold text-slate-900 dark:text-slate-200 cursor-pointer">
                 Strictly block order placement during paused hours (Reject checkout attempts via API)
               </label>
             </div>
@@ -319,7 +319,7 @@ export default function DeliveryHoursSettings() {
         <div className="lg:col-span-5 xl:col-span-4 space-y-6">
           {/* Live Simulation Preview Card */}
           <div className="rounded-3xl border border-border-theme bg-card p-6 shadow-sm space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
               <Eye className="h-4 w-4 text-primary" />
               <span>Customer Product Card Hover Preview</span>
             </div>
@@ -346,29 +346,29 @@ export default function DeliveryHoursSettings() {
               <div className="text-xs text-primary font-black mt-1">₹499</div>
             </div>
 
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
               When night restriction is active, product catalog stays accessible. Hovering shows this unavailable prompt to users.
             </p>
           </div>
 
           {/* Operating Info Card */}
           <div className="rounded-3xl border border-border-theme bg-card p-6 shadow-sm space-y-3">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
               <Info className="h-4 w-4 text-primary" />
               <span>Operating Guidelines</span>
             </div>
-            <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-400">
+            <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
               <li className="flex items-start gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span><strong>Catalog Browsing:</strong> Remains active 24/7 so customers can browse gifts.</span>
+                <span><strong className="text-slate-900 dark:text-white">Catalog Browsing:</strong> Remains active 24/7 so customers can browse gifts.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span><strong>Checkout Block:</strong> Placing orders is cleanly rejected with an explanatory notification.</span>
+                <span><strong className="text-slate-900 dark:text-white">Checkout Block:</strong> Placing orders is cleanly rejected with an explanatory notification.</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                <span><strong>Auto-Resume:</strong> Store reopens automatically once the morning resume time is reached.</span>
+                <span><strong className="text-slate-900 dark:text-white">Auto-Resume:</strong> Store reopens automatically once the morning resume time is reached.</span>
               </li>
             </ul>
           </div>

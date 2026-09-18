@@ -136,8 +136,8 @@ export default function InventoryFilterBar({
                 onClick={() => onStatusChange(tab.key)}
                 className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
                   active
-                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm"
-                    : "bg-background border border-border-theme text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                    ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm font-bold"
+                    : "bg-background border border-border-theme text-slate-800 dark:text-slate-200 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
               >
                 <span>{tab.label}</span>
@@ -146,7 +146,7 @@ export default function InventoryFilterBar({
                     className={`rounded-full px-1.5 py-0.2 text-[11px] font-bold ${
                       active
                         ? "bg-white/20 text-white dark:bg-black/20 dark:text-slate-900"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                        : "bg-slate-200/80 dark:bg-slate-800 text-slate-800 dark:text-slate-300"
                     }`}
                   >
                     {tab.count}
@@ -160,16 +160,16 @@ export default function InventoryFilterBar({
         {/* Dropdowns: Category + Sort */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Category Dropdown */}
-          <div className="flex items-center gap-1.5 rounded-xl border border-border-theme bg-background px-3 py-1.5 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
-            <Filter className="h-3.5 w-3.5 text-slate-400" />
+          <div className="flex items-center gap-1.5 rounded-xl border border-border-theme bg-background px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <Filter className="h-3.5 w-3.5 text-slate-500" />
             <select
               value={selectedCategory}
               onChange={(e) => onCategoryChange(e.target.value)}
-              className="bg-transparent text-xs sm:text-sm font-medium focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
             >
               <option value="all">All Categories</option>
               {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>
+                <option key={cat._id} value={cat._id} className="bg-card text-foreground">
                   {cat.name}
                 </option>
               ))}
@@ -177,15 +177,15 @@ export default function InventoryFilterBar({
           </div>
 
           {/* Sort Dropdown */}
-          <div className="flex items-center gap-1.5 rounded-xl border border-border-theme bg-background px-3 py-1.5 text-xs sm:text-sm text-slate-700 dark:text-slate-300">
-            <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
+          <div className="flex items-center gap-1.5 rounded-xl border border-border-theme bg-background px-3 py-1.5 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <ArrowUpDown className="h-3.5 w-3.5 text-slate-500" />
             <select
               value={`${sortBy}-${sortOrder}`}
               onChange={(e) => {
                 const [f, o] = e.target.value.split("-");
                 onSortChange(f, o as "asc" | "desc");
               }}
-              className="bg-transparent text-xs sm:text-sm font-medium focus:outline-none cursor-pointer"
+              className="bg-transparent text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
             >
               <option value="createdAt-desc">Newest Added</option>
               <option value="stock-asc">Stock: Low to High</option>

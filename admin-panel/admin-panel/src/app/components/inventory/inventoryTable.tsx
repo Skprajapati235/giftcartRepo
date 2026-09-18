@@ -43,7 +43,7 @@ export default function InventoryTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-border-theme bg-th-bg/60 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <tr className="border-b border-border-theme bg-th-bg/60 text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
               <th className="py-3.5 px-4 w-10">
                 <input
                   type="checkbox"
@@ -136,7 +136,7 @@ export default function InventoryTable({
                             {item.name}
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                            <span className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 border border-border-theme px-1.5 py-0.2 rounded font-medium text-slate-600 dark:text-slate-300">
+                            <span className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 border border-border-theme px-1.5 py-0.2 rounded font-semibold text-slate-800 dark:text-slate-200">
                               {item.sku}
                             </span>
                             {item.flowerCount && (
@@ -161,7 +161,7 @@ export default function InventoryTable({
 
                     {/* Category */}
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 text-xs font-medium text-slate-700 dark:text-slate-300 border border-border-theme">
+                      <span className="inline-flex items-center rounded-lg bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 text-xs font-semibold text-slate-800 dark:text-slate-200 border border-border-theme">
                         {item.category?.name || "Uncategorized"}
                       </span>
                     </td>
@@ -187,7 +187,7 @@ export default function InventoryTable({
                           onClick={() => onInlineAdjust(item, -1)}
                           disabled={item.stock <= 0}
                           title="Decrease Stock by 1"
-                          className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white transition-colors disabled:opacity-30 cursor-pointer"
+                          className="rounded-lg p-1 text-slate-700 dark:text-slate-300 hover:bg-slate-100 hover:text-slate-950 dark:hover:bg-slate-800 dark:hover:text-white transition-colors disabled:opacity-30 cursor-pointer"
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -197,7 +197,7 @@ export default function InventoryTable({
                         <button
                           onClick={() => onInlineAdjust(item, 1)}
                           title="Increase Stock by 1"
-                          className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white transition-colors cursor-pointer"
+                          className="rounded-lg p-1 text-slate-700 dark:text-slate-300 hover:bg-slate-100 hover:text-slate-950 dark:hover:bg-slate-800 dark:hover:text-white transition-colors cursor-pointer"
                         >
                           <Plus className="h-3 w-3" />
                         </button>
@@ -263,7 +263,7 @@ export default function InventoryTable({
 
       {/* Pagination & Summary Footer */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-border-theme bg-card">
-        <div className="text-xs text-slate-500 dark:text-slate-400">
+        <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">
           Showing{" "}
           <span className="font-semibold text-slate-900 dark:text-white">
             {total === 0 ? 0 : (currentPage - 1) * limit + 1}

@@ -98,7 +98,7 @@ export default function SupportStats({
             <div className={`absolute inset-0 bg-gradient-to-br ${c.gradient} pointer-events-none`} />
 
             <div className="relative flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider truncate">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider truncate">
                 {c.label}
               </span>
               <div className={`rounded-xl p-2 bg-background border border-border-theme ${c.iconColor}`}>
@@ -110,7 +110,7 @@ export default function SupportStats({
               <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                 {c.value}
               </div>
-              <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+              <p className="mt-1 text-[12px] text-slate-700 dark:text-slate-300 font-semibold truncate">
                 {c.subtext}
               </p>
             </div>

@@ -61,7 +61,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [totalUsers, setTotalUsers] = useState(0);
   const [totalCategories, setTotalCategories] = useState(0);
 
-  const fetchAll = async () => {
+  const fetchAll = React.useCallback(async () => {
     if (!authenticated) {
       setProducts([]);
       setCategories([]);
@@ -110,16 +110,16 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [authenticated]);
 
   useEffect(() => {
     if (authLoading) return;
     fetchAll();
-  }, [authenticated, authLoading]);
+  }, [authenticated, authLoading, fetchAll]);
 
-  const refreshAll = async () => {
+  const refreshAll = React.useCallback(async () => {
     await fetchAll();
-  };
+  }, [fetchAll]);
 
   const handleCreateCategory = async (payload: { name: string, image?: string }) => {
     await service.createCategory(payload);

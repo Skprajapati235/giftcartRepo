@@ -8,9 +8,9 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <AdminMain>
-        <div className="mb-6 lg:mb-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-slate-500 sm:text-sm">
-            Dashboard
+        <div className="mb-4 lg:mb-6">
+          <p className="text-xs uppercase tracking-[0.25em] font-bold text-slate-700 dark:text-slate-400 sm:text-sm">
+            Overview & Analytics
           </p>
         </div>
         <DashboardView />

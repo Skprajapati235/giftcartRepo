@@ -120,7 +120,8 @@ app.use("/api/cart", require("./routes/cartRoutes"));
 app.use("/api/inventory", require("./routes/inventoryRoutes"));
 app.use("/api/support", require("./routes/supportRoutes"));
 app.use("/api/store-settings", require("./routes/storeSettingsRoutes"));
-
+app.use("/api/leads", require("./routes/leadRoutes"));
+app.use("/api/crm", require("./routes/crmRoutes"));
 // AI Chat endpoint for Admin Panel
 const PYTHON_AI_URL = process.env.PYTHON_AI_URL || "http://localhost:8001";
 const AI_INTERNAL_KEY = process.env.AI_INTERNAL_KEY || "";

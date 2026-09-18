@@ -111,7 +111,7 @@ export default function SupportDetailModal({
           {/* Customer Profile & Info Card */}
           <div className="grid gap-3 sm:grid-cols-2 rounded-2xl border border-border-theme bg-background p-4">
             <div>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
                 Customer
               </span>
               <div className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
@@ -139,11 +139,11 @@ export default function SupportDetailModal({
             </div>
 
             <div className="sm:border-l sm:border-border-theme sm:pl-4">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1">
                 Ticket Information
               </span>
-              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
+              <div className="flex items-center gap-2 text-xs text-slate-800 dark:text-slate-200 font-medium">
+                <Calendar className="h-3.5 w-3.5 text-slate-500" />
                 <span>
                   {new Date(ticket.createdAt).toLocaleString("en-IN", {
                     day: "2-digit",
@@ -208,10 +208,10 @@ export default function SupportDetailModal({
 
           {/* Customer's Query / Message */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
               Customer Message:
             </label>
-            <div className="rounded-2xl border border-border-theme bg-background p-4 text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap">
+            <div className="rounded-2xl border border-border-theme bg-background p-4 text-sm text-slate-900 dark:text-slate-100 font-medium leading-relaxed whitespace-pre-wrap">
               {ticket.message}
             </div>
           </div>
