@@ -168,10 +168,10 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
 
                 {groups.map((group) => (
                     <section key={group.label}>
-                        <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                        <p className="mb-1 px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500/80">
                             {group.label}
                         </p>
-                        <ul className="space-y-1">
+                        <ul className="space-y-0.5">
                             {group.items.map((chat) => {
                                 const active = pathname === `/chat/${chat.chatId}`;
 
@@ -180,7 +180,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                         <li key={chat.chatId}>
                                             <form
                                                 onSubmit={(event) => void submitRename(event, chat)}
-                                                className="flex items-center gap-1 rounded-xl border border-primary bg-background px-2 py-1.5"
+                                                className="flex items-center gap-1 rounded-lg border border-primary/50 bg-background/90 px-2 py-1 shadow-sm"
                                             >
                                                 <input
                                                     autoFocus
@@ -191,12 +191,12 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                                         if (event.key === "Escape") setEditingId(null);
                                                     }}
                                                     aria-label="Chat title"
-                                                    className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground outline-none"
+                                                    className="min-w-0 flex-1 bg-transparent text-xs sm:text-[13px] text-foreground outline-none"
                                                 />
                                                 <button
                                                     type="submit"
                                                     aria-label="Save title"
-                                                    className="rounded-md p-1 text-emerald-600 hover:bg-hover-theme"
+                                                    className="rounded-md p-1 text-emerald-500 hover:bg-hover-theme"
                                                 >
                                                     <Check className="h-3.5 w-3.5" />
                                                 </button>
@@ -204,7 +204,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                                     type="button"
                                                     onClick={() => setEditingId(null)}
                                                     aria-label="Cancel rename"
-                                                    className="rounded-md p-1 text-slate-500 hover:bg-hover-theme"
+                                                    className="rounded-md p-1 text-slate-400 hover:bg-hover-theme"
                                                 >
                                                     <X className="h-3.5 w-3.5" />
                                                 </button>
@@ -216,16 +216,16 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                 return (
                                     <li
                                         key={chat.chatId}
-                                        className={`group flex items-center rounded-xl border transition ${active
-                                                ? "border-primary bg-primary text-white shadow-md"
-                                                : "border-transparent bg-background text-slate-500 hover:border-border-theme hover:bg-hover-theme hover:text-foreground"
+                                        className={`group flex items-center rounded-lg transition-colors ${active
+                                                ? "bg-slate-200/80 text-foreground dark:bg-white/[0.08]"
+                                                : "text-slate-400 hover:bg-slate-200/40 hover:text-foreground dark:text-slate-400 dark:hover:bg-white/[0.04]"
                                             }`}
                                     >
                                         <Link
                                             href={`/chat/${chat.chatId}`}
                                             onClick={onNavigate}
                                             title={chat.title}
-                                            className="min-w-0 flex-1 truncate px-3 py-2.5 text-[13px] font-semibold"
+                                            className={`min-w-0 flex-1 truncate px-2.5 py-1.5 text-xs sm:text-[13px] ${active ? "font-medium" : "font-normal"}`}
                                         >
                                             {chat.title}
                                         </Link>
@@ -234,7 +234,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                                 type="button"
                                                 onClick={() => startRename(chat)}
                                                 aria-label="Rename chat"
-                                                className={`rounded-md p-1.5 ${active ? "hover:bg-white/20" : "hover:bg-slate-200 dark:hover:bg-slate-700"}`}
+                                                className="rounded-md p-1 text-slate-400 transition hover:bg-slate-300/40 hover:text-foreground dark:hover:bg-white/10 dark:hover:text-foreground"
                                             >
                                                 <Pencil className="h-3.5 w-3.5" />
                                             </button>
@@ -242,7 +242,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                                 type="button"
                                                 onClick={() => setPendingDelete(chat)}
                                                 aria-label="Delete chat"
-                                                className={`rounded-md p-1.5 ${active ? "hover:bg-white/20" : "hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-500/20"}`}
+                                                className="rounded-md p-1 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-500 dark:hover:bg-rose-500/20"
                                             >
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </button>
