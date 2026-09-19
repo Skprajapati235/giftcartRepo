@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ElementType } from "react";
 import { useAuth } from "../context/AuthContext";
+import ChatHistoryPanel from "../../components/ai-chat-dashboard/ChatHistoryPanel";
 import { useTheme } from "../context/ThemeContext";
 import { useSidebar } from "../context/SidebarContext";
 import {
@@ -35,14 +36,20 @@ function DesktopSidebar() {
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
-    const groupKey = adminNavigation.find((item) =>
-      item.children?.some((child) => pathname?.startsWith(child.href))
+    // const groupKey = adminNavigation.find((item) =>
+    //   item.children?.some((child) => pathname?.startsWith(child.href))
+    // )?.key;
+    // setActivePanel(groupKey ?? null);
+    const groupKey = adminNavigation.find(
+      (item) =>
+        item.children?.some((child) => pathname?.startsWith(child.href)) ||
+        (item.panel && item.href && pathname?.startsWith(item.href))
     )?.key;
     setActivePanel(groupKey ?? null);
   }, [pathname]);
 
   const handlePanelOpen = (item: NavItem) => {
-    if (item.children) {
+    if (item.children || item.panel) {
       setActivePanel(item.key);
       return;
     }
@@ -50,7 +57,7 @@ function DesktopSidebar() {
   };
 
   const activeGroup = adminNavigation.find(
-    (item) => item.key === activePanel && item.children
+    (item) => item.key === activePanel && (item.children || item.panel)
   );
 
   const mainNav = adminNavigation.filter((item) => item.key !== "admin");
@@ -77,7 +84,12 @@ function DesktopSidebar() {
                     {item.children ? (
                       <button
                         type="button"
-                        onClick={() => handlePanelOpen(item)}
+                        // onClick={() => handlePanelOpen(item)}
+                        onClick={(event) => {
+                          // Already inside AI Chat: just open the sub-sidebar, keep the current chat
+                          if (item.panel && pathname?.startsWith(item.href!)) event.preventDefault();
+                          handlePanelOpen(item);
+                        }}
                         className={`mx-auto flex h-10 w-11 items-center justify-center rounded-xl transition-all xl:h-11 xl:w-12 ${active
                           ? "bg-primary text-white shadow-lg ring-1 ring-primary/20"
                           : "text-slate-400 hover:bg-hover-theme hover:text-foreground"
@@ -137,7 +149,7 @@ function DesktopSidebar() {
       >
         {activeGroup && (
           <div className="flex h-full flex-col justify-between p-4 xl:p-5">
-            <div>
+            <div className={activeGroup.panel ? "flex min-h-0 flex-1 flex-col" : ""}>
               <div className="mb-5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <activeGroup.icon className="h-4 w-4 text-foreground" />
@@ -153,6 +165,9 @@ function DesktopSidebar() {
                   <ArrowLeft className="h-4 w-4" />
                 </button>
               </div>
+              {/* <div className="space-y-2"> */}
+              {/* {activeGroup.children?.map((child) => { */}
+              {activeGroup.panel === "aiChat" && <ChatHistoryPanel />}
               <div className="space-y-2">
                 {activeGroup.children?.map((child) => {
                   const childActive = pathname?.startsWith(child.href);
@@ -236,7 +251,13 @@ function MobileSidebar() {
   useEffect(() => {
     const next: Record<string, boolean> = {};
     adminNavigation.forEach((item) => {
-      if (item.children?.some((c) => pathname?.startsWith(c.href))) {
+      // if (item.children?.some((c) => pathname?.startsWith(c.href))) {
+      //   next[item.key] = true;
+      // }
+      if (
+        item.children?.some((c) => pathname?.startsWith(c.href)) ||
+        (item.panel && item.href && pathname?.startsWith(item.href))
+      ) {
         next[item.key] = true;
       }
     });
@@ -276,6 +297,37 @@ function MobileSidebar() {
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {adminNavigation.map((item) => {
+            if (item.panel === "aiChat") {
+              const open = expanded[item.key];
+              const groupActive = Boolean(pathname?.startsWith(item.href!));
+              const Icon = item.icon;
+              return (
+                <div key={item.key} className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(item.key)}
+                    className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition ${groupActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-hover-theme"
+                      }`}
+                  >
+                    <span className="flex items-center gap-3">
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </span>
+                    <ChevronDown
+                      className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                  {open && (
+                    <div className="flex max-h-[60vh] flex-col pb-1 pl-3">
+                      <ChatHistoryPanel onNavigate={closeMobile} alwaysShowActions />
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             if (item.children) {
               const open = expanded[item.key];
               const groupActive = isPathActive(pathname, undefined, item.children);

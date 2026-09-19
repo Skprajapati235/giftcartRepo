@@ -122,42 +122,47 @@ app.use("/api/support", require("./routes/supportRoutes"));
 app.use("/api/store-settings", require("./routes/storeSettingsRoutes"));
 app.use("/api/leads", require("./routes/leadRoutes"));
 app.use("/api/crm", require("./routes/crmRoutes"));
-// AI Chat endpoint for Admin Panel
-const PYTHON_AI_URL = process.env.PYTHON_AI_URL || "http://localhost:8001";
-const AI_INTERNAL_KEY = process.env.AI_INTERNAL_KEY || "";
+// // AI Chat endpoint for Admin Panel
+// const PYTHON_AI_URL = process.env.PYTHON_AI_URL || "http://localhost:8001";
+// const AI_INTERNAL_KEY = process.env.AI_INTERNAL_KEY || "";
 
-app.post("/api/ask-agent", authMiddleware, async (req, res) => {
-  try {
-    const { message, history } = req.body;
-    const token = req.headers.authorization?.split(" ")[1];
+// app.post("/api/ask-agent", authMiddleware, async (req, res) => {
+//   try {
+//     const { message, history } = req.body;
+//     const token = req.headers.authorization?.split(" ")[1];
 
-    if (!message || !token) {
-      return res.status(400).json({ success: false, message: "Message and authorization required" });
-    }
+//     if (!message || !token) {
+//       return res.status(400).json({ success: false, message: "Message and authorization required" });
+//     }
 
-    const response = await axios.post(
-      `${PYTHON_AI_URL}/api/ai/chat`,
-      { message, history: history || [] },
-      {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "X-AI-Internal-Key": AI_INTERNAL_KEY,
-          "Content-Type": "application/json",
-        },
-        timeout: 30000,
-      }
-    );
+//     const response = await axios.post(
+//       `${PYTHON_AI_URL}/api/ai/chat`,
+//       { message, history: history || [] },
+//       {
+//         headers: {
+//           "Authorization": `Bearer ${token}`,
+//           "X-AI-Internal-Key": AI_INTERNAL_KEY,
+//           "Content-Type": "application/json",
+//         },
+//         timeout: 30000,
+//       }
+//     );
 
-    res.json(response.data);
-  } catch (error) {
-    console.error("AI Chat Error:", error.message);
-    res.status(500).json({
-      success: false,
-      message: error.response?.data?.detail || "AI service error",
-      answer: "Sorry, I couldn't process that request. Please try again.",
-    });
-  }
-});
+//     res.json(response.data);
+//   } catch (error) {
+//     console.error("AI Chat Error:", error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: error.response?.data?.detail || "AI service error",
+//       answer: "Sorry, I couldn't process that request. Please try again.",
+//     });
+//   }
+// });
+
+// AI Chat (Admin Panel) — chat history is stored in MongoDB (models/AiChat.js)
+const aiChatController = require("./controllers/aiChatController");
+app.post("/api/ask-agent", adminMiddleware, aiChatController.askAgent);
+app.use("/api/ai-chat", adminMiddleware, require("./routes/aiChatRoutes"));
 
 
 

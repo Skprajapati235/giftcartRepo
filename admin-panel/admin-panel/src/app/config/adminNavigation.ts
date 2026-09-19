@@ -38,11 +38,15 @@ export type NavItem = {
   label: string;
   icon: ElementType;
   children?: NavChild[];
+  /** Opens a custom sub-sidebar (instead of a plain link / child list). "aiChat" = New chat + chat history. */
+  panel?: "aiChat";
+
 };
 
 export const adminNavigation: NavItem[] = [
   { key: "dashboard", href: "/dashboard", label: "Dashboard", icon: Home },
-  { key: "chat", href: "/chat", label: "AI Chat", icon: Bot },
+  // { key: "chat", href: "/chat", label: "AI Chat", icon: Bot },
+  { key: "chat", href: "/chat", label: "AI Chat", icon: Bot, panel: "aiChat" },
   {
     key: "shop",
     label: "Shop",
