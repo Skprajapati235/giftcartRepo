@@ -15,7 +15,7 @@ exports.generateInvoicePDF = (order, stream) => {
         .fontSize(20)
         .text("INVOICE", 50, 57)
         .fontSize(10)
-        .text("Giftcart Ltd.", 200, 50, { align: "right" })
+        .text("GiftFestive Ltd.", 200, 50, { align: "right" })
         .text("123 Gifting Lane", 200, 65, { align: "right" })
         .text("Gifting City, GC 12345", 200, 80, { align: "right" })
         .moveDown();

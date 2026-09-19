@@ -149,7 +149,7 @@ function formatOrderUpdateMessage({ order, statusOverride }) {
   const remaining = Math.max(0, items.length - topItems.length);
 
   const lines = [];
-  lines.push(`Giftcart: ${statusLabel}`);
+  lines.push(`GiftFestive: ${statusLabel}`);
   if (orderId) lines.push(`Order ID: ${orderId}`);
   if (topItems.length) {
     lines.push(
@@ -166,7 +166,7 @@ function formatOrderUpdateMessage({ order, statusOverride }) {
 
 function formatLoginMessage({ user }) {
   const name = user?.name ? String(user.name) : "there";
-  return `Giftcart: Hi ${name}, login successful.`;
+  return `GiftFestive: Hi ${name}, login successful.`;
 }
 
 module.exports = {

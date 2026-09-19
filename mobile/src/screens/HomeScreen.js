@@ -319,9 +319,10 @@ export default function HomeScreen({ navigation }) {
 
           <View style={styles.logoContainer}>
             <Image
-              source={require('../assets/images/GiftorawithText2.png')}
-              style={styles.logoImage}
+              source={require('../assets/images/GiftFestiveIcon.png')}
+              style={styles.logoIcon}
             />
+            <Text style={styles.logoText}>GiftFestive</Text>
           </View>
 
           <View style={styles.headerRight}>
@@ -567,7 +568,7 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity style={styles.drawerBackdrop} onPress={() => setIsDrawerOpen(false)} />
             <View style={styles.drawerContent}>
               <View style={styles.drawerHeader}>
-                <Text style={styles.logoTextMain}>GiftCart</Text>
+                <Text style={styles.logoTextMain}>GiftFestive</Text>
                 <TouchableOpacity onPress={() => setIsDrawerOpen(false)}><Feather name="x" size={24} color="#000" /></TouchableOpacity>
               </View>
               <View style={styles.drawerProfile}>
@@ -836,11 +837,21 @@ const styles = StyleSheet.create({
     color: '#111',
   },
   searchIcon: { padding: 8 },
-  menuButton: { padding: 5 },
-  logoImage: {
-    width: 100,
-    height: 50,
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
     resizeMode: 'contain',
+  },
+  logoText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FF6A3D',
+    letterSpacing: -0.5,
   },
   deliveryWarningBanner: {
     flexDirection: 'row',

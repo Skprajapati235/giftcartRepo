@@ -259,7 +259,7 @@ export default function CheckoutScreen({ navigation, route }) {
           orderId: res.razorpayOrder.id,
           amount: res.razorpayOrder.amount,
           key: razorpayKey,
-          name: 'GiftCart',
+          name: 'GiftFestive',
           description: 'Payment for your order',
           user: {
             name: user.name,

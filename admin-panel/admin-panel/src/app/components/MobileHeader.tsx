@@ -20,11 +20,16 @@ export default function MobileHeader() {
         <Menu className="h-5 w-5" />
       </button>
 
-      <img
-        src="/images/GiftorawithText2.png"
-        alt="Giftora"
-        className="h-7 max-w-[140px] object-contain"
-      />
+      <div className="flex items-center gap-2">
+        <img
+          src="/images/GiftFestive.png"
+          alt="GiftFestive"
+          className="h-7 w-7 object-contain"
+        />
+        <span className="text-base font-extrabold tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-amber-500 bg-clip-text text-transparent">
+          GiftFestive
+        </span>
+      </div>
 
       <button
         type="button"

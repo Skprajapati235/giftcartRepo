@@ -63,12 +63,12 @@ export default function ProfileScreen({ navigation }) {
           <ProfileItem icon="help-circle" label="Help & Support" onPress={() => navigation.navigate('CustomerSupport')} />
           <ProfileItem icon="shield" label="Terms & Policy" onPress={() => navigation.navigate('TermsPolicy')} />
           <ProfileItem icon="code" label="Developer" onPress={() => navigation.navigate('Developer')} />
-          <ProfileItem icon="share-2" label="Share GiftCart" onPress={() => {}} />
+          <ProfileItem icon="share-2" label="Share GiftFestive" onPress={() => {}} />
         </View>
 
         <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
           <Feather name="log-out" size={20} color="#FFF" />
-          <Text style={styles.logoutText}>Sign Out of GiftCart</Text>
+          <Text style={styles.logoutText}>Sign Out of GiftFestive</Text>
         </TouchableOpacity>
 
       </ScrollView>

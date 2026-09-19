@@ -12,10 +12,10 @@ export default function TermsPolicyPage() {
             Terms & Policy
           </p>
           <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-900">
-            GiftCart Terms & Policy
+            GiftFestive Terms & Policy
           </h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            This page contains the terms and conditions and privacy policy for GiftCart.
+            This page contains the terms and conditions and privacy policy for GiftFestive.
           </p>
         </div>
 
@@ -23,11 +23,11 @@ export default function TermsPolicyPage() {
           <div className="rounded-3xl border border-border-theme bg-card p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">Terms and Conditions</h2>
             <p className="mt-4 text-sm leading-7 text-slate-600">
-              Welcome to GiftCart. By using our platform, you agree to follow these terms and conditions.
+              Welcome to GiftFestive. By using our platform, you agree to follow these terms and conditions.
             </p>
             <div className="mt-5 space-y-4 text-sm leading-7 text-slate-600">
               <p>
-                1. Use of Service: GiftCart is provided for lawful personal and business orders. You must not use the platform
+                1. Use of Service: GiftFestive is provided for lawful personal and business orders. You must not use the platform
                 for illegal products, fraud, or any activity that violates local laws.
               </p>
               <p>
@@ -48,7 +48,7 @@ export default function TermsPolicyPage() {
           <div className="rounded-3xl border border-border-theme bg-card p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">Privacy Policy</h2>
             <p className="mt-4 text-sm leading-7 text-slate-600">
-              GiftCart respects your privacy. This policy explains how we collect, use, and protect your personal information.
+              GiftFestive respects your privacy. This policy explains how we collect, use, and protect your personal information.
             </p>
             <div className="mt-5 space-y-4 text-sm leading-7 text-slate-600">
               <p>

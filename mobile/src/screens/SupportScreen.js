@@ -127,14 +127,14 @@ export default function SupportScreen({ navigation, route }) {
   };
 
   const openWhatsApp = () => {
-    const text = encodeURIComponent('Hello GiftCart Support, I need assistance with my order.');
+    const text = encodeURIComponent('Hello GiftFestive Support, I need assistance with my order.');
     Linking.openURL(`https://wa.me/919876543210?text=${text}`).catch(() => {
       showToast('Could not open WhatsApp', 'error');
     });
   };
 
   const openEmail = () => {
-    Linking.openURL('mailto:support@giftcart.com?subject=Customer Support Inquiry').catch(() => {
+    Linking.openURL('mailto:support@giftfestive.com?subject=Customer Support Inquiry').catch(() => {
       showToast('Could not open email app', 'error');
     });
   };
@@ -418,7 +418,7 @@ export default function SupportScreen({ navigation, route }) {
             </View>
             <Text style={styles.modalTitle}>Inquiry Submitted!</Text>
             <Text style={styles.modalSubtitle}>
-              Thank you for contacting GiftCart support. Your ticket has been registered successfully.
+              Thank you for contacting GiftFestive support. Your ticket has been registered successfully.
             </Text>
 
             {submittedTicket?._id && (

@@ -1,154 +1,57 @@
-// // import React, { useEffect, useState } from 'react';
-// // import { NavigationContainer } from '@react-navigation/native';
-// // import { StatusBar } from 'expo-status-bar';
-// // import { SafeAreaProvider } from 'react-native-safe-area-context';
-// // import { AuthProvider } from './src/context/AuthContext';
-// // import AppNavigator from './src/navigation/AppNavigator';
-// // import Loader from './src/components/loaders/Loader';
-
-// // import { ToastProvider } from './src/context/ToastContext';
-
-// // export default function App() {
-
-// //   const [globalLoading, setGlobalLoading] = useState(true);
-
-// //   useEffect(() => {
-// //     setTimeout(() => {
-// //       setGlobalLoading(false);
-// //     }, 3000);
-// //   }, []);
-
-// //   if (globalLoading) return <Loader />;
-
-// //   return (
-// //     <SafeAreaProvider>
-// //       <ToastProvider>
-// //         <AuthProvider>
-// //           <NavigationContainer>
-// //             <AppNavigator />
-// //             <StatusBar style="dark" />
-// //           </NavigationContainer>
-// //         </AuthProvider>
-// //       </ToastProvider>
-// //     </SafeAreaProvider>
-// //   );
-// // }
-
-
-
-// import React, { useEffect, useState } from 'react';
-// import { NavigationContainer } from '@react-navigation/native';
-// import { StatusBar } from 'expo-status-bar';
-// import { SafeAreaProvider } from 'react-native-safe-area-context';
-// import { AuthProvider } from './src/context/AuthContext';
-// import { CartProvider } from './src/context/CartContext';
-// import AppNavigator from './src/navigation/AppNavigator';
-// import Loader from './src/components/loaders/Loader';
-
-// import { ToastProvider } from './src/context/ToastContext';
-
-// export default function App() {
-
-//   const [globalLoading, setGlobalLoading] = useState(true);
-
-//   useEffect(() => {
-//     setTimeout(() => {
-//       setGlobalLoading(false);
-//     }, 3000);
-//   }, []);
-
-//   if (globalLoading) return <Loader />;
-
-//   return (
-//     <SafeAreaProvider>
-//       <ToastProvider>
-//         <AuthProvider>
-//           <CartProvider>
-//             <NavigationContainer>
-//               <AppNavigator />
-//               <StatusBar style="dark" />
-//             </NavigationContainer>
-//           </CartProvider>
-//         </AuthProvider>
-//       </ToastProvider>
-//     </SafeAreaProvider>
-//   );
-// }
-
-
-// import React, { useEffect, useState } from 'react';
-// import { NavigationContainer } from '@react-navigation/native';
-// import { StatusBar } from 'expo-status-bar';
-// import { SafeAreaProvider } from 'react-native-safe-area-context';
-// import { AuthProvider } from './src/context/AuthContext';
-// import AppNavigator from './src/navigation/AppNavigator';
-// import Loader from './src/components/loaders/Loader';
-
-// import { ToastProvider } from './src/context/ToastContext';
-
-// export default function App() {
-
-//   const [globalLoading, setGlobalLoading] = useState(true);
-
-//   useEffect(() => {
-//     setTimeout(() => {
-//       setGlobalLoading(false);
-//     }, 3000);
-//   }, []);
-
-//   if (globalLoading) return <Loader />;
-
-//   return (
-//     <SafeAreaProvider>
-//       <ToastProvider>
-//         <AuthProvider>
-//           <NavigationContainer>
-//             <AppNavigator />
-//             <StatusBar style="dark" />
-//           </NavigationContainer>
-//         </AuthProvider>
-//       </ToastProvider>
-//     </SafeAreaProvider>
-//   );
-// }
-
-
-
-import React, { useEffect, useState } from 'react';
+import React, { useState, useContext } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AuthProvider } from './src/context/AuthContext';
+import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
+import { ToastProvider } from './src/context/ToastContext';
+import { LoadingProvider } from './src/context/LoadingContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import Loader from './src/components/loaders/Loader';
 
-import { ToastProvider } from './src/context/ToastContext';
+function MainApp() {
+  const { loading: authLoading } = useContext(AuthContext);
+  const [splashVisible, setSplashVisible] = useState(true);
+
+  return (
+    <View style={styles.container}>
+      <NavigationContainer>
+        <AppNavigator />
+        <StatusBar style="dark" />
+      </NavigationContainer>
+
+      {/* Native Android Splash Screen overlay with smooth dissolve transition */}
+      {splashVisible && (
+        <Loader
+          isAppReady={!authLoading}
+          minDuration={1000}
+          onFinish={() => setSplashVisible(false)}
+        />
+      )}
+    </View>
+  );
+}
 
 export default function App() {
-
-  const [globalLoading, setGlobalLoading] = useState(true);
-
-  useEffect(() => {
-    setTimeout(() => {
-      setGlobalLoading(false);
-    }, 3000);
-  }, []);
-
-  if (globalLoading) return <Loader />;
-
   return (
     <SafeAreaProvider>
       <ToastProvider>
         <AuthProvider>
           <CartProvider>
-            <NavigationContainer>
-              <AppNavigator />
-              <StatusBar style="dark" />
-            </NavigationContainer>
+            <LoadingProvider>
+              <MainApp />
+            </LoadingProvider>
           </CartProvider>
         </AuthProvider>
       </ToastProvider>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+});

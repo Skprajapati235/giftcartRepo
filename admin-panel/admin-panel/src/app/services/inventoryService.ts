@@ -154,7 +154,7 @@ export const downloadInventoryExcel = async (params?: InventoryQueryParams) => {
   const a = document.createElement("a");
   a.href = downloadUrl;
   const dateStr = new Date().toISOString().slice(0, 10);
-  a.download = `giftora-inventory-${dateStr}.csv`;
+  a.download = `giftfestive-inventory-${dateStr}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -188,7 +188,7 @@ export const downloadInventoryPdf = async (params?: InventoryQueryParams) => {
   const a = document.createElement("a");
   a.href = downloadUrl;
   const dateStr = new Date().toISOString().slice(0, 10);
-  a.download = `giftora-inventory-${dateStr}.pdf`;
+  a.download = `giftfestive-inventory-${dateStr}.pdf`;
   document.body.appendChild(a);
   a.click();
   a.remove();

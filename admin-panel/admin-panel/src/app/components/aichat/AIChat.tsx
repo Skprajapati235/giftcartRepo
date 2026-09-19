@@ -14,7 +14,7 @@ function getErrorMessage(error: unknown) {
 
 const welcomeMessage: ChatMessage = {
   role: "assistant",
-  content: "Hi! I am your Giftora admin assistant. How can I help you today?",
+  content: "Hi! I am your GiftFestive admin assistant. How can I help you today?",
 };
 
 export default function AIChat() {
@@ -60,7 +60,7 @@ export default function AIChat() {
                 <Sparkles className="h-5 w-5" />
               </div>
               <div className="min-w-0">
-                <h2 className="truncate text-sm font-bold">Giftora Assistant</h2>
+                <h2 className="truncate text-sm font-bold">GiftFestive Assistant</h2>
                 <p className="text-[11px] text-white/70">Admin support</p>
               </div>
             </div>

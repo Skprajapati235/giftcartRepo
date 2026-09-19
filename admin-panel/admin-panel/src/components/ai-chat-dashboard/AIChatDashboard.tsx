@@ -168,7 +168,7 @@ export default function AIChatDashboard() {
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-bold text-foreground">Giftora AI</h1>
+            <h1 className="truncate text-lg font-bold text-foreground">GiftFestive AI</h1>
             <p className="truncate text-xs text-slate-500">{activeTitle || "Your intelligent admin assistant"}</p>
           </div>
         </div>
@@ -230,7 +230,7 @@ export default function AIChatDashboard() {
           </div>
           {/* Bottom corner disclaimer */}
           <p className="pointer-events-none absolute bottom-3 right-4 sm:right-6 text-right text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 select-none">
-            Giftora AI can make mistakes. Verify important catalog and order details.
+            GiftFestive AI can make mistakes. Verify important catalog and order details.
           </p>
         </div>
       ) : (
@@ -308,7 +308,7 @@ export default function AIChatDashboard() {
                 textareaRef={textareaRef}
               />
               <p className="mt-1.5 text-right text-[10px] sm:text-[11px] text-slate-400 dark:text-slate-500 select-none">
-                Giftora AI can make mistakes. Verify important catalog and order details.
+                GiftFestive AI can make mistakes. Verify important catalog and order details.
               </p>
             </div>
           </div>

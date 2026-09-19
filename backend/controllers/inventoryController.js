@@ -128,7 +128,7 @@ exports.exportExcel = async (req, res) => {
 
     const dateStr = new Date().toISOString().slice(0, 10);
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
-    res.setHeader("Content-Disposition", `attachment; filename="giftora-inventory-${dateStr}.csv"`);
+    res.setHeader("Content-Disposition", `attachment; filename="giftfestive-inventory-${dateStr}.csv"`);
     return res.status(200).send(csvContent);
   } catch (error) {
     console.error("Error exporting inventory to Excel/CSV:", error);
@@ -147,7 +147,7 @@ exports.exportPdf = async (req, res) => {
 
     const dateStr = new Date().toISOString().slice(0, 10);
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename="giftora-inventory-${dateStr}.pdf"`);
+    res.setHeader("Content-Disposition", `attachment; filename="giftfestive-inventory-${dateStr}.pdf"`);
 
     await inventoryPdfGenerator.generateInventoryPDF(items, summary, res);
   } catch (error) {

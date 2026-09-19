@@ -11,9 +11,9 @@ export default function TermsPolicyScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.title}>Terms and Conditions</Text>
           <Text style={styles.text}>
-            Welcome to GiftCart. By using this app, you agree to follow these terms and conditions.
+            Welcome to GiftFestive. By using this app, you agree to follow these terms and conditions.
           </Text>
-          <Text style={styles.bullet}>• Use of Service: GiftCart is provided for lawful personal and business orders. Do not use the app for illegal products, fraud, or any activity that violates local laws.</Text>
+          <Text style={styles.bullet}>• Use of Service: GiftFestive is provided for lawful personal and business orders. Do not use the app for illegal products, fraud, or any activity that violates local laws.</Text>
           <Text style={styles.bullet}>• Account Security: Keep your account credentials private, and inform us immediately if you suspect unauthorized access.</Text>
           <Text style={styles.bullet}>• Orders and Payments: All orders are subject to product availability and payment verification. Delivery times may vary.</Text>
           <Text style={styles.bullet}>• Cancellations and Refunds: Refunds are handled according to our refund policy and may require order verification.</Text>
@@ -23,7 +23,7 @@ export default function TermsPolicyScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.title}>Privacy Policy</Text>
           <Text style={styles.text}>
-            GiftCart respects your privacy. This policy explains how we collect, use, and protect your personal information.
+            GiftFestive respects your privacy. This policy explains how we collect, use, and protect your personal information.
           </Text>
           <Text style={styles.bullet}>• Data Collection: We collect information such as name, email, address, order details, and payment status to process orders and improve your experience.</Text>
           <Text style={styles.bullet}>• Data Use: Your data is used to fulfill orders, send updates, personalize the app experience, and provide support.</Text>

@@ -15,10 +15,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Giftora",
-  description: "Admin dashboard for Giftora backend",
+  title: "GiftFestive",
+  description: "Admin dashboard for GiftFestive backend",
   icons: {
-    icon: "/images/Giftora.png",
+    icon: "/images/GiftFestive.png",
   },
 };
 

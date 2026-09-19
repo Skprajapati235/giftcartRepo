@@ -112,7 +112,7 @@ export default function LoginScreen({ navigation, route }) {
         <View style={styles.box}>
 
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>Welcome to Giftora ✨</Text>
+            <Text style={styles.title}>Welcome to GiftFestive ✨</Text>
           </View>
           <View style={styles.subtitleContainer}>
             <Text style={styles.subtitle}>Let’s make someone smile today 💖</Text>

@@ -68,12 +68,15 @@ function DesktopSidebar() {
       <aside className="sticky top-0 h-screen w-20 shrink-0 border-r border-border-theme bg-background xl:w-24">
         <div className="flex h-full flex-col justify-between px-1.5 py-3 xl:px-2">
           <div className="space-y-3">
-            <div className="pb-2 pt-2">
+            <div className="flex flex-col items-center justify-center pb-2 pt-2 text-center">
               <img
-                src="/images/GiftorawithText2.png"
-                alt="Giftora"
-                className="mx-auto h-7 max-w-full object-contain"
+                src="/images/GiftFestive.png"
+                alt="GiftFestive"
+                className="mx-auto h-8 w-8 object-contain"
               />
+              <span className="mt-1 text-[11px] font-extrabold tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-amber-500 bg-clip-text text-transparent">
+                GiftFestive
+              </span>
             </div>
             <nav className="space-y-2">
               {mainNav.map((item) => {
@@ -280,11 +283,16 @@ function MobileSidebar() {
       />
       <aside className="fixed inset-y-0 left-0 z-50 flex w-[min(100vw-2.5rem,320px)] flex-col border-r border-border-theme bg-card shadow-2xl lg:hidden">
         <div className="flex items-center justify-between border-b border-border-theme px-4 py-3">
-          <img
-            src="/images/GiftorawithText2.png"
-            alt="Giftora"
-            className="h-7 object-contain"
-          />
+          <div className="flex items-center gap-2">
+            <img
+              src="/images/GiftFestive.png"
+              alt="GiftFestive"
+              className="h-7 w-7 object-contain"
+            />
+            <span className="text-base font-extrabold tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-amber-500 bg-clip-text text-transparent">
+              GiftFestive
+            </span>
+          </div>
           <button
             type="button"
             onClick={closeMobile}

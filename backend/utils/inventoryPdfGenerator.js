@@ -30,7 +30,7 @@ exports.generateInventoryPDF = (items, summary, stream) => {
         .fillColor("#FFFFFF")
         .fontSize(18)
         .font("Helvetica-Bold")
-        .text("GIFTORA INVENTORY AUDIT REPORT", 50, 48);
+        .text("GIFTFESTIVE INVENTORY AUDIT REPORT", 50, 48);
 
       const dateStr = new Date().toLocaleString("en-IN", {
         day: "2-digit",
@@ -188,7 +188,7 @@ exports.generateInventoryPDF = (items, summary, stream) => {
           .fontSize(8)
           .fillColor("#94A3B8")
           .text(
-            `Giftora Inventory Management System • Generated on ${dateStr}`,
+            `GiftFestive Inventory Management System • Generated on ${dateStr}`,
             36,
             pageHeight - 24,
             { align: "left" }

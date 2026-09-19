@@ -69,7 +69,7 @@ export default function ChatComposer({
           rows={1}
           disabled={isLoading}
           placeholder="Ask about products, orders, users, or your catalog..."
-          aria-label="Message Giftora AI"
+          aria-label="Message GiftFestive AI"
           className={`max-h-36 flex-1 resize-none bg-transparent leading-5 text-foreground outline-none placeholder:text-slate-400 ${
             centered
               ? "min-h-[46px] px-1.5 py-2.5 text-sm sm:text-base"

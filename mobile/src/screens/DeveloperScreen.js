@@ -5,7 +5,7 @@ import { SafeScreen, ScreenHeader } from '../components/layout';
 const developerImage = require('../assets/images/gallery5.jpg');
 
 const stats = [
-  { label: 'Product', value: 'GiftCart' },
+  { label: 'Product', value: 'GiftFestive' },
   { label: 'Platform', value: 'Mobile + Admin' },
   { label: 'Goal', value: 'Easy gifting' },
 ];
@@ -16,7 +16,7 @@ const emailAddress = 'prajapatisonu7897@gmail.com';
 export default function DeveloperScreen({ navigation }) {
   const openWhatsApp = async () => {
     const url = `https://wa.me/918400787712?text=${encodeURIComponent(
-      'Hello Sonu, I am interested in GiftCart and want to know more.'
+      'Hello Sonu, I am interested in GiftFestive and want to know more.'
     )}`;
     try {
       await Linking.openURL(url);
@@ -26,7 +26,7 @@ export default function DeveloperScreen({ navigation }) {
   };
 
   const openEmail = async () => {
-    const url = `mailto:${emailAddress}?subject=${encodeURIComponent('GiftCart inquiry')}`;
+    const url = `mailto:${emailAddress}?subject=${encodeURIComponent('GiftFestive inquiry')}`;
     try {
       await Linking.openURL(url);
     } catch (error) {
@@ -46,7 +46,7 @@ export default function DeveloperScreen({ navigation }) {
           </View>
           <Text style={styles.heroTitle}>Sonu Kumar Prajapati</Text>
           <Text style={styles.heroSubtitle}>
-            Founder of GiftCart — a complete gift shopping platform built for small businesses, fast city-based discovery, and easy checkout.
+            Founder of GiftFestive — a complete gift shopping platform built for small businesses, fast city-based discovery, and easy checkout.
           </Text>
 
           <View style={styles.contactBadges}>
@@ -73,9 +73,9 @@ export default function DeveloperScreen({ navigation }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Why GiftCart exists</Text>
+          <Text style={styles.sectionTitle}>Why GiftFestive exists</Text>
           <Text style={styles.aboutText}>
-            GiftCart is made to help gift shops and local stores launch a premium shopping experience without building a separate app. It combines a smooth mobile storefront with a strong admin dashboard.
+            GiftFestive is made to help gift shops and local stores launch a premium shopping experience without building a separate app. It combines a smooth mobile storefront with a strong admin dashboard.
           </Text>
           <Text style={styles.aboutText}>
             Buyers can browse city-based products, save addresses, use coupons, and checkout with Razorpay or COD. Store owners can manage products, cities, coupons, orders, reviews, payments, and customers from one place.
