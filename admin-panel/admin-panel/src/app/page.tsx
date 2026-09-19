@@ -176,7 +176,7 @@ export default function Home() {
                     <input
                       type="email"
                       required
-                      placeholder="admin@giftfestive.com"
+                      placeholder="Enter your email"
                       value={form.email}
                       onChange={(e) =>
                         setForm({
@@ -209,7 +209,7 @@ export default function Home() {
                     <input
                       type={showPassword ? "text" : "password"}
                       required
-                      placeholder="••••••••••••"
+                      placeholder="Enter password"
                       value={form.password}
                       onChange={(e) =>
                         setForm({

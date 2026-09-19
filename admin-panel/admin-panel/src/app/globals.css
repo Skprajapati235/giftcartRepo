@@ -188,6 +188,28 @@ html[data-theme='dark'] .shadow-sm {
   scrollbar-color: var(--border) transparent !important;
 }
 
+/* Fix for Webkit Autofill Text Color Issue */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: #0f172a !important; /* slate-900 */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover, 
+html.dark input:-webkit-autofill:focus, 
+html.dark input:-webkit-autofill:active,
+html[data-theme='dark'] input:-webkit-autofill,
+html[data-theme='dark'] input:-webkit-autofill:hover, 
+html[data-theme='dark'] input:-webkit-autofill:focus, 
+html[data-theme='dark'] input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #020617 inset !important; /* slate-950 */
+  -webkit-text-fill-color: #f8fafc !important; /* slate-50 / white */
+}
+
 
 @keyframes fast-blink {
 
