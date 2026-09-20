@@ -25,7 +25,14 @@ import {
 function isPathActive(pathname: string | null, href?: string, children?: NavChild[]) {
   if (!pathname) return false;
   if (href) return pathname.startsWith(href);
-  if (children) return children.some((item) => pathname.startsWith(item.href));
+  if (children) {
+    return children.some((item) => {
+      if (item.isGroup && item.children) {
+        return item.children.some((child) => child.href && pathname.startsWith(child.href));
+      }
+      return item.href && pathname.startsWith(item.href);
+    });
+  }
   return false;
 }
 
@@ -33,6 +40,7 @@ function DesktopSidebar() {
   const pathname = usePathname();
   const { logout } = useAuth();
   const [activePanel, setActivePanel] = useState<string | null>(null);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -42,11 +50,37 @@ function DesktopSidebar() {
     // setActivePanel(groupKey ?? null);
     const groupKey = adminNavigation.find(
       (item) =>
-        item.children?.some((child) => pathname?.startsWith(child.href)) ||
+        item.children?.some((child) => {
+          if (child.isGroup && child.children) {
+            return child.children.some(c => c.href && pathname?.startsWith(c.href));
+          }
+          return child.href && pathname?.startsWith(child.href);
+        }) ||
         (item.panel && item.href && pathname?.startsWith(item.href))
     )?.key;
     setActivePanel(groupKey ?? null);
+
+    // Auto-expand groups that have active children
+    const activeNavGroup = adminNavigation.find(item => item.key === (groupKey ?? null));
+    if (activeNavGroup && activeNavGroup.children) {
+      const nextExpanded: Record<string, boolean> = { ...expandedGroups };
+      let changed = false;
+      activeNavGroup.children.forEach(child => {
+        if (child.isGroup && child.children) {
+          const isActive = child.children.some(c => c.href && pathname?.startsWith(c.href));
+          if (isActive && !nextExpanded[child.key]) {
+            nextExpanded[child.key] = true;
+            changed = true;
+          }
+        }
+      });
+      if (changed) setExpandedGroups(nextExpanded);
+    }
   }, [pathname]);
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const handlePanelOpen = (item: NavItem) => {
     if (item.children || item.panel) {
@@ -173,12 +207,56 @@ function DesktopSidebar() {
               {activeGroup.panel === "aiChat" && <ChatHistoryPanel />}
               <div className="space-y-2">
                 {activeGroup.children?.map((child) => {
-                  const childActive = pathname?.startsWith(child.href);
-                  const ChildIcon = child.icon;
+                  if (child.isGroup) {
+                    const isOpen = expandedGroups[child.key];
+                    return (
+                      <div key={child.key} className="mb-2 space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(child.key)}
+                          className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 transition-all ${isOpen ? "bg-slate-50 dark:bg-slate-800/40 shadow-sm border border-border-theme" : "hover:bg-hover-theme border border-transparent"}`}
+                        >
+                          <span className={`text-[11px] font-bold uppercase tracking-wider ${isOpen ? "text-primary" : "text-slate-500"}`}>
+                            {child.label}
+                          </span>
+                          <ChevronDown
+                            className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180 text-primary" : "text-slate-400"}`}
+                          />
+                        </button>
+                        {isOpen && (
+                          <div className="space-y-1 pl-4 pr-1 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100 dark:before:bg-slate-800 before:rounded-full mt-2">
+                            {child.children?.map((subChild) => {
+                              const childActive = pathname?.startsWith(subChild.href!);
+                              const ChildIcon = subChild.icon!;
+                              return (
+                                <Link
+                                  key={subChild.key}
+                                  href={subChild.href!}
+                                  className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-[12px] transition-all relative ${childActive
+                                      ? "bg-primary text-white font-semibold shadow-md shadow-primary/20"
+                                      : "text-slate-500 font-medium hover:bg-hover-theme hover:text-foreground"
+                                    }`}
+                                >
+                                  {childActive && (
+                                    <span className="absolute -left-[14px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary ring-2 ring-white dark:ring-[#0f172a]" />
+                                  )}
+                                  <ChildIcon className={`h-4 w-4 transition-colors ${childActive ? "text-white" : "text-slate-400 group-hover:text-foreground"}`} />
+                                  <span>{subChild.label}</span>
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  const childActive = pathname?.startsWith(child.href!);
+                  const ChildIcon = child.icon!;
                   return (
                     <Link
                       key={child.key}
-                      href={child.href}
+                      href={child.href!}
                       className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-[13px] font-semibold transition ${childActive
                         ? "border-primary bg-primary text-white shadow-md"
                         : "border-transparent bg-background text-slate-500 hover:border-border-theme hover:bg-hover-theme hover:text-foreground"
@@ -250,27 +328,38 @@ function MobileSidebar() {
   const { logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [expandedSubGroups, setExpandedSubGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const next: Record<string, boolean> = {};
+    const nextSub: Record<string, boolean> = {};
     adminNavigation.forEach((item) => {
-      // if (item.children?.some((c) => pathname?.startsWith(c.href))) {
-      //   next[item.key] = true;
-      // }
       if (
-        item.children?.some((c) => pathname?.startsWith(c.href)) ||
+        item.children?.some((child) => {
+          if (child.isGroup && child.children) {
+             const isActive = child.children.some(c => c.href && pathname?.startsWith(c.href));
+             if (isActive) nextSub[child.key] = true;
+             return isActive;
+          }
+          return child.href && pathname?.startsWith(child.href);
+        }) ||
         (item.panel && item.href && pathname?.startsWith(item.href))
       ) {
         next[item.key] = true;
       }
     });
     setExpanded((prev) => ({ ...prev, ...next }));
+    setExpandedSubGroups((prev) => ({ ...prev, ...nextSub }));
   }, [pathname]);
 
   if (!mobileOpen) return null;
 
   const toggleGroup = (key: string) => {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleSubGroup = (key: string) => {
+    setExpandedSubGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   return (
@@ -360,17 +449,64 @@ function MobileSidebar() {
                   </button>
                   {open && (
                     <div className="space-y-0.5 pb-1">
-                      {item.children.map((child) => (
-                        <MobileNavLink
-                          key={child.key}
-                          href={child.href}
-                          label={child.label}
-                          icon={child.icon}
-                          active={Boolean(pathname?.startsWith(child.href))}
-                          onNavigate={closeMobile}
-                          indent
-                        />
-                      ))}
+                      {item.children.map((child) => {
+                        if (child.isGroup) {
+                          const isSubOpen = expandedSubGroups[child.key];
+                          return (
+                            <div key={child.key} className="mb-2 space-y-1 mt-2">
+                              <button
+                                type="button"
+                                onClick={() => toggleSubGroup(child.key)}
+                                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 transition-all ${isSubOpen ? "bg-slate-50 dark:bg-slate-800/40 shadow-sm border border-border-theme" : "hover:bg-hover-theme border border-transparent"}`}
+                              >
+                                <span className={`text-[11px] font-bold uppercase tracking-wider ${isSubOpen ? "text-primary" : "text-slate-500"}`}>
+                                  {child.label}
+                                </span>
+                                <ChevronDown
+                                  className={`h-4 w-4 transition-transform duration-200 ${isSubOpen ? "rotate-180 text-primary" : "text-slate-400"}`}
+                                />
+                              </button>
+                              {isSubOpen && (
+                                <div className="space-y-1 pl-4 pr-1 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100 dark:before:bg-slate-800 before:rounded-full mt-2">
+                                  {child.children?.map((subChild) => {
+                                    const childActive = Boolean(pathname?.startsWith(subChild.href!));
+                                    const ChildIcon = subChild.icon!;
+                                    return (
+                                      <Link
+                                        key={subChild.key}
+                                        href={subChild.href!}
+                                        onClick={closeMobile}
+                                        className={`group flex items-center gap-3 rounded-xl px-3 py-2 text-[12px] transition-all relative ${childActive
+                                            ? "bg-primary text-white font-semibold shadow-md shadow-primary/20"
+                                            : "text-slate-500 font-medium hover:bg-hover-theme hover:text-foreground"
+                                          }`}
+                                      >
+                                        {childActive && (
+                                          <span className="absolute -left-[14px] top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary ring-2 ring-white dark:ring-[#0f172a]" />
+                                        )}
+                                        <ChildIcon className={`h-4 w-4 transition-colors ${childActive ? "text-white" : "text-slate-400 group-hover:text-foreground"}`} />
+                                        <span>{subChild.label}</span>
+                                      </Link>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <MobileNavLink
+                            key={child.key}
+                            href={child.href!}
+                            label={child.label}
+                            icon={child.icon!}
+                            active={Boolean(pathname?.startsWith(child.href!))}
+                            onNavigate={closeMobile}
+                            indent
+                          />
+                        );
+                      })}
                     </div>
                   )}
                 </div>

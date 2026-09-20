@@ -27,9 +27,11 @@ import {
 
 export type NavChild = {
   key: string;
-  href: string;
+  href?: string;
   label: string;
-  icon: ElementType;
+  icon?: ElementType;
+  isGroup?: boolean;
+  children?: NavChild[];
 };
 
 export type NavItem = {
@@ -52,23 +54,46 @@ export const adminNavigation: NavItem[] = [
     label: "Shop",
     icon: ShoppingBag,
     children: [
-      { key: "products", href: "/products", label: "Products", icon: Box },
-      { key: "inventory", href: "/inventory", label: "Inventory", icon: Boxes },
-      { key: "deliveryHours", href: "/delivery-hours", label: "Operating Hours", icon: Clock },
-      { key: "cities", href: "/cities", label: "Cities", icon: MapPin },
-      { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
-      { key: "payments", href: "/payments", label: "Payments", icon: CreditCard },
-      { key: "reviews", href: "/reviews", label: "Reviews", icon: Star },
-      { key: "flavors", href: "/flavors", label: "Flavors", icon: Pipette },
-      { key: "occasions", href: "/occasions", label: "Occasions", icon: PartyPopper },
+      {
+        key: "catalog",
+        label: "Catalog",
+        isGroup: true,
+        children: [
+          { key: "products", href: "/products", label: "Products", icon: Box },
+          { key: "category", href: "/category", label: "Categories", icon: Tag },
+          { key: "flavors", href: "/flavors", label: "Flavors", icon: Pipette },
+          { key: "cities", href: "/cities", label: "Cities", icon: MapPin },
+          { key: "offers", href: "/coupons", label: "Offers", icon: Gift },
+        ],
+      },
+      {
+        key: "order-mgmt",
+        label: "Order",
+        isGroup: true,
+        children: [
+          { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
+          { key: "reviews", href: "/reviews", label: "Reviews", icon: Star },
+        ],
+      },
+      {
+        key: "inventory-mgmt",
+        label: "Inventory",
+        isGroup: true,
+        children: [
+          { key: "inventory", href: "/inventory", label: "Inventory", icon: Boxes },
+          { key: "payments", href: "/payments", label: "Payments", icon: CreditCard },
+        ],
+      },
+      {
+        key: "settings",
+        label: "Settings",
+        isGroup: true,
+        children: [
+          { key: "occasions", href: "/occasions", label: "Occasions", icon: PartyPopper },
+          { key: "deliveryHours", href: "/delivery-hours", label: "Operating Hours", icon: Clock },
+        ],
+      },
     ],
-  },
-  { key: "category", href: "/category", label: "Categories", icon: Tag },
-  {
-    key: "offers",
-    label: "Offers",
-    icon: Gift,
-    children: [{ key: "coupons", href: "/coupons", label: "Coupons", icon: Ticket }],
   },
   { key: "users", href: "/users", label: "Users", icon: Users },
   {
