@@ -55,13 +55,13 @@ export default function AdminEditForm({ adminId, onCancel }: AdminEditFormProps)
             <div className="mt-6 flex gap-3">
                 <button
                     onClick={saveEdit}
-                    className="bg-slate-900 text-white px-5 py-3 rounded-2xl hover:bg-slate-800 transition"
+                    className="w-24 bg-slate-900 text-white px-4 py-2 text-sm rounded-xl hover:bg-slate-800 transition text-center"
                 >
                     Save
                 </button>
                 <button
                     onClick={onCancel}
-                    className="bg-slate-200 text-slate-900 px-5 py-3 rounded-2xl hover:bg-slate-300 transition"
+                    className="w-24 bg-slate-200 text-slate-900 px-4 py-2 text-sm rounded-xl hover:bg-slate-300 transition text-center"
                 >
                     Cancel
                 </button>

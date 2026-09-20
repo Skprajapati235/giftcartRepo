@@ -84,19 +84,19 @@ export default function AddEditFlavor({ flavor, onClose }: AddEditFlavorProps) {
           </div>
         </div>
 
-        <div className="pt-4 flex flex-col sm:flex-row items-center gap-4 md:col-span-2">
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-end gap-3 md:col-span-2">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto border border-border-theme text-slate-700 rounded-2xl px-6 py-4 font-bold hover:bg-hover-theme transition"
+            className="w-full sm:w-32 border border-border-theme text-slate-700 rounded-xl px-4 py-2 text-sm font-bold hover:bg-hover-theme transition text-center"
           >
             Cancel
           </button>
           <button
             disabled={saving}
-            className="w-full sm:flex-1 bg-primary text-white rounded-2xl py-4 font-bold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50"
+            className="w-full sm:w-32 bg-primary text-white rounded-xl px-4 py-2 text-sm font-bold hover:opacity-90 transition shadow-lg shadow-primary/20 disabled:opacity-50 text-center"
           >
-            {saving ? "Processing..." : flavor?._id ? "Update Flavor" : "Create Flavor"}
+            {saving ? "Processing..." : flavor?._id ? "Update" : "Create"}
           </button>
         </div>
       </form>

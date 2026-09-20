@@ -764,7 +764,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
               <button
                 type="button"
                 onClick={() => addVariantRow(setWeightOptions)}
-                className="w-full py-3 border-2 border-dashed border-primary/40 hover:border-primary text-primary hover:bg-primary/5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                className="w-full py-2 border-2 border-dashed border-primary/40 hover:border-primary text-primary hover:bg-primary/5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
               >
                 <Plus size={16} /> Add Another Weight Variant
               </button>
@@ -940,7 +940,7 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 <button
                   type="button"
                   onClick={() => addVariantRow(setFlowerCountOptions)}
-                  className="w-full py-3 border-2 border-dashed border-primary/40 hover:border-primary text-primary hover:bg-primary/5 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                  className="w-full py-2 border-2 border-dashed border-primary/40 hover:border-primary text-primary hover:bg-primary/5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer"
                 >
                   <Plus size={16} /> Add Another Bouquet Variant
                 </button>
@@ -1115,19 +1115,19 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
         </div>
 
         {/* Form Actions */}
-        <div className="pt-6 border-t border-border-theme flex flex-col sm:flex-row justify-end gap-4 flex-shrink-0">
+        <div className="pt-6 border-t border-border-theme flex flex-col sm:flex-row justify-end gap-3 flex-shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto border border-border-theme text-slate-700 dark:text-slate-300 rounded-2xl px-6 py-3.5 font-bold hover:bg-hover-theme transition cursor-pointer"
+            className="w-full sm:w-32 border border-border-theme text-slate-700 dark:text-slate-300 rounded-xl px-4 py-2 text-sm font-bold hover:bg-hover-theme transition cursor-pointer text-center"
           >
             Cancel
           </button>
           <button
             disabled={saving}
-            className="w-full sm:w-auto bg-primary text-white px-12 py-3.5 rounded-2xl font-bold hover:opacity-90 transition shadow-xl shadow-primary/20 disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-32 bg-primary text-white px-4 py-2 text-sm rounded-xl font-bold hover:opacity-90 transition shadow-md shadow-primary/20 disabled:opacity-50 cursor-pointer text-center"
           >
-            {saving ? "Saving..." : product?._id ? "Update Product" : "Save Product"}
+            {saving ? "Saving..." : product?._id ? "Update" : "Save"}
           </button>
         </div>
       </form>

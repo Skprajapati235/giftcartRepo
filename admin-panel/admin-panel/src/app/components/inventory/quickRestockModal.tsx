@@ -278,14 +278,14 @@ export default function QuickRestockModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-border-theme bg-background py-2.5 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="flex-1 rounded-xl border border-border-theme bg-background py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary text-white py-2.5 text-xs sm:text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary text-white py-2 text-sm font-bold shadow-lg shadow-primary/20 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

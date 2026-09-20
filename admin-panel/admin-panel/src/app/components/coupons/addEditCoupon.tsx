@@ -263,16 +263,16 @@ export default function AddEditCoupon({ coupon, onClose }: AddEditCouponProps) {
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-8 py-5 border border-border-theme rounded-2xl font-black text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all"
+            className="flex-1 px-4 py-2 text-sm border border-border-theme rounded-xl font-black text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all text-center"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="flex-[2] px-8 py-5 bg-primary text-white rounded-2xl font-black shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50"
+            className="flex-1 px-4 py-2 text-sm bg-primary text-white rounded-xl font-black shadow-xl shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 text-center"
           >
-            {saving ? "Processing..." : coupon?._id ? "Save Changes" : "Create Coupon Now"}
+            {saving ? "Processing..." : coupon?._id ? "Save" : "Create"}
           </button>
         </div>
       </form>

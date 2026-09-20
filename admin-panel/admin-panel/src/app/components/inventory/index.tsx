@@ -259,6 +259,21 @@ export default function InventoryView() {
     }
   };
 
+  if (editingProduct) {
+    return (
+      <div className="w-full animate-in fade-in duration-200">
+        <AddEditProduct
+          product={editingProduct}
+          onClose={() => {
+            setEditingProduct(null);
+            fetchItems();
+            fetchSummary();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -436,17 +451,6 @@ export default function InventoryView() {
         </div>
       )}
 
-      {/* Edit Product Modal if triggered from action */}
-      {editingProduct && (
-        <AddEditProduct
-          product={editingProduct}
-          onClose={() => {
-            setEditingProduct(null);
-            fetchItems();
-            fetchSummary();
-          }}
-        />
-      )}
     </div>
   );
 }
