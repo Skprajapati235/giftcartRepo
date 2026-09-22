@@ -330,20 +330,29 @@ async function appendWhatsAppLogs(orderId, event, results) {
     reason: r?.reason,
     error: r?.error
       ? {
-          status: r.error.status != null ? Number(r.error.status) : undefined,
-          code: r.error.code != null ? Number(r.error.code) : undefined,
-          message: r.error.message ? String(r.error.message) : undefined,
-          moreInfo: r.error.moreInfo ? String(r.error.moreInfo) : undefined,
-        }
+        status: r.error.status != null ? Number(r.error.status) : undefined,
+        code: r.error.code != null ? Number(r.error.code) : undefined,
+        message: r.error.message ? String(r.error.message) : undefined,
+        moreInfo: r.error.moreInfo ? String(r.error.moreInfo) : undefined,
+      }
       : undefined,
     createdAt: new Date(),
   }));
   await Order.findByIdAndUpdate(orderId, { $push: { whatsappLogs: { $each: logs } } });
 }
 
+// async function sendPostPaymentNotifications(updatedOrder) {
+//   try {
+//     await emailService.sendOrderNotification(updatedOrder, updatedOrder.user);
+//   } catch (err) {
+//     console.warn("[email] order notification failed:", err?.message || err);
+//   }
+
 async function sendPostPaymentNotifications(updatedOrder) {
   try {
     await emailService.sendOrderNotification(updatedOrder, updatedOrder.user);
+    updatedOrder.orderEmailSentAt = new Date();
+    await updatedOrder.save();
   } catch (err) {
     console.warn("[email] order notification failed:", err?.message || err);
   }
@@ -435,11 +444,21 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
   }
 
   // If COD, send email notification immediately
+  // if (paymentMethod === 'COD') {
+  //   const user = await User.findById(userId);
+  //   if (user) {
+  //     emailService.sendOrderNotification(savedOrder, user);
+  //   }
+  // }
+
+  // If COD, send email notification immediately
   if (paymentMethod === 'COD') {
     const user = await User.findById(userId);
     if (user) {
       emailService.sendOrderNotification(savedOrder, user);
     }
+    savedOrder.orderEmailSentAt = new Date();
+    await savedOrder.save();
   }
 
   // WhatsApp: order placed (Pending)

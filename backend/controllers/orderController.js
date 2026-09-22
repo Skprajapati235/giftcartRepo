@@ -7,6 +7,110 @@ const { calculateItemPricing } = require("../utils/priceCalculator");
 const { generateInvoicePDF } = require("../utils/pdfGenerator");
 const mongoose = require("mongoose");
 const deliveryHoursService = require("../services/deliveryHoursService");
+const { verifyActionToken } = require("../utils/orderActionToken");
+const emailService = require("../utils/emailService");
+
+
+const VALID_EMAIL_ACTION_STATUSES = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
+
+function sendActionPage(res, { title, message, ok, confirmForm }) {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.send(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>${title}</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f6f7fb;margin:0;padding:40px 16px;display:flex;justify-content:center}
+    .card{max-width:440px;width:100%;background:#fff;border-radius:12px;padding:28px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+    h2{margin:0 0 10px;color:${ok ? "#16A34A" : "#DC2626"}}
+    p{color:#444;margin:0 0 6px;line-height:1.5}
+    button{margin-top:16px;padding:12px 22px;border:none;border-radius:6px;background:#D82B76;color:#fff;font-size:15px;font-weight:bold;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>${ok ? "✅" : "⚠️"} ${title}</h2>
+    <p>${message}</p>
+    ${confirmForm || ""}
+  </div>
+</body>
+</html>`);
+}
+
+// GET /api/order/email-action/:id/:status — shows a confirmation page (does NOT change status yet).
+// A confirm step keeps this safe from email-client "link scanners" (Outlook Safe Links, spam
+// filters, etc.) that auto-open links in an email — those never submit the confirm button below.
+exports.emailActionPreview = async (req, res) => {
+  try {
+    const { id, status } = req.params;
+    const { token } = req.query;
+
+    if (!VALID_EMAIL_ACTION_STATUSES.includes(status)) {
+      return sendActionPage(res, { title: "Invalid status", message: "This status is not recognized.", ok: false });
+    }
+    if (!verifyActionToken(id, status, token)) {
+      return sendActionPage(res, {
+        title: "Link invalid",
+        message: "This action link is invalid or has been tampered with. Please open the order from the admin panel instead.",
+        ok: false,
+      });
+    }
+
+    const order = await orderService.getOrderById(id);
+    if (!order) {
+      return sendActionPage(res, { title: "Order not found", message: "This order could not be found.", ok: false });
+    }
+
+    return sendActionPage(res, {
+      title: "Confirm status change",
+      message: `Order <strong>#${String(order._id).slice(-6).toUpperCase()}</strong> (${order.user?.name || "Customer"}, ₹${order.totalAmount}) — set status to <strong>${status}</strong>?`,
+      ok: true,
+      confirmForm: `
+        <form method="POST" action="/api/order/email-action/${order._id}/${encodeURIComponent(status)}">
+          <input type="hidden" name="token" value="${token}" />
+          <button type="submit">Confirm: Mark as ${status}</button>
+        </form>`,
+    });
+  } catch (error) {
+    console.error("Email Action Preview Error:", error);
+    res.status(500).send("Something went wrong loading this order.");
+  }
+};
+
+// POST /api/order/email-action/:id/:status — actually updates the status, only after confirmation.
+exports.emailActionConfirm = async (req, res) => {
+  try {
+    const { id, status } = req.params;
+    const token = req.body?.token || req.query?.token;
+
+    if (!VALID_EMAIL_ACTION_STATUSES.includes(status)) {
+      return sendActionPage(res, { title: "Invalid status", message: "This status is not recognized.", ok: false });
+    }
+    if (!verifyActionToken(id, status, token)) {
+      return sendActionPage(res, {
+        title: "Link invalid",
+        message: "This action link is invalid or has been tampered with. Please open the order from the admin panel instead.",
+        ok: false,
+      });
+    }
+
+    const updated = await orderService.updateOrderStatus(id, status);
+    if (!updated) {
+      return sendActionPage(res, { title: "Order not found", message: "This order could not be found.", ok: false });
+    }
+
+    return sendActionPage(res, {
+      title: "Order updated",
+      message: `Order <strong>#${String(updated._id).slice(-6).toUpperCase()}</strong> status is now <strong>${status}</strong>.`,
+      ok: true,
+    });
+  } catch (error) {
+    console.error("Email Action Confirm Error:", error);
+    res.status(500).send("Something went wrong updating this order.");
+  }
+};
 
 function normalizeCouponCode(couponCode) {
   if (!couponCode) return "";
@@ -181,6 +285,41 @@ exports.verifyPayment = async (req, res) => {
   } catch (error) {
     console.error("Verify Payment Error:", error);
     res.status(500).json({ success: false, message: error.message || "Error verifying payment" });
+  }
+};
+
+
+// POST /api/order/:id/send-email
+// Called by the customer app right after an order is placed (COD) so the
+// admin gets the "New Order Received" email even if the automatic send
+// inside orderService.createOrder didn't fire for some reason. Guarded by
+// orderEmailSentAt so it's a safe no-op if the email already went out.
+exports.sendOrderEmail = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).populate("user");
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    // Only the order's own customer (or an admin) can trigger this
+    const isOwner = String(order.user?._id) === String(req.user.id);
+    const isAdmin = req.user.role === "admin";
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ success: false, message: "Not authorized for this order" });
+    }
+
+    if (order.orderEmailSentAt) {
+      return res.json({ success: true, alreadySent: true, message: "Order email was already sent" });
+    }
+
+    await emailService.sendOrderNotification(order, order.user);
+    order.orderEmailSentAt = new Date();
+    await order.save();
+
+    res.json({ success: true, message: "Order email sent" });
+  } catch (error) {
+    console.error("Send Order Email Error:", error);
+    res.status(500).json({ success: false, message: error.message || "Error sending order email" });
   }
 };
 

@@ -88,6 +88,12 @@ const orderSchema = new mongoose.Schema({
   couponCode: { type: String },
   discountAmount: { type: Number, default: 0 },
   isAdminViewed: { type: Boolean, default: false },
+  // Set once the "New Order Received" admin email has actually been sent
+  // for this order — lets every trigger point (COD auto-send on create,
+  // online auto-send after payment, and the customer app's explicit
+  // /order/:id/send-email call) share one guard so the admin never gets
+  // duplicate emails for the same order.
+  orderEmailSentAt: { type: Date, default: null },
   processingAt: { type: Date },
   shippedAt: { type: Date },
   deliveredAt: { type: Date },
