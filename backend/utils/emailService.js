@@ -129,6 +129,7 @@
 
 
 const nodemailer = require("nodemailer");
+const axios = require("axios");
 const dns = require("dns");
 const { promisify } = require("util");
 const { generateActionToken } = require("./orderActionToken");
@@ -136,13 +137,64 @@ const { generateActionToken } = require("./orderActionToken");
 const resolve4 = promisify(dns.resolve4);
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "prajapatisonu7897@gmail.com";
 
-// Some hosts (Render included) have no outbound IPv6 route, but smtp.gmail.com
-// resolves to an IPv6 address by default -> "connect ENETUNREACH ...:587".
-// nodemailer's SMTP transport does NOT support a `family` option to force
-// IPv4 (it's silently ignored), so we resolve the hostname to an IPv4
-// address ourselves and connect to that IP directly. `tls.servername` keeps
-// the original hostname so Gmail's TLS certificate still validates correctly
-// against the IP connection.
+// --- Primary send path: Brevo's HTTPS email API -----------------------
+// Render's free tier (and several other hosts' free/hobby tiers) blocks ALL
+// outbound SMTP ports (25, 465, 587) at the network level as of Sept 2025 —
+// no SMTP config fix can work around that, since it's a platform firewall,
+// not a DNS/reachability issue. Sending over HTTPS (port 443) via Brevo's
+// API sidesteps the block entirely. This path is used whenever
+// BREVO_API_KEY is set; otherwise we fall back to plain SMTP (works fine
+// locally, or on a paid Render plan / any host that allows SMTP egress).
+async function sendViaBrevoApi({ to, subject, html, text }) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_USER;
+  const senderName = process.env.BREVO_SENDER_NAME || "Giftcart Orders";
+
+  if (!senderEmail) {
+    throw new Error("BREVO_SENDER_EMAIL (or EMAIL_USER) must be set to send via the Brevo API.");
+  }
+
+  try {
+    await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+        ...(text ? { textContent: text } : {}),
+      },
+      {
+        headers: {
+          "api-key": apiKey,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        timeout: 15000,
+      }
+    );
+  } catch (err) {
+    // Surface Brevo's actual rejection reason (e.g. unverified sender) instead
+    // of a generic axios error.
+    const apiMessage = err.response?.data?.message || err.response?.data?.code;
+    const wrapped = new Error(apiMessage ? `Brevo API error: ${apiMessage}` : err.message);
+    wrapped.code = err.response?.status || err.code;
+    throw wrapped;
+  }
+}
+
+function usingBrevoApi() {
+  return Boolean(process.env.BREVO_API_KEY);
+}
+
+// --- Fallback send path: plain SMTP (nodemailer) -----------------------
+// Some hosts have no outbound IPv6 route, but smtp.gmail.com resolves to an
+// IPv6 address by default -> "connect ENETUNREACH ...:587". nodemailer's
+// SMTP transport does NOT support a `family` option to force IPv4 (it's
+// silently ignored), so we resolve the hostname to an IPv4 address ourselves
+// and connect to that IP directly. `tls.servername` keeps the original
+// hostname so the TLS certificate still validates correctly against the IP
+// connection. This path is only reached when BREVO_API_KEY is not set.
 let transporterPromise = null;
 
 async function buildTransporter() {
@@ -269,8 +321,10 @@ exports.sendOrderNotification = async (order, user) => {
       `,
     };
 
-    await (await getTransporter()).sendMail(mailOptions);
-    console.log(`[email] Order notification sent for order ${order._id}`);
+    await (usingBrevoApi()
+      ? sendViaBrevoApi({ to: ADMIN_NOTIFY_EMAIL, subject: mailOptions.subject, html: mailOptions.html })
+      : (await getTransporter()).sendMail(mailOptions));
+    console.log(`[email] Order notification sent for order ${order._id} (via ${usingBrevoApi() ? "Brevo API" : "SMTP"})`);
   } catch (error) {
     console.error(
       "[email] Error sending order notification email — order:",
@@ -288,15 +342,18 @@ exports.sendOrderNotification = async (order, user) => {
 };
 
 exports.sendPasswordResetOtp = async ({ email, name, otp }) => {
+  const subject = "Giftcart password reset OTP";
+  const text = `Hi ${name || "there"}, your Giftcart password reset OTP is ${otp}. It expires in 10 minutes. If you did not request this, you can ignore this email.`;
+  const html = `<p>Hi ${name || "there"},</p><p>Your Giftcart password reset OTP is:</p><h2>${otp}</h2><p>This OTP expires in 10 minutes. If you did not request this, you can ignore this email.</p>`;
+
   try {
-    await (await getTransporter()).sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Giftcart password reset OTP",
-      text: `Hi ${name || "there"}, your Giftcart password reset OTP is ${otp}. It expires in 10 minutes. If you did not request this, you can ignore this email.`,
-      html: `<p>Hi ${name || "there"},</p><p>Your Giftcart password reset OTP is:</p><h2>${otp}</h2><p>This OTP expires in 10 minutes. If you did not request this, you can ignore this email.</p>`,
-    });
+    if (usingBrevoApi()) {
+      await sendViaBrevoApi({ to: email, subject, html, text });
+    } else {
+      await (await getTransporter()).sendMail({ from: process.env.EMAIL_USER, to: email, subject, text, html });
+    }
   } catch (error) {
+    console.error("[email] Error sending OTP email:", error.code, error.message);
     throw new Error("Unable to send OTP email. Please verify the email service configuration and try again.");
   }
 };
