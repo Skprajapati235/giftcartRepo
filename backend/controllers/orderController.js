@@ -294,6 +294,35 @@ exports.verifyPayment = async (req, res) => {
 // admin gets the "New Order Received" email even if the automatic send
 // inside orderService.createOrder didn't fire for some reason. Guarded by
 // orderEmailSentAt so it's a safe no-op if the email already went out.
+// exports.sendOrderEmail = async (req, res) => {
+//   try {
+//     const order = await Order.findById(req.params.id).populate("user");
+//     if (!order) {
+//       return res.status(404).json({ success: false, message: "Order not found" });
+//     }
+
+//     // Only the order's own customer (or an admin) can trigger this
+//     const isOwner = String(order.user?._id) === String(req.user.id);
+//     const isAdmin = req.user.role === "admin";
+//     if (!isOwner && !isAdmin) {
+//       return res.status(403).json({ success: false, message: "Not authorized for this order" });
+//     }
+
+//     // if (order.orderEmailSentAt) {
+//     //   return res.json({ success: true, alreadySent: true, message: "Order email was already sent" });
+//     // }
+
+//     await emailService.sendOrderNotification(order, order.user);
+//     order.orderEmailSentAt = new Date();
+//     await order.save();
+
+//     res.json({ success: true, message: "Order email sent" });
+//   } catch (error) {
+//     console.error("Send Order Email Error:", error);
+//     res.status(500).json({ success: false, message: error.message || "Error sending order email" });
+//   }
+// };
+
 exports.sendOrderEmail = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate("user");
@@ -308,12 +337,8 @@ exports.sendOrderEmail = async (req, res) => {
       return res.status(403).json({ success: false, message: "Not authorized for this order" });
     }
 
-    // if (order.orderEmailSentAt) {
-    //   return res.json({ success: true, alreadySent: true, message: "Order email was already sent" });
-    // }
-
     await emailService.sendOrderNotification(order, order.user);
-    order.orderEmailSentAt = new Date();
+    order.orderEmailSentAt = new Date(); // record-keeping only, does not block future sends
     await order.save();
 
     res.json({ success: true, message: "Order email sent" });

@@ -452,14 +452,19 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
   // }
 
   // If COD, send email notification immediately
-  if (paymentMethod === 'COD') {
-    const user = await User.findById(userId);
-    if (user) {
-      emailService.sendOrderNotification(savedOrder, user);
-    }
-    savedOrder.orderEmailSentAt = new Date();
-    await savedOrder.save();
-  }
+  // if (paymentMethod === 'COD') {
+  //   const user = await User.findById(userId);
+  //   if (user) {
+  //     emailService.sendOrderNotification(savedOrder, user);
+  //   }
+  //   savedOrder.orderEmailSentAt = new Date();
+  //   await savedOrder.save();
+  // }
+  // Note: COD order-confirmation email is NOT sent here — the customer app
+  // calls POST /order/:id/send-email right after this response, and that is
+  // now the single place COD emails are sent from (see orderController.sendOrderEmail).
+  // Keeping only one trigger point avoids any chance of a stale "already sent"
+  // guard blocking a legitimate, brand-new order's email.
 
   // WhatsApp: order placed (Pending)
   try {
