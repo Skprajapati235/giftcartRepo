@@ -21,6 +21,62 @@ import {
 } from "../../services/deliveryHoursService";
 import { useToast } from "../../../context/ToastContext";
 
+const TimePicker = ({ value, onChange }: { value: string, onChange: (val: string) => void }) => {
+  const [hour24 = 0, minute = 0] = value.split(':').map(Number);
+  const period = hour24 >= 12 ? 'PM' : 'AM';
+  const hour12 = hour24 % 12 || 12;
+
+  const handleTimeChange = (newHour: number, newMinute: number, newPeriod: string) => {
+    let finalHour = newHour;
+    if (newPeriod === 'PM' && finalHour < 12) finalHour += 12;
+    if (newPeriod === 'AM' && finalHour === 12) finalHour = 0;
+    
+    const h = finalHour.toString().padStart(2, '0');
+    const m = newMinute.toString().padStart(2, '0');
+    onChange(`${h}:${m}`);
+  };
+
+  return (
+    <div className="flex items-center gap-2 w-full">
+      <select 
+        value={hour12}
+        onChange={(e) => handleTimeChange(Number(e.target.value), minute, period)}
+        className="w-full rounded-xl border border-border-theme bg-card px-3 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:border-primary focus:outline-none cursor-pointer appearance-none text-center"
+      >
+        {Array.from({length: 12}, (_, i) => i + 1).map(h => (
+          <option key={h} value={h}>{h.toString().padStart(2, '0')}</option>
+        ))}
+      </select>
+      <span className="text-slate-500 font-bold">:</span>
+      <select 
+        value={minute}
+        onChange={(e) => handleTimeChange(hour12, Number(e.target.value), period)}
+        className="w-full rounded-xl border border-border-theme bg-card px-3 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:border-primary focus:outline-none cursor-pointer appearance-none text-center"
+      >
+        {['00', '15', '30', '45'].map(m => (
+          <option key={m} value={Number(m)}>{m}</option>
+        ))}
+      </select>
+      <div className="flex bg-slate-100 dark:bg-slate-800/50 rounded-xl p-1 border border-border-theme ml-1 shrink-0">
+        <button
+          type="button"
+          onClick={() => handleTimeChange(hour12, minute, 'AM')}
+          className={`px-3 py-1.5 text-xs font-black rounded-lg transition-colors ${period === 'AM' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          AM
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTimeChange(hour12, minute, 'PM')}
+          className={`px-3 py-1.5 text-xs font-black rounded-lg transition-colors ${period === 'PM' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          PM
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function DeliveryHoursSettings() {
   const { showToast } = useToast();
 
@@ -231,16 +287,10 @@ export default function DeliveryHoursSettings() {
                     <span>Stop Deliveries / Pause Orders At</span>
                   </label>
                   <span className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">
-                    (24h format)
+                    (12h format)
                   </span>
                 </div>
-                <input
-                  type="time"
-                  required
-                  value={dailyStart}
-                  onChange={(e) => setDailyStart(e.target.value)}
-                  className="w-full rounded-xl border border-border-theme bg-card px-4 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:border-primary focus:outline-none"
-                />
+                <TimePicker value={dailyStart} onChange={setDailyStart} />
                 <p className="text-[12px] text-slate-700 dark:text-slate-300 font-medium">
                   Default: 23:00 (11:00 PM). Orders are stopped starting from this time.
                 </p>
@@ -254,16 +304,10 @@ export default function DeliveryHoursSettings() {
                     <span>Resume Deliveries / Open Orders At</span>
                   </label>
                   <span className="text-[11px] font-mono font-bold text-slate-600 dark:text-slate-400">
-                    (24h format)
+                    (12h format)
                   </span>
                 </div>
-                <input
-                  type="time"
-                  required
-                  value={dailyEnd}
-                  onChange={(e) => setDailyEnd(e.target.value)}
-                  className="w-full rounded-xl border border-border-theme bg-card px-4 py-2.5 text-sm font-bold text-slate-900 dark:text-white focus:border-primary focus:outline-none"
-                />
+                <TimePicker value={dailyEnd} onChange={setDailyEnd} />
                 <p className="text-[12px] text-slate-700 dark:text-slate-300 font-medium">
                   Default: 07:00 (07:00 AM). Delivery services reopen from this time.
                 </p>
