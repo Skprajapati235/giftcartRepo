@@ -109,6 +109,7 @@ exports.sendOrderNotification = async (order, user) => {
       "| message:",
       error.message
     );
+    throw error;
   }
 };
 
