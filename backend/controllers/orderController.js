@@ -308,9 +308,9 @@ exports.sendOrderEmail = async (req, res) => {
       return res.status(403).json({ success: false, message: "Not authorized for this order" });
     }
 
-    if (order.orderEmailSentAt) {
-      return res.json({ success: true, alreadySent: true, message: "Order email was already sent" });
-    }
+    // if (order.orderEmailSentAt) {
+    //   return res.json({ success: true, alreadySent: true, message: "Order email was already sent" });
+    // }
 
     await emailService.sendOrderNotification(order, order.user);
     order.orderEmailSentAt = new Date();
