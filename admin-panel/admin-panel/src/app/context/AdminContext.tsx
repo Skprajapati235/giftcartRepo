@@ -33,6 +33,10 @@ interface AdminContextState {
   createOccasion: (payload: { name: string; image?: string; isActive?: boolean }) => Promise<void>;
   updateOccasion: (id: string, payload: { name?: string; image?: string; isActive?: boolean }) => Promise<void>;
   deleteOccasion: (id: string) => Promise<void>;
+  heroSlides: any[];
+  createHeroSlide: (payload: any) => Promise<void>;
+  updateHeroSlide: (id: string, payload: any) => Promise<void>;
+  deleteHeroSlide: (id: string) => Promise<void>;
   createCity: (payload: { state: string; cities: string[]; image?: string }) => Promise<void>;
   updateCity: (id: string, payload: { state: string; cities: string[]; image?: string }) => Promise<void>;
   deleteCity: (id: string) => Promise<void>;
@@ -53,6 +57,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [cities, setCities] = useState<any[]>([]);
   const [flavors, setFlavors] = useState<any[]>([]);
   const [occasions, setOccasions] = useState<any[]>([]);
+  const [heroSlides, setHeroSlides] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +70,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     if (!authenticated) {
       setProducts([]);
       setCategories([]);
+      setHeroSlides([]);
       setUsers([]);
       setAdmins([]);
       setLoading(false);
@@ -75,7 +81,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setError("");
 
     try {
-      const [productData, categoryData, cityData, userData, adminData, flavorData, occasionData] = await Promise.all([
+      const [productData, categoryData, cityData, userData, adminData, flavorData, occasionData, heroSlideData] = await Promise.all([
         service.getProducts({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
         service.getCategories({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
         service.getCities({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
@@ -83,6 +89,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         service.getAdmins({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
         service.getFlavors({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
         service.getOccasions({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
+        service.getHeroSlides({ limit: 1000 }).catch(e => ({ data: [], total: 0 })),
       ]);
 
       const pArr = productData?.data || (Array.isArray(productData) ? productData : []);
@@ -92,12 +99,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const aArr = adminData?.data || (Array.isArray(adminData) ? adminData : []);
       const fArr = flavorData?.data || (Array.isArray(flavorData) ? flavorData : []);
       const ocArr = occasionData?.data || (Array.isArray(occasionData) ? occasionData : []);
+      const hsArr = heroSlideData?.data || (Array.isArray(heroSlideData) ? heroSlideData : []);
 
       setProducts([...pArr].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
       setCategories([...cArr].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
       setCities([...cityArr].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
       setFlavors([...fArr].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
       setOccasions([...ocArr].sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()));
+      setHeroSlides([...hsArr].sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0)));
       setUsers(uArr);
       setAdmins(aArr);
 
@@ -163,6 +172,21 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   const handleOccasionDelete = async (id: string) => {
     await service.deleteOccasion(id);
+    await refreshAll();
+  };
+
+  const handleCreateHeroSlide = async (payload: any) => {
+    await service.createHeroSlide(payload);
+    await refreshAll();
+  };
+
+  const handleUpdateHeroSlide = async (id: string, payload: any) => {
+    await service.updateHeroSlide(id, payload);
+    await refreshAll();
+  };
+
+  const handleHeroSlideDelete = async (id: string) => {
+    await service.deleteHeroSlide(id);
     await refreshAll();
   };
 
@@ -244,8 +268,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       createOccasion: handleCreateOccasion,
       updateOccasion: handleUpdateOccasion,
       deleteOccasion: handleOccasionDelete,
+      heroSlides,
+      createHeroSlide: handleCreateHeroSlide,
+      updateHeroSlide: handleUpdateHeroSlide,
+      deleteHeroSlide: handleHeroSlideDelete,
     }),
-    [products, categories, cities, flavors, occasions, users, admins, loading, error, totalProducts, totalUsers, totalCategories]
+    [products, categories, cities, flavors, occasions, heroSlides, users, admins, loading, error, totalProducts, totalUsers, totalCategories]
   );
 
   return (

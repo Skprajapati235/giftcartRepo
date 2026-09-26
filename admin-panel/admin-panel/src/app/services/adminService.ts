@@ -348,3 +348,45 @@ export const deleteOccasion = async (id: string) => {
   const response = await authApi(getAuthToken()).delete(`/occasion/${id}`);
   return response.data;
 };
+
+export const getHeroSlides = async (params?: { page?: number; limit?: number; search?: string; all?: boolean }) => {
+  const response = await authApi(getAuthToken()).get("/heroslides", { params });
+  return response.data;
+};
+
+export const createHeroSlide = async (payload: {
+  tag?: string;
+  title: string;
+  desc?: string;
+  cta?: string;
+  categoryMatch?: string;
+  image: string;
+  order?: number;
+  isActive?: boolean;
+}) => {
+  const response = await authApi(getAuthToken()).post("/heroslides", payload);
+  return response.data;
+};
+
+export const updateHeroSlide = async (
+  id: string,
+  payload: {
+    tag?: string;
+    title?: string;
+    desc?: string;
+    cta?: string;
+    categoryMatch?: string;
+    image?: string;
+    order?: number;
+    isActive?: boolean;
+  }
+) => {
+  const response = await authApi(getAuthToken()).put(`/heroslides/${id}`, payload);
+  return response.data;
+};
+
+export const deleteHeroSlide = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/heroslides/${id}`);
+  return response.data;
+};
+

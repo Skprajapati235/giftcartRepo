@@ -28,6 +28,7 @@ import productService from '../services/productService';
 import LocationSelectionModal from '../components/LocationSelectionModal';
 import userService from '../services/userService';
 import couponService from '../services/couponService';
+import heroSlideService from '../services/heroSlideService';
 import { useToast } from '../context/ToastContext';
 import ProductCard from '../components/ProductCard';
 import { ProductCardSkeleton, CategorySkeleton, BannerSkeleton, SearchBarSkeleton } from '../components/Skeleton';
@@ -41,7 +42,7 @@ const { width } = Dimensions.get('window');
 const GRID_H_PADDING = 14;
 const GRID_GAP = 12;
 
-const heroSlides = [
+const fallbackHeroSlides = [
   {
     tag: "Fresh Blooms",
     title: "Flowers Worth\nEvery Celebration",
@@ -146,6 +147,7 @@ export default function HomeScreen({ navigation }) {
   const [refreshing, setRefreshing] = useState(false);
 
   // Hero carousel slider
+  const [heroSlides, setHeroSlides] = useState(fallbackHeroSlides);
   const [activeSlide, setActiveSlide] = useState(0);
   const heroRef = useRef(null);
 
@@ -157,7 +159,9 @@ export default function HomeScreen({ navigation }) {
     if (slide.categoryMatch) {
       const matchLower = slide.categoryMatch.toLowerCase();
       const found = categories.find((c) =>
-        c.name.toLowerCase().includes(matchLower)
+        c._id === slide.categoryMatch ||
+        c.name.toLowerCase().includes(matchLower) ||
+        matchLower.includes(c.name.toLowerCase())
       );
       if (found) {
         handleSelectCategory(found._id);
@@ -186,13 +190,14 @@ export default function HomeScreen({ navigation }) {
 
   // Hero Carousel Autoplay
   useEffect(() => {
+    if (heroSlides.length <= 1) return;
     const timer = setInterval(() => {
       const nextIndex = (activeSlide + 1) % heroSlides.length;
       setActiveSlide(nextIndex);
       heroRef.current?.scrollToIndex({ index: nextIndex, animated: true });
     }, 4500);
     return () => clearInterval(timer);
-  }, [activeSlide]);
+  }, [activeSlide, heroSlides.length]);
 
   // Coupon Carousel Autoplay
   useEffect(() => {
@@ -237,23 +242,30 @@ export default function HomeScreen({ navigation }) {
         params.occasion = selectedOccasion;
       }
 
-      const [categoriesData, prodResp, couponsData, occasionData] = await Promise.all([
+      const [categoriesData, prodResp, couponsData, occasionData, heroSlidesData] = await Promise.all([
         categoryService.getCategories({ limit: 50 }).catch(() => ({ data: [] })),
         productService.getProductsWithPagination(params),
         couponService.getActiveCoupons({ limit: 20 }).catch(() => ({ data: [] })),
         occasionService.getOccasions().catch(() => ({ data: [] })),
+        heroSlideService.getHeroSlides().catch(() => ({ data: [] })),
       ]);
 
       const newProducts = prodResp.products || [];
       const occList = Array.isArray(occasionData)
         ? occasionData
         : occasionData?.data || occasionData?.occasions || [];
+      const heroList = Array.isArray(heroSlidesData)
+        ? heroSlidesData
+        : heroSlidesData?.data || [];
 
       if (isInitial) {
         setProducts(newProducts);
         setCategories(categoriesData?.data || []);
         setActiveCoupons(couponsData?.data || []);
         setOccasions(occList.length > 0 ? occList : fallbackOccasions);
+        if (heroList.length > 0) {
+          setHeroSlides(heroList);
+        }
         setPage(2);
       } else {
         setProducts((prev) => {
@@ -478,14 +490,14 @@ export default function HomeScreen({ navigation }) {
                     horizontal
                     pagingEnabled
                     showsHorizontalScrollIndicator={false}
-                    keyExtractor={(_, index) => index.toString()}
+                    keyExtractor={(item, index) => item._id || index.toString()}
                     getItemLayout={(_, index) => ({ length: width - 28, offset: (width - 28) * index, index })}
                     renderItem={({ item }) => (
                       <View style={[styles.heroCard, { width: width - 28 }]}>
                         {/* Right Photo Container with Seamless Blend */}
                         <View style={styles.heroImageContainer}>
                           <Image
-                            source={{ uri: item.img }}
+                            source={{ uri: item.img || item.image }}
                             style={styles.heroImage}
                             resizeMode="cover"
                           />

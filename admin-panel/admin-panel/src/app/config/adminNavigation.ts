@@ -23,6 +23,7 @@ import {
   Mail,
   Lightbulb,
   UserPlus,
+  SlidersHorizontal,
 } from "lucide-react";
 
 export type NavChild = {
@@ -89,6 +90,7 @@ export const adminNavigation: NavItem[] = [
         label: "Settings",
         isGroup: true,
         children: [
+          { key: "heroSlides", href: "/hero-slides", label: "Hero Slides", icon: SlidersHorizontal },
           { key: "occasions", href: "/occasions", label: "Occasions", icon: PartyPopper },
           { key: "deliveryHours", href: "/delivery-hours", label: "Operating Hours", icon: Clock },
         ],
