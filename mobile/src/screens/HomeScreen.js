@@ -29,6 +29,7 @@ import LocationSelectionModal from '../components/LocationSelectionModal';
 import userService from '../services/userService';
 import couponService from '../services/couponService';
 import heroSlideService from '../services/heroSlideService';
+import galleryService from '../services/galleryService';
 import { useToast } from '../context/ToastContext';
 import ProductCard from '../components/ProductCard';
 import { ProductCardSkeleton, CategorySkeleton, BannerSkeleton, SearchBarSkeleton } from '../components/Skeleton';
@@ -155,6 +156,9 @@ export default function HomeScreen({ navigation }) {
   const [activeCouponIdx, setActiveCouponIdx] = useState(0);
   const couponRef = useRef(null);
 
+  // Moments of Joy Gallery
+  const [featuredGallery, setFeaturedGallery] = useState([]);
+
   const handleHeroCta = (slide) => {
     if (slide.categoryMatch) {
       const matchLower = slide.categoryMatch.toLowerCase();
@@ -242,12 +246,13 @@ export default function HomeScreen({ navigation }) {
         params.occasion = selectedOccasion;
       }
 
-      const [categoriesData, prodResp, couponsData, occasionData, heroSlidesData] = await Promise.all([
+      const [categoriesData, prodResp, couponsData, occasionData, heroSlidesData, galleryData] = await Promise.all([
         categoryService.getCategories({ limit: 50 }).catch(() => ({ data: [] })),
         productService.getProductsWithPagination(params),
         couponService.getActiveCoupons({ limit: 20 }).catch(() => ({ data: [] })),
         occasionService.getOccasions().catch(() => ({ data: [] })),
         heroSlideService.getHeroSlides().catch(() => ({ data: [] })),
+        galleryService.getGallery({ limit: 8, isFeatured: true }).catch(() => ({ data: [] })),
       ]);
 
       const newProducts = prodResp.products || [];
@@ -257,6 +262,7 @@ export default function HomeScreen({ navigation }) {
       const heroList = Array.isArray(heroSlidesData)
         ? heroSlidesData
         : heroSlidesData?.data || [];
+      const galleryList = Array.isArray(galleryData?.data) ? galleryData.data : [];
 
       if (isInitial) {
         setProducts(newProducts);
@@ -265,6 +271,9 @@ export default function HomeScreen({ navigation }) {
         setOccasions(occList.length > 0 ? occList : fallbackOccasions);
         if (heroList.length > 0) {
           setHeroSlides(heroList);
+        }
+        if (galleryList.length > 0) {
+          setFeaturedGallery(galleryList);
         }
         setPage(2);
       } else {
@@ -685,6 +694,58 @@ export default function HomeScreen({ navigation }) {
                   })}
                 </ScrollView>
               </View>
+
+              {/* ── Moments of Joy 📸 (Celebration Gallery) ── */}
+              {featuredGallery.length > 0 && !selectedCategory && !selectedOccasion && (
+                <View style={styles.sectionContainer}>
+                  <View style={styles.sectionHeaderRow}>
+                    <View>
+                      <Text style={styles.sectionPreTitle}>REAL CELEBRATIONS</Text>
+                      <Text style={styles.sectionMainTitle}>Moments of Joy 📸</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.viewAllPill}
+                      onPress={() => navigation.navigate('Gallery')}
+                    >
+                      <Text style={styles.viewAllText}>See All</Text>
+                      <Feather name="arrow-right" size={11} color={colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalScroll}
+                  >
+                    {featuredGallery.map((item) => (
+                      <TouchableOpacity
+                        key={item._id}
+                        activeOpacity={0.88}
+                        onPress={() => navigation.navigate('Gallery')}
+                        style={styles.homeGalleryCard}
+                      >
+                        <Image source={{ uri: item.image }} style={styles.homeGalleryImg} resizeMode="cover" />
+                        <LinearGradient
+                          colors={['transparent', 'rgba(0,0,0,0.85)']}
+                          style={styles.homeGalleryGradient}
+                        />
+                        <View style={styles.homeGalleryCategory}>
+                          <Text style={styles.homeGalleryCategoryText}>{item.category}</Text>
+                        </View>
+                        <View style={styles.homeGalleryBottom}>
+                          <Text style={styles.homeGalleryTitle} numberOfLines={1}>
+                            {item.title}
+                          </Text>
+                          <View style={styles.homeGalleryLikesRow}>
+                            <Ionicons name="heart" size={11} color="#FF3B30" />
+                            <Text style={styles.homeGalleryLikesText}>{item.likes || 0}</Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
 
               {/* ── Hot Offers & Coupons (when available) ── */}
               {activeCoupons.length > 0 && !selectedCategory && !selectedOccasion && (
@@ -2113,5 +2174,64 @@ const styles = StyleSheet.create({
     fontSize: 9.5,
     fontWeight: '700',
     color: '#94A3B8',
+  },
+  homeGalleryCard: {
+    width: 156,
+    height: 180,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: '#FFF',
+    marginRight: 12,
+    position: 'relative',
+    ...shadows.sm,
+  },
+  homeGalleryImg: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  homeGalleryGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  homeGalleryCategory: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.25)',
+  },
+  homeGalleryCategoryText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  homeGalleryBottom: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    right: 8,
+  },
+  homeGalleryTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#FFF',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  homeGalleryLikesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  homeGalleryLikesText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFF',
   },
 });

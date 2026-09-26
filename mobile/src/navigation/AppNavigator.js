@@ -23,6 +23,7 @@ import SavedAddressesScreen from '../screens/SavedAddressesScreen';
 import ManagePaymentsScreen from '../screens/ManagePaymentsScreen';
 import DeveloperScreen from '../screens/DeveloperScreen';
 import SupportScreen from '../screens/SupportScreen';
+import GalleryScreen from '../screens/GalleryScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -68,6 +69,7 @@ export default function AppNavigator() {
       <Stack.Screen name="TermsPolicy" component={TermsPolicyScreen} />
       <Stack.Screen name="Developer" component={DeveloperScreen} />
       <Stack.Screen name="CustomerSupport" component={SupportScreen} />
+      <Stack.Screen name="Gallery" component={GalleryScreen} />
 
       {/* Guest-only entry points */}
       <Stack.Screen name="Login" component={LoginScreen} />

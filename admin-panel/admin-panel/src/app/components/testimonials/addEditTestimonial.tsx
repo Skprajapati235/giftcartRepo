@@ -16,6 +16,7 @@ import {
   User,
   MessageSquare,
   Check,
+  Save,
 } from "lucide-react";
 import { useToast } from "../../../context/ToastContext";
 import MediaModal from "../ui/MediaModal";
@@ -183,10 +184,10 @@ export default function AddEditTestimonial({
             type="submit"
             form="testimonial-form"
             disabled={saving}
-            className="px-5 py-2.5 rounded-xl bg-primary hover:opacity-90 text-white text-xs font-bold shadow-lg shadow-primary/25 disabled:opacity-50 transition flex items-center gap-2"
+            className="px-5 py-2.5 rounded-xl bg-primary hover:opacity-90 text-white text-xs font-black shadow-lg shadow-primary/25 disabled:opacity-50 transition flex items-center gap-2"
           >
-            <Check size={15} />
-            {saving ? "Saving..." : testimonial?._id ? "Update Testimonial" : "Publish Testimonial"}
+            <Save size={15} />
+            {saving ? "Saving..." : testimonial?._id ? "Save Changes" : "Save Testimonial"}
           </button>
         </div>
       </div>
@@ -571,6 +572,35 @@ export default function AddEditTestimonial({
                 Include customer location or company name alongside high-resolution profile pictures to build authentic trust.
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Bottom Save Action Bar */}
+        <div className="lg:col-span-12 mt-6 pt-5 border-t border-border-theme flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-border-theme shadow-sm">
+          <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300">
+            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-semibold">
+              {testimonial?._id
+                ? "Editing verified testimonial — Instant updates on web & app."
+                : "Ready to save — Live preview updates dynamically on right."}
+            </span>
+          </div>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl border border-border-theme text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-hover-theme transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 sm:flex-initial px-8 py-3 rounded-xl bg-primary hover:opacity-90 text-white text-xs font-black shadow-lg shadow-primary/30 disabled:opacity-50 transition flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Save size={16} />
+              <span>{saving ? "Saving..." : testimonial?._id ? "Save Changes" : "Save Testimonial"}</span>
+            </button>
           </div>
         </div>
       </form>

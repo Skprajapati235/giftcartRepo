@@ -28,6 +28,7 @@ import {
   ArrowRightLeft,
   Activity,
   MessageSquareQuote,
+  Images,
 } from "lucide-react";
 
 export type NavChild = {
@@ -69,6 +70,7 @@ export const adminNavigation: NavItem[] = [
           { key: "flavors", href: "/flavors", label: "Flavors", icon: Pipette },
           { key: "cities", href: "/cities", label: "Cities", icon: MapPin },
           { key: "offers", href: "/coupons", label: "Offers", icon: Gift },
+          { key: "gallery", href: "/gallery", label: "Gallery", icon: Images },
         ],
       },
       {

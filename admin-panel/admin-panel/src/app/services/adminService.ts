@@ -467,4 +467,7 @@ export const getRobotsData = async () => {
 // Testimonial API re-exports
 export * from "./testimonialService";
 
+// Gallery API re-exports
+export * from "./galleryService";
+
 
