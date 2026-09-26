@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,11 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  Dimensions,
+  useWindowDimensions,
   ActivityIndicator,
   RefreshControl,
   Modal,
   StatusBar,
-  Animated,
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,11 +19,13 @@ import galleryService from '../services/galleryService';
 import { colors, shadows } from '../constants/theme';
 import { SafeScreen } from '../components/layout';
 
-const { width } = Dimensions.get('window');
-const COLUMN_WIDTH = (width - 36) / 2;
-
 export default function GalleryScreen() {
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
+
+  // Dynamic responsive widths
+  const colWidth = useMemo(() => Math.floor((width - 36) / 2), [width]);
+  const gridItemWidth = useMemo(() => Math.floor((width - 36) / 3), [width]);
 
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -38,47 +39,50 @@ export default function GalleryScreen() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [likedMap, setLikedMap] = useState({});
 
-  const loadData = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const loadData = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
 
-    try {
-      const [galleryRes, catsRes, settingsRes] = await Promise.all([
-        galleryService.getGallery({
-          category: activeCategory !== 'all' ? activeCategory : undefined,
-          limit: 30,
-        }),
-        galleryService.getCategories(),
-        galleryService.getSettings(),
-      ]);
+      try {
+        const [galleryRes, catsRes, settingsRes] = await Promise.all([
+          galleryService.getGallery({
+            category: activeCategory !== 'all' ? activeCategory : undefined,
+            limit: 40,
+          }),
+          galleryService.getCategories(),
+          galleryService.getSettings(),
+        ]);
 
-      if (galleryRes && galleryRes.data) {
-        setItems(galleryRes.data);
-      }
-      if (Array.isArray(catsRes) && catsRes.length > 0) {
-        setCategories(catsRes);
-      }
-      if (settingsRes) {
-        setSettings(settingsRes);
-        if (settingsRes.mobileLayout) {
-          setLayoutMode(settingsRes.mobileLayout);
+        if (galleryRes && galleryRes.data) {
+          setItems(galleryRes.data);
         }
+        if (Array.isArray(catsRes) && catsRes.length > 0) {
+          setCategories(catsRes);
+        }
+        if (settingsRes) {
+          setSettings(settingsRes);
+          if (settingsRes.mobileLayout && !isRefresh) {
+            setLayoutMode(settingsRes.mobileLayout);
+          }
+        }
+      } catch (err) {
+        console.warn('GalleryScreen loadData error:', err);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (err) {
-      console.warn('GalleryScreen loadData error:', err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [activeCategory]);
+    },
+    [activeCategory]
+  );
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const handleLike = async (id, currentLikes, e) => {
+  const handleLike = async (id, e) => {
     if (e && e.stopPropagation) e.stopPropagation();
-    if (likedMap[id]) return; // already liked
+    if (likedMap[id]) return;
 
     setLikedMap((prev) => ({ ...prev, [id]: true }));
     setItems((prev) =>
@@ -110,21 +114,21 @@ export default function GalleryScreen() {
     });
   };
 
-  // Split into 2 columns for a masonry look
-  const col1 = items.filter((_, idx) => idx % 2 === 0);
-  const col2 = items.filter((_, idx) => idx % 2 === 1);
+  // Split items for Masonry 2 columns
+  const col1 = useMemo(() => items.filter((_, idx) => idx % 2 === 0), [items]);
+  const col2 = useMemo(() => items.filter((_, idx) => idx % 2 === 1), [items]);
 
+  // 1. RENDER MASONRY CARD (Pinterest style)
   const renderMasonryCard = (item, isCol2 = false) => {
     const isLiked = Boolean(likedMap[item._id]);
-    // Stagger heights slightly for a Pinterest masonry aesthetic
-    const cardHeight = isCol2 ? 240 : 210;
+    const cardHeight = isCol2 ? Math.round(colWidth * 1.34) : Math.round(colWidth * 1.15);
 
     return (
       <TouchableOpacity
         key={item._id}
-        activeOpacity={0.88}
+        activeOpacity={0.9}
         onPress={() => setSelectedItem(item)}
-        style={[styles.card, { height: cardHeight }]}
+        style={[styles.masonryCard, { width: colWidth, height: cardHeight }]}
       >
         <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
 
@@ -136,7 +140,9 @@ export default function GalleryScreen() {
         {/* Top Badges */}
         <View style={styles.cardTopRow}>
           <View style={styles.categoryBadge}>
-            <Text style={styles.categoryBadgeText}>{item.category || 'Celebration'}</Text>
+            <Text style={styles.categoryBadgeText} numberOfLines={1}>
+              {item.category || 'Celebration'}
+            </Text>
           </View>
 
           <View style={styles.topRightIcons}>
@@ -147,7 +153,7 @@ export default function GalleryScreen() {
             )}
             {item.isFeatured && (
               <View style={styles.featuredBadge}>
-                <Ionicons name="sparkles" size={10} color="#741343" />
+                <Ionicons name="sparkles" size={9} color="#741343" />
               </View>
             )}
           </View>
@@ -163,12 +169,12 @@ export default function GalleryScreen() {
             {settings?.enableLikes !== false && (
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={(e) => handleLike(item._id, item.likes, e)}
+                onPress={(e) => handleLike(item._id, e)}
                 style={styles.likePill}
               >
                 <Ionicons
                   name={isLiked ? 'heart' : 'heart-outline'}
-                  size={14}
+                  size={13}
                   color={isLiked ? '#FF3B30' : '#FFF'}
                 />
                 <Text style={styles.likeCount}>{item.likes || 0}</Text>
@@ -177,7 +183,7 @@ export default function GalleryScreen() {
 
             {settings?.enableShopLook !== false && item.linkedProduct && (
               <View style={styles.shopPill}>
-                <Feather name="shopping-bag" size={11} color="#FFD166" />
+                <Feather name="shopping-bag" size={10} color="#FFD166" />
                 <Text style={styles.shopPillText}>Shop</Text>
               </View>
             )}
@@ -187,14 +193,15 @@ export default function GalleryScreen() {
     );
   };
 
+  // 2. RENDER SQUARE GRID CARD (Instagram Explore style)
   const renderGridCard = (item) => {
     const isLiked = Boolean(likedMap[item._id]);
     return (
       <TouchableOpacity
         key={item._id}
-        activeOpacity={0.85}
+        activeOpacity={0.88}
         onPress={() => setSelectedItem(item)}
-        style={styles.gridCard}
+        style={[styles.gridCard, { width: gridItemWidth, height: gridItemWidth }]}
       >
         <Image source={{ uri: item.image }} style={styles.gridImage} resizeMode="cover" />
 
@@ -218,11 +225,14 @@ export default function GalleryScreen() {
     );
   };
 
+  // 3. RENDER REELS / FEED CARD (TikTok / Social Feed style)
   const renderFeedCard = (item) => {
     const isLiked = Boolean(likedMap[item._id]);
+    const feedImgHeight = Math.min(Math.round(width - 32), 380);
+
     return (
       <View key={item._id} style={styles.feedCard}>
-        {/* Header */}
+        {/* Feed Header */}
         <View style={styles.feedHeader}>
           <View style={styles.feedAuthorRow}>
             <View style={styles.feedAvatar}>
@@ -230,7 +240,7 @@ export default function GalleryScreen() {
                 {item.title ? item.title.charAt(0).toUpperCase() : 'G'}
               </Text>
             </View>
-            <View>
+            <View style={{ flex: 1, marginRight: 8 }}>
               <Text style={styles.feedAuthorName} numberOfLines={1}>
                 {item.title}
               </Text>
@@ -251,7 +261,7 @@ export default function GalleryScreen() {
         <TouchableOpacity
           activeOpacity={0.92}
           onPress={() => setSelectedItem(item)}
-          style={styles.feedMediaContainer}
+          style={[styles.feedMediaContainer, { height: feedImgHeight }]}
         >
           <Image source={{ uri: item.image }} style={styles.feedMediaImage} resizeMode="cover" />
           {item.mediaType === 'video' && (
@@ -263,22 +273,20 @@ export default function GalleryScreen() {
 
         {/* Actions Bar */}
         <View style={styles.feedActionBar}>
-          <View style={styles.feedActionLeft}>
-            {settings?.enableLikes !== false && (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                onPress={(e) => handleLike(item._id, item.likes, e)}
-                style={styles.feedLikeBtn}
-              >
-                <Ionicons
-                  name={isLiked ? 'heart' : 'heart-outline'}
-                  size={22}
-                  color={isLiked ? '#FF3B30' : '#1F2937'}
-                />
-                <Text style={styles.feedLikeCount}>{item.likes || 0} likes</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          {settings?.enableLikes !== false && (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={(e) => handleLike(item._id, e)}
+              style={styles.feedLikeBtn}
+            >
+              <Ionicons
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={22}
+                color={isLiked ? '#FF3B30' : '#1F2937'}
+              />
+              <Text style={styles.feedLikeCount}>{item.likes || 0} loves</Text>
+            </TouchableOpacity>
+          )}
 
           {settings?.enableShopLook !== false && item.linkedProduct && (
             <TouchableOpacity
@@ -287,38 +295,46 @@ export default function GalleryScreen() {
               style={styles.feedShopBtn}
             >
               <Feather name="shopping-bag" size={12} color="#FFF" />
-              <Text style={styles.feedShopBtnText}>Shop This Item</Text>
+              <Text style={styles.feedShopBtnText}>Shop Item (₹{item.linkedProduct.price})</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Caption */}
+        {/* Caption & Story */}
         <View style={styles.feedCaptionBox}>
           {item.caption ? (
             <Text style={styles.feedCaption}>
-              <Text style={styles.feedCaptionTitle}>{item.title} </Text>
+              <Text style={styles.feedCaptionTitle}>{item.title} • </Text>
               {item.caption}
             </Text>
           ) : null}
 
           {item.tags && item.tags.length > 0 && (
-            <Text style={styles.feedTagsText}>
-              {item.tags.map((t) => (t.startsWith('#') ? t : `#${t}`)).join(' ')}
-            </Text>
+            <View style={styles.feedTagsRow}>
+              {item.tags.map((tag, i) => (
+                <Text key={i} style={styles.feedTagText}>
+                  {tag.startsWith('#') ? tag : `#${tag}`}
+                </Text>
+              ))}
+            </View>
           )}
         </View>
       </View>
     );
   };
 
+  // 4. RENDER SNAP CAROUSEL CARD
   const renderCarouselCard = (item, idx) => {
     const isLiked = Boolean(likedMap[item._id]);
+    const cWidth = Math.min(Math.round(width * 0.84), 340);
+    const cHeight = Math.min(Math.round(width * 1.15), 450);
+
     return (
       <TouchableOpacity
         key={item._id}
         activeOpacity={0.9}
         onPress={() => setSelectedItem(item)}
-        style={styles.carouselCard}
+        style={[styles.carouselCard, { width: cWidth, height: cHeight }]}
       >
         <Image source={{ uri: item.image }} style={styles.carouselImage} resizeMode="cover" />
         <LinearGradient
@@ -353,7 +369,7 @@ export default function GalleryScreen() {
             {settings?.enableLikes !== false && (
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={(e) => handleLike(item._id, item.likes, e)}
+                onPress={(e) => handleLike(item._id, e)}
                 style={styles.carouselLikeBtn}
               >
                 <Ionicons
@@ -385,51 +401,33 @@ export default function GalleryScreen() {
     <SafeScreen style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
 
-      {/* Screen Header */}
+      {/* ── Screen Header ── */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.textBerry} />
+          <Ionicons name="chevron-back" size={22} color={colors.textBerry} />
         </TouchableOpacity>
 
         <View style={styles.headerTitleWrap}>
-          <View style={styles.headerTag}>
-            <Text style={styles.headerTagText}>REAL DELIVERIES</Text>
-          </View>
-          <Text style={styles.headerTitle}>{settings?.title || 'Moments of Joy 📸'}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {settings?.title || 'Moments of Joy 📸'}
+          </Text>
+          <Text style={styles.headerSubtitle}>Celebration & Delivery Stories</Text>
         </View>
 
-        {/* Layout Switcher Pill */}
         <TouchableOpacity
-          onPress={() => {
-            const modes = ['masonry', 'grid', 'feed', 'carousel'];
-            const nextIdx = (modes.indexOf(layoutMode) + 1) % modes.length;
-            setLayoutMode(modes[nextIdx]);
-          }}
+          onPress={() => loadData(true)}
+          style={styles.refreshBtn}
           activeOpacity={0.7}
-          style={styles.layoutTogglePill}
         >
-          <MaterialCommunityIcons
-            name={
-              layoutMode === 'masonry'
-                ? 'view-dashboard-outline'
-                : layoutMode === 'grid'
-                ? 'grid'
-                : layoutMode === 'feed'
-                ? 'view-agenda-outline'
-                : 'view-carousel-outline'
-            }
-            size={15}
-            color="#741343"
-          />
-          <Text style={styles.layoutPillText}>{layoutMode.toUpperCase()}</Text>
+          <Ionicons name="refresh" size={18} color="#64748B" />
         </TouchableOpacity>
       </View>
 
-      {/* Categories Horizontal Pills */}
+      {/* ── Category Filter Pills ── */}
       <View style={styles.categoryScrollWrap}>
         <ScrollView
           horizontal
@@ -438,10 +436,7 @@ export default function GalleryScreen() {
         >
           <TouchableOpacity
             onPress={() => setActiveCategory('all')}
-            style={[
-              styles.catChip,
-              activeCategory === 'all' && styles.catChipActive,
-            ]}
+            style={[styles.catChip, activeCategory === 'all' && styles.catChipActive]}
           >
             <Text
               style={[
@@ -470,7 +465,73 @@ export default function GalleryScreen() {
         </ScrollView>
       </View>
 
-      {/* Main Content Area */}
+      {/* ── Secondary Toolbar (Count + Layout View Selector) ── */}
+      <View style={styles.toolbarRow}>
+        <Text style={styles.toolbarCountText}>
+          {items.length} moments • {layoutMode.toUpperCase()} VIEW
+        </Text>
+
+        {/* 4 Interactive Layout Icons */}
+        <View style={styles.layoutSegmentedControl}>
+          <TouchableOpacity
+            onPress={() => setLayoutMode('masonry')}
+            style={[
+              styles.layoutSegmentBtn,
+              layoutMode === 'masonry' && styles.layoutSegmentBtnActive,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="view-dashboard-outline"
+              size={15}
+              color={layoutMode === 'masonry' ? '#FFF' : '#64748B'}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setLayoutMode('grid')}
+            style={[
+              styles.layoutSegmentBtn,
+              layoutMode === 'grid' && styles.layoutSegmentBtnActive,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="grid"
+              size={15}
+              color={layoutMode === 'grid' ? '#FFF' : '#64748B'}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setLayoutMode('feed')}
+            style={[
+              styles.layoutSegmentBtn,
+              layoutMode === 'feed' && styles.layoutSegmentBtnActive,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="view-agenda-outline"
+              size={15}
+              color={layoutMode === 'feed' ? '#FFF' : '#64748B'}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setLayoutMode('carousel')}
+            style={[
+              styles.layoutSegmentBtn,
+              layoutMode === 'carousel' && styles.layoutSegmentBtnActive,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="view-carousel-outline"
+              size={15}
+              color={layoutMode === 'carousel' ? '#FFF' : '#64748B'}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* ── Main Content Area ── */}
       {loading && !refreshing ? (
         <View style={styles.centerBox}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -496,17 +557,6 @@ export default function GalleryScreen() {
             />
           }
         >
-          {/* Subtitle Banner */}
-          {/* Subtitle Banner */}
-          <View style={styles.subBanner}>
-            <Text style={styles.subBannerTitle}>
-              {settings?.title || 'Real Celebrations by Giftcart Customers ✨'}
-            </Text>
-            <Text style={styles.subBannerSubtitle}>
-              {settings?.subtitle || 'Tap any photo to read the story or order the featured bouquet & cake.'}
-            </Text>
-          </View>
-
           {/* DYNAMIC MULTI-LAYOUT RENDERING */}
           {layoutMode === 'masonry' && (
             <View style={styles.columnsWrapper}>
@@ -532,7 +582,7 @@ export default function GalleryScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                snapToInterval={width * 0.82 + 14}
+                snapToInterval={Math.min(Math.round(width * 0.84), 340) + 14}
                 decelerationRate="fast"
                 contentContainerStyle={styles.carouselContent}
               >
@@ -545,7 +595,7 @@ export default function GalleryScreen() {
         </ScrollView>
       )}
 
-      {/* Lightbox / Detail Modal */}
+      {/* ── Lightbox / Detail Modal ── */}
       {selectedItem && (
         <Modal
           visible={Boolean(selectedItem)}
@@ -578,12 +628,12 @@ export default function GalleryScreen() {
                 </View>
               </View>
 
-              {/* Modal Info Body */}
+              {/* Modal Body */}
               <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
                 <View style={styles.modalTitleRow}>
                   <Text style={styles.modalTitle}>{selectedItem.title}</Text>
                   <TouchableOpacity
-                    onPress={() => handleLike(selectedItem._id, selectedItem.likes)}
+                    onPress={() => handleLike(selectedItem._id)}
                     style={styles.modalLikeBtn}
                   >
                     <Ionicons
@@ -632,8 +682,8 @@ export default function GalleryScreen() {
                       style={styles.linkedProductBtn}
                       activeOpacity={0.8}
                     >
-                      <Text style={styles.linkedProductBtnText}>Order Now</Text>
-                      <Ionicons name="arrow-forward" size={13} color="#FFF" />
+                      <Text style={styles.linkedProductBtnText}>Shop Now</Text>
+                      <Feather name="arrow-up-right" size={12} color="#FFF" />
                     </TouchableOpacity>
                   </View>
                 )}
@@ -649,7 +699,7 @@ export default function GalleryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
@@ -659,42 +709,50 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#FFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#F1F5F9',
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FFF5F8',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitleWrap: {
-    alignItems: 'center',
-  },
-  headerTag: {
-    backgroundColor: '#FDE8E8',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginBottom: 2,
-  },
-  headerTagText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#D82B76',
-    letterSpacing: 0.5,
+    flex: 1,
+    marginHorizontal: 12,
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: colors.textBerry,
+    color: '#0F172A',
   },
+  headerSubtitle: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
+    marginTop: 1,
+  },
+  refreshBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Category filter scroll
   categoryScrollWrap: {
     backgroundColor: '#FFF',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#F1F5F9',
   },
   categoryScrollContent: {
     paddingHorizontal: 14,
@@ -704,50 +762,101 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   catChipActive: {
-    backgroundColor: colors.brandBerry,
+    backgroundColor: '#741343',
+    borderColor: '#741343',
+    ...shadows.sm,
   },
   catChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#4B5563',
+    color: '#475569',
   },
   catChipTextActive: {
     color: '#FFF',
   },
-  scrollContent: {
-    padding: 14,
+
+  // Secondary Toolbar Row
+  toolbarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#F8FAFC',
   },
-  subBanner: {
-    marginBottom: 14,
-    paddingHorizontal: 4,
-  },
-  subBannerTitle: {
-    fontSize: 15,
+  toolbarCountText: {
+    fontSize: 11,
     fontWeight: '800',
-    color: '#1F2937',
-    marginBottom: 3,
+    color: '#64748B',
+    letterSpacing: 0.3,
   },
-  subBannerSubtitle: {
+  layoutSegmentedControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E2E8F0',
+    padding: 2,
+    borderRadius: 12,
+    gap: 2,
+  },
+  layoutSegmentBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  layoutSegmentBtnActive: {
+    backgroundColor: '#741343',
+  },
+
+  // Main scroll content
+  scrollContent: {
+    paddingHorizontal: 14,
+    paddingTop: 10,
+  },
+  centerBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+    minHeight: 300,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginTop: 14,
+  },
+  emptySubtitle: {
     fontSize: 12,
-    color: '#6B7280',
-    lineHeight: 16,
+    color: '#64748B',
+    textAlign: 'center',
+    marginTop: 6,
+    lineHeight: 18,
   },
+
+  // 1. Masonry Styles
   columnsWrapper: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
   },
   column: {
-    flex: 1,
     gap: 12,
   },
-  card: {
-    borderRadius: 20,
+  masonryCard: {
+    borderRadius: 22,
     overflow: 'hidden',
     backgroundColor: '#FFF',
+    position: 'relative',
     ...shadows.sm,
   },
   cardImage: {
@@ -775,6 +884,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 0.5,
     borderColor: 'rgba(255,255,255,0.3)',
+    maxWidth: '70%',
   },
   categoryBadgeText: {
     color: '#FFF',
@@ -784,13 +894,13 @@ const styles = StyleSheet.create({
   topRightIcons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4,
   },
   videoBadge: {
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: 'rgba(216, 43, 118, 0.9)',
+    backgroundColor: 'rgba(216, 43, 118, 0.95)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -815,7 +925,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
     lineHeight: 16,
     marginBottom: 6,
-    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowColor: 'rgba(0,0,0,0.7)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
@@ -828,7 +938,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 12,
@@ -842,7 +952,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: 'rgba(116, 19, 67, 0.85)',
+    backgroundColor: 'rgba(116, 19, 67, 0.9)',
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 10,
@@ -852,217 +962,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
   },
-  centerBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 30,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 13,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: colors.textBerry,
-    marginTop: 12,
-  },
-  emptySubtitle: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-    marginTop: 6,
-    lineHeight: 18,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  modalCard: {
-    width: '100%',
-    maxHeight: '85%',
-    backgroundColor: '#FFF',
-    borderRadius: 28,
-    overflow: 'hidden',
-  },
-  modalImageWrap: {
-    width: '100%',
-    height: 280,
-    position: 'relative',
-    backgroundColor: '#000',
-  },
-  modalImage: {
-    width: '100%',
-    height: '100%',
-  },
-  modalCloseBtn: {
-    position: 'absolute',
-    top: 14,
-    right: 14,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalCategoryBadge: {
-    position: 'absolute',
-    bottom: 14,
-    left: 14,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 14,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  modalCategoryText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  modalBody: {
-    padding: 18,
-  },
-  modalTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 10,
-    marginBottom: 8,
-  },
-  modalTitle: {
-    flex: 1,
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#1F2937',
-  },
-  modalLikeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    backgroundColor: '#FFF1F2',
-  },
-  modalLikeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#BE123C',
-  },
-  modalCaption: {
-    fontSize: 13,
-    color: '#4B5563',
-    lineHeight: 19,
-    marginBottom: 12,
-  },
-  modalTagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: 16,
-  },
-  modalTagChip: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  modalTagText: {
-    fontSize: 11,
-    color: '#6B7280',
-    fontWeight: '600',
-  },
-  linkedProductCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF5F8',
-    padding: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#FCE7F3',
-    marginBottom: 12,
-  },
-  linkedProductImage: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
-  },
-  linkedProductInfo: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  linkedProductLabel: {
-    fontSize: 8,
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: 0.5,
-  },
-  linkedProductName: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#1F2937',
-    marginTop: 1,
-  },
-  linkedProductPrice: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.textBerry,
-    marginTop: 2,
-  },
-  linkedProductBtn: {
-    backgroundColor: colors.brandBerry,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  linkedProductBtnText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontWeight: '800',
-  },
 
-  // Layout Switcher Pill
-  layoutTogglePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: '#F3E8EE',
-  },
-  layoutPillText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#741343',
-    letterSpacing: 0.5,
-  },
-
-  // Layout 2: Square Grid Styles
+  // 2. Square Grid Styles
   gridWrapper: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
-    paddingHorizontal: 12,
   },
   gridCard: {
-    width: (width - 36) / 3,
-    height: (width - 36) / 3,
     borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#E2E8F0',
     position: 'relative',
   },
   gridImage: {
@@ -1076,7 +986,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.65)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1093,12 +1003,12 @@ const styles = StyleSheet.create({
   },
   gridLikeBadge: {
     position: 'absolute',
-    bottom: 6,
-    left: 6,
+    bottom: 5,
+    left: 5,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.65)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
@@ -1109,17 +1019,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Layout 3: Immersive Feed Styles
+  // 3. Immersive Feed Styles
   feedWrapper: {
-    paddingHorizontal: 16,
-    gap: 18,
+    gap: 16,
   },
   feedCard: {
     borderRadius: 24,
     backgroundColor: '#FFF',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#E2E8F0',
     ...shadows.sm,
   },
   feedHeader: {
@@ -1133,29 +1042,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
   },
   feedAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#741343',
     alignItems: 'center',
     justifyContent: 'center',
   },
   feedAvatarText: {
     color: '#FFF',
     fontWeight: '900',
-    fontSize: 14,
+    fontSize: 15,
   },
   feedAuthorName: {
     fontSize: 13,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#0F172A',
   },
   feedCategoryTag: {
     fontSize: 10,
-    color: colors.textBerry,
+    color: '#D82B76',
     fontWeight: '700',
+    marginTop: 1,
   },
   feedFeaturedBadge: {
     flexDirection: 'row',
@@ -1173,8 +1084,7 @@ const styles = StyleSheet.create({
   },
   feedMediaContainer: {
     width: '100%',
-    height: 380,
-    backgroundColor: '#111',
+    backgroundColor: '#0F172A',
     position: 'relative',
   },
   feedMediaImage: {
@@ -1183,12 +1093,12 @@ const styles = StyleSheet.create({
   },
   feedVideoOverlay: {
     position: 'absolute',
-    top: '44%',
-    left: '44%',
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    top: '42%',
+    left: '42%',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0,0,0,0.65)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1198,11 +1108,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 10,
-  },
-  feedActionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F8FAFC',
   },
   feedLikeBtn: {
     flexDirection: 'row',
@@ -1212,16 +1119,16 @@ const styles = StyleSheet.create({
   feedLikeCount: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#1E293B',
   },
   feedShopBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: colors.brandBerry,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 14,
+    backgroundColor: '#741343',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
   },
   feedShopBtnText: {
     color: '#FFF',
@@ -1232,33 +1139,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 14,
   },
-  feedCaptionTitle: {
-    fontWeight: '800',
-    color: '#111827',
-  },
   feedCaption: {
     fontSize: 12,
-    color: '#4B5563',
+    color: '#475569',
     lineHeight: 18,
   },
-  feedTagsText: {
+  feedCaptionTitle: {
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  feedTagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  feedTagText: {
     fontSize: 11,
-    color: colors.primary,
-    fontWeight: '600',
-    marginTop: 6,
+    color: '#741343',
+    fontWeight: '700',
   },
 
-  // Layout 4: Snap Carousel Styles
+  // 4. Snap Carousel Styles
   carouselContainer: {
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   carouselContent: {
-    paddingHorizontal: 16,
     gap: 14,
   },
   carouselCard: {
-    width: width * 0.82,
-    height: 480,
     borderRadius: 26,
     overflow: 'hidden',
     backgroundColor: '#000',
@@ -1304,15 +1213,15 @@ const styles = StyleSheet.create({
   },
   carouselTitle: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '900',
-    marginBottom: 6,
+    marginBottom: 5,
   },
   carouselCaption: {
     color: 'rgba(255,255,255,0.85)',
     fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 14,
+    lineHeight: 17,
+    marginBottom: 12,
   },
   carouselActionsRow: {
     flexDirection: 'row',
@@ -1323,7 +1232,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: 'rgba(255,255,255,0.25)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
@@ -1339,12 +1248,167 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: '#FFF',
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: 14,
   },
   carouselShopText: {
     color: '#741343',
     fontSize: 11,
     fontWeight: '900',
+  },
+
+  // Modal Lightbox Styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCard: {
+    width: '100%',
+    maxHeight: '90%',
+    backgroundColor: '#FFF',
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  modalImageWrap: {
+    width: '100%',
+    height: 300,
+    backgroundColor: '#000',
+    position: 'relative',
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
+  },
+  modalCloseBtn: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCategoryBadge: {
+    position: 'absolute',
+    bottom: 14,
+    left: 14,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 14,
+  },
+  modalCategoryText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  modalBody: {
+    padding: 18,
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginRight: 10,
+  },
+  modalLikeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFF1F2',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  modalLikeText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#E11D48',
+  },
+  modalCaption: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  modalTagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 16,
+  },
+  modalTagChip: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  modalTagText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  linkedProductCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF5F8',
+    padding: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#FCE7F3',
+    marginBottom: 14,
+  },
+  linkedProductImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+  },
+  linkedProductInfo: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  linkedProductLabel: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#741343',
+    letterSpacing: 0.5,
+  },
+  linkedProductName: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#0F172A',
+    marginTop: 1,
+  },
+  linkedProductPrice: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#D82B76',
+    marginTop: 2,
+  },
+  linkedProductBtn: {
+    backgroundColor: '#741343',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  linkedProductBtnText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

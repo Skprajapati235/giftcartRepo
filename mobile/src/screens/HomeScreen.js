@@ -708,7 +708,6 @@ export default function HomeScreen({ navigation }) {
                       onPress={() => navigation.navigate('Gallery')}
                     >
                       <Text style={styles.viewAllText}>See All</Text>
-                      <Feather name="arrow-right" size={11} color={colors.primary} />
                     </TouchableOpacity>
                   </View>
 
@@ -730,8 +729,13 @@ export default function HomeScreen({ navigation }) {
                           style={styles.homeGalleryGradient}
                         />
                         <View style={styles.homeGalleryCategory}>
-                          <Text style={styles.homeGalleryCategoryText}>{item.category}</Text>
+                          <Text style={styles.homeGalleryCategoryText}>{item.category || 'Moments'}</Text>
                         </View>
+                        {item.mediaType === 'video' && (
+                          <View style={styles.homeGalleryVideoBadge}>
+                            <Ionicons name="play" size={10} color="#FFF" />
+                          </View>
+                        )}
                         <View style={styles.homeGalleryBottom}>
                           <Text style={styles.homeGalleryTitle} numberOfLines={1}>
                             {item.title}
@@ -2176,8 +2180,8 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
   homeGalleryCard: {
-    width: 156,
-    height: 180,
+    width: Math.min(Math.round(width * 0.42), 170),
+    height: Math.min(Math.round(width * 0.52), 215),
     borderRadius: 18,
     overflow: 'hidden',
     backgroundColor: '#FFF',
@@ -2208,6 +2212,17 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 9,
     fontWeight: '700',
+  },
+  homeGalleryVideoBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   homeGalleryBottom: {
     position: 'absolute',
