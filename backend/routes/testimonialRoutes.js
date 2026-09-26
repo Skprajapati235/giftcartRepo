@@ -6,6 +6,8 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 // Public endpoints
 router.get("/", controller.getAll);
 router.get("/:id", controller.getById);
+router.post("/submit", controller.create);
+router.post("/public", controller.create);
 
 // Admin-only management endpoints
 router.post("/", adminMiddleware, controller.create);
