@@ -27,6 +27,7 @@ import {
   Globe,
   ArrowRightLeft,
   Activity,
+  MessageSquareQuote,
 } from "lucide-react";
 
 export type NavChild = {
@@ -77,6 +78,7 @@ export const adminNavigation: NavItem[] = [
         children: [
           { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
           { key: "reviews", href: "/reviews", label: "Reviews", icon: Star },
+          { key: "testimonials", href: "/testimonials", label: "Testimonials", icon: MessageSquareQuote },
         ],
       },
       {
