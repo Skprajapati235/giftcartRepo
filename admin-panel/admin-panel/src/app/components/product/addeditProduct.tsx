@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Upload, Plus, Trash2 } from "lucide-react";
+import { X, Upload, Plus, Trash2, Globe } from "lucide-react";
 import * as service from "../../services/adminService";
 import { useAdmin } from "../../context/AdminContext";
 import { useToast } from "../../../context/ToastContext";
@@ -64,7 +64,15 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     tax: product?.tax !== undefined ? String(product.tax) : "0",
     shippingCost: product?.shippingCost !== undefined ? String(product.shippingCost) : "0",
     occasions: (product?.occasions || []).map((o: any) => o?._id || o),
+    seoTitle: product?.seoTitle || "",
+    seoDescription: product?.seoDescription || "",
+    seoKeywords: Array.isArray(product?.seoKeywords) ? product.seoKeywords.join(", ") : product?.seoKeywords || "",
+    canonicalUrl: product?.canonicalUrl || "",
+    ogImage: product?.ogImage || "",
+    noIndex: !!product?.noIndex,
   });
+
+  const [showSeo, setShowSeo] = useState(false);
 
   // Multiple weight variants (Cakes) — each with its own price/sale price/
   // discount/tax/shipping. Nothing here is auto-calculated; whatever the
@@ -366,6 +374,15 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
         stock: Math.max(0, parseInt(form.stock, 10) || 0),
         sku: form.sku.trim() || undefined,
         lowStockThreshold: Math.max(0, parseInt(form.lowStockThreshold, 10) || 5),
+        seoTitle: form.seoTitle?.trim() || undefined,
+        seoDescription: form.seoDescription?.trim() || undefined,
+        seoKeywords: (form.seoKeywords || "")
+          .split(",")
+          .map((k: string) => k.trim())
+          .filter(Boolean),
+        canonicalUrl: form.canonicalUrl?.trim() || undefined,
+        ogImage: form.ogImage?.trim() || undefined,
+        noIndex: !!form.noIndex,
       };
 
       if (product?._id) {
@@ -1111,6 +1128,99 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
                 })
               )}
             </div>
+          </div>
+
+          {/* Collapsible SEO & Google Search Section */}
+          <div className="rounded-2xl border border-border-theme bg-card/40 p-5 space-y-4">
+            <div
+              onClick={() => setShowSeo(!showSeo)}
+              className="flex items-center justify-between cursor-pointer select-none"
+            >
+              <div className="flex items-center gap-2">
+                <Globe size={18} className="text-primary" />
+                <span className="text-sm font-bold text-foreground">
+                  SEO & Google Search Settings
+                </span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  (Optional - Click to {showSeo ? "collapse" : "expand"})
+                </span>
+              </div>
+              <span className="text-xs font-bold text-primary">
+                {showSeo ? "Hide ▲" : "Show ▼"}
+              </span>
+            </div>
+
+            {showSeo && (
+              <div className="pt-3 border-t border-border-theme space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">
+                      Custom SEO Title
+                    </label>
+                    <input
+                      value={form.seoTitle}
+                      onChange={(e) => setForm({ ...form, seoTitle: e.target.value })}
+                      placeholder={form.name ? `${form.name} | GiftFestive Faridabad` : "e.g. Delicious Chocolate Truffle Cake"}
+                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Defaults to product name if left blank.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">
+                      Focus Keywords (comma-separated)
+                    </label>
+                    <input
+                      value={form.seoKeywords}
+                      onChange={(e) => setForm({ ...form, seoKeywords: e.target.value })}
+                      placeholder="e.g. chocolate cake, midnight delivery, faridabad"
+                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">
+                    Meta Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={form.seoDescription}
+                    onChange={(e) => setForm({ ...form, seoDescription: e.target.value })}
+                    placeholder="Search snippet summary (140-160 characters recommended)..."
+                    className="w-full rounded-xl border border-border-theme bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-1.5">
+                      Canonical URL Override
+                    </label>
+                    <input
+                      value={form.canonicalUrl}
+                      onChange={(e) => setForm({ ...form, canonicalUrl: e.target.value })}
+                      placeholder="Leave empty for standard product URL"
+                      className="w-full rounded-xl border border-border-theme bg-background px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+
+                  <div className="flex items-center pt-6">
+                    <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.noIndex}
+                        onChange={(e) => setForm({ ...form, noIndex: e.target.checked })}
+                        className="rounded text-primary focus:ring-primary"
+                      />
+                      <span>NoIndex (Hide this product from Google search)</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -84,7 +84,16 @@ const productSchema = new mongoose.Schema({
   // Which cities this product can be delivered to. Empty/undefined array
   // means "available everywhere" so existing products keep working exactly
   // as before this field was added — nothing becomes invisible by default.
-  availableCities: [{ type: String }]
+  availableCities: [{ type: String }],
+  // SEO Specific Fields
+  seoTitle: { type: String, trim: true },
+  seoDescription: { type: String, trim: true },
+  seoKeywords: [{ type: String }],
+  canonicalUrl: { type: String, trim: true },
+  ogImage: { type: String, trim: true },
+  noIndex: { type: Boolean, default: false },
+  noFollow: { type: Boolean, default: false },
+  customSchema: { type: String, trim: true }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Product", productSchema);

@@ -390,3 +390,78 @@ export const deleteHeroSlide = async (id: string) => {
   return response.data;
 };
 
+// =============================================================
+// SEO SERVICES
+// =============================================================
+
+export const getSeoGlobal = async () => {
+  const response = await authApi(getAuthToken()).get("/seo/global");
+  return response.data;
+};
+
+export const updateSeoGlobal = async (payload: any) => {
+  const response = await authApi(getAuthToken()).put("/seo/global", payload);
+  return response.data;
+};
+
+export const getSeoPages = async (params?: { page?: number; limit?: number; search?: string }) => {
+  const response = await authApi(getAuthToken()).get("/seo/pages", { params });
+  return response.data;
+};
+
+export const createSeoPage = async (payload: any) => {
+  const response = await authApi(getAuthToken()).post("/seo/pages", payload);
+  return response.data;
+};
+
+export const updateSeoPage = async (id: string, payload: any) => {
+  const response = await authApi(getAuthToken()).put(`/seo/pages/${id}`, payload);
+  return response.data;
+};
+
+export const deleteSeoPage = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/seo/pages/${id}`);
+  return response.data;
+};
+
+export const seedSeoPages = async () => {
+  const response = await authApi(getAuthToken()).post("/seo/seed");
+  return response.data;
+};
+
+export const getSeoRedirects = async (params?: { page?: number; limit?: number; search?: string }) => {
+  const response = await authApi(getAuthToken()).get("/seo/redirects", { params });
+  return response.data;
+};
+
+export const createSeoRedirect = async (payload: any) => {
+  const response = await authApi(getAuthToken()).post("/seo/redirects", payload);
+  return response.data;
+};
+
+export const updateSeoRedirect = async (id: string, payload: any) => {
+  const response = await authApi(getAuthToken()).put(`/seo/redirects/${id}`, payload);
+  return response.data;
+};
+
+export const deleteSeoRedirect = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/seo/redirects/${id}`);
+  return response.data;
+};
+
+export const getSeoAudit = async () => {
+  const response = await authApi(getAuthToken()).get("/seo/audit");
+  return response.data;
+};
+
+export const getSitemapData = async () => {
+  const response = await authApi(getAuthToken()).get("/seo/sitemap-data");
+  return response.data;
+};
+
+export const getRobotsData = async () => {
+  const response = await authApi(getAuthToken()).get("/seo/robots-data");
+  return response.data;
+};
+
+

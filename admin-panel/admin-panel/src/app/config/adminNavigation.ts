@@ -24,6 +24,9 @@ import {
   Lightbulb,
   UserPlus,
   SlidersHorizontal,
+  Globe,
+  ArrowRightLeft,
+  Activity,
 } from "lucide-react";
 
 export type NavChild = {
@@ -114,6 +117,18 @@ export const adminNavigation: NavItem[] = [
     children: [
       { key: "websiteContacts", href: "/websitecontact", label: "Website Contacts", icon: Mail },
       { key: "customerSupport", href: "/support", label: "Customer Support", icon: LifeBuoy },
+    ],
+  },
+  {
+    key: "seo",
+    label: "SEO Suite",
+    icon: Globe,
+    children: [
+      { key: "seo-global", href: "/seo/global", label: "Global & Schema", icon: Settings },
+      { key: "seo-pages", href: "/seo/pages", label: "Page-by-Page SEO", icon: FileText },
+      { key: "seo-redirects", href: "/seo/redirects", label: "URL Redirects", icon: ArrowRightLeft },
+      { key: "seo-robots", href: "/seo/robots-sitemap", label: "Robots & Sitemap", icon: Bot },
+      { key: "seo-audit", href: "/seo/audit", label: "SEO Health Audit", icon: Activity },
     ],
   },
   {
