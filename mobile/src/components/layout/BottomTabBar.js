@@ -3,13 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useLayoutInsets } from '../../hooks/useLayoutInsets';
 import { TAB_BAR_BASE_HEIGHT } from '../../constants/layout';
+import { colors } from '../../constants/theme';
 
 const DEFAULT_TABS = [
-  { name: 'HOME', icon: 'home', screen: 'Home' },
-  { name: 'COLLECTIONS', icon: 'grid', screen: 'Collections' },
-  { name: 'WISHLIST', icon: 'heart', screen: 'Wishlist' },
-  { name: 'CART', icon: 'shopping-cart', screen: 'Cart' },
-  { name: 'MY ORDERS', icon: 'shopping-bag', screen: 'MyOrders' },
+  { name: 'Home', icon: 'home', screen: 'Home' },
+  { name: 'Collections', icon: 'grid', screen: 'Collections' },
+  { name: 'Wishlist', icon: 'heart', screen: 'Wishlist' },
+  { name: 'Cart', icon: 'shopping-cart', screen: 'Cart' },
+  { name: 'Orders', icon: 'shopping-bag', screen: 'MyOrders' },
 ];
 
 export default function BottomTabBar({
@@ -29,10 +30,14 @@ export default function BottomTabBar({
             key={tab.screen}
             style={styles.item}
             onPress={() => navigation.navigate(tab.screen)}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
           >
-            <View>
-              <Feather name={tab.icon} size={22} color={isActive ? '#D82B76' : '#555'} />
+            <View style={styles.iconContainer}>
+              <Feather
+                name={tab.icon}
+                size={22}
+                color={isActive ? colors.primary : '#71717A'}
+              />
               {tab.screen === 'Cart' && cartBadge > 0 && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{cartBadge > 9 ? '9+' : cartBadge}</Text>
@@ -42,6 +47,7 @@ export default function BottomTabBar({
             <Text style={[styles.label, isActive && styles.labelActive]} numberOfLines={1}>
               {tab.name}
             </Text>
+            {isActive && <View style={styles.activeDot} />}
           </TouchableOpacity>
         );
       })}
@@ -56,41 +62,56 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#EEE',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    borderTopColor: colors.borderWarm,
+    elevation: 12,
+    shadowColor: '#741343',
+    shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.08,
-    shadowRadius: 4,
+    shadowRadius: 8,
   },
   item: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 6,
+    paddingTop: 8,
+  },
+  iconContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
-    fontSize: 9,
-    fontWeight: '800',
-    marginTop: 4,
-    color: '#555',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 3,
+    color: '#71717A',
   },
   labelActive: {
-    color: '#D82B76',
+    color: colors.primary,
+    fontWeight: '900',
+  },
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary,
+    marginTop: 2,
   },
   badge: {
     position: 'absolute',
     right: -10,
-    top: -6,
-    backgroundColor: '#D82B76',
+    top: -5,
+    backgroundColor: colors.secondary,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 3,
+    borderWidth: 1,
+    borderColor: '#FFF',
   },
   badgeText: {
     color: '#FFF',

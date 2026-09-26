@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
 import { CartProvider } from './src/context/CartContext';
+import { WishlistProvider } from './src/context/WishlistContext';
 import { ToastProvider } from './src/context/ToastContext';
 import { LoadingProvider } from './src/context/LoadingContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -38,11 +39,13 @@ export default function App() {
     <SafeAreaProvider>
       <ToastProvider>
         <AuthProvider>
-          <CartProvider>
-            <LoadingProvider>
-              <MainApp />
-            </LoadingProvider>
-          </CartProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <LoadingProvider>
+                <MainApp />
+              </LoadingProvider>
+            </CartProvider>
+          </WishlistProvider>
         </AuthProvider>
       </ToastProvider>
     </SafeAreaProvider>

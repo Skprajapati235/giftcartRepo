@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Image, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Image,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { addReview, updateReview } from '../services/reviewService';
 import apiClient from '../api/apiClient';
-import { SafeScreen } from '../components/layout';
+import { SafeScreen, ScreenHeader } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import { colors } from '../constants/theme';
 
 export default function AddReviewScreen({ route, navigation }) {
   const { product, orderId, existingReview } = route.params;
@@ -21,7 +32,7 @@ export default function AddReviewScreen({ route, navigation }) {
       return;
     }
 
-    let result = await ImagePicker.launchImageLibraryAsync({
+    const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
@@ -51,7 +62,7 @@ export default function AddReviewScreen({ route, navigation }) {
       const filename = imageUri.split('/').pop();
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image`;
-      
+
       formData.append('file', { uri: imageUri, name: filename, type });
 
       try {
@@ -68,7 +79,7 @@ export default function AddReviewScreen({ route, navigation }) {
 
   const handleSubmit = async () => {
     if (!comment.trim()) {
-      Alert.alert('Error', 'Please enter a comment.');
+      Alert.alert('Feedback Needed', 'Please write a few words about your experience.');
       return;
     }
 
@@ -83,13 +94,13 @@ export default function AddReviewScreen({ route, navigation }) {
 
       if (existingReview) {
         await updateReview(existingReview._id, reviewPayload);
-        Alert.alert('Success', 'Your review has been updated!', [
-          { text: 'OK', onPress: () => navigation.goBack() }
+        Alert.alert('Review Updated', 'Your review has been updated successfully! ✨', [
+          { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       } else {
         await addReview(product._id, reviewPayload);
-        Alert.alert('Success', 'Your review has been submitted successfully!', [
-          { text: 'OK', onPress: () => navigation.goBack() }
+        Alert.alert('Thank You!', 'Your review has been submitted successfully! 🎉', [
+          { text: 'OK', onPress: () => navigation.goBack() },
         ]);
       }
     } catch (error) {
@@ -99,52 +110,66 @@ export default function AddReviewScreen({ route, navigation }) {
     }
   };
 
+  const getRatingLabel = (r) => {
+    switch (r) {
+      case 5: return 'Loved it! Exceptional 💖';
+      case 4: return 'Very Good! Recommended 👍';
+      case 3: return 'Average / Met expectations 🙂';
+      case 2: return 'Below expectations 🙁';
+      default: return 'Needs improvement 😞';
+    }
+  };
+
   return (
     <SafeScreen style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Write Review</Text>
-        <TouchableOpacity onPress={handleSubmit} disabled={loading}>
-          {loading ? <ActivityIndicator size="small" color="#D82B76" /> : <Text style={styles.submitBtn}>Submit</Text>}
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={existingReview ? 'Edit Review' : 'Write a Review'}
+        subtitle="Share your festive experience"
+        onBack={() => navigation.goBack()}
+        border
+      />
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]}>
-        <View style={styles.productInfo}>
-          <Image source={{ uri: product.image }} style={styles.productImage} />
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottom + 30 }]}>
+        {/* Product Preview Card */}
+        <View style={styles.productCard}>
+          <Image source={{ uri: product?.image }} style={styles.productImage} />
           <View style={styles.productText}>
-            <Text style={styles.productName}>{product.name}</Text>
-            <Text style={styles.productPrice}>₹{product.salePrice || product.price}</Text>
+            <Text style={styles.productName} numberOfLines={2}>{product?.name}</Text>
+            <Text style={styles.productPrice}>₹{product?.salePrice || product?.price}</Text>
           </View>
         </View>
 
-        <View style={styles.divider} />
-
-        <View style={styles.ratingSection}>
-          <Text style={styles.sectionTitle}>Rating</Text>
+        {/* Rating Stars Card */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>How would you rate this gift?</Text>
           <View style={styles.starsContainer}>
             {[1, 2, 3, 4, 5].map((s) => (
-              <TouchableOpacity key={s} onPress={() => setRating(s)}>
-                <Ionicons 
-                  name={s <= rating ? "star" : "star-outline"} 
-                  size={40} 
-                  color={s <= rating ? "#FFD700" : "#E0E0E0"} 
+              <TouchableOpacity
+                key={s}
+                onPress={() => setRating(s)}
+                activeOpacity={0.7}
+                style={styles.starTouch}
+              >
+                <Ionicons
+                  name={s <= rating ? 'star' : 'star-outline'}
+                  size={38}
+                  color={s <= rating ? colors.brandGold : '#CBD5E1'}
                 />
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={styles.ratingLabel}>
-            {rating === 5 ? 'Excellent' : rating === 4 ? 'Very Good' : rating === 3 ? 'Good' : rating === 2 ? 'Fair' : 'Poor'}
-          </Text>
+          <View style={styles.ratingLabelBadge}>
+            <Text style={styles.ratingLabelText}>{getRatingLabel(rating)}</Text>
+          </View>
         </View>
 
-        <View style={styles.reviewSection}>
+        {/* Comment Section */}
+        <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Your Review</Text>
           <TextInput
             style={styles.input}
-            placeholder="Share your experience with this product..."
+            placeholder="Tell us about the quality, taste, packing, and overall gifting experience..."
+            placeholderTextColor="#94A3B8"
             multiline
             numberOfLines={5}
             value={comment}
@@ -153,36 +178,52 @@ export default function AddReviewScreen({ route, navigation }) {
           />
         </View>
 
-        <View style={styles.imageSection}>
+        {/* Photos Section */}
+        <View style={styles.sectionCard}>
           <View style={styles.imageHeader}>
-            <Text style={styles.sectionTitle}>Add Photos</Text>
+            <Text style={styles.sectionTitle}>Add Photos (Optional)</Text>
             <Text style={styles.imageCount}>{images.length}/5</Text>
           </View>
+
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageList}>
-            <TouchableOpacity style={styles.addImgBtn} onPress={pickImage}>
-              <Feather name="camera" size={24} color="#666" />
-              <Text style={styles.addImgText}>Add</Text>
-            </TouchableOpacity>
+            {images.length < 5 && (
+              <TouchableOpacity style={styles.addImgBtn} onPress={pickImage} activeOpacity={0.75}>
+                <Feather name="camera" size={22} color={colors.primary} />
+                <Text style={styles.addImgText}>Add Photo</Text>
+              </TouchableOpacity>
+            )}
+
             {images.map((uri, index) => (
               <View key={index} style={styles.imageWrapper}>
                 <Image source={{ uri }} style={styles.pickedImage} />
-                <TouchableOpacity style={styles.removeBtn} onPress={() => removeImage(index)}>
-                  <Ionicons name="close-circle" size={20} color="#F44336" />
+                <TouchableOpacity
+                  style={styles.removeBtn}
+                  onPress={() => removeImage(index)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="close-circle" size={20} color="#DC2626" />
                 </TouchableOpacity>
               </View>
             ))}
           </ScrollView>
         </View>
 
-        <TouchableOpacity 
-          style={[styles.mainSubmitBtn, loading && styles.disabledBtn]} 
+        {/* Submit Button */}
+        <TouchableOpacity
+          style={[styles.mainSubmitBtn, loading && styles.disabledBtn]}
           onPress={handleSubmit}
           disabled={loading}
+          activeOpacity={0.88}
         >
           {loading ? (
-            <ActivityIndicator color="#FFF" />
+            <ActivityIndicator color="#FFF" size="small" />
           ) : (
-            <Text style={styles.mainSubmitBtnText}>{existingReview ? 'Update Review' : 'Submit Review'}</Text>
+            <View style={styles.submitBtnContent}>
+              <Text style={styles.mainSubmitBtnText}>
+                {existingReview ? 'Update My Review' : 'Submit Review'}
+              </Text>
+              <Feather name="check-circle" size={18} color={colors.brandGold} />
+            </View>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -191,33 +232,172 @@ export default function AddReviewScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFF' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 15, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-  title: { fontSize: 18, fontWeight: '700' },
-  submitBtn: { color: '#D82B76', fontWeight: '800', fontSize: 16 },
-  content: { padding: 20 },
-  productInfo: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  productImage: { width: 60, height: 60, borderRadius: 8, backgroundColor: '#F5F5F5' },
-  productText: { marginLeft: 15 },
-  productName: { fontSize: 16, fontWeight: '700', color: '#212121' },
-  productPrice: { fontSize: 14, color: '#666', marginTop: 2 },
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginBottom: 20 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#333', marginBottom: 10 },
-  ratingSection: { alignItems: 'center', marginBottom: 30 },
-  starsContainer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 10 },
-  ratingLabel: { fontSize: 14, fontWeight: '600', color: '#666' },
-  reviewSection: { marginBottom: 30 },
-  input: { borderWidth: 1, borderColor: '#DDD', borderRadius: 12, padding: 15, minHeight: 120, fontSize: 16, color: '#333', backgroundColor: '#FAFAFA' },
-  imageSection: { marginBottom: 30 },
-  imageHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  imageCount: { color: '#999', fontSize: 12 },
-  imageList: { flexDirection: 'row' },
-  addImgBtn: { width: 80, height: 80, borderRadius: 12, borderStyle: 'dashed', borderWidth: 1, borderColor: '#999', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  addImgText: { fontSize: 12, color: '#666', marginTop: 4 },
-  imageWrapper: { position: 'relative', marginRight: 10 },
-  pickedImage: { width: 80, height: 80, borderRadius: 12 },
-  removeBtn: { position: 'absolute', top: -5, right: -5, backgroundColor: '#FFF', borderRadius: 10 },
-  mainSubmitBtn: { backgroundColor: '#D82B76', paddingVertical: 18, borderRadius: 15, alignItems: 'center', marginTop: 20, marginBottom: 20, shadowColor: '#D82B76', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  mainSubmitBtnText: { color: '#FFF', fontSize: 18, fontWeight: '800' },
-  disabledBtn: { backgroundColor: '#E0E0E0', shadowOpacity: 0, elevation: 0 }
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundWarm,
+  },
+  content: {
+    padding: 16,
+  },
+  productCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  productImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: colors.backgroundCream,
+  },
+  productText: {
+    marginLeft: 14,
+    flex: 1,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+    lineHeight: 19,
+  },
+  productPrice: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: colors.brandBerry,
+    marginTop: 4,
+  },
+  sectionCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 12,
+  },
+  starsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  starTouch: {
+    padding: 4,
+  },
+  ratingLabelBadge: {
+    alignSelf: 'center',
+    backgroundColor: colors.backgroundRose,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.borderRose,
+  },
+  ratingLabelText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.brandBerry,
+  },
+  input: {
+    borderWidth: 1.5,
+    borderColor: colors.borderWarm,
+    borderRadius: 14,
+    padding: 14,
+    minHeight: 110,
+    fontSize: 14,
+    color: '#1E293B',
+    backgroundColor: '#FFFDFB',
+    lineHeight: 20,
+  },
+  imageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  imageCount: {
+    color: '#94A3B8',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  imageList: {
+    flexDirection: 'row',
+  },
+  addImgBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 14,
+    borderStyle: 'dashed',
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+    backgroundColor: colors.backgroundRose,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  addImgText: {
+    fontSize: 11,
+    color: colors.primary,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  imageWrapper: {
+    position: 'relative',
+    marginRight: 10,
+  },
+  pickedImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+  },
+  removeBtn: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+  },
+  mainSubmitBtn: {
+    backgroundColor: colors.brandBerry,
+    paddingVertical: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 6,
+    shadowColor: colors.brandBerry,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  disabledBtn: {
+    opacity: 0.6,
+  },
+  submitBtnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  mainSubmitBtnText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
 });
+

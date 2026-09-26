@@ -23,6 +23,7 @@ import { useToast } from '../context/ToastContext';
 import { SafeScreen, ScreenHeader, StickyBottomBar } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
 import useDeliveryHours from '../hooks/useDeliveryHours';
+import { colors, shadows } from '../constants/theme';
 
 export default function CheckoutScreen({ navigation, route }) {
   // cartItems + totals come straight from the backend cart (see
@@ -33,6 +34,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const { removeFromCart } = useCart();
   const { showToast } = useToast();
   const deliveryHours = useDeliveryHours();
+  const isOrderBlocked = Boolean(deliveryHours.isCurrentlyRestricted || deliveryHours.blockOrders);
   const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [paymentData, setPaymentData] = useState(null);
@@ -47,6 +49,7 @@ export default function CheckoutScreen({ navigation, route }) {
   const [activeCoupons, setActiveCoupons] = useState([]);
   const [showCouponModal, setShowCouponModal] = useState(false);
   const paymentHandledRef = useRef(false);
+  const createdOrderIdRef = useRef(null);
   const { bottom } = useLayoutInsets();
 
   // Shipping Address Form State
@@ -180,10 +183,10 @@ export default function CheckoutScreen({ navigation, route }) {
   };
 
   const handleCheckout = async () => {
-    if (deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders) {
+    if (isOrderBlocked) {
       Alert.alert(
         '🌙 Night Delivery Paused',
-        deliveryHours.message || `Orders cannot be placed right now. Delivery will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}.`,
+        deliveryHours.message || `Orders cannot be placed right now. Delivery will resume after ${deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'}.`,
         [{ text: 'OK' }]
       );
       return;
@@ -241,13 +244,20 @@ export default function CheckoutScreen({ navigation, route }) {
       };
 
       const res = await orderService.createOrder(orderData);
+      const orderId = res?.order?._id || res?.data?._id || res?._id;
+      createdOrderIdRef.current = orderId;
 
       if (paymentMethod === 'COD') {
+        // Trigger confirmation email (same as giftfestive website)
+        if (orderId) {
+          orderService.sendOrderEmail(orderId);
+        }
+
         // For COD, directly mark as success
         await Promise.all(cartItems.map((item) => removeFromCart(item)));
 
-        showToast('Order placed successfully with COD!', 'success');
-        setTimeout(() => navigation.navigate('Home'), 1500);
+        showToast('🎉 Order placed successfully! Check your email for confirmation.', 'success');
+        setTimeout(() => navigation.navigate('MyOrders'), 1500);
       } else {
         const razorpayKey = res.razorpayKeyId;
         if (!razorpayKey || !res.razorpayOrder?.id) {
@@ -262,13 +272,22 @@ export default function CheckoutScreen({ navigation, route }) {
           name: 'GiftFestive',
           description: 'Payment for your order',
           user: {
-            name: user.name,
-            email: user.email,
-          }
+            name: user?.name || finalShippingInfo?.fullName || 'Customer',
+            email: user?.email || '',
+            phone: finalShippingInfo?.phone || user?.mobileNumber || user?.phone || '',
+          },
         });
         setShowWebView(true);
       }
     } catch (error) {
+      if (error?.response?.data?.isDeliveryRestricted || error?.response?.status === 403) {
+        Alert.alert(
+          '🌙 Night Delivery Paused',
+          error.response?.data?.message || deliveryHours.message || `Orders cannot be placed during night hours. Delivery resumes after ${deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'}.`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
       const errorMsg = error?.message || 'Could not place order';
       showToast(errorMsg, 'error');
     } finally {
@@ -292,16 +311,22 @@ export default function CheckoutScreen({ navigation, route }) {
       setShowWebView(false);
       setLoading(true);
       try {
-        await orderService.verifyPayment({
+        const verifyRes = await orderService.verifyPayment({
           razorpay_order_id: data.razorpay_order_id,
           razorpay_payment_id: data.razorpay_payment_id,
           razorpay_signature: data.razorpay_signature,
         });
 
+        // Trigger confirmation email (same as giftfestive website)
+        const finalOrderId = verifyRes?.orderId || createdOrderIdRef.current;
+        if (finalOrderId) {
+          orderService.sendOrderEmail(finalOrderId);
+        }
+
         await Promise.all(cartItems.map((item) => removeFromCart(item)));
 
-        showToast('Order placed successfully!', 'success');
-        setTimeout(() => navigation.navigate('Home'), 1500);
+        showToast('🎉 Payment successful! Order placed. Check your email for confirmation.', 'success');
+        setTimeout(() => navigation.navigate('MyOrders'), 1500);
       } catch (err) {
         const msg =
           err.response?.data?.message ||
@@ -312,6 +337,13 @@ export default function CheckoutScreen({ navigation, route }) {
       } finally {
         setLoading(false);
       }
+      return;
+    }
+
+    if (data.status === 'failed') {
+      if (paymentHandledRef.current) return;
+      setShowWebView(false);
+      showToast(data.error || 'Payment failed', 'error');
       return;
     }
 
@@ -326,41 +358,60 @@ export default function CheckoutScreen({ navigation, route }) {
     <!DOCTYPE html>
     <html>
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <style>
+          body { margin: 0; padding: 0; background-color: #FAFAFA; display: flex; align-items: center; justify-content: center; height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+          .loader { text-align: center; color: #D82B76; font-size: 16px; font-weight: 600; }
+        </style>
       </head>
       <body>
+        <div class="loader">Opening secure payment gateway...</div>
         <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
         <script>
           window.__rzpPaymentDone = false;
           var options = {
-            "key": "${paymentData.key}",
-            "amount": "${paymentData.amount}",
+            "key": ${JSON.stringify(paymentData.key)},
+            "amount": ${JSON.stringify(paymentData.amount)},
             "currency": "INR",
-            "name": "${paymentData.name}",
-            "description": "${paymentData.description}",
-            "order_id": "${paymentData.orderId}",
+            "name": ${JSON.stringify(paymentData.name)},
+            "description": ${JSON.stringify(paymentData.description)},
+            "order_id": ${JSON.stringify(paymentData.orderId)},
+            "theme": { "color": "#D82B76" },
+            "prefill": {
+              "name": ${JSON.stringify(paymentData.user.name || '')},
+              "email": ${JSON.stringify(paymentData.user.email || '')},
+              "contact": ${JSON.stringify(paymentData.user.phone || '')}
+            },
             "handler": function (response) {
               window.__rzpPaymentDone = true;
-              window.ReactNativeWebView.postMessage(JSON.stringify({
-                status: 'success',
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature
-              }));
-            },
-            "prefill": {
-              "name": "${paymentData.user.name}",
-              "email": "${paymentData.user.email}"
+              if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  status: 'success',
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_signature: response.razorpay_signature
+                }));
+              }
             },
             "modal": {
               "ondismiss": function() {
                 if (!window.__rzpPaymentDone) {
-                  window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'cancelled' }));
+                  if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'cancelled' }));
+                  }
                 }
               }
             }
           };
           var rzp1 = new Razorpay(options);
+          rzp1.on('payment.failed', function(response) {
+            if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+              window.ReactNativeWebView.postMessage(JSON.stringify({
+                status: 'failed',
+                error: (response && response.error && response.error.description) ? response.error.description : 'Payment failed'
+              }));
+            }
+          });
           rzp1.open();
         </script>
       </body>
@@ -376,6 +427,10 @@ export default function CheckoutScreen({ navigation, route }) {
           source={{ html: razorpayHtml }}
           onMessage={onMessage}
           style={{ flex: 1 }}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          mixedContentMode="always"
         />
       </SafeScreen>
     );
@@ -387,11 +442,13 @@ export default function CheckoutScreen({ navigation, route }) {
 
       {deliveryHours.isCurrentlyRestricted && (
         <View style={styles.checkoutWarningBanner}>
-          <Feather name="moon" size={16} color="#991B1B" />
+          <Text style={{ fontSize: 20 }}>🌙</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.checkoutWarningTitle}>Night Delivery Paused</Text>
+            <Text style={styles.checkoutWarningTitle}>
+              Night Delivery Paused — Resumes {deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'}
+            </Text>
             <Text style={styles.checkoutWarningDesc}>
-              {deliveryHours.message || `Orders will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}.`}
+              Checkout and order placement are temporarily paused during night hours. You can review items and prepare your address. Deliveries resume after {deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'}.
             </Text>
           </View>
         </View>
@@ -728,18 +785,19 @@ export default function CheckoutScreen({ navigation, route }) {
         <TouchableOpacity
           style={[
             styles.payBtn,
-            loading && { opacity: 0.7 },
-            deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders && styles.payBtnPaused,
+            (loading || isOrderBlocked) && { opacity: 0.85 },
+            isOrderBlocked && styles.payBtnPaused,
           ]}
           onPress={handleCheckout}
-          disabled={loading}
+          disabled={loading || isOrderBlocked}
+          activeOpacity={0.85}
         >
           {loading ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.payBtnText}>
-              {deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders
-                ? `Delivery Paused (Resumes ${deliveryHours.formattedEnd || '7:00 AM'})`
+            <Text style={[styles.payBtnText, isOrderBlocked && styles.payBtnTextPaused]}>
+              {isOrderBlocked
+                ? `🌙 Delivery Paused (Resumes ${deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'})`
                 : (paymentMethod === 'COD' ? 'Place Order (Cash on Delivery)' : 'Pay Now ₹' + finalTotal)}
             </Text>
           )}
@@ -750,101 +808,155 @@ export default function CheckoutScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
   scrollFlex: { flex: 1 },
   locationBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2E7D32',
+    backgroundColor: colors.brandCreamAlt,
+    borderWidth: 1,
+    borderColor: colors.borderRose,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 7,
+    borderRadius: 10,
     gap: 5,
   },
   locationBtnText: {
-    color: '#FFF',
+    color: colors.primary,
     fontSize: 11,
     fontWeight: '800',
   },
-  title: { fontSize: 20, fontWeight: '800', color: '#000' },
-  content: { padding: 20 },
-  section: { marginBottom: 25 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#555', marginBottom: 15 },
-  addressForm: { gap: 12 },
+  title: { fontSize: 20, fontWeight: '900', color: colors.brandBerry },
+  content: { padding: 16 },
+  section: { marginBottom: 20 },
+  sectionTitle: { fontSize: 15, fontWeight: '900', color: colors.brandBerry, marginBottom: 12 },
+  addressForm: { gap: 10 },
   input: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#EEE',
+    borderColor: colors.borderWarm,
     borderRadius: 12,
-    padding: 15,
-    fontSize: 14,
-    color: '#333',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 13.5,
+    color: colors.textDark,
   },
-  summaryCard: { backgroundColor: '#FFF', borderRadius: 15, padding: 20, elevation: 2 },
-  orderItem: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  summaryCard: {
+    backgroundColor: colors.brandCream,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    ...shadows.sm,
+  },
+  orderItem: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   orderItemLeft: { flex: 1, paddingRight: 10 },
-  itemName: { fontSize: 14, color: '#666', marginBottom: 4, fontWeight: '700' },
-  itemMeta: { fontSize: 12, color: '#888', marginBottom: 2 },
-  itemPrice: { fontSize: 14, fontWeight: '700', color: '#333' },
-  divider: { height: 1, backgroundColor: '#EEE', marginVertical: 15 },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  summaryLabel: { fontSize: 14, color: '#555' },
-  summaryValue: { fontSize: 14, fontWeight: '700', color: '#111' },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  totalLabel: { fontSize: 18, fontWeight: '800', color: '#000' },
-  totalPrice: { fontSize: 18, fontWeight: '800', color: '#D82B76' },
-  paymentOptions: { flexDirection: 'row', gap: 15 },
-  paymentOption: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 15, borderWidth: 1, borderColor: '#DDD', borderRadius: 10, backgroundColor: '#FFF' },
-  selectedOption: { borderColor: '#D82B76', backgroundColor: '#FFF5F8' },
+  itemName: { fontSize: 13.5, color: colors.textDark, marginBottom: 3, fontWeight: '800' },
+  itemMeta: { fontSize: 11, color: colors.textMuted, marginBottom: 2 },
+  itemPrice: { fontSize: 13.5, fontWeight: '800', color: colors.brandBerry },
+  divider: { height: 1, backgroundColor: colors.borderWarm, marginVertical: 12 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  summaryLabel: { fontSize: 12.5, color: colors.textMuted, fontWeight: '600' },
+  summaryValue: { fontSize: 13, fontWeight: '800', color: colors.textDark },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  totalLabel: { fontSize: 16, fontWeight: '900', color: colors.brandBerry },
+  totalPrice: { fontSize: 18, fontWeight: '900', color: colors.brandBerry },
+  paymentOptions: { flexDirection: 'row', gap: 12 },
+  paymentOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: colors.borderWarm,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+  },
+  selectedOption: { borderColor: colors.brandBerry, backgroundColor: colors.brandCreamAlt },
   disabledPaymentOption: { opacity: 0.5, backgroundColor: '#F9F9F9' },
-  paymentText: { fontSize: 14, fontWeight: '600', color: '#666', marginLeft: 8 },
+  paymentText: { fontSize: 13, fontWeight: '700', color: colors.textDark, marginLeft: 8 },
   disabledText: { color: '#AAA' },
-  selectedText: { color: '#D82B76' },
-  codNote: { fontSize: 12, color: '#888', marginTop: 5, fontStyle: 'italic' },
-  payBtn: { backgroundColor: '#D82B76', borderRadius: 12, paddingVertical: 18, alignItems: 'center', elevation: 3 },
-  payBtnText: { color: '#FFF', fontSize: 18, fontWeight: '800' },
+  selectedText: { color: colors.brandBerry, fontWeight: '900' },
+  codNote: { fontSize: 11, color: colors.textMuted, marginTop: 6, fontStyle: 'italic' },
+  payBtn: {
+    backgroundColor: colors.brandBerry,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    ...shadows.button,
+  },
+  payBtnText: { color: '#FFF', fontSize: 15, fontWeight: '900' },
   // Coupon Styles
-  couponContainer: { backgroundColor: '#FFF', borderRadius: 15, padding: 15, borderStyle: 'dashed', borderWidth: 1, borderColor: '#DDD' },
-  couponInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9F9F9', borderRadius: 12, height: 55 },
-  couponInput: { flex: 1, paddingHorizontal: 12, fontSize: 14, fontWeight: '700', color: '#000' },
-  applyBtn: { paddingHorizontal: 20, height: '100%', justifyContent: 'center' },
-  applyBtnText: { color: '#D82B76', fontWeight: '800', fontSize: 13 },
-  removeCoupon: { paddingHorizontal: 15 },
-  appliedMsg: { marginTop: 10, color: '#16a34a', fontSize: 12, fontWeight: '700', marginLeft: 5 },
-  viewAllCoupons: { marginTop: 10, color: '#D82B76', fontSize: 12, fontWeight: '800', textDecorationLine: 'underline', marginLeft: 5 },
+  couponContainer: {
+    backgroundColor: colors.brandCream,
+    borderRadius: 16,
+    padding: 14,
+    borderStyle: 'dashed',
+    borderWidth: 1.5,
+    borderColor: colors.borderWarm,
+  },
+  couponInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    height: 48,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+  },
+  couponInput: { flex: 1, paddingHorizontal: 12, fontSize: 13, fontWeight: '700', color: colors.textDark },
+  applyBtn: { paddingHorizontal: 16, height: '100%', justifyContent: 'center' },
+  applyBtnText: { color: colors.brandBerry, fontWeight: '900', fontSize: 12 },
+  removeCoupon: { paddingHorizontal: 14 },
+  appliedMsg: { marginTop: 8, color: '#16a34a', fontSize: 11.5, fontWeight: '800', marginLeft: 4 },
+  viewAllCoupons: { marginTop: 8, color: colors.primary, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline', marginLeft: 4 },
   // Modal Styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, maxHeight: '80%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 20, fontWeight: '900', color: '#111' },
+  modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, maxHeight: '80%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 18, fontWeight: '900', color: colors.brandBerry },
   couponItemNew: {
-    borderRadius: 20, overflow: 'hidden', borderStyle: 'solid',
-    borderWidth: 1, borderColor: '#EEE', backgroundColor: '#FFF', marginBottom: 15,
-    elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    backgroundColor: '#FFF',
+    marginBottom: 12,
+    ...shadows.sm,
   },
-  modalCouponImg: { width: '100%', height: 120, resizeMode: 'cover' },
-  couponDetailBox: { padding: 15 },
-  couponItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  couponTag: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFF0F5', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
-  couponTagText: { color: '#D82B76', fontWeight: '800', fontSize: 12, letterSpacing: 0.5 },
-  couponValue: { fontSize: 16, fontWeight: '900', color: '#111' },
-  couponMinOrderModal: { fontSize: 11, color: '#666', fontWeight: '600', marginBottom: 15 },
-  modalApplyBtn: { backgroundColor: '#D82B76', paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
-  modalApplyBtnText: { color: '#FFF', fontWeight: '800', fontSize: 13 },
+  modalCouponImg: { width: '100%', height: 110, resizeMode: 'cover' },
+  couponDetailBox: { padding: 14 },
+  couponItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  couponTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.brandCreamAlt,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.borderRose,
+  },
+  couponTagText: { color: colors.primary, fontWeight: '900', fontSize: 11, letterSpacing: 0.5 },
+  couponValue: { fontSize: 14, fontWeight: '900', color: colors.brandBerry },
+  couponMinOrderModal: { fontSize: 10.5, color: colors.textMuted, fontWeight: '600', marginBottom: 12 },
+  modalApplyBtn: { backgroundColor: colors.brandBerry, paddingVertical: 10, borderRadius: 10, alignItems: 'center', ...shadows.button },
+  modalApplyBtnText: { color: '#FFF', fontWeight: '900', fontSize: 12 },
   // Saved Address Card
   savedAddressCard: {
-    backgroundColor: '#F0FFF4',
+    backgroundColor: colors.brandCream,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#BBF7D0',
-    padding: 16,
+    borderColor: colors.borderWarm,
+    padding: 14,
     marginBottom: 4,
   },
   savedAddressTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   savedAddressBadge: {
     flexDirection: 'row',
@@ -852,53 +964,62 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   savedAddressBadgeText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#16A34A',
+    fontSize: 11,
+    fontWeight: '900',
+    color: '#16a34a',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   changeAddressBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
     borderWidth: 1,
-    borderColor: '#D82B76',
+    borderColor: colors.borderRose,
+    backgroundColor: colors.brandCreamAlt,
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
-  changeAddressBtnText: { color: '#D82B76', fontSize: 12, fontWeight: '800' },
-  savedName: { fontSize: 15, fontWeight: '900', color: '#111', marginBottom: 2 },
-  savedPhone: { fontSize: 13, color: '#555', fontWeight: '600', marginBottom: 6 },
-  savedAddr: { fontSize: 13, color: '#333', lineHeight: 20 },
-  savedPin: { fontSize: 12, color: '#555', fontWeight: '700', marginTop: 4 },
+  changeAddressBtnText: { color: colors.brandBerry, fontSize: 11, fontWeight: '800' },
+  savedName: { fontSize: 14, fontWeight: '900', color: colors.textDark, marginBottom: 2 },
+  savedPhone: { fontSize: 12, color: colors.textMuted, fontWeight: '600', marginBottom: 4 },
+  savedAddr: { fontSize: 12.5, color: colors.textDark, lineHeight: 18 },
+  savedPin: { fontSize: 11.5, color: colors.brandBerry, fontWeight: '800', marginTop: 4 },
   payBtnPaused: {
     backgroundColor: '#475569',
   },
   checkoutWarningBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1.5,
-    borderColor: '#FECACA',
+    backgroundColor: '#21091a',
     borderRadius: 14,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginHorizontal: 15,
+    paddingVertical: 12,
+    marginHorizontal: 16,
     marginTop: 10,
     marginBottom: 4,
-    gap: 10,
+    gap: 12,
+    borderWidth: 0.8,
+    borderColor: 'rgba(255, 209, 102, 0.35)',
   },
   checkoutWarningTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#991B1B',
+    fontSize: 12.5,
+    fontWeight: '900',
+    color: '#FFD166',
   },
   checkoutWarningDesc: {
-    fontSize: 11,
-    color: '#B91C1C',
+    fontSize: 10.5,
+    color: '#F3F4F6',
     marginTop: 2,
-    lineHeight: 16,
+    lineHeight: 15,
+  },
+  payBtnPaused: {
+    backgroundColor: '#3d0f2b',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 209, 102, 0.35)',
+  },
+  payBtnTextPaused: {
+    color: '#FFD166',
+    fontSize: 13,
   },
 });

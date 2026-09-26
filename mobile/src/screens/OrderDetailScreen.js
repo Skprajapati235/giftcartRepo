@@ -4,6 +4,7 @@ import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeScreen, ScreenHeader } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
 import orderService from '../services/orderService';
+import { colors } from '../constants/theme';
 
 export default function OrderDetailScreen({ route, navigation }) {
   const [order, setOrder] = useState(route.params.order);
@@ -36,11 +37,11 @@ export default function OrderDetailScreen({ route, navigation }) {
 
   const getStatusConfig = (status) => {
     switch (status) {
-      case 'Delivered':  return { color: '#00C853', icon: 'check-circle',   bg: '#E8F5E9' };
-      case 'Cancelled':  return { color: '#FF3D00', icon: 'close-circle',   bg: '#FBE9E7' };
-      case 'Processing': return { color: '#2979FF', icon: 'clock-outline',  bg: '#E3F2FD' };
-      case 'Shipped':    return { color: '#FF9100', icon: 'truck-delivery', bg: '#FFF3E0' };
-      default:           return { color: '#9E9E9E', icon: 'help-circle',    bg: '#F5F5F5' };
+      case 'Delivered':  return { color: '#16A34A', icon: 'check-circle',   bg: '#F0FDF4', border: '#BBF7D0' };
+      case 'Cancelled':  return { color: '#DC2626', icon: 'close-circle',   bg: '#FEF2F2', border: '#FECACA' };
+      case 'Processing': return { color: colors.brandBerry, icon: 'clock-outline',  bg: colors.backgroundRose, border: colors.borderRose };
+      case 'Shipped':    return { color: '#D97706', icon: 'truck-delivery', bg: '#FFFBEB', border: '#FDE68A' };
+      default:           return { color: '#64748B', icon: 'help-circle',    bg: '#F8FAFC', border: '#E2E8F0' };
     }
   };
 
@@ -51,30 +52,34 @@ export default function OrderDetailScreen({ route, navigation }) {
 
   return (
     <SafeScreen style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <ScreenHeader title="Order Details" onBack={() => navigation.goBack()} border />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
+      <ScreenHeader
+        title="Order Details"
+        subtitle={`ID: #${order._id.slice(-8).toUpperCase()}`}
+        onBack={() => navigation.goBack()}
+        border
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.brandBerry]} />}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: bottom + 24 }]}
       >
-
         {/* Status Hero */}
         <View style={styles.heroCard}>
-          <View style={[styles.statusIconBox, { backgroundColor: statusConfig.bg }]}>
-            <MaterialCommunityIcons name={statusConfig.icon} size={32} color={statusConfig.color} />
+          <View style={[styles.statusIconBox, { backgroundColor: statusConfig.bg, borderColor: statusConfig.border }]}>
+            <MaterialCommunityIcons name={statusConfig.icon} size={30} color={statusConfig.color} />
           </View>
           <View style={styles.heroInfo}>
             <Text style={[styles.heroStatusText, { color: statusConfig.color }]}>Order {order.status}</Text>
-            <Text style={styles.heroIdText}>#{order._id.slice(-8).toUpperCase()}</Text>
-            <Text style={styles.heroDate}>{new Date(order.createdAt).toDateString()}</Text>
+            <Text style={styles.heroIdText}>Order #{order._id.slice(-8).toUpperCase()}</Text>
+            <Text style={styles.heroDate}>Placed on {new Date(order.createdAt).toDateString()}</Text>
           </View>
         </View>
 
         {/* Tracking Timeline */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionHeader}>Tracking</Text>
+          <Text style={styles.sectionHeader}>Tracking Timeline</Text>
           <View style={styles.timelineContainer}>
             {steps.map((step, index) => {
               const isCompleted = currentStepIndex >= index || order.status === 'Delivered';
@@ -109,7 +114,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                       {getStepDate(step) && <Text style={styles.timelineTime}>{getStepDate(step)}</Text>}
                     </View>
                     <Text style={styles.timelineStepDesc}>
-                      {isCompleted ? `Your order has been ${isCancelled ? 'cancelled' : step.toLowerCase()}` : 'Pending'}
+                      {isCompleted ? `Your order has been ${isCancelled ? 'cancelled' : step.toLowerCase()}` : 'Pending update'}
                     </Text>
                   </View>
                 </View>
@@ -123,7 +128,7 @@ export default function OrderDetailScreen({ route, navigation }) {
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionHeader}>Order Items</Text>
             <View style={styles.badgeCount}>
-              <Text style={styles.badgeCountText}>{order.items?.length || 0}</Text>
+              <Text style={styles.badgeCountText}>{order.items?.length || 0} ITEMS</Text>
             </View>
           </View>
 
@@ -134,42 +139,37 @@ export default function OrderDetailScreen({ route, navigation }) {
             return (
               <View key={index} style={[styles.itemRow, index === order.items.length - 1 && { borderBottomWidth: 0 }]}>
                 <View style={styles.productImageBox}>
-                  {product.image
-                    ? <Image source={{ uri: product.image }} style={styles.productImage} />
-                    : <Feather name="package" size={24} color="#DDD" />
-                  }
+                  {product.image ? (
+                    <Image source={{ uri: product.image }} style={styles.productImage} />
+                  ) : (
+                    <Feather name="package" size={24} color="#CBD5E1" />
+                  )}
                 </View>
                 <View style={styles.productInfo}>
-                  <Text style={styles.productName} numberOfLines={2}>{item.name || product.name || 'Gift Item'}</Text>
+                  <Text style={styles.productName} numberOfLines={2}>
+                    {item.name || product.name || 'Gift Item'}
+                  </Text>
 
                   {/* Variant + Eggless + Flavor Badges */}
                   <View style={{ flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                     {item.isEggless && (
                       <View style={styles.variantBadge}>
-                        <Text style={styles.variantBadgeText}>
-                          Eggless
-                        </Text>
+                        <Text style={styles.variantBadgeText}>Eggless</Text>
                       </View>
                     )}
                     {item.flavor && (
                       <View style={[styles.variantBadge, { backgroundColor: '#E0F2FE', borderColor: '#BAE6FD' }]}>
-                        <Text style={[styles.variantBadgeText, { color: '#0369A1' }]}>
-                          {item.flavor}
-                        </Text>
+                        <Text style={[styles.variantBadgeText, { color: '#0369A1' }]}>{item.flavor}</Text>
                       </View>
                     )}
                     {item.weight && (
-                      <View style={[styles.variantBadge, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0' }]}>
-                        <Text style={[styles.variantBadgeText, { color: '#64748B' }]}>
-                          {item.weight}
-                        </Text>
+                      <View style={[styles.variantBadge, { backgroundColor: colors.backgroundCream, borderColor: colors.borderWarm }]}>
+                        <Text style={[styles.variantBadgeText, { color: '#64748B' }]}>{item.weight}</Text>
                       </View>
                     )}
                     {item.flowerCount && (
-                      <View style={[styles.variantBadge, { backgroundColor: '#F1F5F9', borderColor: '#E2E8F0' }]}>
-                        <Text style={[styles.variantBadgeText, { color: '#64748B' }]}>
-                          {item.flowerCount}
-                        </Text>
+                      <View style={[styles.variantBadge, { backgroundColor: colors.backgroundCream, borderColor: colors.borderWarm }]}>
+                        <Text style={[styles.variantBadgeText, { color: '#64748B' }]}>{item.flowerCount}</Text>
                       </View>
                     )}
                   </View>
@@ -181,7 +181,7 @@ export default function OrderDetailScreen({ route, navigation }) {
 
                   {item.expectedDeliveryDate && (
                     <View style={styles.deliveryBadgeOrder}>
-                      <Feather name="truck" size={10} color="#D82B76" />
+                      <Feather name="truck" size={10} color={colors.primary} />
                       <Text style={styles.deliveryTextOrder}>Expected: {item.expectedDeliveryDate}</Text>
                     </View>
                   )}
@@ -190,9 +190,10 @@ export default function OrderDetailScreen({ route, navigation }) {
                     <TouchableOpacity
                       style={styles.reviewBtn}
                       onPress={() => navigation.navigate('AddReview', { product, orderId: order._id })}
+                      activeOpacity={0.8}
                     >
+                      <Feather name="star" size={12} color={colors.brandBerry} />
                       <Text style={styles.reviewBtnText}>Rate this product</Text>
-                      <Feather name="star" size={12} color="#D82B76" style={{ marginLeft: 4 }} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -203,7 +204,7 @@ export default function OrderDetailScreen({ route, navigation }) {
 
         {/* Payment + Shipping */}
         <View style={styles.horizontalRow}>
-          <View style={[styles.miniCard, { marginRight: 10, flex: 1.5 }]}>
+          <View style={[styles.miniCard, { marginRight: 10, flex: 1.4 }]}>
             <Text style={styles.miniTitle}>Shipping Address</Text>
             <Text style={styles.miniName}>{order.shippingAddress?.fullName}</Text>
             <Text style={styles.miniSubText}>
@@ -214,7 +215,7 @@ export default function OrderDetailScreen({ route, navigation }) {
               <Text style={styles.miniSubText}>Near {order.shippingAddress.landmark}</Text>
             )}
             <Text style={styles.miniSubText}>PIN: {order.shippingAddress?.pinCode}</Text>
-            <Text style={[styles.miniSubText, { marginTop: 4, color: '#1A1A1A', fontWeight: '700' }]}>
+            <Text style={[styles.miniSubText, { marginTop: 4, color: '#1E293B', fontWeight: '700' }]}>
               📞 {order.shippingAddress?.phone}
             </Text>
           </View>
@@ -222,14 +223,14 @@ export default function OrderDetailScreen({ route, navigation }) {
           <View style={styles.miniCard}>
             <Text style={styles.miniTitle}>Payment</Text>
             <View style={[styles.payBadge, order.paymentMethod === 'COD' ? styles.payBadgeCod : styles.payBadgeOnline]}>
-              <Text style={[styles.payBadgeText, order.paymentMethod === 'COD' ? { color: '#16A34A' } : { color: '#1D4ED8' }]}>
+              <Text style={[styles.payBadgeText, order.paymentMethod === 'COD' ? { color: '#16A34A' } : { color: '#2563EB' }]}>
                 {order.paymentMethod || 'Online'}
               </Text>
             </View>
             <Text style={styles.miniSubText2}>Grand Total</Text>
             <Text style={styles.totalPrice}>₹{order.totalAmount}</Text>
             {order.discountAmount > 0 && (
-              <Text style={styles.couponSaved}>Coupon saved ₹{order.discountAmount}</Text>
+              <Text style={styles.couponSaved}>Saved ₹{order.discountAmount}</Text>
             )}
           </View>
         </View>
@@ -242,7 +243,7 @@ export default function OrderDetailScreen({ route, navigation }) {
         >
           <View style={styles.supportHelpLeft}>
             <View style={styles.supportIconBox}>
-              <Feather name="headphones" size={20} color="#D82B76" />
+              <Feather name="headphones" size={20} color={colors.brandBerry} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.supportHelpTitle}>Need Help with this Order?</Text>
@@ -251,91 +252,327 @@ export default function OrderDetailScreen({ route, navigation }) {
           </View>
           <Feather name="chevron-right" size={20} color="#94A3B8" />
         </TouchableOpacity>
-
       </ScrollView>
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FBFCFE' },
-  scrollContent: { padding: 15 },
-
-  heroCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF',
-    padding: 20, borderRadius: 24, marginBottom: 16,
-    elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8,
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundWarm,
   },
-  statusIconBox: { width: 60, height: 60, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  heroInfo: { marginLeft: 15 },
-  heroStatusText: { fontSize: 20, fontWeight: '900' },
-  heroIdText: { fontSize: 12, color: '#94A3B8', marginTop: 2, fontWeight: '700', fontFamily: 'monospace' },
-  heroDate: { fontSize: 11, color: '#CBD5E1', marginTop: 2 },
-
-  sectionCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 16, elevation: 1 },
-  sectionHeader: { fontSize: 16, fontWeight: '800', color: '#1A1A1A', marginBottom: 16 },
-  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  badgeCount: { backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
-  badgeCountText: { fontSize: 12, fontWeight: '800', color: '#64748B' },
-
-  timelineContainer: { marginLeft: 5 },
-  timelineItem: { flexDirection: 'row', minHeight: 65 },
-  timelineLeft: { alignItems: 'center', width: 24 },
-  timelineDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: '#E2E8F0', zIndex: 2, justifyContent: 'center', alignItems: 'center' },
-  dotActive: { backgroundColor: '#00C853' },
-  timelineLine: { width: 2, flex: 1, backgroundColor: '#E2E8F0', marginVertical: 2 },
-  lineActive: { backgroundColor: '#00C853' },
-  timelineRight: { marginLeft: 15, flex: 1, paddingBottom: 10 },
-  timelineStepTitle: { fontSize: 14, fontWeight: '700', color: '#94A3B8' },
-  textActive: { color: '#1A1A1A' },
-  timelineTime: { fontSize: 9, color: '#2E7D32', fontWeight: '800' },
-  timelineStepDesc: { fontSize: 12, color: '#94A3B8', marginTop: 3 },
-
-  itemRow: { flexDirection: 'row', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' },
-  productImageBox: { width: 70, height: 70, borderRadius: 16, backgroundColor: '#F8FAFC', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' },
-  productImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  productInfo: { marginLeft: 14, flex: 1 },
-  productName: { fontSize: 14, fontWeight: '700', color: '#1E293B', lineHeight: 20 },
-
-  variantBadge: { backgroundColor: '#FFF0F5', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: '#FECDD3', alignSelf: 'flex-start', marginTop: 4 },
-  variantBadgeText: { fontSize: 11, fontWeight: '800', color: '#D82B76' },
-
-  itemMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
-  productSub: { fontSize: 12, color: '#94A3B8', fontWeight: '600' },
-  productPrice: { fontSize: 16, fontWeight: '900', color: '#D82B76' },
-
-  deliveryBadgeOrder: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FFF0F5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, marginTop: 6, alignSelf: 'flex-start' },
-  deliveryTextOrder: { fontSize: 10, fontWeight: '800', color: '#D82B76' },
-
-  reviewBtn: { flexDirection: 'row', alignItems: 'center', marginTop: 8, backgroundColor: '#FFF0F5', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, alignSelf: 'flex-start' },
-  reviewBtnText: { fontSize: 11, fontWeight: '800', color: '#D82B76' },
-
-  horizontalRow: { flexDirection: 'row', marginBottom: 16 },
-  miniCard: { flex: 1, backgroundColor: '#FFF', borderRadius: 20, padding: 16, elevation: 1 },
-  miniTitle: { fontSize: 11, fontWeight: '800', color: '#94A3B8', marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  miniName: { fontSize: 14, fontWeight: '800', color: '#1A1A1A', marginBottom: 4 },
-  miniSubText: { fontSize: 12, color: '#64748B', marginTop: 2 },
-  miniSubText2: { fontSize: 11, color: '#94A3B8', marginTop: 10, fontWeight: '600' },
-
-  payBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 4 },
-  payBadgeCod: { backgroundColor: '#F0FDF4' },
-  payBadgeOnline: { backgroundColor: '#EFF6FF' },
-  payBadgeText: { fontSize: 12, fontWeight: '800' },
-
-  totalPrice: { fontSize: 24, fontWeight: '900', color: '#1A1A1A', marginTop: 2 },
-  couponSaved: { fontSize: 11, color: '#16A34A', fontWeight: '700', marginTop: 4 },
-
+  scrollContent: {
+    padding: 16,
+  },
+  heroCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    padding: 18,
+    borderRadius: 20,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statusIconBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 18,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroInfo: {
+    marginLeft: 14,
+    flex: 1,
+  },
+  heroStatusText: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  heroIdText: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  heroDate: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  sectionCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    elevation: 1,
+  },
+  sectionHeader: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: '#1E293B',
+    marginBottom: 14,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  badgeCount: {
+    backgroundColor: colors.backgroundCream,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+  },
+  badgeCountText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: colors.brandBerry,
+  },
+  timelineContainer: {
+    marginLeft: 4,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    minHeight: 60,
+  },
+  timelineLeft: {
+    alignItems: 'center',
+    width: 22,
+  },
+  timelineDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#E2E8F0',
+    zIndex: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dotActive: {
+    backgroundColor: '#16A34A',
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: '#E2E8F0',
+    marginVertical: 2,
+  },
+  lineActive: {
+    backgroundColor: '#16A34A',
+  },
+  timelineRight: {
+    marginLeft: 14,
+    flex: 1,
+    paddingBottom: 10,
+  },
+  timelineStepTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#94A3B8',
+  },
+  textActive: {
+    color: '#1E293B',
+  },
+  timelineTime: {
+    fontSize: 9,
+    color: '#16A34A',
+    fontWeight: '800',
+  },
+  timelineStepDesc: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  productImageBox: {
+    width: 68,
+    height: 68,
+    borderRadius: 14,
+    backgroundColor: colors.backgroundCream,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  productInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1E293B',
+    lineHeight: 19,
+  },
+  variantBadge: {
+    backgroundColor: colors.backgroundRose,
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: colors.borderRose,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  variantBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.brandBerry,
+  },
+  itemMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  productSub: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+  },
+  productPrice: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: colors.brandBerry,
+  },
+  deliveryBadgeOrder: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.backgroundCream,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+  },
+  deliveryTextOrder: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.brandBerry,
+  },
+  reviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 8,
+    backgroundColor: colors.backgroundRose,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: colors.borderRose,
+  },
+  reviewBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.brandBerry,
+  },
+  horizontalRow: {
+    flexDirection: 'row',
+    marginBottom: 14,
+  },
+  miniCard: {
+    flex: 1,
+    backgroundColor: '#FFF',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+  },
+  miniTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#94A3B8',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  miniName: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 4,
+  },
+  miniSubText: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  miniSubText2: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 10,
+    fontWeight: '600',
+  },
+  payBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  payBadgeCod: {
+    backgroundColor: '#F0FDF4',
+  },
+  payBadgeOnline: {
+    backgroundColor: '#EFF6FF',
+  },
+  payBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  totalPrice: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginTop: 2,
+  },
+  couponSaved: {
+    fontSize: 11,
+    color: '#16A34A',
+    fontWeight: '800',
+    marginTop: 3,
+  },
   supportHelpCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFF',
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 16,
-    marginBottom: 24,
-    borderWidth: 1.5,
-    borderColor: '#FCE7F3',
-    elevation: 1,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
   },
   supportHelpLeft: {
     flexDirection: 'row',
@@ -344,12 +581,14 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   supportIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#FFF0F5',
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: colors.backgroundRose,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderRose,
   },
   supportHelpTitle: {
     fontSize: 14,
@@ -363,3 +602,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
+

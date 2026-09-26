@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -7,21 +7,24 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  StatusBar,
 } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useCart } from '../context/CartContext';
+import { AuthContext } from '../context/AuthContext';
 import { SafeScreen, ScreenHeader, StickyBottomBar } from '../components/layout';
 import useDeliveryHours from '../hooks/useDeliveryHours';
+import { colors, shadows } from '../constants/theme';
 
 export default function CartScreen({ navigation }) {
   const { cart, cartLoading, removeFromCart, updateQuantity, refreshCart } = useCart();
+  const { user } = useContext(AuthContext);
   const [selectedKeys, setSelectedKeys] = useState([]);
   const deliveryHours = useDeliveryHours();
+  const isOrderBlocked = Boolean(deliveryHours.isCurrentlyRestricted || deliveryHours.blockOrders);
 
   const getKey = (item) => item.variantKey || item._id;
 
-  // Refresh from the backend every time this screen comes into focus, and
-  // default-select every line so "Checkout Now" works the way it used to.
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', refreshCart);
     return unsubscribe;
@@ -37,10 +40,6 @@ export default function CartScreen({ navigation }) {
 
   const selectedItems = cart.filter((item) => selectedKeys.includes(getKey(item)));
 
-  // Pure aggregation of numbers the backend already calculated per line —
-  // nothing about price/tax/discount is recomputed here. Discount, tax and
-  // shipping are flat per line (NOT multiplied by quantity) — only the
-  // price itself scales with quantity, matching how the backend prices it.
   const selectedTotals = selectedItems.reduce(
     (acc, item) => ({
       subTotal: acc.subTotal + Number(item.salePrice ?? item.price ?? 0) * Number(item.quantity || 0),
@@ -54,15 +53,19 @@ export default function CartScreen({ navigation }) {
   );
 
   const handleCheckout = () => {
-    if (deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders) {
+    if (isOrderBlocked) {
       Alert.alert(
         '🌙 Night Delivery Paused',
-        deliveryHours.message || `Orders cannot be placed during night hours. Delivery will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}.`,
+        deliveryHours.message || `Orders cannot be placed during night hours. Delivery resumes after ${deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'}.`,
         [{ text: 'OK' }]
       );
       return;
     }
     if (selectedItems.length === 0) {
+      return;
+    }
+    if (!user) {
+      navigation.navigate('Login', { redirectTo: 'Checkout' });
       return;
     }
     navigation.navigate('Checkout', { cartItems: selectedItems, totals: selectedTotals });
@@ -81,58 +84,97 @@ export default function CartScreen({ navigation }) {
         <TouchableOpacity onPress={() => toggleSelection(key)} style={styles.checkbox}>
           <Ionicons
             name={isSelected ? "checkbox" : "square-outline"}
-            size={24}
-            color={isSelected ? "#D82B76" : "#DDD"}
+            size={22}
+            color={isSelected ? colors.brandBerry : '#CBD5E1'}
           />
         </TouchableOpacity>
-        <Image source={{ uri: item.image }} style={styles.image} />
-        <View style={styles.info}>
-          <Text style={styles.name} numberOfLines={2}>{item.name}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 }}>
-            <Text style={styles.price}>₹{salePrice}</Text>
-            {hasSaving && (
-              <Text style={styles.mrpText}>₹{mrpPrice}</Text>
-            )}
-          </View>
-          {item.isEggless && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <Text style={{ fontSize: 11, color: '#D82B76', fontWeight: '800', backgroundColor: '#FFF0F5', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
-                Eggless
-              </Text>
-            </View>
-          )}
 
-          {/* Quantity stepper — every tap calls the backend, which
-              recalculates itemTotal and the cart totals. */}
-          <View style={styles.qtyRow}>
-            <TouchableOpacity style={styles.qtyBtn} onPress={() => updateQuantity(item, qty - 1)}>
-              <Feather name="minus" size={14} color="#741343" />
-            </TouchableOpacity>
-            <Text style={styles.qtyText}>{qty}</Text>
-            <TouchableOpacity style={styles.qtyBtn} onPress={() => updateQuantity(item, qty + 1)}>
-              <Feather name="plus" size={14} color="#741343" />
+        <Image source={{ uri: item.image }} style={styles.image} />
+
+        <View style={styles.info}>
+          <View style={styles.titleRow}>
+            <Text style={styles.name} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <TouchableOpacity onPress={() => removeFromCart(item)} style={styles.removeBtn}>
+              <Feather name="trash-2" size={16} color={colors.textLight} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.lineTotal}>Item total: ₹{item.itemTotal}</Text>
+
+          {/* Variant Badges */}
+          <View style={styles.variantRow}>
+            {item.weight ? (
+              <View style={styles.weightBadge}>
+                <Text style={styles.weightText}>{item.weight}</Text>
+              </View>
+            ) : null}
+            {item.flavor ? (
+              <View style={styles.flavorBadge}>
+                <Text style={styles.flavorText}>
+                  {typeof item.flavor === 'string' ? item.flavor : item.flavor.name}
+                </Text>
+              </View>
+            ) : null}
+            {item.isEggless ? (
+              <View style={styles.egglessBadge}>
+                <Text style={styles.egglessText}>Eggless</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Pricing & Stepper */}
+          <View style={styles.bottomRow}>
+            <View>
+              <View style={styles.priceRow}>
+                <Text style={styles.price}>₹{salePrice}</Text>
+                {hasSaving && <Text style={styles.mrpText}>₹{mrpPrice}</Text>}
+              </View>
+              <Text style={styles.lineTotal}>Item total: ₹{item.itemTotal}</Text>
+            </View>
+
+            <View style={styles.stepper}>
+              <TouchableOpacity
+                style={styles.stepBtn}
+                onPress={() => updateQuantity(item, qty - 1)}
+              >
+                <Feather name="minus" size={13} color={colors.brandBerry} />
+              </TouchableOpacity>
+              <Text style={styles.qtyText}>{qty}</Text>
+              <TouchableOpacity
+                style={styles.stepBtn}
+                onPress={() => updateQuantity(item, qty + 1)}
+              >
+                <Feather name="plus" size={13} color={colors.brandBerry} />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-        <TouchableOpacity onPress={() => removeFromCart(item)} style={styles.removeBtn}>
-          <Feather name="trash-2" size={20} color="#FF6A3D" />
-        </TouchableOpacity>
       </View>
     );
   };
 
   return (
     <SafeScreen style={styles.container}>
-      <ScreenHeader title="My Cart" onBack={() => navigation.goBack()} border />
+      <StatusBar barStyle="light-content" backgroundColor="#741343" />
+      <ScreenHeader
+        title="Shopping Cart"
+        onBack={() => navigation.goBack()}
+        border
+        berry
+        subtitle={cart.length > 0 ? `${cart.length} item${cart.length !== 1 ? 's' : ''}` : null}
+      />
 
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+        {/* Night Delivery Paused Banner */}
       {deliveryHours.isCurrentlyRestricted && (
-        <View style={styles.cartWarningBanner}>
-          <Feather name="moon" size={16} color="#991B1B" />
+        <View style={styles.nightBanner}>
+          <Text style={{ fontSize: 20 }}>🌙</Text>
           <View style={{ flex: 1 }}>
-            <Text style={styles.cartWarningTitle}>Night Delivery Paused</Text>
-            <Text style={styles.cartWarningDesc}>
-              {deliveryHours.message || `Orders will resume after ${deliveryHours.nextAvailableTime || '7:00 AM'}. You can review your bag.`}
+            <Text style={styles.nightTitle}>
+              Night Delivery Paused — Resumes {deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'}
+            </Text>
+            <Text style={styles.nightSubtitle}>
+              Orders are temporarily paused during night operating hours. Deliveries resume after {deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'}. You can review your cart items.
             </Text>
           </View>
         </View>
@@ -146,38 +188,102 @@ export default function CartScreen({ navigation }) {
         onRefresh={refreshCart}
         style={styles.listFlex}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={() => (
+        showsVerticalScrollIndicator={false}
+        ListFooterComponent={
+          cart.length > 0 ? (
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryHeader}>
+                <Text style={styles.summaryTitle}>Order Summary</Text>
+                <View style={styles.secureBadge}>
+                  <Text style={styles.secureText}>SECURE CHECKOUT</Text>
+                </View>
+              </View>
+
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>
+                  Item Total ({selectedTotals.totalQuantity} items)
+                </Text>
+                <Text style={styles.summaryVal}>₹{selectedTotals.subTotal}</Text>
+              </View>
+
+              {selectedTotals.totalDiscount > 0 && (
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Discount</Text>
+                  <Text style={styles.discountVal}>-₹{selectedTotals.totalDiscount}</Text>
+                </View>
+              )}
+
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Delivery Fee</Text>
+                <Text style={selectedTotals.totalShipping > 0 ? styles.summaryVal : styles.freeShipping}>
+                  {selectedTotals.totalShipping > 0 ? `₹${selectedTotals.totalShipping}` : 'FREE'}
+                </Text>
+              </View>
+
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Taxes</Text>
+                <Text style={styles.summaryVal}>
+                  {selectedTotals.totalTax > 0 ? `₹${selectedTotals.totalTax}` : 'Included'}
+                </Text>
+              </View>
+
+              <View style={styles.summaryDivider} />
+
+              <View style={styles.grandTotalBox}>
+                <Text style={styles.grandTotalLabel}>Grand Total</Text>
+                <Text style={styles.grandTotalVal}>₹{selectedTotals.grandTotal.toFixed(0)}</Text>
+              </View>
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
           !cartLoading && (
             <View style={styles.empty}>
-              <Feather name="shopping-cart" size={60} color="#DDD" />
-              <Text style={styles.emptyText}>Your cart is empty</Text>
-              <TouchableOpacity style={styles.shopBtn} onPress={() => navigation.navigate('Home')}>
-                <Text style={styles.shopText}>Shop Now</Text>
+              <View style={styles.emptyCircle}>
+                <Feather name="shopping-bag" size={40} color={colors.brandBerry} />
+              </View>
+              <Text style={styles.emptyTitle}>Your Cart is Empty</Text>
+              <Text style={styles.emptySubtitle}>
+                Looks like you haven't added anything to your cart yet.
+              </Text>
+              <TouchableOpacity
+                style={styles.shopBtn}
+                onPress={() => navigation.navigate('Home')}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.shopText}>Start Shopping</Text>
               </TouchableOpacity>
             </View>
           )
-        )}
+        }
       />
+      </View>
 
       {cart.length > 0 && (
         <StickyBottomBar>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total Amount:</Text>
-            <Text style={styles.totalVal}>₹{selectedTotals.grandTotal.toFixed(0)}</Text>
+          <View style={styles.bottomBarRow}>
+            <View>
+              <Text style={styles.bottomTotalLabel}>Total Amount</Text>
+              <Text style={styles.bottomTotalVal}>₹{selectedTotals.grandTotal.toFixed(0)}</Text>
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.checkoutBtn,
+                isOrderBlocked && styles.checkoutBtnPaused,
+              ]}
+              onPress={handleCheckout}
+              disabled={isOrderBlocked}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.checkoutText, isOrderBlocked && styles.checkoutTextPaused]}>
+                {isOrderBlocked
+                  ? `🌙 Delivery Paused (${deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'})`
+                  : 'Proceed to Checkout'}
+              </Text>
+              <Feather name={isOrderBlocked ? 'lock' : 'arrow-right'} size={15} color={isOrderBlocked ? '#FFD166' : colors.brandGold} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={[
-              styles.checkoutBtn,
-              deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders && styles.checkoutBtnPaused,
-            ]}
-            onPress={handleCheckout}
-          >
-            <Text style={styles.checkoutText}>
-              {deliveryHours.isCurrentlyRestricted && deliveryHours.blockOrders
-                ? `Delivery Paused (After ${deliveryHours.formattedEnd || '7:00 AM'})`
-                : 'Checkout Now'}
-            </Text>
-          </TouchableOpacity>
         </StickyBottomBar>
       )}
     </SafeScreen>
@@ -185,54 +291,123 @@ export default function CartScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FAFAFA' },
+  container: { flex: 1, backgroundColor: '#741343' },
   listFlex: { flex: 1 },
-  list: { padding: 15, flexGrow: 1 },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 15, padding: 10, marginBottom: 15, elevation: 2 },
-  checkbox: { paddingRight: 10 },
-  image: { width: 80, height: 80, borderRadius: 10 },
-  info: { flex: 1, marginLeft: 15, justifyContent: 'center' },
-  name: { fontSize: 16, fontWeight: '600', color: '#333' },
-  price: { fontSize: 18, fontWeight: '800', color: '#1a1a1a', marginTop: 5 },
-  mrpText: { fontSize: 13, color: '#CBD5E1', textDecorationLine: 'line-through', fontWeight: '600' },
-  qtyRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
-  qtyBtn: { width: 26, height: 26, borderRadius: 13, borderWidth: 1, borderColor: '#ead6c5', alignItems: 'center', justifyContent: 'center' },
-  qtyText: { fontSize: 14, fontWeight: '700', color: '#333', minWidth: 18, textAlign: 'center' },
-  lineTotal: { fontSize: 12, color: '#741343', fontWeight: '700', marginTop: 6 },
-  removeBtn: { padding: 10, justifyContent: 'center' },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
-  totalLabel: { fontSize: 18, fontWeight: '600', color: '#555' },
-  totalVal: { fontSize: 22, fontWeight: '800', color: '#000' },
-  checkoutBtn: { backgroundColor: '#D82B76', borderRadius: 12, paddingVertical: 15, alignItems: 'center' },
-  checkoutBtnPaused: { backgroundColor: '#475569' },
-  checkoutText: { color: '#FFF', fontSize: 16, fontWeight: '800' },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 100 },
-  emptyText: { fontSize: 18, color: '#999', marginVertical: 20 },
-  shopBtn: { paddingHorizontal: 30, paddingVertical: 12, borderWidth: 2, borderColor: '#D82B76', borderRadius: 10 },
-  shopText: { color: '#D82B76', fontWeight: '800' },
-  cartWarningBanner: {
+  list: { padding: 14, flexGrow: 1, paddingBottom: 30 },
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1.5,
-    borderColor: '#FECACA',
+    backgroundColor: colors.brandCream,
+    borderRadius: 16,
+    padding: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    ...shadows.sm,
+  },
+  checkbox: { paddingRight: 8 },
+  image: { width: 76, height: 76, borderRadius: 12, backgroundColor: '#FFF' },
+  info: { flex: 1, marginLeft: 10, justifyContent: 'center' },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  name: { fontSize: 13.5, fontWeight: '800', color: colors.textDark, flex: 1, marginRight: 6 },
+  removeBtn: { padding: 4 },
+  variantRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
+  weightBadge: { backgroundColor: '#F0FDFA', paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 4 },
+  weightText: { fontSize: 9, fontWeight: '800', color: '#0D9488' },
+  flavorBadge: { backgroundColor: colors.brandCreamAlt, paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 4 },
+  flavorText: { fontSize: 9, fontWeight: '800', color: colors.primary },
+  egglessBadge: { backgroundColor: '#F0FDF4', paddingHorizontal: 6, paddingVertical: 1.5, borderRadius: 4 },
+  egglessText: { fontSize: 9, fontWeight: '800', color: '#16a34a' },
+  bottomRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 8 },
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
+  price: { fontSize: 15, fontWeight: '900', color: colors.brandBerry },
+  mrpText: { fontSize: 11, color: colors.textLight, textDecorationLine: 'line-through' },
+  lineTotal: { fontSize: 10, color: colors.textMuted, fontWeight: '700', marginTop: 2 },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    borderRadius: 8,
+    padding: 2,
+  },
+  stepBtn: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
+  qtyText: { fontSize: 12, fontWeight: '800', color: colors.textDark, paddingHorizontal: 6 },
+  nightBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#21091a',
     borderRadius: 14,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginHorizontal: 15,
+    paddingVertical: 12,
+    marginHorizontal: 14,
+    marginTop: 8,
+    marginBottom: 4,
+    gap: 12,
+    borderWidth: 0.8,
+    borderColor: 'rgba(255, 209, 102, 0.35)',
+  },
+  nightTitle: { fontSize: 12.5, fontWeight: '900', color: '#FFD166' },
+  nightSubtitle: { fontSize: 10.5, color: '#F3F4F6', marginTop: 2, lineHeight: 15 },
+  checkoutBtnPaused: {
+    backgroundColor: '#3d0f2b',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 209, 102, 0.35)',
+  },
+  checkoutTextPaused: {
+    color: '#FFD166',
+  },
+  summaryCard: {
+    backgroundColor: colors.brandCream,
+    borderRadius: 18,
+    padding: 16,
     marginTop: 10,
-    marginBottom: 6,
-    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    ...shadows.sm,
   },
-  cartWarningTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#991B1B',
+  summaryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+  summaryTitle: { fontSize: 16, fontWeight: '900', color: colors.brandBerry },
+  secureBadge: { backgroundColor: colors.brandCreamAlt, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12 },
+  secureText: { fontSize: 8.5, fontWeight: '900', color: colors.primary, letterSpacing: 0.5 },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  summaryLabel: { fontSize: 12.5, color: colors.textMuted, fontWeight: '600' },
+  summaryVal: { fontSize: 13, fontWeight: '800', color: colors.textDark },
+  discountVal: { fontSize: 13, fontWeight: '800', color: '#16a34a' },
+  freeShipping: { fontSize: 12.5, fontWeight: '900', color: '#16a34a' },
+  summaryDivider: { height: 1, backgroundColor: colors.borderWarm, marginVertical: 10 },
+  grandTotalBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
   },
-  cartWarningDesc: {
-    fontSize: 11,
-    color: '#B91C1C',
-    marginTop: 2,
-    lineHeight: 16,
+  grandTotalLabel: { fontSize: 14, fontWeight: '900', color: colors.brandBerry },
+  grandTotalVal: { fontSize: 18, fontWeight: '900', color: colors.brandBerry },
+  bottomBarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  bottomTotalLabel: { fontSize: 10, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase' },
+  bottomTotalVal: { fontSize: 20, fontWeight: '900', color: colors.brandBerry },
+  checkoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.brandBerry,
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    ...shadows.button,
   },
+  checkoutBtnPaused: { backgroundColor: '#475569' },
+  checkoutText: { color: '#FFF', fontSize: 13.5, fontWeight: '900' },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', marginTop: 80, paddingHorizontal: 20 },
+  emptyCircle: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.brandCreamAlt, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
+  emptyTitle: { fontSize: 20, fontWeight: '900', color: colors.textDark },
+  emptySubtitle: { fontSize: 12.5, color: colors.textMuted, textAlign: 'center', marginTop: 4, marginBottom: 20 },
+  shopBtn: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: colors.brandBerry, borderRadius: 12, ...shadows.button },
+  shopText: { color: '#FFF', fontWeight: '900', fontSize: 13 },
 });

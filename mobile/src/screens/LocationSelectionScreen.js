@@ -10,20 +10,24 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, Feather } from '@expo/vector-icons';
 import { AuthContext } from '../context/AuthContext';
 import locationService from '../services/locationService';
 import userService from '../services/userService';
+import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import { colors } from '../constants/theme';
 
 export default function LocationSelectionScreen({ navigation }) {
   const { user, updateUser } = useContext(AuthContext);
   const [cities, setCities] = useState([]);
-  const [selectedState, setSelectedState] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedState, setSelectedState] = useState(user?.state || '');
+  const [selectedCity, setSelectedCity] = useState(user?.city || '');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [stateModalVisible, setStateModalVisible] = useState(false);
   const [cityModalVisible, setCityModalVisible] = useState(false);
+  const { bottom } = useLayoutInsets();
 
   useEffect(() => {
     fetchCities();
@@ -32,7 +36,7 @@ export default function LocationSelectionScreen({ navigation }) {
   const fetchCities = async () => {
     try {
       const data = await locationService.getCities();
-      setCities(data);
+      setCities(data || []);
       setLoading(false);
     } catch (error) {
       console.log('Failed to fetch cities:', error);
@@ -43,7 +47,7 @@ export default function LocationSelectionScreen({ navigation }) {
 
   const handleSelectLocation = async () => {
     if (!selectedState || !selectedCity) {
-      Alert.alert('Required', 'Please select both state and city.');
+      Alert.alert('Selection Required', 'Please select both your state and city.');
       return;
     }
 
@@ -65,9 +69,9 @@ export default function LocationSelectionScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#D82B76" />
-      </View>
+      <SafeScreen style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.brandBerry} />
+      </SafeScreen>
     );
   }
 
@@ -81,8 +85,12 @@ export default function LocationSelectionScreen({ navigation }) {
         setSelectedCity('');
         setStateModalVisible(false);
       }}
+      activeOpacity={0.7}
     >
       <Text style={styles.dropdownItemText}>{item.state}</Text>
+      {selectedState === item.state && (
+        <Ionicons name="checkmark-circle" size={18} color={colors.brandBerry} />
+      )}
     </TouchableOpacity>
   );
 
@@ -93,175 +101,257 @@ export default function LocationSelectionScreen({ navigation }) {
         setSelectedCity(item);
         setCityModalVisible(false);
       }}
+      activeOpacity={0.7}
     >
       <Text style={styles.dropdownItemText}>{item}</Text>
+      {selectedCity === item && (
+        <Ionicons name="checkmark-circle" size={18} color={colors.brandBerry} />
+      )}
     </TouchableOpacity>
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Select Your Location</Text>
-        <Text style={styles.subtitle}>Choose your state and city to continue</Text>
-      </View>
+    <SafeScreen style={styles.safe}>
+      <ScreenHeader
+        title="Delivery City"
+        subtitle="Select where you'd like gifts delivered"
+        onBack={navigation.canGoBack() ? () => navigation.goBack() : undefined}
+        border
+      />
 
-      <View style={styles.formSection}>
-        <Text style={styles.label}>State *</Text>
-        <TouchableOpacity
-          style={styles.selectButton}
-          onPress={() => setStateModalVisible(true)}
-        >
-          <Text style={styles.selectButtonText}>
-            {selectedState || 'Select State'}
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: bottom + 30 }]}>
+        <View style={styles.card}>
+          <View style={styles.iconCircle}>
+            <Feather name="map-pin" size={32} color={colors.brandBerry} />
+          </View>
+          <Text style={styles.cardHeading}>Where should we deliver?</Text>
+          <Text style={styles.cardSub}>
+            Select your city to check delivery availability, same-day delivery slots, and night orders.
           </Text>
-          <Ionicons name="chevron-down" size={20} color="#D82B76" />
-        </TouchableOpacity>
 
-        <Text style={styles.label}>City *</Text>
-        <TouchableOpacity
-          style={[styles.selectButton, !selectedState && styles.selectButtonDisabled]}
-          onPress={() => selectedState && setCityModalVisible(true)}
-          disabled={!selectedState}
-        >
-          <Text
-            style={[
-              styles.selectButtonText,
-              !selectedState && styles.selectButtonTextDisabled,
-            ]}
+          <View style={styles.formSection}>
+            <Text style={styles.label}>Select State</Text>
+            <TouchableOpacity
+              style={styles.selectButton}
+              onPress={() => setStateModalVisible(true)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.selectButtonText, !selectedState && styles.selectButtonTextDisabled]}>
+                {selectedState || 'Choose your state'}
+              </Text>
+              <Ionicons name="chevron-down" size={18} color={colors.brandBerry} />
+            </TouchableOpacity>
+
+            <Text style={styles.label}>Select City</Text>
+            <TouchableOpacity
+              style={[styles.selectButton, !selectedState && styles.selectButtonDisabled]}
+              onPress={() => selectedState && setCityModalVisible(true)}
+              disabled={!selectedState}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.selectButtonText,
+                  !selectedCity && styles.selectButtonTextDisabled,
+                ]}
+              >
+                {selectedCity || (selectedState ? 'Choose your city' : 'Select state first')}
+              </Text>
+              <Ionicons
+                name="chevron-down"
+                size={18}
+                color={selectedState ? colors.brandBerry : '#CBD5E1'}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, submitting && styles.buttonDisabled]}
+            onPress={handleSelectLocation}
+            disabled={submitting}
+            activeOpacity={0.88}
           >
-            {selectedCity || 'Select City'}
-          </Text>
-          <Ionicons name="chevron-down" size={20} color={selectedState ? '#D82B76' : '#ccc'} />
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        style={[styles.button, submitting && styles.buttonDisabled]}
-        onPress={handleSelectLocation}
-        disabled={submitting}
-      >
-        <Text style={styles.buttonText}>
-          {submitting ? 'Saving...' : 'Continue'}
-        </Text>
-      </TouchableOpacity>
-
-      {/* State Modal */}
-      <Modal
-        visible={stateModalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setStateModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select State</Text>
-              <TouchableOpacity onPress={() => setStateModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#000" />
-              </TouchableOpacity>
-            </View>
-            <FlatList
-              data={cities}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item }) => <StateItem item={item} />}
-            />
-          </View>
+            {submitting ? (
+              <ActivityIndicator color="#FFF" size="small" />
+            ) : (
+              <View style={styles.btnContent}>
+                <Text style={styles.buttonText}>Confirm Delivery Location</Text>
+                <Feather name="arrow-right" size={18} color={colors.brandGold} />
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
-      </Modal>
 
-      {/* City Modal */}
-      <Modal
-        visible={cityModalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setCityModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select City in {selectedState}</Text>
-              <TouchableOpacity onPress={() => setCityModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#000" />
-              </TouchableOpacity>
+        {/* State Modal */}
+        <Modal
+          visible={stateModalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setStateModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Choose State</Text>
+                <TouchableOpacity onPress={() => setStateModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="#1E293B" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={cities}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => <StateItem item={item} />}
+              />
             </View>
-            <FlatList
-              data={selectedStateCities}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item }) => <CityItem item={item} />}
-            />
           </View>
-        </View>
-      </Modal>
-    </ScrollView>
+        </Modal>
+
+        {/* City Modal */}
+        <Modal
+          visible={cityModalVisible}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setCityModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Cities in {selectedState}</Text>
+                <TouchableOpacity onPress={() => setCityModalVisible(false)}>
+                  <Ionicons name="close" size={24} color="#1E293B" />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={selectedStateCities}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => <CityItem item={item} />}
+              />
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: colors.backgroundWarm,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundWarm,
+  },
   container: {
     flexGrow: 1,
-    padding: 20,
-    backgroundColor: '#FAFAFA',
+    padding: 18,
     justifyContent: 'center',
   },
-  header: {
-    marginBottom: 30,
+  card: {
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+    alignItems: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#222',
-    marginBottom: 8,
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.backgroundRose,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.borderRose,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
+  cardHeading: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  cardSub: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 20,
+    paddingHorizontal: 8,
   },
   formSection: {
-    marginBottom: 30,
+    width: '100%',
+    marginBottom: 16,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#222',
-    marginBottom: 10,
-    marginTop: 15,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 6,
+    marginTop: 10,
+    letterSpacing: 0.3,
   },
   selectButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderWidth: 1.5,
+    borderColor: colors.borderWarm,
+    borderRadius: 14,
+    paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFDFB',
   },
   selectButtonDisabled: {
-    opacity: 0.5,
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
+    opacity: 0.7,
   },
   selectButtonText: {
     fontSize: 14,
-    color: '#222',
+    fontWeight: '700',
+    color: '#0F172A',
     flex: 1,
   },
   selectButtonTextDisabled: {
-    color: '#999',
+    color: '#94A3B8',
+    fontWeight: '500',
   },
   button: {
-    backgroundColor: '#D82B76',
-    paddingVertical: 14,
-    borderRadius: 8,
+    width: '100%',
+    backgroundColor: colors.brandBerry,
+    paddingVertical: 16,
+    borderRadius: 16,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 12,
+    shadowColor: colors.brandBerry,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   buttonDisabled: {
-    opacity: 0.6,
+    opacity: 0.65,
+  },
+  btnContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '800',
   },
   modalOverlay: {
     flex: 1,
@@ -269,33 +359,39 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '80%',
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '75%',
+    paddingBottom: 20,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.borderWarm,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#222',
+    fontSize: 17,
+    fontWeight: '900',
+    color: '#0F172A',
   },
   dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F8FAFC',
   },
   dropdownItemText: {
-    fontSize: 16,
-    color: '#222',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1E293B',
   },
 });
+

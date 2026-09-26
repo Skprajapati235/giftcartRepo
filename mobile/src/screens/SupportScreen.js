@@ -18,6 +18,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
 import supportService from '../services/supportService';
+import { colors } from '../constants/theme';
 
 const ISSUE_CATEGORIES = [
   { id: 'order_status', label: 'Order Status & Tracking', icon: 'truck' },
@@ -451,7 +452,7 @@ export default function SupportScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.backgroundWarm,
   },
   scroll: {
     padding: 16,
@@ -459,31 +460,36 @@ const styles = StyleSheet.create({
   bannerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF0F5',
+    backgroundColor: colors.brandBerry,
     borderRadius: 18,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#FCE7F3',
+    borderColor: 'rgba(255,255,255,0.15)',
     gap: 14,
+    shadowColor: colors.brandBerry,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   bannerIconBox: {
     width: 52,
     height: 52,
     borderRadius: 16,
-    backgroundColor: '#FFE4E6',
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   bannerTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#9F1239',
+    color: '#FFF',
     marginBottom: 4,
   },
   bannerDesc: {
     fontSize: 12,
-    color: '#881337',
+    color: 'rgba(255,255,255,0.85)',
     lineHeight: 18,
   },
   section: {
@@ -510,20 +516,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFF',
     borderWidth: 1,
-    borderColor: '#FBCFE8',
+    borderColor: colors.borderWarm,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 20,
     gap: 6,
   },
   categoryChipActive: {
-    backgroundColor: '#D82B76',
-    borderColor: '#D82B76',
+    backgroundColor: colors.brandBerry,
+    borderColor: colors.brandBerry,
   },
   categoryChipText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#D82B76',
+    color: colors.brandBerry,
   },
   categoryChipTextActive: {
     color: '#FFF',
@@ -538,6 +544,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
   },
   formTitle: {
     fontSize: 18,
@@ -565,9 +573,9 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFDFB',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.borderWarm,
     borderRadius: 14,
     paddingHorizontal: 12,
     height: 48,
@@ -585,7 +593,7 @@ const styles = StyleSheet.create({
     color: '#475569',
     marginRight: 8,
     borderRightWidth: 1,
-    borderRightColor: '#CBD5E1',
+    borderRightColor: colors.borderWarm,
     paddingRight: 8,
   },
   input: {
@@ -595,9 +603,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   textAreaWrapper: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFDFB',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    borderColor: colors.borderWarm,
     borderRadius: 14,
     padding: 12,
     minHeight: 110,
@@ -628,13 +636,13 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.backgroundCream,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.borderWarm,
   },
   priorityBtnActive: {
-    backgroundColor: '#D82B76',
-    borderColor: '#D82B76',
+    backgroundColor: colors.brandBerry,
+    borderColor: colors.brandBerry,
   },
   priorityText: {
     fontSize: 12,
@@ -648,12 +656,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#D82B76',
+    backgroundColor: colors.brandBerry,
     borderRadius: 16,
     paddingVertical: 15,
     marginTop: 8,
     elevation: 3,
-    shadowColor: '#D82B76',
+    shadowColor: colors.brandBerry,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -686,7 +694,7 @@ const styles = StyleSheet.create({
     padding: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: colors.borderWarm,
     elevation: 1,
   },
   quickIconBox: {
@@ -723,6 +731,8 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
   },
   successIconBox: {
     marginBottom: 14,
@@ -741,12 +751,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   ticketIdBadge: {
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.backgroundCream,
     borderRadius: 12,
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.borderWarm,
     alignItems: 'center',
     marginBottom: 14,
     width: '100%',
@@ -760,7 +770,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     fontWeight: '800',
-    color: '#D82B76',
+    color: colors.brandBerry,
     marginTop: 2,
   },
   modalTimeNotice: {
@@ -771,7 +781,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalDoneBtn: {
-    backgroundColor: '#D82B76',
+    backgroundColor: colors.brandBerry,
     borderRadius: 14,
     paddingVertical: 13,
     width: '100%',

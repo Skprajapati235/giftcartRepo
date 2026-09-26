@@ -1,19 +1,24 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Linking } from 'react-native';
+import { Feather, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import { colors } from '../constants/theme';
 
 const developerImage = require('../assets/images/gallery5.jpg');
 
 const stats = [
-  { label: 'Product', value: 'GiftFestive' },
-  { label: 'Platform', value: 'Mobile + Admin' },
-  { label: 'Goal', value: 'Easy gifting' },
+  { label: 'Platform', value: 'GiftFestive' },
+  { label: 'Experience', value: 'Web + App' },
+  { label: 'Specialty', value: 'Festive Gifting' },
 ];
 
 const whatsappNumber = '+918400787712';
 const emailAddress = 'prajapatisonu7897@gmail.com';
 
 export default function DeveloperScreen({ navigation }) {
+  const { bottom } = useLayoutInsets();
+
   const openWhatsApp = async () => {
     const url = `https://wa.me/918400787712?text=${encodeURIComponent(
       'Hello Sonu, I am interested in GiftFestive and want to know more.'
@@ -35,30 +40,37 @@ export default function DeveloperScreen({ navigation }) {
   };
 
   return (
-    <SafeScreen>
-      <ScreenHeader title="Developer" onBack={() => navigation.goBack()} border />
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeScreen style={styles.container}>
+      <ScreenHeader
+        title="Developer & Platform"
+        subtitle="Creator & platform overview"
+        onBack={() => navigation.goBack()}
+        border
+      />
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottom + 30 }]} showsVerticalScrollIndicator={false}>
         <View style={styles.heroCard}>
-          <View style={styles.heroAccent} />
           <Image source={developerImage} style={styles.heroImage} />
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>Developer</Text>
+            <Text style={styles.badgeText}>Platform Architect</Text>
           </View>
           <Text style={styles.heroTitle}>Sonu Kumar Prajapati</Text>
           <Text style={styles.heroSubtitle}>
-            Founder of GiftFestive — a complete gift shopping platform built for small businesses, fast city-based discovery, and easy checkout.
+            Creator of GiftFestive — a complete festive gifting ecosystem designed for handcrafted cakes, fresh flowers, and midnight delivery.
           </Text>
 
           <View style={styles.contactBadges}>
-            <TouchableOpacity style={styles.contactBadge} onPress={openWhatsApp}>
+            <TouchableOpacity style={styles.contactBadge} onPress={openWhatsApp} activeOpacity={0.8}>
+              <FontAwesome5 name="whatsapp" size={18} color="#16A34A" style={{ marginBottom: 6 }} />
               <Text style={styles.contactLabel}>WhatsApp</Text>
               <Text style={styles.contactValue}>{whatsappNumber}</Text>
-              <Text style={styles.contactAction}>Tap to message</Text>
+              <Text style={styles.contactAction}>Tap to message →</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.contactBadge} onPress={openEmail}>
+
+            <TouchableOpacity style={styles.contactBadge} onPress={openEmail} activeOpacity={0.8}>
+              <Feather name="mail" size={18} color={colors.primary} style={{ marginBottom: 6 }} />
               <Text style={styles.contactLabel}>Email</Text>
               <Text style={styles.contactValue}>{emailAddress}</Text>
-              <Text style={styles.contactAction}>Tap to email</Text>
+              <Text style={styles.contactAction}>Tap to email →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -73,41 +85,20 @@ export default function DeveloperScreen({ navigation }) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Why GiftFestive exists</Text>
+          <Text style={styles.sectionTitle}>Why GiftFestive Exists</Text>
           <Text style={styles.aboutText}>
-            GiftFestive is made to help gift shops and local stores launch a premium shopping experience without building a separate app. It combines a smooth mobile storefront with a strong admin dashboard.
+            GiftFestive is engineered to deliver a luxury festive shopping experience matching the flagship website across both Android and iOS devices.
           </Text>
           <Text style={styles.aboutText}>
-            Buyers can browse city-based products, save addresses, use coupons, and checkout with Razorpay or COD. Store owners can manage products, cities, coupons, orders, reviews, payments, and customers from one place.
-          </Text>
-          <Text style={styles.aboutText}>
-            The goal is real business readiness: reliable order flow, clean design, easy setup, and fast customer interaction.
+            Customers can effortlessly explore city-based gifts, customize cake weights and flower counts, choose eggless preparations, apply promo codes, and enjoy live order tracking with midnight delivery support.
           </Text>
         </View>
 
-        <View style={styles.section}> 
-          <Text style={styles.sectionTitle}>Key features</Text>
-          <View style={styles.bulletList}>
-            <View style={styles.bulletRow}>
-              <Text style={styles.bulletPoint}>•</Text>
-              <Text style={styles.bulletText}>City-based product browsing with smart filters.</Text>
-            </View>
-            <View style={styles.bulletRow}>
-              <Text style={styles.bulletPoint}>•</Text>
-              <Text style={styles.bulletText}>Saved addresses, flexible payments, and coupon checkout.</Text>
-            </View>
-            <View style={styles.bulletRow}>
-              <Text style={styles.bulletPoint}>•</Text>
-              <Text style={styles.bulletText}>Admin panel for inventory, order, coupon, and review management.</Text>
-            </View>
-            <View style={styles.bulletRow}>
-              <Text style={styles.bulletPoint}>•</Text>
-              <Text style={styles.bulletText}>Mobile and admin in one project for fast launch.</Text>
-            </View>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.contactButton} onPress={() => navigation.navigate('Profile')}>
+        <TouchableOpacity
+          style={styles.contactButton}
+          onPress={() => navigation.navigate('Profile')}
+          activeOpacity={0.85}
+        >
           <Text style={styles.contactButtonText}>Back to Profile</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -116,85 +107,154 @@ export default function DeveloperScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 20, paddingBottom: 40 },
-  heroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 4,
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundWarm,
   },
-  heroImage: { width: '100%', height: 220, borderRadius: 24, marginBottom: 18 },
-  heroAccent: {
-    position: 'absolute',
-    top: -16,
-    right: -16,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#E8D7FF',
+  content: {
+    padding: 16,
+  },
+  heroCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  heroImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 18,
+    marginBottom: 14,
   },
   badge: {
     position: 'absolute',
-    top: 22,
-    left: 22,
-    backgroundColor: '#7C3AED',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
+    top: 28,
+    left: 28,
+    backgroundColor: colors.brandBerry,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
     zIndex: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
-  badgeText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
-  heroTitle: { fontSize: 24, fontWeight: '900', color: '#111827', marginBottom: 6 },
-  heroSubtitle: { fontSize: 14, lineHeight: 22, color: '#4B5563' },
+  badgeText: {
+    color: '#FFF',
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 0.5,
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#0F172A',
+    marginBottom: 6,
+  },
+  heroSubtitle: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#64748B',
+  },
   contactBadges: {
-    marginTop: 18,
+    marginTop: 16,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: 10,
   },
   contactBadge: {
     flex: 1,
-    minWidth: '47%',
-    backgroundColor: '#F4EEFF',
-    borderRadius: 22,
-    paddingVertical: 18,
-    paddingHorizontal: 18,
+    backgroundColor: colors.backgroundCream,
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: '#D8B4FE',
+    borderColor: colors.borderWarm,
   },
-  contactLabel: { fontSize: 11, fontWeight: '700', color: '#7C3AED', textTransform: 'uppercase', marginBottom: 6 },
-  contactValue: { fontSize: 14, fontWeight: '800', color: '#111827', lineHeight: 22, marginBottom: 8 },
-  contactAction: { fontSize: 12, color: '#6D28D9' },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 22 },
+  contactLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#94A3B8',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  contactValue: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 6,
+  },
+  contactAction: {
+    fontSize: 11,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
   statCard: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 20,
-    paddingVertical: 18,
-    paddingHorizontal: 14,
-    marginHorizontal: 4,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
     alignItems: 'center',
-  },
-  statValue: { fontSize: 15, fontWeight: '800', color: '#111827', textAlign: 'center' },
-  statLabel: { marginTop: 6, fontSize: 11, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, textAlign: 'center' },
-  section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: colors.borderWarm,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: '#111827', marginBottom: 12 },
-  bulletList: { marginTop: 4 },
-  bulletRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
-  bulletPoint: { color: '#7C3AED', fontSize: 16, lineHeight: 22, marginRight: 8, marginTop: 2 },
-  bulletText: { flex: 1, color: '#4B5563', fontSize: 14, lineHeight: 22 },
-  aboutText: { fontSize: 14, lineHeight: 22, color: '#4B5563', marginBottom: 12 },
-  contactButton: { marginTop: 4, backgroundColor: '#7C3AED', borderRadius: 18, paddingVertical: 16, alignItems: 'center' },
-  contactButtonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 15 },
+  statValue: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: colors.brandBerry,
+    textAlign: 'center',
+  },
+  statLabel: {
+    marginTop: 4,
+    fontSize: 10,
+    color: '#94A3B8',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  section: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: colors.brandBerry,
+    marginBottom: 8,
+  },
+  aboutText: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#475569',
+    marginBottom: 8,
+  },
+  contactButton: {
+    backgroundColor: colors.brandBerry,
+    borderRadius: 16,
+    paddingVertical: 15,
+    alignItems: 'center',
+    shadowColor: colors.brandBerry,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  contactButtonText: {
+    color: '#FFF',
+    fontWeight: '800',
+    fontSize: 15,
+  },
 });
+

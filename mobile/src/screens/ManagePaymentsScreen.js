@@ -10,7 +10,10 @@ import {
   Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Feather, Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { SafeScreen, ScreenHeader } from '../components/layout';
+import { useLayoutInsets } from '../hooks/useLayoutInsets';
+import { colors } from '../constants/theme';
 
 const PAYMENT_STORAGE_KEY = '@giftcart_payment_methods';
 
@@ -18,6 +21,7 @@ export default function ManagePaymentsScreen({ navigation }) {
   const [methods, setMethods] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { bottom } = useLayoutInsets();
   const [form, setForm] = useState({
     cardHolder: '',
     cardNumber: '',
@@ -40,7 +44,7 @@ export default function ManagePaymentsScreen({ navigation }) {
   const handleSaveMethod = async () => {
     const { cardHolder, cardNumber, expiryDate } = form;
     if (!cardHolder || !cardNumber || cardNumber.length < 12 || !expiryDate) {
-      Alert.alert('Incomplete card details', 'Please enter a valid card name, number, and expiry date.');
+      Alert.alert('Incomplete details', 'Please enter a valid cardholder name, card number, and expiry date.');
       return;
     }
 
@@ -81,32 +85,58 @@ export default function ManagePaymentsScreen({ navigation }) {
   };
 
   return (
-    <SafeScreen>
-      <ScreenHeader title="Manage Payments" onBack={() => navigation.goBack()} border />
+    <SafeScreen style={styles.container}>
+      <ScreenHeader
+        title="Manage Payments"
+        subtitle="Saved payment methods for faster checkout"
+        onBack={() => navigation.goBack()}
+        border
+      />
       <View style={styles.page}>
         <View style={styles.headerSection}>
-          <Text style={styles.subtitle}>Save your cards for faster checkout and easy management.</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setModalOpen(true)}>
+          <Text style={styles.subtitle}>Saved Cards</Text>
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => setModalOpen(true)}
+            activeOpacity={0.85}
+          >
+            <Feather name="plus" size={16} color="#FFF" />
             <Text style={styles.addButtonText}>Add Card</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.list}>
+        <ScrollView contentContainerStyle={[styles.list, { paddingBottom: bottom + 24 }]} showsVerticalScrollIndicator={false}>
           {methods.length === 0 ? (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>No payment methods saved.</Text>
-              <Text style={styles.emptyText}>Add a card and use it whenever you checkout.</Text>
+              <View style={styles.emptyIconBox}>
+                <Feather name="credit-card" size={32} color={colors.brandBerry} />
+              </View>
+              <Text style={styles.emptyTitle}>No saved cards</Text>
+              <Text style={styles.emptyText}>Add your card details for smooth one-tap checkouts.</Text>
             </View>
           ) : (
             methods.map((method) => (
               <View key={method.id} style={styles.card}>
-                <View>
-                  <Text style={styles.cardTitle}>{method.type} • •••• {method.last4}</Text>
-                  <Text style={styles.cardText}>{method.cardHolder}</Text>
-                  <Text style={styles.cardText}>Expiry: {method.expiryDate}</Text>
+                <View style={styles.cardLeft}>
+                  <View style={styles.cardIconBox}>
+                    <FontAwesome5
+                      name={method.type === 'Visa' ? 'cc-visa' : method.type === 'Mastercard' ? 'cc-mastercard' : 'credit-card'}
+                      size={24}
+                      color={colors.brandBerry}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardTitle}>{method.type} •••• {method.last4}</Text>
+                    <Text style={styles.cardText}>{method.cardHolder}</Text>
+                    <Text style={styles.cardExp}>Expires: {method.expiryDate}</Text>
+                  </View>
                 </View>
-                <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(method.id)}>
-                  <Text style={styles.deleteText}>Remove</Text>
+                <TouchableOpacity
+                  style={styles.deleteButton}
+                  onPress={() => handleDelete(method.id)}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="trash-2" size={14} color="#DC2626" />
                 </TouchableOpacity>
               </View>
             ))
@@ -117,24 +147,29 @@ export default function ManagePaymentsScreen({ navigation }) {
       <Modal visible={modalOpen} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Card</Text>
+            <Text style={styles.modalTitle}>Add Payment Card</Text>
             <ScrollView contentContainerStyle={styles.modalForm}>
               <TextInput
                 style={styles.input}
-                placeholder="Name on card"
+                placeholder="Cardholder Name *"
+                placeholderTextColor="#94A3B8"
                 value={form.cardHolder}
                 onChangeText={(value) => setForm((prev) => ({ ...prev, cardHolder: value }))}
               />
               <TextInput
                 style={styles.input}
-                placeholder="Card number"
+                placeholder="16-digit Card Number *"
+                placeholderTextColor="#94A3B8"
                 keyboardType="number-pad"
+                maxLength={19}
                 value={form.cardNumber}
                 onChangeText={(value) => setForm((prev) => ({ ...prev, cardNumber: value.replace(/\s+/g, '') }))}
               />
               <TextInput
                 style={styles.input}
-                placeholder="Expiry date (MM/YY)"
+                placeholder="Expiry Date (MM/YY) *"
+                placeholderTextColor="#94A3B8"
+                maxLength={5}
                 value={form.expiryDate}
                 onChangeText={(value) => setForm((prev) => ({ ...prev, expiryDate: value }))}
               />
@@ -155,28 +190,179 @@ export default function ManagePaymentsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, paddingHorizontal: 20 },
-  headerSection: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, marginBottom: 16 },
-  subtitle: { flex: 1, fontSize: 14, color: '#555', marginRight: 12 },
-  addButton: { backgroundColor: '#D82B76', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 },
-  addButtonText: { color: '#FFF', fontWeight: '700' },
-  list: { paddingBottom: 36 },
-  emptyCard: { backgroundColor: '#FFF', borderRadius: 20, padding: 24, alignItems: 'center', justifyContent: 'center', marginTop: 20, elevation: 2 },
-  emptyTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 8 },
-  emptyText: { fontSize: 14, color: '#666', textAlign: 'center', lineHeight: 20 },
-  card: { backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 16, elevation: 2, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardTitle: { fontSize: 16, fontWeight: '800', color: '#111', marginBottom: 6 },
-  cardText: { fontSize: 13, lineHeight: 20, color: '#555' },
-  deleteButton: { marginTop: 10, alignSelf: 'flex-start', backgroundColor: '#FCE7F3', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12 },
-  deleteText: { color: '#B91C52', fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, maxHeight: '85%' },
-  modalTitle: { fontSize: 18, fontWeight: '800', color: '#111', marginBottom: 16 },
-  modalForm: { paddingBottom: 20 },
-  input: { backgroundColor: '#F8F8F8', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 12, fontSize: 14, color: '#111' },
-  modalActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  modalCancel: { flex: 1, backgroundColor: '#F3F4F6', borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  modalCancelText: { color: '#374151', fontWeight: '700' },
-  modalSave: { flex: 1, backgroundColor: '#D82B76', borderRadius: 16, paddingVertical: 14, alignItems: 'center' },
-  modalSaveText: { color: '#FFF', fontWeight: '700' },
+  container: {
+    flex: 1,
+    backgroundColor: colors.backgroundWarm,
+  },
+  page: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  headerSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 14,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.brandBerry,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  addButtonText: {
+    color: '#FFF',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  list: {
+    paddingBottom: 24,
+  },
+  emptyCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center',
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+  },
+  emptyIconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.backgroundRose,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 6,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  card: {
+    backgroundColor: '#FFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.borderWarm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  cardIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.backgroundRose,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1E293B',
+    marginBottom: 2,
+  },
+  cardText: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+  cardExp: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  deleteButton: {
+    backgroundColor: '#FEF2F2',
+    padding: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    marginLeft: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 22,
+    maxHeight: '85%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#1E293B',
+    marginBottom: 16,
+  },
+  modalForm: {
+    paddingBottom: 16,
+  },
+  input: {
+    backgroundColor: '#FFFDFB',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 10,
+    fontSize: 14,
+    color: '#1E293B',
+    borderWidth: 1.5,
+    borderColor: colors.borderWarm,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modalCancel: {
+    flex: 1,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: '#475569',
+    fontWeight: '800',
+  },
+  modalSave: {
+    flex: 1.5,
+    backgroundColor: colors.brandBerry,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  modalSaveText: {
+    color: '#FFF',
+    fontWeight: '800',
+  },
 });
+

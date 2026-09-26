@@ -48,13 +48,13 @@ const Skeleton = ({ width: w, height: h, borderRadius = 8, style }) => {
 
 export const ProductCardSkeleton = ({ cardWidth }) => (
   <View style={[styles.productCard, cardWidth ? { width: cardWidth } : null]}>
-    <Skeleton width="100%" height={150} borderRadius={20} />
+    <Skeleton width="100%" height={cardWidth ? Math.round(cardWidth * 0.75) : 130} borderRadius={16} />
     <View style={{ padding: 10 }}>
-      <Skeleton width="80%" height={16} style={{ marginBottom: 8 }} />
-      <Skeleton width="40%" height={14} style={{ marginBottom: 12 }} />
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Skeleton width="30%" height={18} />
-        <Skeleton width={30} height={30} borderRadius={15} />
+      <Skeleton width="85%" height={14} style={{ marginBottom: 6 }} />
+      <Skeleton width="55%" height={12} style={{ marginBottom: 10 }} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Skeleton width="40%" height={16} />
+        <Skeleton width={50} height={26} borderRadius={8} />
       </View>
     </View>
   </View>
@@ -103,10 +103,12 @@ const styles = StyleSheet.create({
   productCard: {
     width: (width - 45) / 2,
     backgroundColor: '#FFF',
-    borderRadius: 20,
-    marginBottom: 15,
+    borderRadius: 16,
+    marginBottom: 12,
     overflow: 'hidden',
-    padding: 5,
+    borderWidth: 1,
+    borderColor: '#EAD6C5',
+    padding: 0,
   },
   categoryItem: {
     alignItems: 'center',
