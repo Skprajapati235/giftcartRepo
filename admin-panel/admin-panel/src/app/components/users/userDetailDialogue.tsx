@@ -191,10 +191,26 @@ export default function UserDetailDialogue({ user, onClose }: UserDetailProps) {
                     <p className="text-xs font-mono text-slate-400 font-bold mb-1">#{order._id.slice(-6)}</p>
                     <p className="text-sm font-bold text-foreground">₹{order.totalAmount}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-lg text-xs font-bold ${order.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                    {order.status}
-                  </span>
+                  {(() => {
+                    const isIncomplete = order.paymentMethod !== 'COD' && order.paymentStatus !== 'Success' && (order.isPaymentAbandoned || order.paymentStatus === 'Incomplete' || order.paymentStatus === 'Cancelled');
+                    if (isIncomplete) {
+                      return (
+                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-black bg-rose-500/10 text-rose-600 border border-rose-500/25 flex items-center gap-1">
+                          ⚠️ User Backed Out
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                        order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
+                        order.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                        order.status === 'Processing' ? 'bg-blue-100 text-blue-700' :
+                        'bg-amber-100 text-amber-700'
+                      }`}>
+                        {order.status}
+                      </span>
+                    );
+                  })()}
                 </div>
               ))}
               {loadingMore && (

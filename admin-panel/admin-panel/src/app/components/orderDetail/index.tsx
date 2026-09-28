@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { getOrderDetail } from "../../services/adminService";
 import { useTheme } from "../../context/ThemeContext";
 import { RowSkeleton } from "../skeletonLoader/commonSkeleton";
+import { AlertTriangle, CheckCircle2, XCircle, Clock, Truck } from "lucide-react";
 
 interface OrderItem {
   product: { image: string; name: string };
@@ -36,6 +37,11 @@ interface OrderDetailData {
   paymentMethod?: string;
   couponCode?: string;
   discountAmount?: number;
+  isPaymentAbandoned?: boolean;
+  paymentCancelReason?: string;
+  paymentAbandonedAt?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
   shippingAddress: {
     fullName: string;
     phone: string;
@@ -137,6 +143,21 @@ export default function OrderDetailView() {
   const totalShipping = itemsBreakdown.reduce((s, b) => s + b.shipping, 0);
   const couponDiscount = Number(order.discountAmount || 0);
 
+  const isOrderPaymentIncomplete = (order: OrderDetailData): boolean => {
+    if (!order) return false;
+    if (order.paymentMethod === 'COD') return false;
+    if (order.paymentStatus === 'Success') return false;
+    if (order.isPaymentAbandoned) return true;
+    if (order.paymentStatus === 'Incomplete' || order.paymentStatus === 'Cancelled') return true;
+    if (order.paymentStatus === 'Pending' && order.createdAt) {
+      const diffMins = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60);
+      if (diffMins > 15) return true;
+    }
+    return false;
+  };
+
+  const isIncomplete = isOrderPaymentIncomplete(order);
+
   return (
     <>
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -156,6 +177,12 @@ export default function OrderDetailView() {
             }`}>
               {order.status}
             </span>
+            {isIncomplete && (
+              <span className="ml-2 inline-flex items-center gap-1 rounded-lg bg-rose-500/10 px-2.5 py-1 text-xs font-black text-rose-600 border border-rose-500/20">
+                <AlertTriangle size={12} />
+                User Backed Out
+              </span>
+            )}
           </div>
         </div>
         <button
@@ -165,6 +192,33 @@ export default function OrderDetailView() {
           ← Back
         </button>
       </div>
+
+      {/* ── Abandoned / Incomplete Payment Banner ── */}
+      {isIncomplete && (
+        <div className="mb-8 rounded-2xl border border-rose-200 bg-rose-50/80 dark:border-rose-500/25 dark:bg-rose-500/10 p-5 shadow-sm">
+          <div className="flex items-start gap-3.5">
+            <div className="rounded-xl bg-rose-500 p-2.5 text-white shrink-0 mt-0.5 shadow-sm shadow-rose-500/30">
+              <AlertTriangle size={22} />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-bold text-rose-900 dark:text-rose-300 text-base">
+                  ⚠️ Payment Not Completed — Customer Returned Without Paying
+                </h3>
+                <span className="rounded-lg bg-rose-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">
+                  User Backed Out
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-rose-700 dark:text-rose-300 font-medium leading-relaxed">
+                The customer initiated this online order, but exited or backed out of the payment gateway without completing the payment.
+                {order.paymentCancelReason && (
+                  <span className="block mt-1 font-bold">Details: {order.paymentCancelReason}</span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
@@ -246,12 +300,19 @@ export default function OrderDetailView() {
           <section className={`rounded-2xl border p-6 shadow-sm ${cardBg}`}>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold">Payment Breakdown</h2>
-              <span className={`rounded-lg px-3 py-1 text-xs font-bold text-white ${
-                order.paymentStatus === 'Success' ? 'bg-green-600' :
-                order.paymentStatus === 'Failed' ? 'bg-red-600' : 'bg-amber-500'
-              }`}>
-                {order.paymentStatus}
-              </span>
+              {isIncomplete ? (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-rose-500 px-3 py-1.5 text-xs font-bold text-white shadow-xs">
+                  <AlertTriangle size={13} />
+                  User Returned (Unpaid)
+                </span>
+              ) : (
+                <span className={`rounded-lg px-3 py-1 text-xs font-bold text-white ${
+                  order.paymentStatus === 'Success' ? 'bg-green-600' :
+                  order.paymentStatus === 'Failed' ? 'bg-red-600' : 'bg-amber-500'
+                }`}>
+                  {order.paymentStatus}
+                </span>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -289,7 +350,7 @@ export default function OrderDetailView() {
               </div>
             </div>
 
-            <div className="mt-4 pt-4 border-t border-slate-100">
+            <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">Payment Method</span>
                 <span className={`font-bold px-2.5 py-1 rounded-lg text-xs ${
@@ -298,6 +359,15 @@ export default function OrderDetailView() {
                   {order.paymentMethod || 'Online'}
                 </span>
               </div>
+              {isIncomplete && (
+                <div className="flex items-center justify-between text-xs text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/30 p-2.5 rounded-xl border border-rose-200 dark:border-rose-900/40 mt-1">
+                  <span className="flex items-center gap-1.5">
+                    <AlertTriangle size={14} />
+                    Payment Status:
+                  </span>
+                  <span>Incomplete • Customer Backed Out</span>
+                </div>
+              )}
             </div>
           </section>
         </div>

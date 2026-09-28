@@ -280,11 +280,46 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
-    await orderService.markPaymentFailed(razorpay_order_id);
+    await orderService.markPaymentFailed(razorpay_order_id, "Invalid payment signature verification");
     return res.status(400).json({ success: false, message: "Invalid payment signature" });
   } catch (error) {
     console.error("Verify Payment Error:", error);
     res.status(500).json({ success: false, message: error.message || "Error verifying payment" });
+  }
+};
+
+// POST /api/order/:id/cancel-payment and POST /api/order/cancel-payment
+// Called when customer exits/backs out of the payment gateway without completing payment
+exports.cancelPayment = async (req, res) => {
+  try {
+    const orderId = req.params.id || req.body.orderId;
+    const { razorpayOrderId, reason } = req.body;
+    const userId = req.user?.id;
+
+    if (!orderId && !razorpayOrderId) {
+      return res.status(400).json({ success: false, message: "Order ID or Razorpay Order ID is required" });
+    }
+
+    const updatedOrder = await orderService.markPaymentIncomplete({
+      orderId,
+      razorpayOrderId,
+      reason: reason || "User returned without completing payment",
+      userId,
+    });
+
+    if (!updatedOrder) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Payment marked as incomplete / user backed out",
+      orderId: updatedOrder._id,
+      order: updatedOrder,
+    });
+  } catch (error) {
+    console.error("Cancel Payment Error:", error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message || "Error recording incomplete payment" });
   }
 };
 

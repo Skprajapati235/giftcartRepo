@@ -82,9 +82,12 @@ const orderSchema = new mongoose.Schema({
   razorpayPaymentId: { type: String },
   paymentStatus: {
     type: String,
-    enum: ["Pending", "Success", "Failed"],
+    enum: ["Pending", "Success", "Failed", "Cancelled", "Incomplete", "Abandoned"],
     default: "Pending",
   },
+  isPaymentAbandoned: { type: Boolean, default: false },
+  paymentCancelReason: { type: String, default: null },
+  paymentAbandonedAt: { type: Date, default: null },
   couponCode: { type: String },
   discountAmount: { type: Number, default: 0 },
   isAdminViewed: { type: Boolean, default: false },

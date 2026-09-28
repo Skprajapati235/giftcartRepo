@@ -36,6 +36,8 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 // User routes
 router.post("/create", authMiddleware, controller.createOrder);
 router.post("/verify", authMiddleware, controller.verifyPayment);
+router.post("/cancel-payment", authMiddleware, controller.cancelPayment);
+router.post("/:id/cancel-payment", authMiddleware, controller.cancelPayment);
 router.post("/:id/send-email", authMiddleware, controller.sendOrderEmail);
 router.get("/user", authMiddleware, controller.getUserOrders);
 router.get("/user/:id", authMiddleware, controller.getOrderById);

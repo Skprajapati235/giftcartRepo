@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ShoppingBag, ArrowRight, CheckCircle2, Clock, Truck, Eye } from "lucide-react";
+import { ShoppingBag, ArrowRight, CheckCircle2, Clock, Truck, Eye, AlertCircle } from "lucide-react";
 
 interface Order {
   _id: string;
@@ -10,6 +10,9 @@ interface Order {
   totalAmount: number;
   status?: string;
   paymentStatus?: string;
+  paymentMethod?: string;
+  isPaymentAbandoned?: boolean;
+  paymentCancelReason?: string;
   createdAt?: string;
 }
 
@@ -19,8 +22,29 @@ interface RecentOrderProps {
 }
 
 export default function RecentOrder({ orders, sectionWrapper = "" }: RecentOrderProps) {
-  const getStatusPill = (status?: string) => {
-    switch (status) {
+  const getStatusPill = (order: Order) => {
+    const isPaymentIncomplete = () => {
+      if (order.paymentMethod === 'COD') return false;
+      if (order.paymentStatus === 'Success') return false;
+      if (order.isPaymentAbandoned) return true;
+      if (order.paymentStatus === 'Incomplete' || order.paymentStatus === 'Cancelled') return true;
+      if (order.paymentStatus === 'Pending' && order.createdAt) {
+        const diffMins = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60);
+        if (diffMins > 15) return true;
+      }
+      return false;
+    };
+
+    if (isPaymentIncomplete()) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 px-2.5 py-0.5 text-[11px] font-bold text-rose-700 dark:text-rose-400 border border-rose-500/20">
+          <AlertCircle className="h-3 w-3 text-rose-500" />
+          User Backed Out (Unpaid)
+        </span>
+      );
+    }
+
+    switch (order.status) {
       case "Delivered":
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
@@ -46,7 +70,7 @@ export default function RecentOrder({ orders, sectionWrapper = "" }: RecentOrder
         return (
           <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-400 border border-amber-500/20">
             <Clock className="h-3 w-3" />
-            {status || "Pending"}
+            {order.status || "Pending"}
           </span>
         );
     }
@@ -143,7 +167,7 @@ export default function RecentOrder({ orders, sectionWrapper = "" }: RecentOrder
 
                     {/* Status */}
                     <td className="py-2 px-1.5">
-                      {getStatusPill(order.status)}
+                      {getStatusPill(order)}
                     </td>
 
                     {/* Total Amount */}

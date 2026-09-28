@@ -1,4 +1,4 @@
-import React, { useState, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   TextInput,
   Modal,
   Image,
+  BackHandler,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -295,6 +296,50 @@ export default function CheckoutScreen({ navigation, route }) {
     }
   };
 
+  const handlePaymentAbandonedOrCancelled = async (reason = 'user_backed_out') => {
+    if (paymentHandledRef.current) return;
+    setShowWebView(false);
+    const orderId = createdOrderIdRef.current;
+    const razorpayOrderId = paymentData?.orderId;
+    if (orderId) {
+      try {
+        await orderService.cancelPayment(orderId, {
+          reason: reason === 'user_dismissed_gateway'
+            ? 'User dismissed payment modal'
+            : reason === 'payment_gateway_failed'
+            ? 'Payment failed at gateway'
+            : 'User returned without completing payment',
+          razorpayOrderId,
+        });
+      } catch (err) {
+        console.warn('Could not record cancelled payment:', err);
+      }
+    }
+  };
+
+  // Intercept Android hardware back button during online payment
+  useEffect(() => {
+    if (!showWebView) return;
+    const onHardwareBack = () => {
+      handlePaymentAbandonedOrCancelled('user_backed_out');
+      showToast('Payment was not completed. Returned to checkout.', 'warning');
+      return true;
+    };
+    const sub = BackHandler.addEventListener('hardwareBackPress', onHardwareBack);
+    return () => sub.remove();
+  }, [showWebView, paymentData]);
+
+  // If user exits screen before completing payment, record abandonment
+  useEffect(() => {
+    return () => {
+      if (createdOrderIdRef.current && !paymentHandledRef.current) {
+        orderService.cancelPayment(createdOrderIdRef.current, {
+          reason: 'User exited checkout screen before completing payment',
+        });
+      }
+    };
+  }, []);
+
   const onMessage = async (event) => {
     let data;
     try {
@@ -342,15 +387,15 @@ export default function CheckoutScreen({ navigation, route }) {
 
     if (data.status === 'failed') {
       if (paymentHandledRef.current) return;
-      setShowWebView(false);
-      showToast(data.error || 'Payment failed', 'error');
+      await handlePaymentAbandonedOrCancelled('payment_gateway_failed');
+      showToast(data.error || 'Payment failed. Order not completed.', 'error');
       return;
     }
 
     if (data.status === 'cancelled') {
       if (paymentHandledRef.current) return;
-      setShowWebView(false);
-      showToast('Payment cancelled', 'warning');
+      await handlePaymentAbandonedOrCancelled('user_dismissed_gateway');
+      showToast('Payment cancelled. Order was not completed.', 'warning');
     }
   };
 
@@ -421,7 +466,14 @@ export default function CheckoutScreen({ navigation, route }) {
   if (showWebView) {
     return (
       <SafeScreen style={{ flex: 1, backgroundColor: '#FFF' }}>
-        <ScreenHeader title="Secure Payment" onBack={() => setShowWebView(false)} border />
+        <ScreenHeader
+          title="Secure Payment"
+          onBack={() => {
+            handlePaymentAbandonedOrCancelled('user_backed_out');
+            showToast('You returned from payment. Order was not completed.', 'warning');
+          }}
+          border
+        />
         <WebView
           originWhitelist={['*']}
           source={{ html: razorpayHtml }}

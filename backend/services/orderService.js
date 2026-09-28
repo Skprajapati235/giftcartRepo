@@ -492,6 +492,8 @@ exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
     {
       razorpayPaymentId,
       paymentStatus: "Success",
+      isPaymentAbandoned: false,
+      paymentCancelReason: null,
       status: "Processing",
       processingAt: new Date(),
     },
@@ -506,12 +508,56 @@ exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
 };
 
 // Mark payment as failed
-exports.markPaymentFailed = async (razorpayOrderId) => {
+exports.markPaymentFailed = async (razorpayOrderId, reason = "Payment failed at gateway") => {
   return await Order.findOneAndUpdate(
     { razorpayOrderId },
-    { paymentStatus: "Failed" },
+    {
+      paymentStatus: "Failed",
+      isPaymentAbandoned: true,
+      paymentCancelReason: reason,
+      paymentAbandonedAt: new Date(),
+      status: "Cancelled",
+      cancelledAt: new Date(),
+    },
     { new: true }
   );
+};
+
+// Mark order payment as incomplete (customer backed out / closed checkout)
+exports.markPaymentIncomplete = async ({ orderId, razorpayOrderId, reason = "User returned without completing payment", userId } = {}) => {
+  const mongoose = require("mongoose");
+  const query = {};
+  if (orderId && mongoose.Types.ObjectId.isValid(orderId)) {
+    query._id = orderId;
+  } else if (razorpayOrderId) {
+    query.razorpayOrderId = razorpayOrderId;
+  } else {
+    return null;
+  }
+
+  const existingOrder = await Order.findOne(query);
+  if (!existingOrder) return null;
+
+  // If non-admin user is specified, verify ownership
+  if (userId && String(existingOrder.user) !== String(userId)) {
+    const err = new Error("Not authorized for this order");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // Do not overwrite if payment is already Success
+  if (existingOrder.paymentStatus === "Success") {
+    return existingOrder;
+  }
+
+  existingOrder.paymentStatus = "Incomplete";
+  existingOrder.isPaymentAbandoned = true;
+  existingOrder.paymentCancelReason = reason || "User returned without completing payment";
+  existingOrder.paymentAbandonedAt = new Date();
+  existingOrder.status = "Cancelled";
+  existingOrder.cancelledAt = new Date();
+
+  return await existingOrder.save();
 };
 
 // Get all orders for a specific user
@@ -550,7 +596,7 @@ exports.getAllOrders = async ({ page = 1, limit = 10, search = "" } = {}) => {
   }
 
   const orders = await Order.find(query)
-    .populate("user", "name email")
+    .populate("user", "name email mobileNumber")
     .sort("-createdAt")
     .skip(skip)
     .limit(limit);

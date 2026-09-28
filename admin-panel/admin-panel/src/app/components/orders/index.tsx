@@ -20,6 +20,14 @@ interface Order {
   items: OrderItem[];
   totalAmount: number;
   status: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  isPaymentAbandoned?: boolean;
+  paymentCancelReason?: string;
+  couponCode?: string;
+  discountAmount?: number;
   createdAt: string;
   whatsappLogs?: Array<{
     event?: string;

@@ -37,6 +37,9 @@ interface Order {
   totalAmount: number;
   status: string;
   paymentStatus: string;
+  paymentMethod?: string;
+  isPaymentAbandoned?: boolean;
+  paymentCancelReason?: string;
   shippingAddress: {
     fullName: string;
     phone: string;
@@ -166,6 +169,18 @@ export default function DashboardView() {
   const isRestrictedActive = deliveryStatus?.isRestricted;
   const isNightClosed = deliveryStatus?.isCurrentlyRestricted;
 
+  const incompleteOrdersCount = orders.filter((order: any) => {
+    if (order.paymentMethod === 'COD') return false;
+    if (order.paymentStatus === 'Success') return false;
+    if (order.isPaymentAbandoned) return true;
+    if (order.paymentStatus === 'Incomplete' || order.paymentStatus === 'Cancelled') return true;
+    if (order.paymentStatus === 'Pending' && order.createdAt) {
+      const diffMins = (Date.now() - new Date(order.createdAt).getTime()) / (1000 * 60);
+      if (diffMins > 15) return true;
+    }
+    return false;
+  }).length;
+
   return (
     <div className="space-y-4 sm:space-y-5 pb-8">
       {/* 1. Header Banner: Greeting + Live Store Status + Quick Actions */}
@@ -180,6 +195,17 @@ export default function DashboardView() {
                 <Sparkles className="h-3 w-3" />
                 <span>Admin Command Center</span>
               </span>
+
+              {incompleteOrdersCount > 0 && (
+                <Link
+                  href="/orders"
+                  className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 transition-colors"
+                  title="View customers who backed out without completing payment"
+                >
+                  <AlertTriangle className="h-3 w-3 text-rose-500" />
+                  <span>{incompleteOrdersCount} User Backed Out (Unpaid)</span>
+                </Link>
+              )}
 
               {/* Delivery Operating Pill */}
               <Link

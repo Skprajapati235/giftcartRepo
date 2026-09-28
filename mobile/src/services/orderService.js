@@ -9,6 +9,14 @@ const orderService = {
     const response = await api.post('/order/verify', paymentData, { timeout: 60000 });
     return response.data;
   },
+  cancelPayment: async (orderId, data = {}) => {
+    try {
+      const response = await api.post(`/order/${orderId}/cancel-payment`, data);
+      return response.data;
+    } catch (err) {
+      console.warn('Payment cancellation sync failed:', err?.response?.data || err.message);
+    }
+  },
   sendOrderEmail: async (orderId) => {
     try {
       const response = await api.post(`/order/${orderId}/send-email`);
