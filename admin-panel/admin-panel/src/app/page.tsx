@@ -21,6 +21,7 @@ import AuthBackground from "./components/auth/authBackground";
 import AuthHeroSection from "./components/auth/authHeroSection";
 
 export default function Home() {
+  
   const {
     login,
     setSession,
