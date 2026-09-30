@@ -11,6 +11,7 @@ import {
   EyeOff,
   ArrowRight,
   ShieldCheck,
+  ShieldAlert,
   AlertCircle,
   Sparkles,
 } from "lucide-react";
@@ -20,8 +21,33 @@ import AuthBackground from "./components/auth/authBackground";
 import AuthHeroSection from "./components/auth/authHeroSection";
 
 export default function Home() {
-  const { login, setSession, authenticated, loading, error } = useAuth();
+  const {
+    login,
+    setSession,
+    authenticated,
+    loading,
+    error,
+    sessionExpiredNotice,
+    clearExpiredNotice,
+  } = useAuth();
   const router = useRouter();
+
+  const [urlExpired, setUrlExpired] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("expired") === "true") {
+        setUrlExpired(true);
+      }
+    }
+  }, []);
+
+  const activeNotice =
+    sessionExpiredNotice ||
+    (urlExpired
+      ? "Session expired due to 30 seconds of inactivity. Please sign in again."
+      : null);
 
   const [form, setForm] = useState({
     email: "",
@@ -112,6 +138,30 @@ export default function Home() {
               
               {/* Subtle Top Gradient Accent Line */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-pink-500 via-fuchsia-500 to-indigo-600" />
+
+              {/* Session Expired Security Notice */}
+              {activeNotice && (
+                <div className="mb-5 mt-1 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs font-semibold flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
+                  <div className="flex items-center gap-2.5">
+                    <ShieldAlert className="h-5 w-5 shrink-0 text-amber-500" />
+                    <span>{activeNotice}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearExpiredNotice();
+                      setUrlExpired(false);
+                      if (typeof window !== "undefined") {
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                      }
+                    }}
+                    className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-300 p-1 rounded-md text-base leading-none"
+                    aria-label="Dismiss notice"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
 
               {/* Mode Switcher Tabs: Sign In / Register */}
               <div className="flex p-1 bg-slate-100/80 dark:bg-slate-800/80 rounded-xl mb-6 shadow-inner border border-slate-200/50 dark:border-slate-700/50">

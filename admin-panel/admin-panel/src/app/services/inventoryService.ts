@@ -1,20 +1,4 @@
-import axios from "axios";
-
-const baseURL = process.env.NEXT_PUBLIC_API_URL;
-
-const getAuthToken = () => {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem("giftcartAdminToken") || "";
-};
-
-const authApi = () =>
-  axios.create({
-    baseURL,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
-  });
+import { authApi, baseURL, getAuthToken } from "./apiClient";
 
 export interface InventoryItem {
   _id: string;

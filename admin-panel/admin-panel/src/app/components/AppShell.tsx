@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
 import MobileHeader from "./MobileHeader";
@@ -8,18 +8,36 @@ import { ThemeProvider } from "../context/ThemeContext";
 import { SidebarProvider } from "../context/SidebarContext";
 import NotificationManager from "./NotificationManager";
 import { AiChatProvider } from "../context/AiChatContext";
+import { useAuth } from "../context/AuthContext";
+import SessionTimeoutModal from "./auth/SessionTimeoutModal";
+import GlobalLoader from "./GlobalLoaders/GlobalLoader";
 
 export default function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hideSidebar = ["/", "/register", "/forgot-password"].includes(pathname || "");
+  const { authenticated, loading } = useAuth();
+
+  useEffect(() => {
+    if (!hideSidebar && !loading && !authenticated) {
+      if (typeof window !== "undefined") {
+        window.location.replace("/?expired=true");
+      }
+    }
+  }, [hideSidebar, loading, authenticated]);
 
   return (
     <ThemeProvider>
       {hideSidebar ? (
         <>{children}</>
+      ) : loading ? (
+        <GlobalLoader />
+      ) : !authenticated ? (
+        <GlobalLoader />
       ) : (
         <SidebarProvider>
           <AiChatProvider>
+            {/* 30-Second Inactivity Warning & Countdown Modal */}
+            <SessionTimeoutModal />
             <NotificationManager />
             <div className="flex h-screen overflow-hidden bg-background">
               <Sidebar aria-label="Sidebar for administration functions" />

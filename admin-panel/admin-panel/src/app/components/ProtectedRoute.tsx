@@ -15,14 +15,31 @@ export default function ProtectedRoute({
 
   useEffect(() => {
     if (!loading && !authenticated) {
-      router.replace("/");
+      if (typeof window !== "undefined") {
+        window.location.replace("/?expired=true");
+      } else {
+        router.replace("/");
+      }
     }
   }, [authenticated, loading, router]);
 
+  // Handle bfcache (browser back/forward button restore)
+  useEffect(() => {
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        const token = localStorage.getItem("giftcartAdminToken");
+        const lastActive = Number(localStorage.getItem("giftcartAdminLastActive") || 0);
+        if (!token || (lastActive && Date.now() - lastActive > 30000)) {
+          window.location.replace("/?expired=true");
+        }
+      }
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
   if (loading || !authenticated) {
-    return (
-      <GlobalLoader />
-    );
+    return <GlobalLoader />;
   }
 
   return <>{children}</>;

@@ -1,24 +1,14 @@
-import axios from "axios";
+import { api, authApi, getAuthToken } from "./apiClient";
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL;
+export { getAuthToken, authApi };
 
-const api = axios.create({
-  baseURL,
-  headers: { "Content-Type": "application/json" },
-});
-
-const authApi = (token?: string) =>
-  axios.create({
-    baseURL,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-
-const getAuthToken = () => {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem("giftcartAdminToken") || "";
+export const verifyAdminSession = async () => {
+  const token = getAuthToken();
+  if (!token) {
+    return { valid: false, message: "No token" };
+  }
+  const response = await authApi(token).get("/admin/auth/verify-session");
+  return response.data;
 };
 
 export const loginAdmin = async (payload: { email: string; password: string }) => {

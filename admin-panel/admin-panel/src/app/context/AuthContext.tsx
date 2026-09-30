@@ -2,14 +2,17 @@
 
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import * as service from "../services/adminService";
 import { useToast } from "../../context/ToastContext";
-interface AuthState {
+
+export interface AuthState {
   user: any | null;
   token: string | null;
   loading: boolean;
@@ -21,11 +24,21 @@ interface AuthState {
     email: string;
     password: string;
   }) => Promise<void>;
-  logout: () => void;
+  logout: (reason?: any) => void;
   setSession: (tokenValue: string, userValue: any) => void;
+  sessionWarning: boolean;
+  remainingSeconds: number;
+  stayLoggedIn: () => void;
+  sessionExpiredNotice: string | null;
+  clearExpiredNotice: () => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
+
+// Security constants: 30 seconds of inactivity auto-logout, 10s warning window
+const INACTIVITY_TIMEOUT_MS = 30 * 1000;
+const WARNING_THRESHOLD_MS = 20 * 1000;
+const HEARTBEAT_INTERVAL_MS = 15 * 1000;
 
 function parseJwt(token: string) {
   try {
@@ -57,23 +70,92 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const clearSession = async () => {
+  // Inactivity countdown states
+  const [sessionWarning, setSessionWarning] = useState(false);
+  const [remainingSeconds, setRemainingSeconds] = useState(10);
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState<string | null>(null);
+
+  const lastActiveRef = useRef<number>(Date.now());
+  const lastThrottleRef = useRef<number>(0);
+
+  const clearExpiredNotice = useCallback(() => {
+    setSessionExpiredNotice(null);
     if (typeof window !== "undefined") {
-      localStorage.removeItem("giftcartAdminToken");
-      localStorage.removeItem("giftcartAdminUser");
+      sessionStorage.removeItem("giftcartSessionExpiredNotice");
     }
-    if (typeof window !== "undefined") {
-      window.location.href = "/";
-    }
-  };
-  const setSession = (tokenValue: string, userValue: any) => {
+  }, []);
+
+  const clearSession = useCallback(
+    (options?: { reason?: string; message?: string }) => {
+      const msg =
+        options?.message ||
+        (options?.reason === "inactivity"
+          ? "Session expired due to 30 seconds of inactivity. Please sign in again."
+          : "Session expired. Please sign in again.");
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("giftcartAdminToken");
+        localStorage.removeItem("giftcartAdminUser");
+        localStorage.removeItem("giftcartAdminLastActive");
+        sessionStorage.setItem("giftcartSessionExpiredNotice", msg);
+      }
+
+      setToken(null);
+      setUser(null);
+      setSessionWarning(false);
+      setSessionExpiredNotice(msg);
+
+      if (typeof window !== "undefined") {
+        const isPublicPath = ["/", "/register", "/forgot-password"].includes(
+          window.location.pathname
+        );
+        if (!isPublicPath) {
+          window.location.replace("/?expired=true");
+        }
+      }
+    },
+    []
+  );
+
+  const setSession = useCallback((tokenValue: string, userValue: any) => {
+    const now = Date.now();
+    lastActiveRef.current = now;
+    const cleanUser = userValue
+      ? {
+          _id: userValue._id || userValue.id,
+          name: userValue.name,
+          email: userValue.email,
+          role: userValue.role,
+          profilePic: userValue.profilePic,
+          city: userValue.city,
+          state: userValue.state,
+        }
+      : null;
+
     if (typeof window !== "undefined") {
       localStorage.setItem("giftcartAdminToken", tokenValue);
-      localStorage.setItem("giftcartAdminUser", JSON.stringify(userValue));
+      localStorage.setItem("giftcartAdminUser", JSON.stringify(cleanUser));
+      localStorage.setItem("giftcartAdminLastActive", String(now));
+      sessionStorage.removeItem("giftcartSessionExpiredNotice");
     }
     setToken(tokenValue);
-    setUser(userValue);
-  };
+    setUser(cleanUser);
+    setSessionWarning(false);
+    setSessionExpiredNotice(null);
+  }, []);
+
+  const stayLoggedIn = useCallback(() => {
+    const now = Date.now();
+    lastActiveRef.current = now;
+    if (typeof window !== "undefined") {
+      localStorage.setItem("giftcartAdminLastActive", String(now));
+    }
+    setSessionWarning(false);
+    setRemainingSeconds(10);
+
+    // Verify session with backend to ensure connection is healthy
+    service.verifyAdminSession().catch(() => {});
+  }, []);
 
   const login = async (payload: { email: string; password: string }) => {
     setLoading(true);
@@ -81,8 +163,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const data = await service.loginAdmin(payload);
-      const user = data.user || data.admin;
-      setSession(data.token, user);
+      const userObj = data.user || data.admin;
+      setSession(data.token, userObj);
       showToast("Signed in successfully", "success");
     } catch (err: any) {
       const msg = err.response?.data?.message || err.message || "Login failed";
@@ -106,7 +188,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await service.registerAdmin(payload);
       showToast("Account created! Please sign in.", "success");
     } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || "Registration failed";
+      const msg =
+        err.response?.data?.message || err.message || "Registration failed";
       setError(msg);
       showToast(msg, "error");
       throw err;
@@ -115,22 +198,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 1. Initial hydration from storage & check if already expired
   useEffect(() => {
     if (typeof window === "undefined") {
       setLoading(false);
       return;
     }
 
+    const notice = sessionStorage.getItem("giftcartSessionExpiredNotice");
+    if (notice) {
+      setSessionExpiredNotice(notice);
+    }
+
     const storedToken = localStorage.getItem("giftcartAdminToken");
     const storedUser = localStorage.getItem("giftcartAdminUser");
+    const storedLastActive = localStorage.getItem("giftcartAdminLastActive");
 
     const parsedUser = safeParseJson(storedUser);
+    const lastActiveTime = storedLastActive ? parseInt(storedLastActive, 10) : 0;
+    const now = Date.now();
+
+    // Check if token exists, is valid JWT, and has not exceeded 30s inactivity
     if (storedToken && parsedUser && isValidToken(storedToken)) {
-      setToken(storedToken);
-      setUser(parsedUser);
+      if (lastActiveTime && now - lastActiveTime > INACTIVITY_TIMEOUT_MS) {
+        // Was inactive for > 30s while browser was closed or page refreshed
+        clearSession({
+          reason: "inactivity",
+          message: "Session expired due to inactivity. Please sign in again.",
+        });
+      } else {
+        lastActiveRef.current = lastActiveTime || now;
+        setToken(storedToken);
+        setUser(parsedUser);
+        localStorage.setItem("giftcartAdminLastActive", String(lastActiveRef.current));
+      }
     } else {
       if (storedToken || storedUser) {
-        clearSession();
+        clearSession({ reason: "invalid_token" });
       } else {
         setToken(null);
         setUser(null);
@@ -138,26 +242,182 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setLoading(false);
-  }, []);
+  }, [clearSession]);
 
+  // 2. Activity listeners (resets the 30s inactivity timer on user interactions)
   useEffect(() => {
     if (!token) return;
 
-    const payload = parseJwt(token);
-    if (!payload?.exp) return;
+    const handleUserActivity = () => {
+      const now = Date.now();
+      lastActiveRef.current = now;
 
-    const expiresIn = payload.exp * 1000 - Date.now();
-    if (expiresIn <= 0) {
-      clearSession();
-      return;
-    }
+      // Throttle localStorage updates to once per 1000ms for high performance
+      if (now - lastThrottleRef.current > 1000) {
+        lastThrottleRef.current = now;
+        localStorage.setItem("giftcartAdminLastActive", String(now));
+      }
 
-    const timeout = window.setTimeout(() => {
-      clearSession();
-    }, expiresIn);
+      // If warning modal was displayed, automatically dismiss it upon activity
+      setSessionWarning((prev) => {
+        if (prev) {
+          setRemainingSeconds(10);
+          return false;
+        }
+        return false;
+      });
+    };
 
-    return () => window.clearTimeout(timeout);
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "touchstart",
+      "scroll",
+      "wheel",
+      "click",
+      "pointerdown",
+    ];
+
+    events.forEach((event) => {
+      window.addEventListener(event, handleUserActivity, { passive: true });
+    });
+
+    return () => {
+      events.forEach((event) => {
+        window.removeEventListener(event, handleUserActivity);
+      });
+    };
   }, [token]);
+
+  // 3. Second-by-second Inactivity & Warning Check
+  useEffect(() => {
+    if (!token) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const storedLastStr = localStorage.getItem("giftcartAdminLastActive");
+      const storedLast = storedLastStr ? parseInt(storedLastStr, 10) : lastActiveRef.current;
+      const effectiveLast = Math.max(lastActiveRef.current, storedLast);
+      lastActiveRef.current = effectiveLast;
+
+      const idleMs = now - effectiveLast;
+
+      if (idleMs >= INACTIVITY_TIMEOUT_MS) {
+        clearSession({
+          reason: "inactivity",
+          message: "Session expired due to 30 seconds of inactivity. Please sign in again.",
+        });
+      } else if (idleMs >= WARNING_THRESHOLD_MS) {
+        setSessionWarning(true);
+        const rem = Math.max(1, Math.ceil((INACTIVITY_TIMEOUT_MS - idleMs) / 1000));
+        setRemainingSeconds(rem);
+      } else {
+        setSessionWarning(false);
+        setRemainingSeconds(10);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [token, clearSession]);
+
+  // 4. Periodic Session Check API (Backend Heartbeat every 15s)
+  useEffect(() => {
+    if (!token) return;
+
+    const checkServerSession = async () => {
+      try {
+        const res = await service.verifyAdminSession();
+        if (res && res.valid && res.admin) {
+          setUser((prev: any) => ({ ...prev, ...res.admin }));
+        }
+      } catch (err: any) {
+        const status = err?.response?.status;
+        // 401 or 403 means session is definitively invalid or revoked on server
+        if (status === 401 || status === 403) {
+          clearSession({
+            reason: "server",
+            message: "Session expired or revoked by server. Please sign in again.",
+          });
+        }
+      }
+    };
+
+    // Run on initial mount
+    checkServerSession();
+
+    // Heartbeat every 15 seconds
+    const interval = setInterval(checkServerSession, HEARTBEAT_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [token, clearSession]);
+
+  // 5. Visibility and Focus Change Listener
+  useEffect(() => {
+    if (!token) return;
+
+    const handleVisibilityOrFocus = () => {
+      const now = Date.now();
+      const storedLastStr = localStorage.getItem("giftcartAdminLastActive");
+      const storedLast = storedLastStr ? parseInt(storedLastStr, 10) : lastActiveRef.current;
+
+      if (now - storedLast >= INACTIVITY_TIMEOUT_MS) {
+        clearSession({
+          reason: "inactivity",
+          message: "Session expired due to 30 seconds of inactivity. Please sign in again.",
+        });
+      } else {
+        // Tab resumed and still within 30s: ping server immediately
+        service.verifyAdminSession().catch((err: any) => {
+          if (err?.response?.status === 401 || err?.response?.status === 403) {
+            clearSession({
+              reason: "server",
+              message: "Session expired or revoked by server. Please sign in again.",
+            });
+          }
+        });
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleVisibilityOrFocus);
+    window.addEventListener("focus", handleVisibilityOrFocus);
+
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibilityOrFocus);
+      window.removeEventListener("focus", handleVisibilityOrFocus);
+    };
+  }, [token, clearSession]);
+
+  // 6. Multi-tab Sync & Global 401 Event Handling
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "giftcartAdminToken" && !e.newValue) {
+        clearSession({
+          reason: "cross-tab",
+          message: "Logged out from another tab.",
+        });
+      } else if (e.key === "giftcartAdminLastActive" && e.newValue) {
+        const otherTabActive = parseInt(e.newValue, 10);
+        lastActiveRef.current = Math.max(lastActiveRef.current, otherTabActive);
+        setSessionWarning(false);
+      }
+    };
+
+    const handleSessionExpiredEvent = (e: any) => {
+      clearSession({
+        reason: "unauthorized",
+        message: e.detail?.message || "Session expired or unauthorized. Please sign in again.",
+      });
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("giftcart:session-expired", handleSessionExpiredEvent);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("giftcart:session-expired", handleSessionExpiredEvent);
+    };
+  }, [clearSession]);
 
   const value = useMemo(
     () => ({
@@ -168,10 +428,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       authenticated: Boolean(user && token),
       login,
       register,
-      logout: clearSession,
+      logout: (reason?: any) =>
+        clearSession({
+          reason: typeof reason === "string" ? reason : "manual",
+          message: "Signed out successfully.",
+        }),
       setSession,
+      sessionWarning,
+      remainingSeconds,
+      stayLoggedIn,
+      sessionExpiredNotice,
+      clearExpiredNotice,
     }),
-    [user, token, loading, error]
+    [
+      user,
+      token,
+      loading,
+      error,
+      sessionWarning,
+      remainingSeconds,
+      stayLoggedIn,
+      sessionExpiredNotice,
+      clearExpiredNotice,
+      setSession,
+      clearSession,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

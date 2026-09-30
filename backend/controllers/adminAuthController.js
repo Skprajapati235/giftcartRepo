@@ -1,10 +1,20 @@
 const authService = require("../services/authService");
 const generateToken = require("../utils/generateToken");
+const User = require("../models/User");
+
+const sanitizeAdmin = (admin) => {
+  if (!admin) return null;
+  const obj = typeof admin.toObject === "function" ? admin.toObject() : { ...admin };
+  delete obj.password;
+  delete obj.resetOtpHash;
+  delete obj.resetOtpExpiresAt;
+  return obj;
+};
 
 exports.register = async (req, res) => {
   try {
     const admin = await authService.registerAdmin(req.body);
-    res.status(201).json({ admin });
+    res.status(201).json({ admin: sanitizeAdmin(admin) });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -14,7 +24,7 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const admin = await authService.loginAdmin({ email, password });
-    res.json({ admin, token: generateToken(admin._id, admin.role) });
+    res.json({ admin: sanitizeAdmin(admin), token: generateToken(admin._id, admin.role) });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -39,7 +49,7 @@ exports.googleLogin = async (req, res) => {
     const admin = await authService.googleLogin({ email, name });
 
     res.json({
-      admin,
+      admin: sanitizeAdmin(admin),
       token: generateToken(admin._id, admin.role),
     });
   } catch (err) {
@@ -62,5 +72,39 @@ exports.resetPassword = async (req, res) => {
     res.json({ message: "Password reset successfully. You can now log in" });
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+};
+
+exports.verifySession = async (req, res) => {
+  try {
+    const adminId = req.user?.id;
+    if (!adminId) {
+      return res.status(401).json({ success: false, message: "Unauthorized: No active admin session" });
+    }
+
+    const admin = await User.findById(adminId).select("-password -resetOtpHash -resetOtpExpiresAt");
+    if (!admin) {
+      return res.status(401).json({ success: false, message: "Admin account not found" });
+    }
+
+    if (admin.role !== "admin") {
+      return res.status(403).json({ success: false, message: "Admin privileges required" });
+    }
+
+    res.json({
+      success: true,
+      valid: true,
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        email: admin.email,
+        role: admin.role,
+        profilePic: admin.profilePic,
+        city: admin.city,
+        state: admin.state,
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || "Failed to verify session" });
   }
 };

@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { authApi } from "./apiClient";
 
 export interface ChatMessage {
   id?: string;
@@ -22,22 +20,6 @@ export interface AiChatSummary {
 export interface AiChatDetail extends AiChatSummary {
   messages: ChatMessage[];
 }
-
-const getAuthToken = () => {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem("giftcartAdminToken") || "";
-};
-
-const authApi = () => {
-  const token = getAuthToken();
-  return axios.create({
-    baseURL,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-};
 
 /**
  * Send a message to the AI.

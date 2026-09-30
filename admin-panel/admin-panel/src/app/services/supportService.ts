@@ -1,27 +1,4 @@
-import axios from "axios";
-
-const baseURL = process.env.NEXT_PUBLIC_API_URL;
-
-const getAuthToken = () => {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem("giftcartAdminToken") || "";
-};
-
-const authApi = () =>
-  axios.create({
-    baseURL,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getAuthToken()}`,
-    },
-  });
-
-const publicApi = axios.create({
-  baseURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
+import { authApi, api as publicApi, getAuthToken } from "./apiClient";
 
 export interface SupportTicket {
   _id: string;
