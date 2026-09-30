@@ -12,8 +12,9 @@ const setupInterceptors = (instance: AxiosInstance): AxiosInstance => {
     (response) => response,
     (error) => {
       const status = error?.response?.status;
-      // If 401 Unauthorized, dispatch global session-expired event
-      if (status === 401 && typeof window !== "undefined") {
+      const isVerifyRoute = Boolean(error?.config?.url?.includes("/admin/auth/verify-session"));
+      // If 401 Unauthorized on normal API calls, dispatch global session-expired event
+      if (status === 401 && !isVerifyRoute && typeof window !== "undefined") {
         const currentPath = window.location.pathname;
         const isPublicPath = ["/", "/register", "/forgot-password"].includes(currentPath);
         if (!isPublicPath) {

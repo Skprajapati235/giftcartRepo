@@ -343,10 +343,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Run on initial mount
-    checkServerSession();
-
-    // Heartbeat every 15 seconds
+    // Heartbeat runs every 15 seconds
     const interval = setInterval(checkServerSession, HEARTBEAT_INTERVAL_MS);
 
     return () => clearInterval(interval);
@@ -361,20 +358,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedLastStr = localStorage.getItem("giftcartAdminLastActive");
       const storedLast = storedLastStr ? parseInt(storedLastStr, 10) : lastActiveRef.current;
 
+      // If user was away for 30s or more, expire session immediately
       if (now - storedLast >= INACTIVITY_TIMEOUT_MS) {
         clearSession({
           reason: "inactivity",
           message: "Session expired due to 30 seconds of inactivity. Please sign in again.",
-        });
-      } else {
-        // Tab resumed and still within 30s: ping server immediately
-        service.verifyAdminSession().catch((err: any) => {
-          if (err?.response?.status === 401 || err?.response?.status === 403) {
-            clearSession({
-              reason: "server",
-              message: "Session expired or revoked by server. Please sign in again.",
-            });
-          }
         });
       }
     };

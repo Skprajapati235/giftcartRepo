@@ -1,5 +1,6 @@
 const authService = require("../services/authService");
 const generateToken = require("../utils/generateToken");
+const Admin = require("../models/Admin");
 const User = require("../models/User");
 
 const sanitizeAdmin = (admin) => {
@@ -82,7 +83,11 @@ exports.verifySession = async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized: No active admin session" });
     }
 
-    const admin = await User.findById(adminId).select("-password -resetOtpHash -resetOtpExpiresAt");
+    let admin = await Admin.findById(adminId).select("-password -resetOtpHash -resetOtpExpiresAt");
+    if (!admin) {
+      admin = await User.findById(adminId).select("-password -resetOtpHash -resetOtpExpiresAt");
+    }
+
     if (!admin) {
       return res.status(401).json({ success: false, message: "Admin account not found" });
     }
@@ -96,6 +101,7 @@ exports.verifySession = async (req, res) => {
       valid: true,
       admin: {
         id: admin._id,
+        _id: admin._id,
         name: admin.name,
         email: admin.email,
         role: admin.role,
