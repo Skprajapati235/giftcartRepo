@@ -25,7 +25,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
               <Sidebar aria-label="Sidebar for administration functions" />
               <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
                 <MobileHeader />
-                <div className="flex-1 overflow-x-hidden overflow-y-auto bg-background lg:border-l lg:border-border-theme">
+                <div className="flex-1 overflow-x-hidden overflow-y-auto bg-background">
                   {children}
                 </div>
               </div>

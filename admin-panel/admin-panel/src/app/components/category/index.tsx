@@ -67,11 +67,14 @@ export default function CategoryView() {
   return (
     <>
       <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 mt-1">Categories</h1>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Categories</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Manage product departments, taxonomy, and store navigation</p>
+        </div>
         {!showForm && (
           <button
             onClick={openForm}
-            className="flex items-center gap-2 bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-lg shadow-primary/20"
+            className="flex items-center gap-2 bg-primary hover:opacity-95 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-md shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] cursor-pointer"
           >
             <Plus size={18} />
             Create new

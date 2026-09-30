@@ -35,6 +35,7 @@ export type NavChild = {
   key: string;
   href?: string;
   label: string;
+  description?: string;
   icon?: ElementType;
   isGroup?: boolean;
   children?: NavChild[];
@@ -44,11 +45,11 @@ export type NavItem = {
   key: string;
   href?: string;
   label: string;
+  railLabel?: string;
   icon: ElementType;
   children?: NavChild[];
   /** Opens a custom sub-sidebar (instead of a plain link / child list). "aiChat" = New chat + chat history. */
   panel?: "aiChat";
-
 };
 
 export const adminNavigation: NavItem[] = [
@@ -108,41 +109,45 @@ export const adminNavigation: NavItem[] = [
   {
     key: "insight",
     label: "Insight",
+    railLabel: "Insights",
     icon: Lightbulb,
     children: [
-      { key: "leads", href: "/leads", label: "Leads", icon: UserPlus },
-      { key: "crm", href: "/crm", label: "CRM Contacts", icon: Users },
+      { key: "leads", href: "/leads", label: "Leads", description: "Customer inquiries & funnel", icon: UserPlus },
+      { key: "crm", href: "/crm", label: "CRM Contacts", description: "User base directory", icon: Users },
     ],
   },
   {
     key: "websitecontact",
     label: "Website Contact",
+    railLabel: "Contacts",
     icon: Phone,
     children: [
-      { key: "websiteContacts", href: "/websitecontact", label: "Website Contacts", icon: Mail },
-      { key: "customerSupport", href: "/support", label: "Customer Support", icon: LifeBuoy },
+      { key: "websiteContacts", href: "/websitecontact", label: "Website Contacts", description: "Inbound form submissions", icon: Mail },
+      { key: "customerSupport", href: "/support", label: "Customer Support", description: "Helpdesk & ticket issues", icon: LifeBuoy },
     ],
   },
   {
     key: "seo",
     label: "SEO Suite",
+    railLabel: "SEO Suite",
     icon: Globe,
     children: [
-      { key: "seo-global", href: "/seo/global", label: "Global & Schema", icon: Settings },
-      { key: "seo-pages", href: "/seo/pages", label: "Page-by-Page SEO", icon: FileText },
-      { key: "seo-redirects", href: "/seo/redirects", label: "URL Redirects", icon: ArrowRightLeft },
-      { key: "seo-robots", href: "/seo/robots-sitemap", label: "Robots & Sitemap", icon: Bot },
-      { key: "seo-audit", href: "/seo/audit", label: "SEO Health Audit", icon: Activity },
+      { key: "seo-global", href: "/seo/global", label: "Global & Schema", description: "Meta tags & JSON-LD data", icon: Settings },
+      { key: "seo-pages", href: "/seo/pages", label: "Page-by-Page SEO", description: "On-page title & keywords", icon: FileText },
+      { key: "seo-redirects", href: "/seo/redirects", label: "URL Redirects", description: "301 & 302 routing rules", icon: ArrowRightLeft },
+      { key: "seo-robots", href: "/seo/robots-sitemap", label: "Robots & Sitemap", description: "Crawl index & XML sitemaps", icon: Bot },
+      { key: "seo-audit", href: "/seo/audit", label: "SEO Health Audit", description: "Score, speed & error checks", icon: Activity },
     ],
   },
   {
     key: "admin",
     label: "Admin",
+    railLabel: "Admin",
     icon: Settings,
     children: [
-      { key: "adminProfile", href: "/admins", label: "Admin Profile", icon: Users },
-      { key: "developer", href: "/developer", label: "Developer", icon: Users },
-      { key: "termsPolicy", href: "/terms", label: "Terms & Policy", icon: FileText },
+      { key: "adminProfile", href: "/admins", label: "Admin Profile", description: "Account & credentials", icon: Users },
+      { key: "developer", href: "/developer", label: "Developer", description: "API keys & system logs", icon: Users },
+      { key: "termsPolicy", href: "/terms", label: "Terms & Policy", description: "Legal docs & compliance", icon: FileText },
     ],
   },
 ];

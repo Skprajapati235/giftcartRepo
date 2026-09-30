@@ -65,11 +65,14 @@ export default function OccasionView() {
   return (
     <>
       <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 mt-1">Occasions</h1>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Gift Occasions & Festivals</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Configure event types (Birthdays, Anniversaries, Valentine, Diwali)</p>
+        </div>
         {!showForm && (
           <button
             onClick={openForm}
-            className="flex items-center gap-2 bg-primary hover:opacity-90 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-lg shadow-primary/20"
+            className="flex items-center gap-2 bg-primary hover:opacity-95 text-white px-5 py-2.5 rounded-xl font-bold transition shadow-md shadow-primary/20 hover:scale-[1.01] active:scale-[0.98] cursor-pointer"
           >
             <Plus size={18} />
             Add New Occasion

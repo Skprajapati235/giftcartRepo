@@ -300,16 +300,21 @@ export default function ProductList({
                   {p.description}
                 </p>
 
-                {/* Price Section */}
-                <div className="mt-4 flex items-center gap-2">
-                  {p.discount > 0 || (p.salePrice && p.salePrice < p.price) ? (
-                    <>
-                      <span className="text-slate-400 line-through font-bold">₹{p.price}</span>
-                      <span className="text-primary font-extrabold">₹{p.salePrice ?? p.price ?? 0}</span>
-                    </>
-                  ) : (
-                    <span className="text-primary font-extrabold">₹{p.price || 0}</span>
-                  )}
+                {/* Price & Status Section */}
+                <div className="mt-3.5 pt-3 border-t border-border-theme/70 flex items-center justify-between">
+                  <div className="flex items-baseline gap-1.5">
+                    {p.discount > 0 || (p.salePrice && p.salePrice < p.price) ? (
+                      <>
+                        <span className="text-primary font-black text-base">₹{p.salePrice ?? p.price ?? 0}</span>
+                        <span className="text-slate-400 line-through font-bold text-xs">₹{p.price}</span>
+                      </>
+                    ) : (
+                      <span className="text-primary font-black text-base">₹{p.price || 0}</span>
+                    )}
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${p.isCodAvailable ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'}`}>
+                    {p.isCodAvailable ? 'COD' : 'Prepaid'}
+                  </span>
                 </div>
 
                 {/* Action Menu Like List */}

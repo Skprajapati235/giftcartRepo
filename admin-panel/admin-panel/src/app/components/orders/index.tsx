@@ -112,14 +112,17 @@ export default function OrdersView() {
 
   return (
     <>
-      <div className="mb-6 sm:mb-8 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Orders</h1>
+      <div className="mb-6 sm:mb-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Customer Orders</h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Manage customer checkouts, payments, delivery statuses and invoices</p>
+        </div>
         
         {selectedIds.length > 0 && (
           <div className="animate-in slide-in-from-bottom-4 fade-in duration-200">
             <button
               onClick={() => setIsBulkDeleting(true)}
-              className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg shadow-rose-500/20 transition-all"
+              className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
               Delete Selected ({selectedIds.length})

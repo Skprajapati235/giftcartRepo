@@ -14,7 +14,7 @@ export default function MobileHeader() {
       <button
         type="button"
         onClick={openMobile}
-        className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-theme bg-background text-foreground transition hover:bg-hover-theme"
+        className="cursor-pointer flex h-10 w-10 items-center justify-center rounded-xl border border-border-theme bg-background text-foreground transition hover:bg-hover-theme"
         aria-label="Open menu"
       >
         <Menu className="h-5 w-5" />
@@ -34,10 +34,10 @@ export default function MobileHeader() {
       <button
         type="button"
         onClick={toggleTheme}
-        className="flex h-10 w-10 items-center justify-center rounded-xl border border-border-theme bg-background text-foreground transition hover:bg-hover-theme"
+        className="cursor-pointer flex h-10 w-10 items-center justify-center rounded-xl border border-border-theme bg-background text-foreground transition hover:bg-hover-theme"
         aria-label="Toggle theme"
       >
-        {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        {theme === "dark" ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5 text-slate-600" />}
       </button>
     </header>
   );

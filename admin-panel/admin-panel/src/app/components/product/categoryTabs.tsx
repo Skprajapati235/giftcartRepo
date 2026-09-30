@@ -38,7 +38,7 @@ export default function CategoryTabs({ activeCategory, onChange }: CategoryTabsP
       <button
         type="button"
         onClick={() => onChange("")}
-        className={`shrink-0 px-4 py-2 rounded-xl text-sm font-bold border transition whitespace-nowrap ${
+        className={`cursor-pointer shrink-0 px-4 py-2 rounded-xl text-sm font-bold border transition whitespace-nowrap ${
           activeCategory === ""
             ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
             : "bg-card text-foreground border-border-theme hover:bg-hover-theme"
@@ -59,7 +59,7 @@ export default function CategoryTabs({ activeCategory, onChange }: CategoryTabsP
             key={cat._id}
             type="button"
             onClick={() => onChange(cat._id)}
-            className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition whitespace-nowrap ${
+            className={`cursor-pointer shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition whitespace-nowrap ${
               activeCategory === cat._id
                 ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                 : "bg-card text-foreground border-border-theme hover:bg-hover-theme"

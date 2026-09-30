@@ -47,7 +47,8 @@ export default function UsersView() {
   return (
     <>
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Customer Accounts</h1>
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Customer Accounts</h1>
+        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Manage registered buyers, mobile numbers, profiles, and customer wishlists</p>
       </div>
 
       <UserList

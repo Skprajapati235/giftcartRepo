@@ -116,7 +116,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
             <Link
                 href="/chat"
                 onClick={onNavigate}
-                className="flex items-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-[13px] font-semibold text-white shadow-md transition hover:opacity-90"
+                className="cursor-pointer flex items-center gap-2 rounded-xl bg-primary px-3 py-2.5 text-[13px] font-semibold text-white shadow-md transition hover:opacity-90"
             >
                 <Plus className="h-4 w-4" />
                 New chat
@@ -148,7 +148,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                         <button
                             type="button"
                             onClick={() => void refresh()}
-                            className="mt-2 font-semibold text-primary hover:underline"
+                            className="cursor-pointer mt-2 font-semibold text-primary hover:underline"
                         >
                             Try again
                         </button>
@@ -196,7 +196,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                                 <button
                                                     type="submit"
                                                     aria-label="Save title"
-                                                    className="rounded-md p-1 text-emerald-500 hover:bg-hover-theme"
+                                                    className="cursor-pointer rounded-md p-1 text-emerald-500 hover:bg-hover-theme"
                                                 >
                                                     <Check className="h-3.5 w-3.5" />
                                                 </button>
@@ -204,7 +204,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                                     type="button"
                                                     onClick={() => setEditingId(null)}
                                                     aria-label="Cancel rename"
-                                                    className="rounded-md p-1 text-slate-400 hover:bg-hover-theme"
+                                                    className="cursor-pointer rounded-md p-1 text-slate-400 hover:bg-hover-theme"
                                                 >
                                                     <X className="h-3.5 w-3.5" />
                                                 </button>
@@ -225,7 +225,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                             href={`/chat/${chat.chatId}`}
                                             onClick={onNavigate}
                                             title={chat.title}
-                                            className={`min-w-0 flex-1 truncate px-2.5 py-1.5 text-xs sm:text-[13px] ${active ? "font-medium" : "font-normal"}`}
+                                            className={`cursor-pointer min-w-0 flex-1 truncate px-2.5 py-1.5 text-xs sm:text-[13px] ${active ? "font-medium" : "font-normal"}`}
                                         >
                                             {chat.title}
                                         </Link>
@@ -234,7 +234,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                                 type="button"
                                                 onClick={() => startRename(chat)}
                                                 aria-label="Rename chat"
-                                                className="rounded-md p-1 text-slate-400 transition hover:bg-slate-300/40 hover:text-foreground dark:hover:bg-white/10 dark:hover:text-foreground"
+                                                className="cursor-pointer rounded-md p-1 text-slate-400 transition hover:bg-slate-300/40 hover:text-foreground dark:hover:bg-white/10 dark:hover:text-foreground"
                                             >
                                                 <Pencil className="h-3.5 w-3.5" />
                                             </button>
@@ -242,7 +242,7 @@ export default function ChatHistoryPanel({ onNavigate, alwaysShowActions = false
                                                 type="button"
                                                 onClick={() => setPendingDelete(chat)}
                                                 aria-label="Delete chat"
-                                                className="rounded-md p-1 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-500 dark:hover:bg-rose-500/20"
+                                                className="cursor-pointer rounded-md p-1 text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-500 dark:hover:bg-rose-500/20"
                                             >
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </button>

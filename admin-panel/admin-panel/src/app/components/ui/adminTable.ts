@@ -1,4 +1,4 @@
-/** Shared admin list table classes — prevents row overlap on mobile */
+/** Shared admin list table classes — prevents row overlap on mobile with modern typography */
 
 export const adminTableWrapClass =
   "overflow-x-auto w-full max-w-full [-webkit-overflow-scrolling:touch] min-h-[350px] pb-32";
@@ -11,7 +11,7 @@ export const adminTableWideClass =
   "w-full min-w-[960px] text-left border-collapse";
 
 export const adminTableHeadCellClass =
-  "px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-slate-500 sm:px-6 sm:py-4";
+  "px-5 py-3.5 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 sm:px-6 sm:py-4 select-none";
 
 export const adminTableBodyCellClass =
-  "px-4 py-4 align-middle sm:px-6 sm:py-5";
+  "px-5 py-4 align-middle text-sm text-slate-700 dark:text-slate-200 sm:px-6 sm:py-4.5";
