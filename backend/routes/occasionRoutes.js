@@ -6,6 +6,7 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 // Public — navbar list + category filter (supports ?all=true for the
 // lightweight full list, or ?page/&limit/&search for the admin table).
 router.get("/", controller.getAll);
+router.get("/:id", controller.getOne);
 
 // Admin — create/edit/delete occasions.
 router.post("/", adminMiddleware, controller.create);

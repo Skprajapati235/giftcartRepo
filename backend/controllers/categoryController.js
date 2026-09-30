@@ -19,6 +19,16 @@ exports.getAll = async (req, res) => {
   }
 };
 
+exports.getOne = async (req, res) => {
+  try {
+    const data = await service.getCategoryById(req.params.id);
+    if (!data) return res.status(404).json({ message: "Category not found" });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.update = async (req, res) => {
   const data = await service.updateCategory(req.params.id, req.body);
   res.json(data);

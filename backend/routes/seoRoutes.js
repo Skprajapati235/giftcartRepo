@@ -5,6 +5,8 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 // Public endpoints (used by frontend website and search bots)
 router.get("/global", controller.getGlobal);
 router.get("/page", controller.getPageByPath);
+router.get("/category", controller.getCategorySeo);
+router.get("/occasion", controller.getOccasionSeo);
 router.get("/sitemap-data", controller.getSitemapData);
 router.get("/robots-data", controller.getRobotsData);
 router.get("/check-redirect", controller.checkRedirect);

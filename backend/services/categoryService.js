@@ -23,6 +23,10 @@ exports.getCategories = async ({ page = 1, limit = 10, search = "" } = {}) => {
   };
 };
 
+exports.getCategoryById = async (id) => {
+  return await Category.findById(id);
+};
+
 exports.updateCategory = async (id, data) => {
   return await Category.findByIdAndUpdate(id, data, { new: true });
 };

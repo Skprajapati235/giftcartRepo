@@ -1,11 +1,17 @@
 const service = require("../services/seoService");
 
+// Caching helper for high performance
+const setPublicCacheHeaders = (res, maxAge = 60, sMaxAge = 300) => {
+  res.set("Cache-Control", `public, max-age=${maxAge}, s-maxage=${sMaxAge}, stale-while-revalidate=600`);
+};
+
 // -------------------------------------------------------------
 // Global SEO
 // -------------------------------------------------------------
 exports.getGlobal = async (req, res) => {
   try {
     const data = await service.getGlobalSeo();
+    setPublicCacheHeaders(res, 120, 600);
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -28,6 +34,7 @@ exports.getPageByPath = async (req, res) => {
   try {
     const path = req.query.path || "/";
     const data = await service.getPageSeoByPath(path);
+    setPublicCacheHeaders(res, 60, 300);
     res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -128,6 +135,7 @@ exports.checkRedirect = async (req, res) => {
   try {
     const path = req.query.path || "";
     const data = await service.checkRedirect(path);
+    setPublicCacheHeaders(res, 60, 300);
     res.json({ success: true, ...data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -140,6 +148,7 @@ exports.checkRedirect = async (req, res) => {
 exports.getSitemapData = async (req, res) => {
   try {
     const data = await service.getSitemapData();
+    setPublicCacheHeaders(res, 300, 900);
     res.json({ success: true, ...data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -149,7 +158,33 @@ exports.getSitemapData = async (req, res) => {
 exports.getRobotsData = async (req, res) => {
   try {
     const data = await service.getRobotsData();
+    setPublicCacheHeaders(res, 300, 900);
     res.json({ success: true, ...data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// -------------------------------------------------------------
+// Category & Occasion SEO
+// -------------------------------------------------------------
+exports.getCategorySeo = async (req, res) => {
+  try {
+    const idOrSlug = req.query.id || req.query.slug || "";
+    const data = await service.getCategorySeo(idOrSlug);
+    setPublicCacheHeaders(res, 60, 300);
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getOccasionSeo = async (req, res) => {
+  try {
+    const idOrSlug = req.query.id || req.query.slug || "";
+    const data = await service.getOccasionSeo(idOrSlug);
+    setPublicCacheHeaders(res, 60, 300);
+    res.json({ success: true, data });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -29,6 +29,10 @@ exports.getAllOccasionsList = async () => {
   return await Occasion.find({ isActive: true }).sort({ name: 1 });
 };
 
+exports.getOccasionById = async (id) => {
+  return await Occasion.findById(id);
+};
+
 exports.updateOccasion = async (id, data) => {
   return await Occasion.findByIdAndUpdate(id, data, { new: true });
 };

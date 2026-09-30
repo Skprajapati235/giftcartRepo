@@ -6,6 +6,51 @@ const Category = require("../models/Category");
 const Occasion = require("../models/Occasion");
 const Flavor = require("../models/Flavor");
 
+// -------------------------------------------------------------
+// High-Speed In-Memory Cache (Sub-millisecond responses for SEO)
+// -------------------------------------------------------------
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes default TTL
+
+const memoryCache = {
+  global: null,
+  globalTimestamp: 0,
+  pages: new Map(), // path -> { data, timestamp }
+  redirects: new Map(), // path -> { data, timestamp }
+  sitemap: null,
+  sitemapTimestamp: 0,
+  robots: null,
+  robotsTimestamp: 0,
+};
+
+const invalidateAllSeoCache = () => {
+  memoryCache.global = null;
+  memoryCache.globalTimestamp = 0;
+  memoryCache.pages.clear();
+  memoryCache.redirects.clear();
+  memoryCache.sitemap = null;
+  memoryCache.sitemapTimestamp = 0;
+  memoryCache.robots = null;
+  memoryCache.robotsTimestamp = 0;
+};
+
+const invalidatePageCache = (normalizedPath) => {
+  if (normalizedPath) {
+    memoryCache.pages.delete(normalizedPath);
+  } else {
+    memoryCache.pages.clear();
+  }
+  memoryCache.sitemap = null;
+  memoryCache.sitemapTimestamp = 0;
+};
+
+const invalidateRedirectCache = (normalizedPath) => {
+  if (normalizedPath) {
+    memoryCache.redirects.delete(normalizedPath);
+  } else {
+    memoryCache.redirects.clear();
+  }
+};
+
 // Normalize URL paths e.g. "/About/" -> "/about", "" -> "/"
 const normalizePath = (path) => {
   if (!path) return "/";
@@ -22,9 +67,14 @@ const normalizePath = (path) => {
 // -------------------------------------------------------------
 
 exports.getGlobalSeo = async () => {
-  let global = await SeoGlobal.findOne();
+  const now = Date.now();
+  if (memoryCache.global && (now - memoryCache.globalTimestamp < CACHE_TTL_MS)) {
+    return memoryCache.global;
+  }
+
+  let global = await SeoGlobal.findOne().lean();
   if (!global) {
-    global = await SeoGlobal.create({
+    const created = await SeoGlobal.create({
       siteName: "GiftFestive",
       defaultTitle: "GiftFestive | Faridabad Most Trusted Online Gift, Cake & Flower Delivery",
       titleTemplate: "%s | GiftFestive",
@@ -39,14 +89,14 @@ exports.getGlobalSeo = async () => {
         "midnight cake delivery faridabad",
         "same day gift delivery faridabad",
       ],
-      siteUrl: "https://giftfestive.com",
-      defaultOgImage: "https://giftfestive.com/opengraph-image",
+      siteUrl: "https://www.giftfestive.com",
+      defaultOgImage: "https://res.cloudinary.com/dqraerylq/image/upload/v1790399811/giftcart/onoltlcvokmoh7f8b4wk.jpg",
       twitterHandle: "@giftfestive",
       twitterCardType: "summary_large_image",
       organization: {
         legalName: "GiftFestive",
         founder: "Sonu Prajapati",
-        telephone: "+91-9999999999",
+        telephone: "8400787712",
         email: "support@giftfestive.com",
         logoUrl: "https://giftfestive.com/icon-512.png",
         priceRange: "₹₹",
@@ -66,45 +116,93 @@ exports.getGlobalSeo = async () => {
         ],
       },
     });
+    global = created.toObject();
   }
+
+  memoryCache.global = global;
+  memoryCache.globalTimestamp = now;
   return global;
 };
 
 exports.updateGlobalSeo = async (data) => {
   let global = await SeoGlobal.findOne();
   if (!global) {
-    return await SeoGlobal.create(data);
+    global = await SeoGlobal.create(data);
+  } else {
+    Object.assign(global, data);
+    await global.save();
   }
-  Object.assign(global, data);
-  return await global.save();
+  invalidateAllSeoCache();
+  return global;
 };
 
 // -------------------------------------------------------------
-// 2. PAGE-BY-PAGE SEO
+// 2. PAGE-BY-PAGE SEO (WITH FULL FALLBACK ENRICHMENT)
 // -------------------------------------------------------------
 
 exports.getPageSeoByPath = async (rawPath) => {
   const path = normalizePath(rawPath);
-  let page = await SeoPage.findOne({ path, isActive: true });
-  if (!page) {
-    // Return fallback populated from global SEO
-    const global = await exports.getGlobalSeo();
-    return {
-      path,
-      pageName: path === "/" ? "Home" : path.replace("/", "").replace(/-/g, " "),
-      metaTitle: global.defaultTitle,
-      metaDescription: global.defaultDescription,
-      metaKeywords: global.defaultKeywords || [],
-      canonicalUrl: `${global.siteUrl}${path === "/" ? "" : path}`,
-      ogTitle: global.defaultTitle,
-      ogDescription: global.defaultDescription,
-      ogImage: global.defaultOgImage,
-      noIndex: false,
-      noFollow: false,
-      isFallback: true,
-    };
+  const now = Date.now();
+
+  const cached = memoryCache.pages.get(path);
+  if (cached && (now - cached.timestamp < CACHE_TTL_MS)) {
+    return cached.data;
   }
-  return page;
+
+  const global = await exports.getGlobalSeo();
+  let page = await SeoPage.findOne({ path, isActive: true }).lean();
+
+  const siteUrl = global.siteUrl || "https://www.giftfestive.com";
+  const siteName = global.siteName || "GiftFestive";
+  const canonicalUrl = page?.canonicalUrl?.trim() || `${siteUrl}${path === "/" ? "" : path}`;
+
+  const metaTitle = page?.metaTitle?.trim() || global.defaultTitle;
+  const metaDescription = page?.metaDescription?.trim() || global.defaultDescription;
+  const metaKeywords = (page?.metaKeywords && page.metaKeywords.length > 0)
+    ? page.metaKeywords
+    : (global.defaultKeywords || []);
+
+  const ogTitle = page?.ogTitle?.trim() || metaTitle;
+  const ogDescription = page?.ogDescription?.trim() || metaDescription;
+  const ogImage = page?.ogImage?.trim() || global.defaultOgImage || "https://giftfestive.com/opengraph-image";
+
+  const enrichedPage = {
+    _id: page?._id || null,
+    path,
+    pageName: page?.pageName || (path === "/" ? "Home" : path.replace(/^\//, "").replace(/-/g, " ")),
+    metaTitle,
+    metaDescription,
+    metaKeywords,
+    canonicalUrl,
+    ogTitle,
+    ogDescription,
+    ogImage,
+    twitterTitle: ogTitle,
+    twitterDescription: ogDescription,
+    twitterImage: ogImage,
+    twitterHandle: global.twitterHandle || "@giftfestive",
+    twitterCardType: global.twitterCardType || "summary_large_image",
+    noIndex: !!page?.noIndex,
+    noFollow: !!page?.noFollow,
+    structuredData: page?.structuredData || "",
+    sitemapPriority: page?.sitemapPriority ?? (path === "/" ? 1.0 : 0.8),
+    changeFrequency: page?.changeFrequency || (path === "/" ? "daily" : "weekly"),
+    includeInSitemap: page?.includeInSitemap !== false,
+    isActive: page?.isActive !== false,
+    siteName,
+    siteUrl,
+    titleTemplate: global.titleTemplate || "%s | GiftFestive",
+    googleSiteVerification: global.googleSiteVerification || "",
+    bingSiteVerification: global.bingSiteVerification || "",
+    pinterestVerification: global.pinterestVerification || "",
+    googleAnalyticsId: global.googleAnalyticsId || "",
+    googleTagManagerId: global.googleTagManagerId || "",
+    organization: global.organization || {},
+    isFallback: !page,
+  };
+
+  memoryCache.pages.set(path, { data: enrichedPage, timestamp: now });
+  return enrichedPage;
 };
 
 exports.getAllSeoPages = async ({ page = 1, limit = 20, search = "" } = {}) => {
@@ -122,7 +220,8 @@ exports.getAllSeoPages = async ({ page = 1, limit = 20, search = "" } = {}) => {
   const pages = await SeoPage.find(query)
     .sort({ path: 1 })
     .skip(skip)
-    .limit(parseInt(limit, 10));
+    .limit(parseInt(limit, 10))
+    .lean();
 
   const total = await SeoPage.countDocuments(query);
 
@@ -140,18 +239,24 @@ exports.createSeoPage = async (data) => {
   if (exists) {
     throw new Error(`SEO settings for path "${data.path}" already exist.`);
   }
-  return await SeoPage.create(data);
+  const created = await SeoPage.create(data);
+  invalidatePageCache(data.path);
+  return created;
 };
 
 exports.updateSeoPage = async (id, data) => {
   if (data.path) {
     data.path = normalizePath(data.path);
   }
-  return await SeoPage.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+  const updated = await SeoPage.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+  invalidatePageCache();
+  return updated;
 };
 
 exports.deleteSeoPage = async (id) => {
-  return await SeoPage.findByIdAndDelete(id);
+  const deleted = await SeoPage.findByIdAndDelete(id);
+  invalidatePageCache();
+  return deleted;
 };
 
 // Auto seed default static pages if empty
@@ -160,10 +265,17 @@ exports.seedDefaultPages = async () => {
     {
       path: "/",
       pageName: "Home Page",
-      metaTitle: "GiftFestive | Faridabad Most Trusted Online Gift, Cake & Flower Delivery",
+      metaTitle: "Online cake delivery in Faridabad Surprise Gift Service: Send Free Virtual Gifts Online - online gift giftfestive",
       metaDescription:
-        "Order fresh flowers, artisan cakes, customized gift hampers & surprises in Faridabad with same-day express and midnight delivery across all sectors.",
-      metaKeywords: ["giftfestive", "gift delivery faridabad", "cake delivery faridabad", "flowers faridabad"],
+        "Order fresh cakes, flower bouquets & gift hampers in Faridabad. Same-day & midnight delivery across all sectors of Faridabad. 100% eggless options available!",
+      metaKeywords: [
+        "giftfestive",
+        "cake delivery faridabad",
+        "gift delivery faridabad",
+        "flowers delivery faridabad",
+        "midnight cake delivery faridabad",
+        "same day gift delivery faridabad"
+      ],
       sitemapPriority: 1.0,
       changeFrequency: "daily",
     },
@@ -173,7 +285,7 @@ exports.seedDefaultPages = async () => {
       metaTitle: "Browse Gift Categories | Cakes, Flowers, Hampers & More | GiftFestive",
       metaDescription:
         "Explore curated gift categories at GiftFestive. Fresh flowers, birthday cakes, personalized hampers, chocolates & plants delivered in Faridabad.",
-      metaKeywords: ["gift categories", "cakes category", "flower bouquets", "gifts online"],
+      metaKeywords: ["gift categories", "cakes category", "flower bouquets", "gifts online faridabad"],
       sitemapPriority: 0.9,
       changeFrequency: "daily",
     },
@@ -202,17 +314,17 @@ exports.seedDefaultPages = async () => {
       pageName: "About Us",
       metaTitle: "About GiftFestive | Faridabad's Premier Gifting Destination",
       metaDescription:
-        "Learn about GiftFestive's journey, our commitment to quality artisan cakes, fresh handpicked blooms, and same-day smiles across Faridabad.",
-      metaKeywords: ["about giftfestive", "best gift shop faridabad", "gift delivery team"],
+        "Learn about GiftFestive's journey, founded by Sonu Prajapati. Our commitment to quality artisan cakes, fresh handpicked blooms, and same-day delivery in Faridabad.",
+      metaKeywords: ["about giftfestive", "best gift shop faridabad", "sonu prajapati giftfestive"],
       sitemapPriority: 0.7,
       changeFrequency: "monthly",
     },
     {
       path: "/contact",
       pageName: "Contact Us",
-      metaTitle: "Contact GiftFestive | 24/7 Customer Care & Delivery Helpdesk",
+      metaTitle: "Contact GiftFestive | Customer Care & Delivery Helpdesk",
       metaDescription:
-        "Need help with your order or custom corporate gifting? Reach out to GiftFestive support via WhatsApp, phone, or email.",
+        "Need help with your order or customized surprise? Reach out to GiftFestive support via WhatsApp (8400787712), phone, or email.",
       metaKeywords: ["giftfestive contact", "gift delivery customer support", "faridabad gift phone"],
       sitemapPriority: 0.7,
       changeFrequency: "monthly",
@@ -222,7 +334,7 @@ exports.seedDefaultPages = async () => {
       pageName: "Shipping & Delivery Policy",
       metaTitle: "Express Same-Day & Midnight Delivery Policy | GiftFestive",
       metaDescription:
-        "Read our shipping details, delivery slots (standard, fixed-time, midnight), and serviceable areas across Faridabad and NCR.",
+        "Read our delivery slots (standard, fixed-time, midnight) and serviceable areas across Faridabad and Delhi NCR.",
       metaKeywords: ["delivery policy", "midnight delivery faridabad", "shipping terms"],
       sitemapPriority: 0.6,
       changeFrequency: "monthly",
@@ -268,11 +380,12 @@ exports.seedDefaultPages = async () => {
     }
   }
 
+  invalidatePageCache();
   return { message: "Seeding complete", addedCount };
 };
 
 // -------------------------------------------------------------
-// 3. 301 / 302 URL REDIRECTS
+// 3. 301 / 302 URL REDIRECTS (INSTANT CHECK)
 // -------------------------------------------------------------
 
 exports.getAllRedirects = async ({ page = 1, limit = 20, search = "" } = {}) => {
@@ -289,7 +402,8 @@ exports.getAllRedirects = async ({ page = 1, limit = 20, search = "" } = {}) => 
   const redirects = await SeoRedirect.find(query)
     .sort({ createdAt: -1 })
     .skip(skip)
-    .limit(parseInt(limit, 10));
+    .limit(parseInt(limit, 10))
+    .lean();
 
   const total = await SeoRedirect.countDocuments(query);
 
@@ -308,32 +422,50 @@ exports.createRedirect = async (data) => {
   if (exists) {
     throw new Error(`A redirect rule for "${data.fromPath}" already exists.`);
   }
-  return await SeoRedirect.create(data);
+  const created = await SeoRedirect.create(data);
+  invalidateRedirectCache();
+  return created;
 };
 
 exports.updateRedirect = async (id, data) => {
   if (data.fromPath) data.fromPath = normalizePath(data.fromPath);
   if (data.toPath) data.toPath = data.toPath.trim();
-  return await SeoRedirect.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+  const updated = await SeoRedirect.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+  invalidateRedirectCache();
+  return updated;
 };
 
 exports.deleteRedirect = async (id) => {
-  return await SeoRedirect.findByIdAndDelete(id);
+  const deleted = await SeoRedirect.findByIdAndDelete(id);
+  invalidateRedirectCache();
+  return deleted;
 };
 
 exports.checkRedirect = async (rawPath) => {
   const path = normalizePath(rawPath);
-  const redirect = await SeoRedirect.findOne({ fromPath: path, isActive: true });
+  const now = Date.now();
+
+  const cached = memoryCache.redirects.get(path);
+  if (cached && (now - cached.timestamp < CACHE_TTL_MS)) {
+    return cached.data;
+  }
+
+  const redirect = await SeoRedirect.findOne({ fromPath: path, isActive: true }).lean();
+  let result;
   if (redirect) {
     // Non-blocking increment hit count
     SeoRedirect.findByIdAndUpdate(redirect._id, { $inc: { hits: 1 } }).catch(() => {});
-    return {
+    result = {
       redirect: true,
       toPath: redirect.toPath,
       statusCode: redirect.statusCode || 301,
     };
+  } else {
+    result = { redirect: false };
   }
-  return { redirect: false };
+
+  memoryCache.redirects.set(path, { data: result, timestamp: now });
+  return result;
 };
 
 // -------------------------------------------------------------
@@ -341,31 +473,52 @@ exports.checkRedirect = async (rawPath) => {
 // -------------------------------------------------------------
 
 exports.getSitemapData = async () => {
-  const global = await exports.getGlobalSeo();
-  const baseUrl = global.siteUrl || "https://giftfestive.com";
+  const now = Date.now();
+  if (memoryCache.sitemap && (now - memoryCache.sitemapTimestamp < CACHE_TTL_MS)) {
+    return memoryCache.sitemap;
+  }
 
-  // 1. Pages from SeoPage
+  const global = await exports.getGlobalSeo();
+  const baseUrl = (global.siteUrl || "https://www.giftfestive.com").replace(/\/+$/, "");
+
+  // 1. Configured Pages from SeoPage
   const pages = await SeoPage.find({
     isActive: true,
     includeInSitemap: { $ne: false },
     noIndex: { $ne: true },
-  }).select("path updatedAt sitemapPriority changeFrequency");
+  }).select("path updatedAt sitemapPriority changeFrequency").lean();
 
   const pageRoutes = pages.map((p) => ({
     url: `${baseUrl}${p.path === "/" ? "" : p.path}`,
-    lastModified: p.updatedAt || new Date(),
+    lastModified: p.updatedAt ? new Date(p.updatedAt).toISOString() : new Date().toISOString(),
     changeFrequency: p.changeFrequency || "weekly",
-    priority: p.sitemapPriority || 0.8,
+    priority: p.sitemapPriority ?? 0.8,
   }));
+
+  // Fallback core pages if not configured
+  if (pageRoutes.length === 0) {
+    pageRoutes.push(
+      { url: baseUrl, lastModified: new Date().toISOString(), changeFrequency: "daily", priority: 1.0 },
+      { url: `${baseUrl}/categories`, lastModified: new Date().toISOString(), changeFrequency: "daily", priority: 0.9 },
+      { url: `${baseUrl}/occasions`, lastModified: new Date().toISOString(), changeFrequency: "weekly", priority: 0.9 },
+      { url: `${baseUrl}/offers`, lastModified: new Date().toISOString(), changeFrequency: "weekly", priority: 0.8 },
+      { url: `${baseUrl}/about`, lastModified: new Date().toISOString(), changeFrequency: "monthly", priority: 0.7 },
+      { url: `${baseUrl}/contact`, lastModified: new Date().toISOString(), changeFrequency: "monthly", priority: 0.7 },
+      { url: `${baseUrl}/shipping`, lastModified: new Date().toISOString(), changeFrequency: "monthly", priority: 0.6 },
+      { url: `${baseUrl}/refunds`, lastModified: new Date().toISOString(), changeFrequency: "monthly", priority: 0.6 },
+      { url: `${baseUrl}/privacy`, lastModified: new Date().toISOString(), changeFrequency: "yearly", priority: 0.5 },
+      { url: `${baseUrl}/terms`, lastModified: new Date().toISOString(), changeFrequency: "yearly", priority: 0.5 },
+    );
+  }
 
   // 2. Active Products
   const products = await Product.find({
     noIndex: { $ne: true },
-  }).select("_id name updatedAt");
+  }).select("_id name updatedAt").lean();
 
   const productRoutes = products.map((prod) => ({
     url: `${baseUrl}/product/${prod._id}`,
-    lastModified: prod.updatedAt || new Date(),
+    lastModified: prod.updatedAt ? new Date(prod.updatedAt).toISOString() : new Date().toISOString(),
     changeFrequency: "weekly",
     priority: 0.8,
   }));
@@ -373,11 +526,11 @@ exports.getSitemapData = async () => {
   // 3. Categories
   const categories = await Category.find({
     noIndex: { $ne: true },
-  }).select("_id name slug updatedAt");
+  }).select("_id name slug updatedAt").lean();
 
   const categoryRoutes = categories.map((cat) => ({
     url: `${baseUrl}/categories?category=${cat._id}`,
-    lastModified: cat.updatedAt || new Date(),
+    lastModified: cat.updatedAt ? new Date(cat.updatedAt).toISOString() : new Date().toISOString(),
     changeFrequency: "weekly",
     priority: 0.8,
   }));
@@ -385,24 +538,10 @@ exports.getSitemapData = async () => {
   // 4. Occasions
   let occasionRoutes = [];
   try {
-    const occasions = await Occasion.find({ isActive: { $ne: false } }).select("_id name updatedAt");
+    const occasions = await Occasion.find({ isActive: { $ne: false } }).select("_id name updatedAt").lean();
     occasionRoutes = occasions.map((occ) => ({
       url: `${baseUrl}/occasions?occasion=${occ._id}`,
-      lastModified: occ.updatedAt || new Date(),
-      changeFrequency: "weekly",
-      priority: 0.8,
-    }));
-  } catch (err) {
-    // Optional fallback if model not loaded
-  }
-
-  // 5. Flavors (e.g. Chocolate, Red Velvet, Pineapple cakes)
-  let flavorRoutes = [];
-  try {
-    const flavors = await Flavor.find({ noIndex: { $ne: true } }).select("_id name slug updatedAt");
-    flavorRoutes = flavors.map((flv) => ({
-      url: `${baseUrl}/categories?flavor=${flv._id}`,
-      lastModified: flv.updatedAt || new Date(),
+      lastModified: occ.updatedAt ? new Date(occ.updatedAt).toISOString() : new Date().toISOString(),
       changeFrequency: "weekly",
       priority: 0.8,
     }));
@@ -410,11 +549,29 @@ exports.getSitemapData = async () => {
     // Optional fallback
   }
 
-  return {
+  // 5. Flavors
+  let flavorRoutes = [];
+  try {
+    const flavors = await Flavor.find({ noIndex: { $ne: true } }).select("_id name slug updatedAt").lean();
+    flavorRoutes = flavors.map((flv) => ({
+      url: `${baseUrl}/categories?flavor=${flv._id}`,
+      lastModified: flv.updatedAt ? new Date(flv.updatedAt).toISOString() : new Date().toISOString(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    }));
+  } catch (err) {
+    // Optional fallback
+  }
+
+  const sitemapData = {
     baseUrl,
     totalUrls: pageRoutes.length + productRoutes.length + categoryRoutes.length + occasionRoutes.length + flavorRoutes.length,
     routes: [...pageRoutes, ...productRoutes, ...categoryRoutes, ...occasionRoutes, ...flavorRoutes],
   };
+
+  memoryCache.sitemap = sitemapData;
+  memoryCache.sitemapTimestamp = now;
+  return sitemapData;
 };
 
 // -------------------------------------------------------------
@@ -422,10 +579,15 @@ exports.getSitemapData = async () => {
 // -------------------------------------------------------------
 
 exports.getRobotsData = async () => {
-  const global = await exports.getGlobalSeo();
-  const baseUrl = global.siteUrl || "https://giftfestive.com";
+  const now = Date.now();
+  if (memoryCache.robots && (now - memoryCache.robotsTimestamp < CACHE_TTL_MS)) {
+    return memoryCache.robots;
+  }
 
-  return {
+  const global = await exports.getGlobalSeo();
+  const baseUrl = (global.siteUrl || "https://www.giftfestive.com").replace(/\/+$/, "");
+
+  const robotsData = {
     host: baseUrl,
     sitemap: `${baseUrl}/sitemap.xml`,
     rules: [
@@ -465,10 +627,105 @@ exports.getRobotsData = async () => {
     ],
     customRules: global.robotsCustomRules || "",
   };
+
+  memoryCache.robots = robotsData;
+  memoryCache.robotsTimestamp = now;
+  return robotsData;
 };
 
 // -------------------------------------------------------------
-// 6. SEO HEALTH AUDIT & DIAGNOSTICS
+// 6. CATEGORY & OCCASION SPECIFIC SEO HELPERS
+// -------------------------------------------------------------
+
+exports.getCategorySeo = async (idOrSlug) => {
+  const global = await exports.getGlobalSeo();
+  const siteUrl = global.siteUrl || "https://www.giftfestive.com";
+  let category = null;
+
+  try {
+    if (idOrSlug && idOrSlug.match(/^[0-9a-fA-F]{24}$/)) {
+      category = await Category.findById(idOrSlug).lean();
+    } else if (idOrSlug) {
+      category = await Category.findOne({ slug: idOrSlug.toLowerCase() }).lean();
+    }
+  } catch (e) {}
+
+  if (!category) {
+    return exports.getPageSeoByPath("/categories");
+  }
+
+  const metaTitle = category.seoTitle || `${category.name} in Faridabad | Express Same-Day Delivery | GiftFestive`;
+  const metaDescription =
+    category.seoDescription ||
+    `Order ${category.name.toLowerCase()} in Faridabad with same-day and midnight express delivery. Handcrafted quality and fresh surprises at GiftFestive.`;
+
+  return {
+    category,
+    path: `/categories?category=${category._id}`,
+    pageName: category.name,
+    metaTitle,
+    metaDescription,
+    metaKeywords: (category.seoKeywords && category.seoKeywords.length > 0)
+      ? category.seoKeywords
+      : [category.name, `${category.name} faridabad`, "online gifts faridabad", "GiftFestive"],
+    canonicalUrl: category.canonicalUrl || `${siteUrl}/categories?category=${category._id}`,
+    ogTitle: metaTitle,
+    ogDescription: metaDescription,
+    ogImage: category.ogImage || category.image || global.defaultOgImage,
+    noIndex: !!category.noIndex,
+    headingText: category.headingText || category.name,
+    subheadingText: category.subheadingText || "",
+    bottomContent: category.bottomContent || "",
+    siteName: global.siteName,
+    siteUrl,
+  };
+};
+
+exports.getOccasionSeo = async (idOrSlug) => {
+  const global = await exports.getGlobalSeo();
+  const siteUrl = global.siteUrl || "https://www.giftfestive.com";
+  let occasion = null;
+
+  try {
+    if (idOrSlug && idOrSlug.match(/^[0-9a-fA-F]{24}$/)) {
+      occasion = await Occasion.findById(idOrSlug).lean();
+    } else if (idOrSlug) {
+      occasion = await Occasion.findOne({ slug: idOrSlug.toLowerCase() }).lean();
+    }
+  } catch (e) {}
+
+  if (!occasion) {
+    return exports.getPageSeoByPath("/occasions");
+  }
+
+  const metaTitle = occasion.seoTitle || `${occasion.name} Gifts in Faridabad | GiftFestive`;
+  const metaDescription =
+    occasion.seoDescription ||
+    `Find curated ${occasion.name.toLowerCase()} gifts, cakes, flower bouquets and surprise hampers delivered across Faridabad.`;
+
+  return {
+    occasion,
+    path: `/occasions?occasion=${occasion._id}`,
+    pageName: occasion.name,
+    metaTitle,
+    metaDescription,
+    metaKeywords: (occasion.seoKeywords && occasion.seoKeywords.length > 0)
+      ? occasion.seoKeywords
+      : [occasion.name, `${occasion.name} gifts`, `${occasion.name} delivery faridabad`, "GiftFestive"],
+    canonicalUrl: `${siteUrl}/occasions?occasion=${occasion._id}`,
+    ogTitle: metaTitle,
+    ogDescription: metaDescription,
+    ogImage: occasion.image || global.defaultOgImage,
+    noIndex: !!occasion.noIndex,
+    headingText: occasion.headingText || occasion.name,
+    bottomContent: occasion.bottomContent || "",
+    siteName: global.siteName,
+    siteUrl,
+  };
+};
+
+// -------------------------------------------------------------
+// 7. SEO HEALTH AUDIT & DIAGNOSTICS
 // -------------------------------------------------------------
 
 exports.getSeoAuditStats = async () => {
@@ -498,7 +755,6 @@ exports.getSeoAuditStats = async () => {
     SeoRedirect.countDocuments(),
   ]);
 
-  // Calculate simple health score (0 to 100)
   let deductions = 0;
   if (totalProducts > 0) {
     deductions += (productsMissingMetaTitle / totalProducts) * 30;

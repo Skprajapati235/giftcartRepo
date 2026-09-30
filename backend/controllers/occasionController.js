@@ -29,6 +29,16 @@ exports.getAll = async (req, res) => {
   }
 };
 
+exports.getOne = async (req, res) => {
+  try {
+    const data = await service.getOccasionById(req.params.id);
+    if (!data) return res.status(404).json({ message: "Occasion not found" });
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 exports.update = async (req, res) => {
   try {
     const data = await service.updateOccasion(req.params.id, req.body);
