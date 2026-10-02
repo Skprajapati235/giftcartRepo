@@ -15,6 +15,9 @@ import {
   Image as ImageIcon,
   Save,
   Upload,
+  FolderOpen,
+  Pencil,
+  X,
 } from "lucide-react";
 import ProtectedRoute from "../components/ProtectedRoute";
 import AdminMain from "../components/AdminMain";
@@ -24,19 +27,15 @@ import {
   createAddon,
   updateAddon,
   deleteAddon,
+  getAdminAddonCategories,
+  createAddonCategory,
+  updateAddonCategory,
+  deleteAddonCategory,
   AddonItem,
+  AddonCategory,
+  ProductCategoryOption,
 } from "../services/giftingService";
-
-const CATEGORIES = [
-  { id: "all", label: "All Items", icon: "✨" },
-  { id: "candle", label: "Candles 🕯️", icon: "🕯️" },
-  { id: "card", label: "Greeting Cards 💌", icon: "💌" },
-  { id: "popper", label: "Party Poppers 🎉", icon: "🎉" },
-  { id: "chocolate", label: "Chocolates 🍫", icon: "🍫" },
-  { id: "teddy", label: "Teddy Bears 🧸", icon: "🧸" },
-  { id: "balloon", label: "Balloons 🎈", icon: "🎈" },
-  { id: "accessory", label: "Accessories ✨", icon: "✨" },
-];
+import { getCategories } from "../services/adminService";
 
 const PRESET_IMAGES: { label: string; url: string; category: string }[] = [
   {
@@ -70,6 +69,13 @@ export default function AddonsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [addonCategories, setAddonCategories] = useState<AddonCategory[]>([]);
+  const [productCategories, setProductCategories] = useState<ProductCategoryOption[]>([]);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [categoryName, setCategoryName] = useState("");
+  const [editingCategory, setEditingCategory] = useState<AddonCategory | null>(null);
+  const [categorySaving, setCategorySaving] = useState(false);
+  const [deleteCategoryConfirmId, setDeleteCategoryConfirmId] = useState<string | null>(null);
 
   // Media Modal state
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -77,12 +83,13 @@ export default function AddonsPage() {
   // Form state
   const [form, setForm] = useState<Partial<AddonItem>>({
     name: "",
-    category: "candle",
+    category: "",
     price: 99,
     image: "",
     description: "",
     isPopular: false,
     isActive: true,
+    productCategories: [],
     sortOrder: 1,
   });
 
@@ -103,19 +110,44 @@ export default function AddonsPage() {
   };
 
   useEffect(() => {
-    loadAddons();
+    const loadPageData = async () => {
+      await loadAddons();
+      await loadCategories();
+    };
+    loadPageData();
   }, []);
+
+  const loadCategories = async () => {
+    const [addonCategoryResult, productCategoryResult] = await Promise.allSettled([
+      getAdminAddonCategories(),
+      getCategories({ page: 1, limit: 100 }),
+    ]);
+    if (addonCategoryResult.status === "fulfilled") {
+      setAddonCategories(addonCategoryResult.value);
+    } else {
+      console.error(addonCategoryResult.reason);
+      setMessage({ type: "error", text: "Failed to load add-on categories" });
+    }
+    if (productCategoryResult.status === "fulfilled") {
+      const response = productCategoryResult.value;
+      setProductCategories(Array.isArray(response) ? response : response?.data || []);
+    } else {
+      console.error(productCategoryResult.reason);
+      setMessage({ type: "error", text: "Failed to load product categories" });
+    }
+  };
 
   const openCreateForm = () => {
     setEditingAddon(null);
     setForm({
       name: "",
-      category: "candle",
       price: 99,
       image: "",
       description: "",
       isPopular: false,
       isActive: true,
+      productCategories: [],
+      category: addonCategories[0]?.slug || "",
       sortOrder: getTopSortOrder(),
     });
     setShowForm(true);
@@ -131,9 +163,53 @@ export default function AddonsPage() {
       description: addon.description || "",
       isPopular: addon.isPopular,
       isActive: addon.isActive,
+      productCategories: (addon.productCategories || []).map((category) =>
+        typeof category === "string" ? category : category._id
+      ),
       sortOrder: getTopSortOrder(),
     });
     setShowForm(true);
+  };
+
+  const saveAddonCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = categoryName.trim();
+    if (!name) return;
+    try {
+      setCategorySaving(true);
+      if (editingCategory) {
+        await updateAddonCategory(editingCategory._id, name);
+        setMessage({ type: "success", text: "Add-on category updated." });
+      } else {
+        await createAddonCategory(name);
+        setMessage({ type: "success", text: "Add-on category created." });
+      }
+      setCategoryName("");
+      setEditingCategory(null);
+      await loadCategories();
+    } catch (err: any) {
+      setMessage({
+        type: "error",
+        text: err?.response?.data?.message || "Failed to save add-on category",
+      });
+    } finally {
+      setCategorySaving(false);
+    }
+  };
+
+  const removeAddonCategory = async (category: AddonCategory) => {
+    try {
+      await deleteAddonCategory(category._id);
+      setDeleteCategoryConfirmId(null);
+      if (selectedCategory === category.slug) setSelectedCategory("all");
+      setMessage({ type: "success", text: "Add-on category deleted." });
+      await loadCategories();
+    } catch (err: any) {
+      setMessage({
+        type: "error",
+        text: err?.response?.data?.message || "Failed to delete add-on category",
+      });
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -158,7 +234,7 @@ export default function AddonsPage() {
       }
       setShowForm(false);
       setEditingAddon(null);
-      await loadAddons();
+      await Promise.all([loadAddons(), loadCategories()]);
       setTimeout(() => setMessage(null), 4000);
     } catch (err: any) {
       setMessage({
@@ -174,6 +250,7 @@ export default function AddonsPage() {
     try {
       await deleteAddon(id);
       setAddons((prev) => prev.filter((a) => a._id !== id));
+      await loadCategories();
       setDeleteConfirmId(null);
       setMessage({ type: "success", text: "Add-on deleted successfully." });
       setTimeout(() => setMessage(null), 3000);
@@ -298,24 +375,59 @@ export default function AddonsPage() {
 
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                      Category Type <span className="text-rose-500">*</span>
+                      Add-on category <span className="text-rose-500">*</span>
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {CATEGORIES.filter((c) => c.id !== "all").map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => setForm({ ...form, category: cat.id as AddonItem["category"] })}
-                          className={`p-2 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${form.category === cat.id
-                              ? "bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400 font-bold shadow-2xs"
-                              : "bg-background border-border-theme text-slate-600 dark:text-slate-400 hover:border-slate-400"
-                            }`}
-                        >
-                          <span className="text-base mb-0.5">{cat.icon}</span>
-                          <span className="text-[11px] truncate">{cat.label.split(" ")[0]}</span>
-                        </button>
+                    <select
+                      required
+                      value={form.category || ""}
+                      onChange={(e) => setForm({ ...form, category: e.target.value })}
+                      className="w-full px-4 py-3 rounded-2xl bg-background border border-border-theme text-sm font-medium text-foreground"
+                    >
+                      <option value="" disabled>Select an add-on category</option>
+                      {addonCategories.map((category) => (
+                        <option key={category._id} value={category.slug}>{category.name}</option>
                       ))}
-                    </div>
+                    </select>
+                    {addonCategories.length === 0 && (
+                      <p className="mt-1.5 text-xs text-amber-600">Create an add-on category from Manage Categories before publishing an item.</p>
+                    )}
+                    <p className="mt-1.5 text-xs text-slate-500">These categories organize checkout extras; they are separate from product categories.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Show with product categories <span className="font-normal normal-case">(optional)</span>
+                    </label>
+                    {productCategories.length === 0 ? (
+                      <p className="text-xs text-amber-600">Create product categories first to target this add-on.</p>
+                    ) : (
+                      <div className="max-h-40 overflow-y-auto space-y-2 rounded-2xl border border-border-theme p-3">
+                        {productCategories.map((category) => (
+                          <label key={category._id} className="flex items-center gap-2 text-sm text-foreground">
+                            <input
+                              type="checkbox"
+                              checked={(form.productCategories || []).includes(category._id)}
+                              onChange={(e) => {
+                                const current = (form.productCategories || []).map((value) =>
+                                  typeof value === "string" ? value : value._id
+                                );
+                                setForm({
+                                  ...form,
+                                  productCategories: e.target.checked
+                                    ? [...current, category._id]
+                                    : current.filter((id) => id !== category._id),
+                                });
+                              }}
+                              className="accent-rose-500"
+                            />
+                            {category.name}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    <p className="mt-1.5 text-xs text-slate-500">
+                      No selection = show for every checkout. Selecting categories shows this add-on only when the cart contains a matching product.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -475,7 +587,7 @@ export default function AddonsPage() {
                       <div className="w-full max-w-[200px] aspect-square rounded-2xl border border-border-theme bg-card shadow-sm p-3 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
                           <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-background border border-border-theme capitalize">
-                            {form.category}
+                            {addonCategories.find((category) => category.slug === form.category)?.name || "Category"}
                           </span>
                           {form.isPopular && (
                             <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950">
@@ -515,11 +627,19 @@ export default function AddonsPage() {
                   Gifting Add-ons Store
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
-                  Manage candles, greeting cards, party poppers, chocolates and teddy bears offered at checkout
+                  Checkout extras. Add-on categories group these items; optional product-category targeting controls which orders see them.
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryManager((visible) => !visible)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border-theme text-sm font-bold text-foreground hover:bg-hover-theme"
+                >
+                  <FolderOpen className="w-4 h-4" />
+                  Manage Categories
+                </button>
                 <button
                   onClick={loadAddons}
                   className="p-2.5 rounded-xl border border-border-theme hover:bg-hover-theme text-slate-500 hover:text-foreground transition cursor-pointer"
@@ -539,19 +659,109 @@ export default function AddonsPage() {
 
             {/* Category Filter Pills */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {CATEGORIES.map((cat) => (
+              {[
+                { slug: "all", name: "All Add-ons" },
+                ...addonCategories.map(({ slug, name }) => ({ slug, name })),
+              ].map((category) => (
                 <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${selectedCategory === cat.id
+                  key={category.slug}
+                  onClick={() => setSelectedCategory(category.slug)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${selectedCategory === category.slug
                       ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
                       : "bg-card border border-border-theme text-slate-600 dark:text-slate-300 hover:bg-hover-theme"
                     }`}
                 >
-                  {cat.label}
+                  {category.name}
                 </button>
               ))}
             </div>
+
+            {showCategoryManager && (
+              <section className="rounded-3xl border border-border-theme bg-card p-5 space-y-4">
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">Add-on categories</h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    These are only for grouping checkout extras. Product categories are managed separately in Products.
+                  </p>
+                </div>
+                <form onSubmit={saveAddonCategory} className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    value={categoryName}
+                    onChange={(e) => setCategoryName(e.target.value)}
+                    placeholder="e.g. Gift Wrap"
+                    required
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-background border border-border-theme text-sm text-foreground"
+                  />
+                  <button
+                    type="submit"
+                    disabled={categorySaving}
+                    className="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-bold disabled:opacity-50"
+                  >
+                    {categorySaving ? "Saving..." : editingCategory ? "Update Category" : "Add Category"}
+                  </button>
+                  {editingCategory && (
+                    <button
+                      type="button"
+                      onClick={() => { setEditingCategory(null); setCategoryName(""); }}
+                      className="p-2.5 rounded-xl border border-border-theme text-slate-500"
+                      aria-label="Cancel category edit"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </form>
+                <div className="divide-y divide-border-theme">
+                  {addonCategories.map((category) => (
+                    <div key={category._id} className="flex items-center justify-between gap-3 py-3">
+                      <div>
+                        <p className="font-semibold text-sm text-foreground">{category.name}</p>
+                        <p className="text-xs text-slate-500">{category.addonCount} add-on items</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => { setEditingCategory(category); setCategoryName(category.name); }}
+                          className="p-2 rounded-lg border border-border-theme text-slate-500 hover:text-foreground"
+                          aria-label={`Edit ${category.name}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        {deleteCategoryConfirmId === category._id ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => removeAddonCategory(category)}
+                              disabled={category.addonCount > 0}
+                              title={category.addonCount > 0 ? "Move add-ons out of this category before deleting" : undefined}
+                              className="px-3 py-2 rounded-lg bg-rose-600 text-white text-xs font-bold disabled:opacity-40"
+                            >
+                              Confirm delete
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeleteCategoryConfirmId(null)}
+                              className="p-2 text-slate-500"
+                              aria-label="Cancel category deletion"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setDeleteCategoryConfirmId(category._id)}
+                            className="p-2 rounded-lg text-slate-400 hover:text-rose-500"
+                            aria-label={`Delete ${category.name}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* Content Cards Grid */}
             {loading ? (
@@ -598,7 +808,7 @@ export default function AddonsPage() {
                           </div>
                         )}
                         <span className="absolute bottom-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-md capitalize">
-                          {addon.category}
+                          {addonCategories.find((category) => category.slug === addon.category)?.name || addon.category}
                         </span>
                       </div>
 

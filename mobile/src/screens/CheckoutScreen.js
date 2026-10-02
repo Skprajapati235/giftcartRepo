@@ -189,6 +189,18 @@ export default function CheckoutScreen({ navigation, route }) {
 
   const slotSurcharge = Number(selectedSlot?.extraCharge || 0);
   const addonsTotal = selectedAddons.reduce((sum, a) => sum + (Number(a.price || 0) * (a.quantity || 1)), 0);
+  const cartProductCategoryIds = new Set(
+    cartItems
+      .map((item) => item.category?._id || item.category)
+      .filter(Boolean)
+      .map(String)
+  );
+  const availableAddons = addonsList.filter((addon) => {
+    const targetCategoryIds = (addon.productCategories || []).map((category) =>
+      String(category?._id || category)
+    );
+    return targetCategoryIds.length === 0 || targetCategoryIds.some((id) => cartProductCategoryIds.has(id));
+  });
 
   const orderSummary = {
     subtotal: cartTotals.subTotal,
@@ -286,7 +298,14 @@ export default function CheckoutScreen({ navigation, route }) {
         paymentMethod,
         couponCode: appliedCoupon || undefined,
         discountAmount: couponDiscount,
-        deliverySlot: selectedSlot || undefined,
+        deliverySlot: selectedSlot
+          ? {
+              slotName: selectedSlot.name,
+              slotType: selectedSlot.type,
+              timeRange: selectedSlot.timeRange,
+              extraCharge: selectedSlot.extraCharge,
+            }
+          : undefined,
         messageOnCake: messageOnCake || undefined,
         cardMessage: cardMessage || undefined,
         recipientName: recipientName || undefined,
@@ -925,11 +944,11 @@ export default function CheckoutScreen({ navigation, route }) {
         </View>
 
         {/* ── 🎁 Celebration Add-on Upsells ── */}
-        {addonsList.length > 0 && (
+        {availableAddons.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>🎁 Make it Extra Special (Add-ons)</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
-              {addonsList.map((addon) => {
+              {availableAddons.map((addon) => {
                 const isAdded = selectedAddons.some((a) => a.name === addon.name);
                 return (
                   <View

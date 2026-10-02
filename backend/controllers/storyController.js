@@ -50,10 +50,10 @@ const DEFAULT_STORIES = [
 // GET /api/stories - Public (auto-seeds defaults if empty)
 exports.getStories = async (req, res) => {
   try {
-    let stories = await Story.find().sort({ sortOrder: 1, createdAt: 1 });
+    let stories = await Story.find().populate("ctaCategory", "name slug").sort({ sortOrder: 1, createdAt: 1 });
     if (!stories || stories.length === 0) {
       await Story.insertMany(DEFAULT_STORIES);
-      stories = await Story.find().sort({ sortOrder: 1, createdAt: 1 });
+      stories = await Story.find().populate("ctaCategory", "name slug").sort({ sortOrder: 1, createdAt: 1 });
     }
     if (req.query.all !== "true") {
       stories = stories.filter((s) => s.isActive);
@@ -71,6 +71,7 @@ exports.createStory = async (req, res) => {
     const story = await Story.create({
       ...req.body,
       thumbnail: req.body.thumbnail || req.body.mediaUrl,
+      ctaCategory: req.body.ctaCategory || undefined,
     });
     res.status(201).json({ success: true, message: "Story created", data: story });
   } catch (error) {
@@ -82,6 +83,9 @@ exports.createStory = async (req, res) => {
 exports.updateStory = async (req, res) => {
   try {
     const updates = { ...req.body };
+    if (Object.prototype.hasOwnProperty.call(updates, "ctaCategory")) {
+      updates.ctaCategory = updates.ctaCategory || null;
+    }
     if (!updates.thumbnail && updates.mediaUrl) {
       updates.thumbnail = updates.mediaUrl;
     }

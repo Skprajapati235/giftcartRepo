@@ -86,6 +86,11 @@ export default function StoryHighlights({ navigation }) {
 
   const handleCtaPress = (story) => {
     closeStory();
+    const categoryId = story?.ctaCategory?._id || story?.ctaCategory;
+    if (categoryId) {
+      navigation?.navigate('Home', { categoryId });
+      return;
+    }
     if (!story?.ctaLink) return;
     // If it's category link, navigate to Collections
     if (story.ctaLink.includes('category') || story.ctaLink.includes('cake') || story.ctaLink.includes('flower')) {

@@ -42,6 +42,10 @@ const storySchema = new mongoose.Schema(
       type: String,
       default: "/category/cakes",
     },
+    ctaCategory: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+    },
     isActive: {
       type: Boolean,
       default: true,

@@ -24,7 +24,9 @@ import {
   updateStory,
   deleteStory,
   StoryItem,
+  ProductCategoryOption,
 } from "../services/giftingService";
+import { getCategories } from "../services/adminService";
 
 const PRESET_STORIES = [
   {
@@ -61,6 +63,7 @@ export default function StoriesPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [productCategories, setProductCategories] = useState<ProductCategoryOption[]>([]);
 
   // Media Modal state
   const [showMediaModal, setShowMediaModal] = useState(false);
@@ -76,6 +79,7 @@ export default function StoriesPage() {
     tag: "Trending",
     ctaText: "Order Now",
     ctaLink: "/products",
+    ctaCategory: "",
     sortOrder: 1,
     isActive: true,
   });
@@ -95,7 +99,18 @@ export default function StoriesPage() {
 
   useEffect(() => {
     loadStories();
+    loadProductCategories();
   }, []);
+
+  const loadProductCategories = async () => {
+    try {
+      const response = await getCategories({ page: 1, limit: 100 });
+      setProductCategories(Array.isArray(response) ? response : response?.data || []);
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: "error", text: "Failed to load product categories for story links" });
+    }
+  };
 
   const openCreateForm = () => {
     setEditingStory(null);
@@ -109,6 +124,7 @@ export default function StoriesPage() {
       tag: "Trending",
       ctaText: "Order Now",
       ctaLink: "/products",
+      ctaCategory: "",
       sortOrder: stories.length + 1,
       isActive: true,
     });
@@ -127,6 +143,10 @@ export default function StoriesPage() {
       tag: story.tag || "",
       ctaText: story.ctaText || "Order Now",
       ctaLink: story.ctaLink || "/products",
+      ctaCategory:
+        typeof story.ctaCategory === "string"
+          ? story.ctaCategory
+          : story.ctaCategory?._id || "",
       sortOrder: story.sortOrder || 1,
       isActive: story.isActive,
     });
@@ -316,15 +336,25 @@ export default function StoriesPage() {
                     </div>
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-                        Target URL Link
+                        Open product category
                       </label>
-                      <input
-                        type="text"
-                        value={form.ctaLink}
-                        onChange={(e) => setForm({ ...form, ctaLink: e.target.value })}
-                        placeholder="e.g. /products?category=cake"
-                        className="w-full px-4 py-3 rounded-2xl bg-background border border-border-theme focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 text-sm font-mono text-foreground transition"
-                      />
+                      <select
+                        value={
+                          typeof form.ctaCategory === "string"
+                            ? form.ctaCategory
+                            : form.ctaCategory?._id || ""
+                        }
+                        onChange={(e) => setForm({ ...form, ctaCategory: e.target.value })}
+                        className="w-full px-4 py-3 rounded-2xl bg-background border border-border-theme text-sm font-medium text-foreground"
+                      >
+                        <option value="">All products / collections</option>
+                        {productCategories.map((category) => (
+                          <option key={category._id} value={category._id}>{category.name}</option>
+                        ))}
+                      </select>
+                      <p className="mt-1.5 text-xs text-slate-500">
+                        Story Highlights are promotional links, not product categories. Choose a real Products category to open it when tapped.
+                      </p>
                     </div>
                   </div>
 

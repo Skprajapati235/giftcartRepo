@@ -20,7 +20,8 @@ export interface DeliverySlotItem {
 export interface AddonItem {
   _id?: string;
   name: string;
-  category: "candle" | "card" | "chocolate" | "balloon" | "popper" | "teddy" | "accessory";
+  category: string;
+  productCategories?: Array<string | ProductCategoryOption>;
   price: number;
   image: string;
   description?: string;
@@ -28,6 +29,19 @@ export interface AddonItem {
   isActive: boolean;
   sortOrder?: number;
   createdAt?: string;
+}
+
+export interface AddonCategory {
+  _id: string;
+  name: string;
+  slug: string;
+  addonCount: number;
+}
+
+export interface ProductCategoryOption {
+  _id: string;
+  name: string;
+  slug?: string;
 }
 
 export interface StoryItem {
@@ -41,6 +55,7 @@ export interface StoryItem {
   tag?: string;
   ctaText?: string;
   ctaLink?: string;
+  ctaCategory?: string | ProductCategoryOption;
   isActive: boolean;
   sortOrder?: number;
   createdAt?: string;
@@ -88,6 +103,25 @@ export const updateAddon = async (id: string, addon: Partial<AddonItem>): Promis
 
 export const deleteAddon = async (id: string): Promise<void> => {
   await authApi(getAuthToken()).delete(`/addons/${id}`);
+};
+
+export const getAdminAddonCategories = async (): Promise<AddonCategory[]> => {
+  const res = await authApi(getAuthToken()).get("/addon-categories");
+  return res.data?.data || [];
+};
+
+export const createAddonCategory = async (name: string): Promise<AddonCategory> => {
+  const res = await authApi(getAuthToken()).post("/addon-categories", { name });
+  return res.data?.data;
+};
+
+export const updateAddonCategory = async (id: string, name: string): Promise<AddonCategory> => {
+  const res = await authApi(getAuthToken()).put(`/addon-categories/${id}`, { name });
+  return res.data?.data;
+};
+
+export const deleteAddonCategory = async (id: string): Promise<void> => {
+  await authApi(getAuthToken()).delete(`/addon-categories/${id}`);
 };
 
 // ──────────────────────────────────────────────

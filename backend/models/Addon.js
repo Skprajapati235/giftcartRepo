@@ -9,9 +9,14 @@ const addonSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["candle", "card", "chocolate", "balloon", "popper", "teddy", "accessory"],
+      required: true,
+      trim: true,
       default: "accessory",
     },
+    productCategories: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+    }],
     price: {
       type: Number,
       required: true,
