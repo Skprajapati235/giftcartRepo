@@ -82,8 +82,8 @@ const orderSchema = new mongoose.Schema({
   ],
   kitchenStatus: {
     type: String,
-    enum: ["Received", "Preparing", "Packed", "OutForDelivery", "Delivered"],
-    default: "Received",
+    enum: ["Received", "Pending", "In Kitchen", "Processing", "Packed", "Out for Delivery", "Shipping", "Delivered", "Cancelled", "Preparing", "OutForDelivery"],
+    default: "Pending",
   },
   totalAmount: { type: Number, required: true },
   shippingAddress: {
@@ -97,7 +97,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+    enum: ["Received", "Pending", "In Kitchen", "Processing", "Packed", "Out for Delivery", "Shipping", "Delivered", "Cancelled", "Shipped"],
     default: "Pending",
   },
   paymentMethod: {
@@ -125,6 +125,12 @@ const orderSchema = new mongoose.Schema({
   // duplicate emails for the same order.
   orderEmailSentAt: { type: Date, default: null },
   processingAt: { type: Date },
+  receivedAt: { type: Date },
+  pendingAt: { type: Date },
+  inKitchenAt: { type: Date },
+  packedAt: { type: Date },
+  outForDeliveryAt: { type: Date },
+  shippingAt: { type: Date },
   shippedAt: { type: Date },
   deliveredAt: { type: Date },
   cancelledAt: { type: Date },

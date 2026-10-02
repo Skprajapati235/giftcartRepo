@@ -11,7 +11,20 @@ const { verifyActionToken } = require("../utils/orderActionToken");
 const emailService = require("../utils/emailService");
 
 
-const VALID_EMAIL_ACTION_STATUSES = ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"];
+const VALID_EMAIL_ACTION_STATUSES = [
+  "Received",
+  "Pending",
+  "In Kitchen",
+  "Processing",
+  "Packed",
+  "Out for Delivery",
+  "Shipping",
+  "Delivered",
+  "Cancelled",
+  "Preparing",
+  "OutForDelivery",
+  "Shipped",
+];
 
 function sendActionPage(res, { title, message, ok, confirmForm }) {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -455,11 +468,12 @@ exports.getOrderById = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    await orderService.updateOrderStatus(req.params.id, status);
+    const order = await orderService.updateOrderStatus(req.params.id, status);
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
     res.json({ success: true, message: "Order status updated" });
   } catch (error) {
     console.error("Update Order Status Error:", error);
-    res.status(500).json({ success: false, message: "Error updating order status" });
+    res.status(error.statusCode || 500).json({ success: false, message: error.statusCode === 400 ? error.message : "Error updating order status" });
   }
 };
 
@@ -555,35 +569,31 @@ exports.getPublicOrderByToken = async (req, res) => {
 exports.updateKitchenStatus = async (req, res) => {
   try {
     const { kitchenStatus } = req.body;
-    const valid = ["Received", "Preparing", "Packed", "OutForDelivery", "Delivered"];
+    const valid = [
+      "Received",
+      "Pending",
+      "In Kitchen",
+      "Processing",
+      "Packed",
+      "Out for Delivery",
+      "Shipping",
+      "Delivered",
+      "Cancelled",
+      "Preparing",
+      "OutForDelivery",
+      "Shipped",
+    ];
     if (!valid.includes(kitchenStatus)) {
       return res.status(400).json({ success: false, message: "Invalid kitchen status" });
     }
 
-    const updateObj = { kitchenStatus };
-    if (kitchenStatus === "Received") {
-      updateObj.status = "Pending";
-    } else if (kitchenStatus === "Preparing" || kitchenStatus === "Packed") {
-      updateObj.status = "Processing";
-      updateObj.processingAt = new Date();
-    } else if (kitchenStatus === "OutForDelivery") {
-      updateObj.status = "Shipped";
-      updateObj.shippedAt = new Date();
-    } else if (kitchenStatus === "Delivered") {
-      updateObj.status = "Delivered";
-      updateObj.deliveredAt = new Date();
-    }
-
-    const order = await Order.findByIdAndUpdate(req.params.id, updateObj, { new: true })
-      .populate("user", "name email mobileNumber")
-      .populate("items.product", "name image price");
+    const order = await orderService.updateOrderStatus(req.params.id, kitchenStatus);
 
     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
-    res.json({ success: true, message: `Kitchen status updated to ${kitchenStatus}`, order });
+    res.json({ success: true, message: `Kitchen status updated to ${order.kitchenStatus}`, order });
   } catch (error) {
     console.error("Update Kitchen Status Error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 };
-

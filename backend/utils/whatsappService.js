@@ -130,11 +130,21 @@ function buildTrackUrl(trackingToken) {
 }
 
 function mapOrderStatusToLabel(status) {
-  if (status === "Pending") return "Order placed";
-  if (status === "Processing") return "Order confirmed";
-  if (status === "Shipped") return "Order shipped";
-  if (status === "Delivered") return "Order delivered";
-  if (status === "Cancelled") return "Order cancelled";
+  const labels = {
+    Received: "Order received",
+    Pending: "Order pending",
+    "In Kitchen": "Order is in the kitchen",
+    Processing: "Order is processing",
+    Packed: "Order packed",
+    "Out for Delivery": "Order is out for delivery",
+    Shipping: "Order is shipping",
+    Shipped: "Order is shipping",
+    Preparing: "Order is in the kitchen",
+    OutForDelivery: "Order is out for delivery",
+    Delivered: "Order delivered",
+    Cancelled: "Order cancelled",
+  };
+  if (labels[status]) return labels[status];
   return String(status || "Order update");
 }
 
@@ -178,4 +188,3 @@ module.exports = {
   buildTrackUrl,
   mapOrderStatusToLabel,
 };
-

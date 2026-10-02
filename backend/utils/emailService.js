@@ -289,8 +289,13 @@ exports.sendOrderNotification = async (order, user) => {
     if (base) {
       actionButtons = `
         <div style="margin-top:18px;">
+          ${buildActionButton(order, "Received", "Received", "#64748B")}
           ${buildActionButton(order, "Pending", "Pending", "#6B7280")}
+          ${buildActionButton(order, "In Kitchen", "In Kitchen", "#0F766E")}
           ${buildActionButton(order, "Processing", "Processing", "#2563EB")}
+          ${buildActionButton(order, "Packed", "Packed", "#7C3AED")}
+          ${buildActionButton(order, "Out for Delivery", "Out for Delivery", "#D97706")}
+          ${buildActionButton(order, "Shipping", "Shipping", "#0284C7")}
           ${buildActionButton(order, "Delivered", "Delivered", "#16A34A")}
           ${buildActionButton(order, "Cancelled", "Cancel Order", "#DC2626")}
         </div>

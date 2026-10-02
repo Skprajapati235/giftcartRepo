@@ -157,6 +157,7 @@ export default function OrderDetailView() {
   };
 
   const isIncomplete = isOrderPaymentIncomplete(order);
+  const orderStatus = ({ Shipped: "Shipping", Preparing: "In Kitchen", OutForDelivery: "Out for Delivery" } as Record<string, string>)[order.status] || order.status;
 
   return (
     <>
@@ -170,12 +171,16 @@ export default function OrderDetailView() {
             <span>›</span>
             <span className="font-mono text-slate-700">#{order._id.slice(-8).toUpperCase()}</span>
             <span className={`ml-2 rounded-lg px-3 py-1 text-xs font-bold text-white ${
-              order.status === 'Delivered' ? 'bg-green-600' :
-              order.status === 'Cancelled' ? 'bg-red-600' :
-              order.status === 'Shipped' ? 'bg-orange-500' :
-              order.status === 'Processing' ? 'bg-blue-600' : 'bg-amber-500'
+              orderStatus === 'Delivered' ? 'bg-green-600' :
+              orderStatus === 'Cancelled' ? 'bg-red-600' :
+              orderStatus === 'Out for Delivery' ? 'bg-orange-500' :
+              orderStatus === 'Shipping' ? 'bg-cyan-600' :
+              orderStatus === 'In Kitchen' ? 'bg-teal-600' :
+              orderStatus === 'Processing' ? 'bg-blue-600' :
+              orderStatus === 'Packed' ? 'bg-purple-600' :
+              orderStatus === 'Received' ? 'bg-indigo-600' : 'bg-amber-500'
             }`}>
-              {order.status}
+              {orderStatus}
             </span>
             {isIncomplete && (
               <span className="ml-2 inline-flex items-center gap-1 rounded-lg bg-rose-500/10 px-2.5 py-1 text-xs font-black text-rose-600 border border-rose-500/20">

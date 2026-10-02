@@ -17,11 +17,28 @@ import { useLayoutInsets } from '../hooks/useLayoutInsets';
 import { colors, shadows } from '../constants/theme';
 
 const statusColor = {
-  delivered: { bg: '#DCFCE7', text: '#16A34A' },
-  processing: { bg: '#FFF7ED', text: '#EA580C' },
-  shipped: { bg: '#EFF6FF', text: '#2563EB' },
-  cancelled: { bg: '#FEF2F2', text: '#DC2626' },
+  received: { bg: '#EFF6FF', text: '#2563EB' },
   pending: { bg: '#F3F4F6', text: '#6B7280' },
+  'in kitchen': { bg: '#CCFBF1', text: '#0F766E' },
+  processing: { bg: '#DBEAFE', text: '#2563EB' },
+  'out for delivery': { bg: '#FFFBEB', text: '#D97706' },
+  shipping: { bg: '#CFFAFE', text: '#0891B2' },
+  delivered: { bg: '#DCFCE7', text: '#16A34A' },
+  packed: { bg: '#F3E8FF', text: '#7E22CE' },
+  cancelled: { bg: '#FEF2F2', text: '#DC2626' },
+};
+
+const statusLabel = {
+  received: 'Received',
+  pending: 'Pending',
+  'in kitchen': 'In Kitchen',
+  processing: 'Processing',
+  packed: 'Packed',
+  'out for delivery': 'Out for Delivery',
+  shipping: 'Shipping',
+  shipped: 'Shipping',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
 };
 
 export default function MyOrdersScreen({ navigation }) {
@@ -54,7 +71,8 @@ export default function MyOrdersScreen({ navigation }) {
   };
 
   const renderOrder = ({ item }) => {
-    const rawStatus = (item.status || item.orderStatus || 'pending').toLowerCase();
+    const legacyStatusMap = { preparing: 'in kitchen', shipped: 'shipping', outfordelivery: 'out for delivery' };
+    const rawStatus = legacyStatusMap[(item.status || item.orderStatus || 'pending').toLowerCase()] || (item.status || item.orderStatus || 'pending').toLowerCase();
     const statusCfg = statusColor[rawStatus] || statusColor.pending;
     const items = item.items || item.orderItems || [];
     const firstItem = items[0];
@@ -79,7 +97,7 @@ export default function MyOrdersScreen({ navigation }) {
 
           <View style={[styles.statusPill, { backgroundColor: statusCfg.bg }]}>
             <Text style={[styles.statusText, { color: statusCfg.text }]}>
-              {item.status || 'Pending'}
+              {statusLabel[rawStatus] || item.status || 'Received'}
             </Text>
           </View>
         </View>

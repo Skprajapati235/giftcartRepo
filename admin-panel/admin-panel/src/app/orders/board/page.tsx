@@ -31,7 +31,7 @@ import { updateOrderKitchenStatus } from "../../services/giftingService";
 import ProtectedRoute from "../../components/ProtectedRoute";
 import AdminMain from "../../components/AdminMain";
 
-type KitchenStatus = "Received" | "Preparing" | "Packed" | "OutForDelivery" | "Delivered";
+type KitchenStatus = "Received" | "Pending" | "In Kitchen" | "Processing" | "Packed" | "Out for Delivery" | "Shipping" | "Delivered" | "Cancelled";
 
 interface OrderItem {
   _id: string;
@@ -50,10 +50,10 @@ interface OrderData {
   _id: string;
   createdAt: string;
   totalAmount: number;
-  status: string;
+  status: KitchenStatus | string;
   paymentMethod: string;
   paymentStatus: string;
-  kitchenStatus?: KitchenStatus;
+  kitchenStatus?: KitchenStatus | string;
   deliverySlot?: {
     slotName?: string;
     slotType?: string;
@@ -81,11 +81,15 @@ interface OrderData {
 }
 
 const PIPELINE_COLUMNS: { id: KitchenStatus; label: string; icon: LucideIcon; color: string; bg: string }[] = [
-  { id: "Received", label: "🔔 New / Received", icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
-  { id: "Preparing", label: "👨‍🍳 In Kitchen / Baking", icon: ChefHat, color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
-  { id: "Packed", label: "📦 Quality Checked & Packed", icon: Package, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
-  { id: "OutForDelivery", label: "🛵 Out for Delivery", icon: Bike, color: "text-indigo-500", bg: "bg-indigo-500/10 border-indigo-500/20" },
+  { id: "Received", label: "🔔 Received", icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
+  { id: "Pending", label: "⏳ Pending", icon: Clock, color: "text-slate-500", bg: "bg-slate-500/10 border-slate-500/20" },
+  { id: "In Kitchen", label: "👨‍🍳 In Kitchen", icon: ChefHat, color: "text-teal-500", bg: "bg-teal-500/10 border-teal-500/20" },
+  { id: "Processing", label: "⚙️ Processing", icon: RefreshCw, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
+  { id: "Packed", label: "📦 Packed", icon: Package, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
+  { id: "Out for Delivery", label: "🛵 Out for Delivery", icon: Bike, color: "text-indigo-500", bg: "bg-indigo-500/10 border-indigo-500/20" },
+  { id: "Shipping", label: "🚚 Shipping", icon: Bike, color: "text-cyan-500", bg: "bg-cyan-500/10 border-cyan-500/20" },
   { id: "Delivered", label: "✅ Delivered", icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { id: "Cancelled", label: "✕ Cancelled", icon: X, color: "text-red-500", bg: "bg-red-500/10 border-red-500/20" },
 ];
 
 const SLOT_COLUMNS = [
@@ -219,28 +223,26 @@ export default function KitchenBoardPage() {
   };
 
   const getEffectiveKitchenStatus = (order: OrderData): KitchenStatus => {
-    if (order.kitchenStatus) return order.kitchenStatus;
-    if (order.status === "Delivered") return "Delivered";
-    if (order.status === "Shipped") return "OutForDelivery";
-    if (order.status === "Processing") return "Preparing";
-    return "Received";
+    const legacyStatuses: Record<string, KitchenStatus> = {
+      Shipped: "Shipping",
+      Preparing: "In Kitchen",
+      OutForDelivery: "Out for Delivery",
+    };
+    const status = legacyStatuses[order.status] || order.status;
+    if (PIPELINE_COLUMNS.some((column) => column.id === status)) return status as KitchenStatus;
+    const legacyKitchenStatus = order.kitchenStatus ? legacyStatuses[order.kitchenStatus] || order.kitchenStatus : undefined;
+    return PIPELINE_COLUMNS.some((column) => column.id === legacyKitchenStatus)
+      ? legacyKitchenStatus as KitchenStatus
+      : "Pending";
   };
 
   const handleAdvanceStatus = async (order: OrderData, nextStatus: KitchenStatus) => {
     try {
       setUpdatingId(order._id);
       await updateOrderKitchenStatus(order._id, nextStatus);
-      const mappedStatus =
-        nextStatus === "Delivered"
-          ? "Delivered"
-          : nextStatus === "OutForDelivery"
-          ? "Shipped"
-          : nextStatus === "Received"
-          ? "Pending"
-          : "Processing";
       // Update locally
       setOrders((prev) =>
-        prev.map((o) => (o._id === order._id ? { ...o, kitchenStatus: nextStatus, status: mappedStatus } : o))
+        prev.map((o) => (o._id === order._id ? { ...o, kitchenStatus: nextStatus, status: nextStatus } : o))
       );
       setMessage({
         type: "success",
@@ -261,16 +263,14 @@ export default function KitchenBoardPage() {
 
   const activeOrders = filteredOrders.filter((order) => order.status !== "Cancelled" && order.status !== "Delivered");
   const preparingCount = activeOrders.filter((order) =>
-    ["Preparing", "Packed"].includes(getEffectiveKitchenStatus(order))
+    ["In Kitchen", "Processing", "Packed"].includes(getEffectiveKitchenStatus(order))
   ).length;
   const deliveryCount = activeOrders.filter((order) =>
-    getEffectiveKitchenStatus(order) === "OutForDelivery"
+    ["Out for Delivery", "Shipping"].includes(getEffectiveKitchenStatus(order))
   ).length;
 
   const getOrdersForPipelineColumn = (status: KitchenStatus) => {
     return filteredOrders.filter((o) => {
-      if (o.status === "Cancelled") return false;
-
       const { slotType } = getOrderSlotInfo(o);
       if (slotFilter !== "all" && slotType !== slotFilter) {
         return false;
@@ -292,12 +292,18 @@ export default function KitchenBoardPage() {
   const getNextAction = (status: KitchenStatus): { next: KitchenStatus; label: string } | null => {
     switch (status) {
       case "Received":
-        return { next: "Preparing", label: "Send to Kitchen ➔" };
-      case "Preparing":
+        return { next: "Pending", label: "Mark Pending ➔" };
+      case "Pending":
+        return { next: "In Kitchen", label: "Send to Kitchen ➔" };
+      case "In Kitchen":
+        return { next: "Processing", label: "Mark Processing ➔" };
+      case "Processing":
         return { next: "Packed", label: "Mark Packed ➔" };
       case "Packed":
-        return { next: "OutForDelivery", label: "Hand to Rider ➔" };
-      case "OutForDelivery":
+        return { next: "Out for Delivery", label: "Hand to Rider ➔" };
+      case "Out for Delivery":
+        return { next: "Shipping", label: "Mark Shipping ➔" };
+      case "Shipping":
         return { next: "Delivered", label: "Mark Delivered ✅" };
       default:
         return null;
@@ -498,11 +504,15 @@ export default function KitchenBoardPage() {
               className="w-full text-xs font-bold py-2.5 px-3 rounded-xl bg-background border border-border-theme text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/30 disabled:opacity-60"
               title="Change Stage"
             >
-              <option value="Received">🔔 Received</option>
-              <option value="Preparing">👨‍🍳 In Kitchen</option>
+              <option value="Received">Received</option>
+              <option value="Pending">Pending</option>
+              <option value="In Kitchen">In Kitchen</option>
+              <option value="Processing">Processing</option>
               <option value="Packed">📦 Packed</option>
-              <option value="OutForDelivery">🛵 Out for Delivery</option>
+              <option value="Out for Delivery">Out for Delivery</option>
+              <option value="Shipping">Shipping</option>
               <option value="Delivered">✅ Delivered</option>
+              <option value="Cancelled">✕ Cancelled</option>
             </select>
 
             {next ? (
@@ -639,7 +649,7 @@ export default function KitchenBoardPage() {
           <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             {[
               { label: "Active orders", value: activeOrders.length, detail: "Need action", icon: Package, tone: "blue" },
-              { label: "In preparation", value: preparingCount, detail: "Preparing or packed", icon: ChefHat, tone: "amber" },
+              { label: "In preparation", value: preparingCount, detail: "In kitchen, processing or packed", icon: ChefHat, tone: "amber" },
               { label: "Out for delivery", value: deliveryCount, detail: "With delivery partner", icon: Bike, tone: "indigo" },
               { label: "Completed", value: filteredOrders.filter((order) => order.status === "Delivered").length, detail: "Delivered orders", icon: PackageCheck, tone: "emerald" },
             ].map((stat) => {

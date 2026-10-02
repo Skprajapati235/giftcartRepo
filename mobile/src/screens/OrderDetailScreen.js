@@ -35,19 +35,27 @@ export default function OrderDetailScreen({ route, navigation }) {
     fetchLiveOrder();
   };
 
+  const legacyStatusMap = { Preparing: 'In Kitchen', Shipped: 'Shipping', OutForDelivery: 'Out for Delivery' };
+  const currentStatus = legacyStatusMap[order.status] || order.status;
+
   const getStatusConfig = (status) => {
     switch (status) {
+      case 'Received':    return { color: '#2563EB', icon: 'bell-outline', bg: '#EFF6FF', border: '#BFDBFE' };
+      case 'Pending':    return { color: '#64748B', icon: 'clock-outline', bg: '#F8FAFC', border: '#E2E8F0' };
+      case 'In Kitchen': return { color: '#0F766E', icon: 'chef-hat', bg: '#CCFBF1', border: '#99F6E4' };
+      case 'Processing': return { color: '#2563EB', icon: 'cog-outline', bg: '#DBEAFE', border: '#BFDBFE' };
       case 'Delivered':  return { color: '#16A34A', icon: 'check-circle',   bg: '#F0FDF4', border: '#BBF7D0' };
       case 'Cancelled':  return { color: '#DC2626', icon: 'close-circle',   bg: '#FEF2F2', border: '#FECACA' };
-      case 'Processing': return { color: colors.brandBerry, icon: 'clock-outline',  bg: colors.backgroundRose, border: colors.borderRose };
-      case 'Shipped':    return { color: '#D97706', icon: 'truck-delivery', bg: '#FFFBEB', border: '#FDE68A' };
+      case 'Packed':     return { color: '#7E22CE', icon: 'package-variant-closed', bg: '#FAF5FF', border: '#E9D5FF' };
+      case 'Out for Delivery': return { color: '#D97706', icon: 'truck-delivery', bg: '#FFFBEB', border: '#FDE68A' };
+      case 'Shipping':   return { color: '#0891B2', icon: 'truck-fast', bg: '#ECFEFF', border: '#A5F3FC' };
       default:           return { color: '#64748B', icon: 'help-circle',    bg: '#F8FAFC', border: '#E2E8F0' };
     }
   };
 
-  const steps = ['Processing', 'Shipped', 'Delivered'];
-  const currentStepIndex = steps.indexOf(order.status);
-  const statusConfig = getStatusConfig(order.status);
+  const steps = ['Pending', 'Received', 'In Kitchen', 'Processing', 'Packed', 'Out for Delivery', 'Shipping', 'Delivered'];
+  const currentStepIndex = steps.indexOf(currentStatus);
+  const statusConfig = getStatusConfig(currentStatus);
   const { bottom } = useLayoutInsets();
 
   return (
@@ -71,7 +79,7 @@ export default function OrderDetailScreen({ route, navigation }) {
             <MaterialCommunityIcons name={statusConfig.icon} size={30} color={statusConfig.color} />
           </View>
           <View style={styles.heroInfo}>
-            <Text style={[styles.heroStatusText, { color: statusConfig.color }]}>Order {order.status}</Text>
+            <Text style={[styles.heroStatusText, { color: statusConfig.color }]}>Order {currentStatus}</Text>
             <Text style={styles.heroIdText}>Order #{order._id.slice(-8).toUpperCase()}</Text>
             <Text style={styles.heroDate}>Placed on {new Date(order.createdAt).toDateString()}</Text>
           </View>
@@ -82,16 +90,21 @@ export default function OrderDetailScreen({ route, navigation }) {
           <Text style={styles.sectionHeader}>Tracking Timeline</Text>
           <View style={styles.timelineContainer}>
             {steps.map((step, index) => {
-              const isCompleted = currentStepIndex >= index || order.status === 'Delivered';
-              const isCancelled = order.status === 'Cancelled';
-              const isLast = index === steps.length - 1;
+              const isCancelled = currentStatus === 'Cancelled';
+              const isCompleted = isCancelled ? index === 0 : currentStepIndex >= index || currentStatus === 'Delivered';
+              const isLast = isCancelled || index === steps.length - 1;
 
               if (isCancelled && index > 0) return null;
 
               const getStepDate = (s) => {
-                if (isCancelled && s === 'Processing') return order.cancelledAt;
-                const d = s === 'Processing' ? order.processingAt
-                        : s === 'Shipped'    ? order.shippedAt
+                if (isCancelled && s === 'Pending') return order.cancelledAt;
+                const d = s === 'Pending' ? order.pendingAt || order.createdAt
+                        : s === 'Received' ? order.receivedAt
+                        : s === 'In Kitchen' ? order.inKitchenAt
+                        : s === 'Processing' ? order.processingAt
+                        : s === 'Packed'     ? order.packedAt
+                        : s === 'Out for Delivery' ? order.outForDeliveryAt
+                        : s === 'Shipping' ? order.shippingAt || order.shippedAt
                         : s === 'Delivered'  ? order.deliveredAt : null;
                 if (!d) return null;
                 const date = new Date(d);
@@ -114,7 +127,7 @@ export default function OrderDetailScreen({ route, navigation }) {
                       {getStepDate(step) && <Text style={styles.timelineTime}>{getStepDate(step)}</Text>}
                     </View>
                     <Text style={styles.timelineStepDesc}>
-                      {isCompleted ? `Your order has been ${isCancelled ? 'cancelled' : step.toLowerCase()}` : 'Pending update'}
+                      {isCancelled ? 'Your order has been cancelled' : isCompleted ? `Your order has been ${step.toLowerCase()}` : 'Pending update'}
                     </Text>
                   </View>
                 </View>
@@ -662,4 +675,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

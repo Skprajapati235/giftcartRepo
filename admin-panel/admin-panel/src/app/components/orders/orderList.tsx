@@ -395,18 +395,23 @@ export default function OrderList({
                     <td className="px-6 py-5">
                       <div className="flex flex-col gap-1">
                         <select
-                          value={order.status}
+                          value={order.status === 'Shipped' ? 'Shipping' : order.status === 'Preparing' ? 'In Kitchen' : order.status === 'OutForDelivery' ? 'Out for Delivery' : order.status}
                           onChange={(e) => onUpdateStatus(order._id, e.target.value)}
                           className={`rounded-xl border-none px-3 py-2 text-[10px] font-bold focus:ring-0 cursor-pointer uppercase tracking-wider ${
                             order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
                             order.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                            order.status === 'Packed' ? 'bg-purple-100 text-purple-700' :
                             order.status === 'Processing' ? 'bg-blue-100 text-blue-700' :
                             'bg-amber-100 text-amber-700'
                           }`}
                         >
+                          <option value="Received">Received</option>
                           <option value="Pending">Pending</option>
+                          <option value="In Kitchen">In Kitchen</option>
                           <option value="Processing">Processing</option>
-                          <option value="Shipped">Shipped</option>
+                          <option value="Packed">Packed</option>
+                          <option value="Out for Delivery">Out for Delivery</option>
+                          <option value="Shipping">Shipping</option>
                           <option value="Delivered">Delivered</option>
                           <option value="Cancelled">Cancelled</option>
                         </select>

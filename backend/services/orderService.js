@@ -465,7 +465,7 @@ exports.createOrder = async ({
       image: a.image || "",
       category: a.category || "accessory",
     })),
-    kitchenStatus: "Received",
+    kitchenStatus: "Pending",
   });
 
   const savedOrder = await order.save();
@@ -526,6 +526,7 @@ exports.markPaymentSuccess = async (razorpayOrderId, razorpayPaymentId) => {
       isPaymentAbandoned: false,
       paymentCancelReason: null,
       status: "Processing",
+      kitchenStatus: "Processing",
       processingAt: new Date(),
     },
     { new: true }
@@ -548,6 +549,7 @@ exports.markPaymentFailed = async (razorpayOrderId, reason = "Payment failed at 
       paymentCancelReason: reason,
       paymentAbandonedAt: new Date(),
       status: "Cancelled",
+      kitchenStatus: "Cancelled",
       cancelledAt: new Date(),
     },
     { new: true }
@@ -586,6 +588,7 @@ exports.markPaymentIncomplete = async ({ orderId, razorpayOrderId, reason = "Use
   existingOrder.paymentCancelReason = reason || "User returned without completing payment";
   existingOrder.paymentAbandonedAt = new Date();
   existingOrder.status = "Cancelled";
+  existingOrder.kitchenStatus = "Cancelled";
   existingOrder.cancelledAt = new Date();
 
   return await existingOrder.save();
@@ -701,14 +704,47 @@ exports.getPublicOrderByTrackingToken = async (trackingToken) => {
 
 // Update order status (admin)
 exports.updateOrderStatus = async (id, status) => {
-  const updateData = { status };
+  const statusAliases = {
+    Preparing: "In Kitchen",
+    OutForDelivery: "Out for Delivery",
+    Shipped: "Shipping",
+  };
+  const normalizedStatus = statusAliases[status] || status;
+  const validStatuses = [
+    "Received",
+    "Pending",
+    "In Kitchen",
+    "Processing",
+    "Packed",
+    "Out for Delivery",
+    "Shipping",
+    "Delivered",
+    "Cancelled",
+  ];
 
-  if (status === "Processing") updateData.processingAt = Date.now();
-  if (status === "Shipped") updateData.shippedAt = Date.now();
-  if (status === "Delivered") updateData.deliveredAt = Date.now();
-  if (status === "Cancelled") updateData.cancelledAt = Date.now();
+  if (!validStatuses.includes(normalizedStatus)) {
+    const error = new Error("Invalid order status");
+    error.statusCode = 400;
+    throw error;
+  }
 
-  const updated = await Order.findByIdAndUpdate(id, updateData, { new: true }).populate("user");
+  const updateData = {
+    status: normalizedStatus,
+    kitchenStatus: normalizedStatus,
+  };
+  const now = Date.now();
+
+  if (normalizedStatus === "Received") updateData.receivedAt = now;
+  if (normalizedStatus === "Pending") updateData.pendingAt = now;
+  if (normalizedStatus === "In Kitchen") updateData.inKitchenAt = now;
+  if (normalizedStatus === "Processing") updateData.processingAt = now;
+  if (normalizedStatus === "Packed") updateData.packedAt = now;
+  if (normalizedStatus === "Out for Delivery") updateData.outForDeliveryAt = now;
+  if (normalizedStatus === "Shipping") updateData.shippingAt = now;
+  if (normalizedStatus === "Delivered") updateData.deliveredAt = now;
+  if (normalizedStatus === "Cancelled") updateData.cancelledAt = now;
+
+  const updated = await Order.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).populate("user");
 
   if (updated) {
     try {
@@ -717,7 +753,7 @@ exports.updateOrderStatus = async (id, status) => {
         toList,
         body: whatsappService.formatOrderUpdateMessage({
           order: updated,
-          statusOverride: status,
+          statusOverride: normalizedStatus,
         }),
       });
       await appendWhatsAppLogs(updated._id, "order_status_update", results);
