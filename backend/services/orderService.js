@@ -605,25 +605,37 @@ exports.getAllOrders = async ({ page = 1, limit = 10, search = "" } = {}) => {
   const skip = (page - 1) * limit;
   let query = {};
 
-  if (search) {
-    // Check if search is a valid ObjectId (Order ID)
+  const normalizedSearch = String(search || "").trim();
+  if (normalizedSearch) {
     const mongoose = require("mongoose");
-    const isObjectId = mongoose.Types.ObjectId.isValid(search);
+    const escapedSearch = normalizedSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const users = await User.find({
+      $or: [
+        { name: { $regex: escapedSearch, $options: "i" } },
+        { email: { $regex: escapedSearch, $options: "i" } },
+        { mobileNumber: { $regex: escapedSearch, $options: "i" } },
+      ],
+    }).select("_id");
 
-    if (isObjectId) {
-      query = { _id: search };
-    } else {
-      // Search in user details (needs populate or aggregation, but simpler to search in populated fields if possible)
-      // For simplicity, we'll try to find users first or use aggregation
-      const users = await User.find({
-        $or: [
-          { name: { $regex: search, $options: "i" } },
-          { email: { $regex: search, $options: "i" } }
-        ]
-      }).select('_id');
-
-      query = { user: { $in: users.map(u => u._id) } };
-    }
+    const isObjectId = mongoose.Types.ObjectId.isValid(normalizedSearch);
+    query = {
+      $or: [
+        { "shippingAddress.fullName": { $regex: escapedSearch, $options: "i" } },
+        { "shippingAddress.phone": { $regex: escapedSearch, $options: "i" } },
+        { "items.name": { $regex: escapedSearch, $options: "i" } },
+        { user: { $in: users.map((user) => user._id) } },
+        ...(isObjectId ? [{ _id: new mongoose.Types.ObjectId(normalizedSearch) }] : []),
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $toString: "$_id" },
+              regex: escapedSearch,
+              options: "i",
+            },
+          },
+        },
+      ],
+    };
   }
 
   const orders = await Order.find(query)

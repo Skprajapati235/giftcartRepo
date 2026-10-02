@@ -11,19 +11,20 @@ import {
   Moon,
   Zap,
   Sun,
-  Sparkles,
-  Gift,
   RefreshCw,
   Volume2,
   VolumeX,
   Phone,
   Eye,
   ArrowRight,
-  MessageSquare,
   AlertCircle,
   Calendar,
   LayoutGrid,
   Columns3,
+  Search,
+  PackageCheck,
+  X,
+  type LucideIcon,
 } from "lucide-react";
 import { getAllOrders } from "../../services/adminService";
 import { updateOrderKitchenStatus } from "../../services/giftingService";
@@ -79,7 +80,7 @@ interface OrderData {
   items: OrderItem[];
 }
 
-const PIPELINE_COLUMNS: { id: KitchenStatus; label: string; icon: any; color: string; bg: string }[] = [
+const PIPELINE_COLUMNS: { id: KitchenStatus; label: string; icon: LucideIcon; color: string; bg: string }[] = [
   { id: "Received", label: "🔔 New / Received", icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
   { id: "Preparing", label: "👨‍🍳 In Kitchen / Baking", icon: ChefHat, color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
   { id: "Packed", label: "📦 Quality Checked & Packed", icon: Package, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
@@ -106,18 +107,26 @@ const SLOT_FILTERS = [
 export default function KitchenBoardPage() {
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [slotFilter, setSlotFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"pipeline" | "slots">("pipeline");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const prevCountRef = useRef(0);
+  const requestIdRef = useRef(0);
+  const hasLoadedOrdersRef = useRef(false);
+  const lastLoadedSearchRef = useRef("");
 
   // Play browser chime when a new order arrives
-  const playChime = () => {
+  const playChime = React.useCallback(() => {
     if (!audioEnabled || typeof window === "undefined") return;
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioCtx = new window.AudioContext();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = "sine";
@@ -129,35 +138,59 @@ export default function KitchenBoardPage() {
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + 0.45);
-    } catch (e) {
+    } catch {
       // Audio autoplay policy
     }
-  };
+  }, [audioEnabled]);
 
-  const loadOrders = async () => {
+  const loadOrders = React.useCallback(async (initialLoad = false) => {
+    const requestId = ++requestIdRef.current;
+    const currentSearch = debouncedSearch.trim();
     try {
-      setLoading(true);
-      const res = await getAllOrders({ limit: 100 });
+      if (initialLoad) setLoading(true);
+      else setRefreshing(true);
+      const res = await getAllOrders({ limit: 100, search: currentSearch || undefined });
+      if (requestId !== requestIdRef.current) return;
       const list: OrderData[] = Array.isArray(res) ? res : res?.data || [];
 
       // Check if new orders arrived since last poll
-      if (prevCountRef.current > 0 && list.length > prevCountRef.current) {
+      if (
+        !currentSearch &&
+        lastLoadedSearchRef.current === currentSearch &&
+        !initialLoad &&
+        prevCountRef.current > 0 &&
+        list.length > prevCountRef.current
+      ) {
         playChime();
       }
       prevCountRef.current = list.length;
+      lastLoadedSearchRef.current = currentSearch;
       setOrders(list);
+      setTotalOrders(Array.isArray(res) ? list.length : Number(res?.total ?? list.length));
+      setLastUpdated(new Date());
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       console.error("Failed to load orders for Kanban:", err);
+      setMessage({ type: "error", text: "Could not refresh orders. Check your connection and try again." });
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-  };
+  }, [debouncedSearch, playChime]);
 
   useEffect(() => {
-    loadOrders();
-    const interval = setInterval(loadOrders, 20000); // 20s auto-poll
+    const timeout = setTimeout(() => setDebouncedSearch(searchTerm.trim()), 350);
+    return () => clearTimeout(timeout);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    loadOrders(!hasLoadedOrdersRef.current);
+    hasLoadedOrdersRef.current = true;
+    const interval = setInterval(() => loadOrders(), 20000); // 20s auto-poll
     return () => clearInterval(interval);
-  }, []);
+  }, [loadOrders]);
 
   // Helper to extract and infer slot info cleanly for any order
   const getOrderSlotInfo = (order: OrderData) => {
@@ -214,7 +247,7 @@ export default function KitchenBoardPage() {
         text: `Order #${String(order._id).slice(-6).toUpperCase()} moved to "${nextStatus}"`,
       });
       setTimeout(() => setMessage(null), 3000);
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to update kitchen status:", err);
       setMessage({ type: "error", text: "Failed to update order kitchen status" });
     } finally {
@@ -223,8 +256,19 @@ export default function KitchenBoardPage() {
   };
 
   // Filter orders for Pipeline View (by KitchenStatus)
+  const filteredOrders = orders;
+  const isSearchPending = searchTerm.trim() !== debouncedSearch;
+
+  const activeOrders = filteredOrders.filter((order) => order.status !== "Cancelled" && order.status !== "Delivered");
+  const preparingCount = activeOrders.filter((order) =>
+    ["Preparing", "Packed"].includes(getEffectiveKitchenStatus(order))
+  ).length;
+  const deliveryCount = activeOrders.filter((order) =>
+    getEffectiveKitchenStatus(order) === "OutForDelivery"
+  ).length;
+
   const getOrdersForPipelineColumn = (status: KitchenStatus) => {
-    return orders.filter((o) => {
+    return filteredOrders.filter((o) => {
       if (o.status === "Cancelled") return false;
 
       const { slotType } = getOrderSlotInfo(o);
@@ -238,7 +282,7 @@ export default function KitchenBoardPage() {
 
   // Filter orders for Slot Group View (by Slot category)
   const getOrdersForSlotColumn = (slotCategory: string) => {
-    return orders.filter((o) => {
+    return filteredOrders.filter((o) => {
       if (o.status === "Cancelled") return false;
       const { slotType } = getOrderSlotInfo(o);
       return slotType === slotCategory;
@@ -284,27 +328,31 @@ export default function KitchenBoardPage() {
     return (
       <div
         key={order._id}
-        className="p-4 rounded-2xl border border-border-theme bg-background hover:border-orange-500/50 transition-all duration-200 space-y-3 shadow-xs group"
+        className="rounded-2xl border border-border-theme bg-card p-4 shadow-sm transition-all duration-200 hover:border-orange-400 hover:shadow-md space-y-3"
       >
         {/* Order ID & Time */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-3">
           <Link
             href={`/orders/${order._id}`}
-            className="font-mono text-xs font-black text-foreground hover:text-orange-500 transition flex items-center gap-1"
+            className="font-mono text-sm font-black text-foreground hover:text-orange-500 transition flex items-center gap-1.5"
             title="View Order Details"
           >
             <span>#{String(order._id).slice(-6).toUpperCase()}</span>
-            <Eye className="w-3 h-3 text-slate-400 group-hover:text-orange-500" />
+            <Eye className="w-3.5 h-3.5 text-slate-400" />
           </Link>
-          <span className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
-            <Clock className="w-3 h-3 text-slate-400" />
-            {new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </span>
+          <div className="text-right">
+            <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+              {new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </p>
+            <p className="text-[10px] text-slate-400">
+              {new Date(order.createdAt).toLocaleDateString([], { day: "numeric", month: "short" })}
+            </p>
+          </div>
         </div>
 
         {/* Delivery Slot Badge & Expected Date */}
         <div
-          className={`p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-1.5 ${
+          className={`min-h-11 p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-2 ${
             slotType === "midnight"
               ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
               : slotType === "early_morning"
@@ -342,29 +390,36 @@ export default function KitchenBoardPage() {
         )}
 
         {/* Customer Info */}
-        <div className="text-xs space-y-0.5">
-          <p className="font-bold text-foreground truncate">
-            {order.shippingAddress?.fullName || order.user?.name || "Customer"}
-          </p>
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Customer</p>
+            <p className="text-sm font-bold text-foreground truncate">
+              {order.shippingAddress?.fullName || order.user?.name || "Customer"}
+            </p>
+          </div>
           {(order.shippingAddress?.phone || order.user?.mobileNumber) && (
             <a
               href={`tel:${order.shippingAddress?.phone || order.user?.mobileNumber}`}
-              className="text-slate-500 hover:text-orange-500 flex items-center gap-1 text-[11px] transition"
+              className="shrink-0 rounded-lg border border-border-theme p-2 text-slate-500 hover:text-orange-500 hover:border-orange-300 transition"
+              aria-label={`Call ${order.shippingAddress?.fullName || order.user?.name || "customer"}`}
             >
-              <Phone className="w-3 h-3 text-slate-400" />
-              {order.shippingAddress?.phone || order.user?.mobileNumber}
+              <Phone className="w-3.5 h-3.5" />
             </a>
           )}
         </div>
 
         {/* Items preview */}
-        <div className="space-y-1 pt-1.5 border-t border-border-theme">
+        <div className="space-y-2 rounded-xl bg-background p-3">
+          <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            <span>Order items</span>
+            <span>{order.items.length} {order.items.length === 1 ? "item" : "items"}</span>
+          </div>
           {order.items.slice(0, 3).map((item, idx) => (
-            <div key={idx} className="text-xs text-foreground flex items-center justify-between">
-              <span className="font-medium truncate max-w-[150px]">
+            <div key={idx} className="text-xs text-foreground flex items-center justify-between gap-2">
+              <span className="font-medium truncate">
                 {item.name} {item.isEggless ? "🥚(Eggless)" : ""}
               </span>
-              <span className="text-slate-500 font-mono text-[11px]">×{item.quantity}</span>
+              <span className="shrink-0 text-slate-500 font-mono text-[11px]">×{item.quantity}</span>
             </div>
           ))}
           {order.items.length > 3 && (
@@ -381,7 +436,7 @@ export default function KitchenBoardPage() {
               🎂 Cake Inscription:
             </span>
             <span className="italic font-serif font-bold">
-              "{order.messageOnCake || order.items.find((i) => i.messageOnCake)?.messageOnCake}"
+              &quot;{order.messageOnCake || order.items.find((i) => i.messageOnCake)?.messageOnCake}&quot;
             </span>
           </div>
         )}
@@ -392,7 +447,7 @@ export default function KitchenBoardPage() {
             <span className="font-bold flex items-center gap-1 mb-0.5">
               💌 Greeting Card:
             </span>
-            <span className="italic font-medium">"{order.cardMessage}"</span>
+            <span className="italic font-medium">&quot;{order.cardMessage}&quot;</span>
           </div>
         )}
 
@@ -419,25 +474,28 @@ export default function KitchenBoardPage() {
         )}
 
         {/* Total amount & Action */}
-        <div className="pt-2 border-t border-border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-black text-foreground">₹{order.totalAmount}</span>
+        <div className="pt-3 border-t border-border-theme space-y-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Order total</p>
+              <span className="text-base font-black text-foreground">₹{Number(order.totalAmount || 0).toLocaleString("en-IN")}</span>
+            </div>
             <Link
               href={`/orders/${order._id}`}
-              className="p-1 text-slate-400 hover:text-foreground rounded-lg hover:bg-hover-theme transition"
+              className="text-xs font-bold text-slate-500 hover:text-orange-500 flex items-center gap-1"
               title="Open Full Order Detail Page"
             >
-              <Eye className="w-3.5 h-3.5" />
+              Details <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
+          <div className="flex flex-col gap-2">
             {/* Quick Stage Dropdown */}
             <select
               value={currentKitchenStatus}
               disabled={isUpdating}
               onChange={(e) => handleAdvanceStatus(order, e.target.value as KitchenStatus)}
-              className="text-[11px] font-bold py-1 px-2 rounded-xl bg-card border border-border-theme text-foreground cursor-pointer focus:outline-none focus:ring-1 focus:ring-orange-500"
+              className="w-full text-xs font-bold py-2.5 px-3 rounded-xl bg-background border border-border-theme text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500/30 disabled:opacity-60"
               title="Change Stage"
             >
               <option value="Received">🔔 Received</option>
@@ -451,13 +509,13 @@ export default function KitchenBoardPage() {
               <button
                 disabled={isUpdating}
                 onClick={() => handleAdvanceStatus(order, next.next)}
-                className="px-2.5 py-1 rounded-xl bg-orange-500 text-white text-[11px] font-bold hover:bg-orange-600 transition shadow-xs disabled:opacity-50 cursor-pointer whitespace-nowrap"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-orange-500 text-white text-xs font-bold hover:bg-orange-600 transition shadow-sm disabled:opacity-50 cursor-pointer whitespace-nowrap"
               >
-                {isUpdating ? "..." : next.label}
+                {isUpdating ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : next.label}
               </button>
             ) : (
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                Delivered
+              <span className="text-xs font-bold px-3 py-2 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-center">
+                Order complete
               </span>
             )}
           </div>
@@ -480,7 +538,11 @@ export default function KitchenBoardPage() {
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                {message.type === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                )}
                 <span className="text-xs font-bold">{message.text}</span>
               </div>
               <button
@@ -493,96 +555,191 @@ export default function KitchenBoardPage() {
           )}
 
           {/* Top Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border-theme rounded-3xl p-6 sm:p-7 shadow-xs">
-            <div>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-orange-500/10 text-orange-600 rounded-2xl border border-orange-500/20">
-                  <ChefHat className="w-6 h-6" />
+          <div className="overflow-hidden rounded-3xl border border-orange-200/70 bg-gradient-to-br from-orange-50 via-card to-amber-50 shadow-sm dark:border-orange-500/15 dark:from-orange-950/20 dark:via-card dark:to-amber-950/10">
+            <div className="flex flex-col gap-5 p-5 sm:p-7 xl:flex-row xl:items-center xl:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="rounded-2xl border border-orange-500/20 bg-orange-500/10 p-3 text-orange-600 dark:text-orange-400">
+                  <ChefHat className="h-7 w-7" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-black text-foreground tracking-tight">Live Kitchen & Order Board (KDS)</h1>
-                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1 animate-pulse">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> LIVE
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h1 className="text-xl font-black tracking-tight text-foreground sm:text-2xl">Kitchen & Order Board</h1>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                      Auto-refresh · 20 sec
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                    Real-time fulfillment pipeline for bakery chefs, cake artists, and delivery dispatchers.
+                  <p className="mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-400">
+                    Track every order from receiving it to handing it over for delivery.
+                  </p>
+                  <p className="mt-2 text-xs font-medium text-slate-500">
+                    {lastUpdated
+                      ? `Last updated ${lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+                      : "Loading latest orders..."}
                   </p>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2.5 flex-wrap">
-              {/* Dual View Mode Switcher */}
-              <div className="flex items-center bg-background border border-border-theme rounded-2xl p-1 shadow-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center rounded-xl border border-border-theme bg-card p-1">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("pipeline")}
+                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition ${
+                      viewMode === "pipeline" ? "bg-orange-500 text-white shadow-sm" : "text-slate-600 hover:bg-hover-theme dark:text-slate-300"
+                    }`}
+                  >
+                    <Columns3 className="h-4 w-4" />
+                    Stages
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("slots")}
+                    className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition ${
+                      viewMode === "slots" ? "bg-orange-500 text-white shadow-sm" : "text-slate-600 hover:bg-hover-theme dark:text-slate-300"
+                    }`}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                    Delivery slots
+                  </button>
+                </div>
+
                 <button
-                  onClick={() => setViewMode("pipeline")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                    viewMode === "pipeline"
-                      ? "bg-orange-500 text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-300 hover:text-foreground"
-                  }`}
+                  type="button"
+                  onClick={() => setAudioEnabled(!audioEnabled)}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-border-theme bg-card px-3 py-2 text-xs font-bold text-foreground transition hover:bg-hover-theme"
+                  title={audioEnabled ? "Turn new-order chime off" : "Turn new-order chime on"}
+                  aria-pressed={audioEnabled}
                 >
-                  <Columns3 className="w-3.5 h-3.5" />
-                  <span>Kitchen Stages</span>
+                  {audioEnabled ? <Volume2 className="h-4 w-4 text-emerald-500" /> : <VolumeX className="h-4 w-4 text-slate-400" />}
+                  {audioEnabled ? "Sound on" : "Sound off"}
                 </button>
+
                 <button
-                  onClick={() => setViewMode("slots")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                    viewMode === "slots"
-                      ? "bg-orange-500 text-white shadow-xs"
-                      : "text-slate-600 dark:text-slate-300 hover:text-foreground"
-                  }`}
+                  type="button"
+                  onClick={() => loadOrders()}
+                  disabled={refreshing}
+                  className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-orange-600 disabled:opacity-60"
                 >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span>By Delivery Slots</span>
+                  <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                  Refresh
                 </button>
+
+                <Link
+                  href="/orders"
+                  className="inline-flex min-h-10 items-center rounded-xl border border-border-theme bg-card px-4 py-2 text-xs font-bold text-foreground transition hover:bg-hover-theme"
+                >
+                  All orders
+                </Link>
               </div>
+            </div>
+          </div>
 
-              <button
-                onClick={() => setAudioEnabled(!audioEnabled)}
-                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                  audioEnabled
-                    ? "bg-card border-border-theme text-foreground hover:bg-hover-theme"
-                    : "bg-background border-border-theme/50 text-slate-400"
-                }`}
-                title={audioEnabled ? "Sound Alert ON" : "Sound Alert OFF"}
-              >
-                {audioEnabled ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
-                <span>{audioEnabled ? "Chime ON" : "Muted"}</span>
-              </button>
+          {/* Order overview */}
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            {[
+              { label: "Active orders", value: activeOrders.length, detail: "Need action", icon: Package, tone: "blue" },
+              { label: "In preparation", value: preparingCount, detail: "Preparing or packed", icon: ChefHat, tone: "amber" },
+              { label: "Out for delivery", value: deliveryCount, detail: "With delivery partner", icon: Bike, tone: "indigo" },
+              { label: "Completed", value: filteredOrders.filter((order) => order.status === "Delivered").length, detail: "Delivered orders", icon: PackageCheck, tone: "emerald" },
+            ].map((stat) => {
+              const tones: Record<string, string> = {
+                blue: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                amber: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+                indigo: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
+                emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+              };
+              const Icon = stat.icon;
+              return (
+                <div key={stat.label} className="flex items-center gap-3 rounded-2xl border border-border-theme bg-card p-4 shadow-xs">
+                  <div className={`rounded-xl p-2.5 ${tones[stat.tone]}`}>
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-2xl font-black leading-none text-foreground">{stat.value}</p>
+                    <p className="mt-1 truncate text-xs font-bold text-foreground">{stat.label}</p>
+                    <p className="mt-0.5 hidden text-[11px] text-slate-500 sm:block">{stat.detail}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-              <button
-                onClick={loadOrders}
-                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-xl hover:opacity-95 transition shadow-sm text-xs cursor-pointer"
+          {/* Search and board filters */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-8">
+            <div className="min-w-0 flex-1">
+              <label
+                htmlFor="kitchen-order-search"
+                className="mb-2 block text-xs font-bold text-slate-600 dark:text-slate-300"
               >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                Refresh Board
-              </button>
-
-              <Link
-                href="/orders"
-                className="px-4 py-2.5 rounded-xl border border-border-theme bg-card hover:bg-hover-theme text-xs font-bold text-foreground transition"
-              >
-                Table View
-              </Link>
+                Find an order
+              </label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
+                  {refreshing ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </span>
+                <input
+                  id="kitchen-order-search"
+                  type="text"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Order ID, customer name, phone or product"
+                  autoComplete="off"
+                  className="h-14 w-full pl-16 pr-12 text-sm font-medium placeholder:font-normal sm:text-[15px]"
+                  aria-label="Search kitchen orders"
+                  aria-describedby="kitchen-search-hint"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-slate-400 transition hover:bg-hover-theme hover:text-foreground"
+                    aria-label="Clear order search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <p id="kitchen-search-hint" className="mt-2 min-h-4 px-1 text-[11px] text-slate-500">
+                {isSearchPending
+                  ? "Keep typing — search starts when you pause."
+                  : refreshing && debouncedSearch
+                    ? "Searching orders..."
+                    : refreshing
+                      ? "Refreshing orders..."
+                      : "Search updates automatically after you pause typing."}
+              </p>
+            </div>
+            <div className="flex min-h-14 items-center justify-between gap-4 px-1 lg:min-w-52 lg:flex-col lg:items-start lg:justify-center lg:gap-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                Matching orders
+              </span>
+              <p className="text-sm font-semibold text-slate-500">
+                <span className="text-xl font-black leading-none text-foreground">{filteredOrders.length}</span>
+                <span className="px-1.5 text-slate-400">/</span>
+                <span className="text-foreground">{totalOrders}</span>
+                <span className="ml-1.5">found</span>
+              </p>
             </div>
           </div>
 
           {/* Delivery Slot Filter Tabs (when in Pipeline Stages view) */}
           {viewMode === "pipeline" && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
               {SLOT_FILTERS.map((f) => {
                 const count = slotCounts[f.id as keyof typeof slotCounts] || 0;
                 return (
                   <button
                     key={f.id}
                     onClick={() => setSlotFilter(f.id)}
-                    className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-2 ${
+                    className={`min-h-10 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-2 border ${
                       slotFilter === f.id
-                        ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
-                        : "bg-card border border-border-theme text-slate-600 dark:text-slate-300 hover:bg-hover-theme"
+                        ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                        : "bg-card border-border-theme text-slate-600 dark:text-slate-300 hover:bg-hover-theme"
                     }`}
                   >
                     <span>{f.icon}</span>
@@ -601,9 +758,54 @@ export default function KitchenBoardPage() {
           )}
 
           {/* Kanban Board Layout */}
-          {viewMode === "pipeline" ? (
+          {loading ? (
+            <div className="grid grid-flow-col auto-cols-[minmax(280px,320px)] gap-4 overflow-x-auto pb-3">
+              {PIPELINE_COLUMNS.map((column) => (
+                <div key={column.id} className="min-h-[420px] animate-pulse rounded-2xl border border-border-theme bg-card p-4">
+                  <div className="mb-5 h-5 w-2/3 rounded bg-hover-theme" />
+                  <div className="space-y-3">
+                    <div className="h-48 rounded-xl bg-hover-theme" />
+                    <div className="h-48 rounded-xl bg-hover-theme" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="flex min-h-72 flex-col items-center justify-center rounded-3xl border border-dashed border-border-theme bg-card px-6 py-12 text-center">
+              <div className="mb-4 rounded-2xl bg-orange-500/10 p-4 text-orange-500">
+                <Search className="h-7 w-7" />
+              </div>
+              <h2 className="text-lg font-bold text-foreground">
+                {debouncedSearch ? "No matching orders found" : "No orders to show"}
+              </h2>
+              <p className="mt-1 max-w-md text-sm text-slate-500">
+                {debouncedSearch
+                  ? `We couldn't find an order, customer, phone number or product matching “${debouncedSearch}”.`
+                  : "New orders will appear here automatically as customers place them."}
+              </p>
+              {debouncedSearch ? (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm("")}
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-orange-600"
+                >
+                  <X className="h-4 w-4" />
+                  Clear search
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => loadOrders()}
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-orange-600"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Refresh orders
+                </button>
+              )}
+            </div>
+          ) : viewMode === "pipeline" ? (
             /* VIEW MODE A: Kitchen Stages Pipeline */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 min-h-[650px] items-start">
+          <div className="grid grid-flow-col auto-cols-[minmax(280px,320px)] gap-4 overflow-x-auto pb-3">
               {PIPELINE_COLUMNS.map((col) => {
                 const colOrders = getOrdersForPipelineColumn(col.id);
                 const Icon = col.icon;
@@ -611,13 +813,13 @@ export default function KitchenBoardPage() {
                 return (
                   <div
                     key={col.id}
-                    className="bg-card border border-border-theme rounded-3xl flex flex-col h-full shadow-xs overflow-hidden"
+                    className="flex max-h-[min(72vh,900px)] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-border-theme bg-card shadow-sm"
                   >
                     {/* Column Header */}
-                    <div className={`p-4 border-b border-border-theme flex items-center justify-between ${col.bg}`}>
+                    <div className={`min-h-[62px] p-4 border-b border-border-theme flex items-center justify-between gap-2 ${col.bg}`}>
                       <div className="flex items-center gap-2">
                         <Icon className={`w-4 h-4 ${col.color}`} />
-                        <span className="font-bold text-xs text-foreground uppercase tracking-wider">{col.label}</span>
+                        <span className="font-bold text-xs leading-snug text-foreground uppercase tracking-wider">{col.label}</span>
                       </div>
                       <span className="text-xs font-black px-2 py-0.5 rounded-full bg-background text-foreground border border-border-theme shadow-xs">
                         {colOrders.length}
@@ -625,10 +827,12 @@ export default function KitchenBoardPage() {
                     </div>
 
                     {/* Column Cards */}
-                    <div className="p-3 space-y-3 overflow-y-auto max-h-[750px] scrollbar-thin">
+                    <div className="flex-1 space-y-3 overflow-y-auto p-3 scrollbar-thin">
                       {colOrders.length === 0 ? (
-                        <div className="text-center py-16 text-slate-400 text-xs">
-                          No orders in this stage
+                        <div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-border-theme px-4 text-center">
+                          <Package className="mb-2 h-7 w-7 text-slate-300" />
+                          <p className="text-xs font-bold text-slate-500">No orders here</p>
+                          <p className="mt-1 text-[11px] text-slate-400">Orders will appear when they reach this stage.</p>
                         </div>
                       ) : (
                         colOrders.map(renderOrderCard)
@@ -640,7 +844,7 @@ export default function KitchenBoardPage() {
             </div>
           ) : (
             /* VIEW MODE B: Delivery Slot Columns (apne apne slot me) */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 min-h-[650px] items-start">
+            <div className="grid grid-flow-col auto-cols-[minmax(280px,320px)] gap-4 overflow-x-auto pb-3">
               {SLOT_COLUMNS.map((col) => {
                 const colOrders = getOrdersForSlotColumn(col.id);
                 const Icon = col.icon;
@@ -648,10 +852,10 @@ export default function KitchenBoardPage() {
                 return (
                   <div
                     key={col.id}
-                    className="bg-card border border-border-theme rounded-3xl flex flex-col h-full shadow-xs overflow-hidden"
+                    className="flex max-h-[min(72vh,900px)] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-border-theme bg-card shadow-sm"
                   >
                     {/* Column Header */}
-                    <div className={`p-4 border-b border-border-theme flex items-center justify-between ${col.bg}`}>
+                    <div className={`min-h-[62px] p-4 border-b border-border-theme flex items-center justify-between gap-2 ${col.bg}`}>
                       <div className="flex items-center gap-2">
                         <Icon className={`w-4 h-4 ${col.color}`} />
                         <div>
@@ -669,10 +873,12 @@ export default function KitchenBoardPage() {
                     </div>
 
                     {/* Column Cards */}
-                    <div className="p-3 space-y-3 overflow-y-auto max-h-[750px] scrollbar-thin">
+                    <div className="flex-1 space-y-3 overflow-y-auto p-3 scrollbar-thin">
                       {colOrders.length === 0 ? (
-                        <div className="text-center py-16 text-slate-400 text-xs">
-                          No orders scheduled in this slot
+                        <div className="flex min-h-44 flex-col items-center justify-center rounded-xl border border-dashed border-border-theme px-4 text-center">
+                          <Calendar className="mb-2 h-7 w-7 text-slate-300" />
+                          <p className="text-xs font-bold text-slate-500">No orders in this slot</p>
+                          <p className="mt-1 text-[11px] text-slate-400">Scheduled orders will appear here.</p>
                         </div>
                       ) : (
                         colOrders.map(renderOrderCard)
