@@ -8,6 +8,15 @@ export const getAuthToken = (): string => {
 };
 
 const setupInterceptors = (instance: AxiosInstance): AxiosInstance => {
+  // Normalize request URLs so leading "/api" doesn't collide with baseURL ending in "/api"
+  instance.interceptors.request.use((config) => {
+    const rawBase = (config.baseURL || baseURL || "").replace(/\/+$/, "");
+    if (rawBase.endsWith("/api") && config.url && config.url.startsWith("/api/")) {
+      config.url = config.url.replace(/^\/api/, "");
+    }
+    return config;
+  });
+
   instance.interceptors.response.use(
     (response) => response,
     (error) => {

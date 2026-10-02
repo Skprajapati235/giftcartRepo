@@ -9,6 +9,8 @@ import {
   CheckCircle2,
   Clock,
   Moon,
+  Zap,
+  Sun,
   Sparkles,
   Gift,
   RefreshCw,
@@ -19,6 +21,9 @@ import {
   ArrowRight,
   MessageSquare,
   AlertCircle,
+  Calendar,
+  LayoutGrid,
+  Columns3,
 } from "lucide-react";
 import { getAllOrders } from "../../services/adminService";
 import { updateOrderKitchenStatus } from "../../services/giftingService";
@@ -36,6 +41,8 @@ interface OrderItem {
   isEggless?: boolean;
   selectedVariant?: string;
   flavor?: string;
+  deliveryTime?: string;
+  expectedDeliveryDate?: string;
 }
 
 interface OrderData {
@@ -51,6 +58,7 @@ interface OrderData {
     slotType?: string;
     timeRange?: string;
     extraCharge?: number;
+    deliveryDate?: string;
   };
   messageOnCake?: string;
   cardMessage?: string;
@@ -71,7 +79,7 @@ interface OrderData {
   items: OrderItem[];
 }
 
-const COLUMNS: { id: KitchenStatus; label: string; icon: any; color: string; bg: string }[] = [
+const PIPELINE_COLUMNS: { id: KitchenStatus; label: string; icon: any; color: string; bg: string }[] = [
   { id: "Received", label: "🔔 New / Received", icon: Clock, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
   { id: "Preparing", label: "👨‍🍳 In Kitchen / Baking", icon: ChefHat, color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
   { id: "Packed", label: "📦 Quality Checked & Packed", icon: Package, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
@@ -79,14 +87,33 @@ const COLUMNS: { id: KitchenStatus; label: string; icon: any; color: string; bg:
   { id: "Delivered", label: "✅ Delivered", icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
 ];
 
+const SLOT_COLUMNS = [
+  { id: "midnight", label: "🌙 Midnight Delivery", sub: "11:00 PM - 12:00 AM", icon: Moon, color: "text-purple-500", bg: "bg-purple-500/10 border-purple-500/20" },
+  { id: "early_morning", label: "⚡ Early Morning", sub: "6:00 AM - 9:00 AM", icon: Zap, color: "text-emerald-500", bg: "bg-emerald-500/10 border-emerald-500/20" },
+  { id: "fixed", label: "⏰ Fixed Time / Express", sub: "Exact hours & 2-3h express", icon: Clock, color: "text-amber-500", bg: "bg-amber-500/10 border-amber-500/20" },
+  { id: "standard", label: "☀️ Standard Day Slots", sub: "Regular delivery slots", icon: Sun, color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
+  { id: "other", label: "📋 General / Unassigned", sub: "Standard fulfillment", icon: Package, color: "text-slate-500", bg: "bg-slate-500/10 border-slate-500/20" },
+];
+
+const SLOT_FILTERS = [
+  { id: "all", label: "All Slots", icon: "✨" },
+  { id: "midnight", label: "Midnight Delivery 🌙", icon: "🌙" },
+  { id: "early_morning", label: "Early Morning ⚡", icon: "⚡" },
+  { id: "fixed", label: "Fixed Time ⏰", icon: "⏰" },
+  { id: "standard", label: "Standard Slots ☀️", icon: "☀️" },
+];
+
 export default function KitchenBoardPage() {
   const [orders, setOrders] = useState<OrderData[]>([]);
   const [loading, setLoading] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [slotFilter, setSlotFilter] = useState("all");
+  const [viewMode, setViewMode] = useState<"pipeline" | "slots">("pipeline");
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const prevCountRef = useRef(0);
 
-  // Play browser beep when a new order arrives
+  // Play browser chime when a new order arrives
   const playChime = () => {
     if (!audioEnabled || typeof window === "undefined") return;
     try {
@@ -128,9 +155,43 @@ export default function KitchenBoardPage() {
 
   useEffect(() => {
     loadOrders();
-    const interval = setInterval(loadOrders, 25000); // 25s auto-poll
+    const interval = setInterval(loadOrders, 20000); // 20s auto-poll
     return () => clearInterval(interval);
   }, []);
+
+  // Helper to extract and infer slot info cleanly for any order
+  const getOrderSlotInfo = (order: OrderData) => {
+    const rawType = (order.deliverySlot?.slotType || "").toLowerCase();
+    const rawName = (order.deliverySlot?.slotName || order.items[0]?.deliveryTime || "").toLowerCase();
+
+    let slotType: "midnight" | "early_morning" | "fixed" | "standard" | "other" = "standard";
+
+    if (rawType === "midnight" || rawName.includes("midnight") || rawName.includes("11 pm") || rawName.includes("11:00 pm")) {
+      slotType = "midnight";
+    } else if (rawType === "early_morning" || rawName.includes("early") || rawName.includes("morning") || rawName.includes("6 am") || rawName.includes("7 am")) {
+      slotType = "early_morning";
+    } else if (rawType === "fixed" || rawType === "fixed_time" || rawName.includes("fixed") || rawName.includes("hour")) {
+      slotType = "fixed";
+    } else if (order.deliverySlot?.slotName || order.items[0]?.deliveryTime) {
+      slotType = "standard";
+    } else {
+      slotType = "other";
+    }
+
+    const displaySlot = order.deliverySlot?.timeRange || order.deliverySlot?.slotName || order.items[0]?.deliveryTime || "Standard Delivery";
+    const displayDate = order.deliverySlot?.deliveryDate || order.items[0]?.expectedDeliveryDate;
+    const extraCharge = order.deliverySlot?.extraCharge || 0;
+
+    return { slotType, displaySlot, displayDate, extraCharge };
+  };
+
+  const getEffectiveKitchenStatus = (order: OrderData): KitchenStatus => {
+    if (order.kitchenStatus) return order.kitchenStatus;
+    if (order.status === "Delivered") return "Delivered";
+    if (order.status === "Shipped") return "OutForDelivery";
+    if (order.status === "Processing") return "Preparing";
+    return "Received";
+  };
 
   const handleAdvanceStatus = async (order: OrderData, nextStatus: KitchenStatus) => {
     try {
@@ -140,17 +201,39 @@ export default function KitchenBoardPage() {
       setOrders((prev) =>
         prev.map((o) => (o._id === order._id ? { ...o, kitchenStatus: nextStatus } : o))
       );
-    } catch (err) {
-      console.error("Failed to update status:", err);
+      setMessage({
+        type: "success",
+        text: `Order #${String(order._id).slice(-6).toUpperCase()} moved to "${nextStatus}"`,
+      });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err: any) {
+      console.error("Failed to update kitchen status:", err);
+      setMessage({ type: "error", text: "Failed to update order kitchen status" });
     } finally {
       setUpdatingId(null);
     }
   };
 
-  const getOrdersForColumn = (status: KitchenStatus) => {
+  // Filter orders for Pipeline View (by KitchenStatus)
+  const getOrdersForPipelineColumn = (status: KitchenStatus) => {
     return orders.filter((o) => {
-      const k = o.kitchenStatus || (o.status === "Delivered" ? "Delivered" : o.status === "Shipped" ? "OutForDelivery" : o.status === "Processing" ? "Preparing" : "Received");
-      return k === status;
+      if (o.status === "Cancelled") return false;
+
+      const { slotType } = getOrderSlotInfo(o);
+      if (slotFilter !== "all" && slotType !== slotFilter) {
+        return false;
+      }
+
+      return getEffectiveKitchenStatus(o) === status;
+    });
+  };
+
+  // Filter orders for Slot Group View (by Slot category)
+  const getOrdersForSlotColumn = (slotCategory: string) => {
+    return orders.filter((o) => {
+      if (o.status === "Cancelled") return false;
+      const { slotType } = getOrderSlotInfo(o);
+      return slotType === slotCategory;
     });
   };
 
@@ -169,230 +252,406 @@ export default function KitchenBoardPage() {
     }
   };
 
+  // Count active orders per slot for the filter tabs
+  const getSlotCounts = () => {
+    const counts = { all: 0, midnight: 0, early_morning: 0, fixed: 0, standard: 0 };
+    orders.forEach((o) => {
+      if (o.status === "Cancelled") return;
+      counts.all++;
+      const { slotType } = getOrderSlotInfo(o);
+      if (counts[slotType as keyof typeof counts] !== undefined) {
+        counts[slotType as keyof typeof counts]++;
+      }
+    });
+    return counts;
+  };
+  const slotCounts = getSlotCounts();
+
+  const renderOrderCard = (order: OrderData) => {
+    const isUpdating = updatingId === order._id;
+    const currentKitchenStatus = getEffectiveKitchenStatus(order);
+    const next = getNextAction(currentKitchenStatus);
+    const { slotType, displaySlot, displayDate, extraCharge } = getOrderSlotInfo(order);
+
+    return (
+      <div
+        key={order._id}
+        className="p-4 rounded-2xl border border-border-theme bg-background hover:border-orange-500/50 transition-all duration-200 space-y-3 shadow-xs group"
+      >
+        {/* Order ID & Time */}
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-xs font-black text-foreground">
+            #{String(order._id).slice(-6).toUpperCase()}
+          </span>
+          <span className="text-[11px] text-slate-500 flex items-center gap-1 font-medium">
+            <Clock className="w-3 h-3 text-slate-400" />
+            {new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+
+        {/* Delivery Slot Badge & Expected Date */}
+        <div
+          className={`p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-1.5 ${
+            slotType === "midnight"
+              ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+              : slotType === "early_morning"
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+              : slotType === "fixed"
+              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+              : "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+          }`}
+        >
+          <div className="flex items-center gap-1.5 truncate">
+            {slotType === "midnight" ? (
+              <Moon className="w-3.5 h-3.5 shrink-0" />
+            ) : slotType === "early_morning" ? (
+              <Zap className="w-3.5 h-3.5 shrink-0" />
+            ) : slotType === "fixed" ? (
+              <Clock className="w-3.5 h-3.5 shrink-0" />
+            ) : (
+              <Sun className="w-3.5 h-3.5 shrink-0" />
+            )}
+            <span className="truncate font-bold">{displaySlot}</span>
+          </div>
+          {extraCharge ? (
+            <span className="font-black shrink-0 text-[10px] bg-background/80 px-1.5 py-0.5 rounded-md">
+              +₹{extraCharge}
+            </span>
+          ) : null}
+        </div>
+
+        {/* Expected Delivery Date if present */}
+        {displayDate && (
+          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-card px-2 py-1 rounded-lg border border-border-theme">
+            <Calendar className="w-3 h-3 text-orange-500 shrink-0" />
+            <span>Delivery: {displayDate}</span>
+          </div>
+        )}
+
+        {/* Customer Info */}
+        <div className="text-xs space-y-0.5">
+          <p className="font-bold text-foreground truncate">
+            {order.shippingAddress?.fullName || order.user?.name || "Customer"}
+          </p>
+          {(order.shippingAddress?.phone || order.user?.mobileNumber) && (
+            <a
+              href={`tel:${order.shippingAddress?.phone || order.user?.mobileNumber}`}
+              className="text-slate-500 hover:text-orange-500 flex items-center gap-1 text-[11px] transition"
+            >
+              <Phone className="w-3 h-3 text-slate-400" />
+              {order.shippingAddress?.phone || order.user?.mobileNumber}
+            </a>
+          )}
+        </div>
+
+        {/* Items preview */}
+        <div className="space-y-1 pt-1.5 border-t border-border-theme">
+          {order.items.slice(0, 3).map((item, idx) => (
+            <div key={idx} className="text-xs text-foreground flex items-center justify-between">
+              <span className="font-medium truncate max-w-[150px]">
+                {item.name} {item.isEggless ? "🥚(Eggless)" : ""}
+              </span>
+              <span className="text-slate-500 font-mono text-[11px]">×{item.quantity}</span>
+            </div>
+          ))}
+          {order.items.length > 3 && (
+            <p className="text-[11px] text-slate-400 font-medium">
+              +{order.items.length - 3} more items
+            </p>
+          )}
+        </div>
+
+        {/* Custom Message on Cake */}
+        {(order.messageOnCake || order.items.some((i) => i.messageOnCake)) && (
+          <div className="p-2.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-xs text-pink-700 dark:text-pink-300">
+            <span className="font-bold flex items-center gap-1 mb-0.5">
+              🎂 Cake Inscription:
+            </span>
+            <span className="italic font-serif font-bold">
+              "{order.messageOnCake || order.items.find((i) => i.messageOnCake)?.messageOnCake}"
+            </span>
+          </div>
+        )}
+
+        {/* Greeting Card Message */}
+        {order.cardMessage && (
+          <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300">
+            <span className="font-bold flex items-center gap-1 mb-0.5">
+              💌 Greeting Card:
+            </span>
+            <span className="italic font-medium">"{order.cardMessage}"</span>
+          </div>
+        )}
+
+        {/* Add-ons */}
+        {order.addons && order.addons.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {order.addons.map((a, i) => (
+              <span
+                key={i}
+                className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+              >
+                🎁 {a.name} (×{a.quantity})
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Current status tag in slot view */}
+        {viewMode === "slots" && (
+          <div className="flex items-center justify-between text-[11px] font-bold px-2.5 py-1 rounded-xl bg-card border border-border-theme">
+            <span className="text-slate-400">Kitchen Stage:</span>
+            <span className="text-orange-500 uppercase">{currentKitchenStatus}</span>
+          </div>
+        )}
+
+        {/* Total amount & Action */}
+        <div className="pt-2 border-t border-border-theme flex items-center justify-between">
+          <span className="text-sm font-black text-foreground">₹{order.totalAmount}</span>
+
+          <div className="flex items-center gap-1.5">
+            <Link
+              href={`/orders?id=${order._id}`}
+              className="p-1.5 text-slate-400 hover:text-foreground rounded-lg hover:bg-hover-theme transition"
+              title="View Order Details"
+            >
+              <Eye className="w-3.5 h-3.5" />
+            </Link>
+
+            {next && (
+              <button
+                disabled={isUpdating}
+                onClick={() => handleAdvanceStatus(order, next.next)}
+                className="px-2.5 py-1.5 rounded-xl bg-orange-500 text-white text-xs font-bold hover:bg-orange-600 transition shadow-xs disabled:opacity-50 cursor-pointer"
+              >
+                {isUpdating ? "..." : next.label}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <ProtectedRoute>
       <AdminMain className="max-w-[1800px] mx-auto">
         <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border rounded-2xl p-6 shadow-sm">
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/10 text-primary rounded-xl">
-              <ChefHat className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-foreground">Live Kitchen & Order Board (KDS)</h1>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 animate-pulse">
-                  ● LIVE
-                </span>
+          {/* Toast Notification */}
+          {message && (
+            <div
+              className={`p-4 rounded-2xl flex items-center justify-between border shadow-sm animate-in fade-in duration-200 ${
+                message.type === "success"
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200"
+                  : "bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-200"
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span className="text-xs font-bold">{message.text}</span>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Visual Kanban fulfillment pipeline for chefs, bakers, and dispatchers. Auto-refreshes in real time.
-              </p>
+              <button
+                onClick={() => setMessage(null)}
+                className="text-xs font-bold uppercase opacity-70 hover:opacity-100"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Top Header */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card border border-border-theme rounded-3xl p-6 sm:p-7 shadow-xs">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-orange-500/10 text-orange-600 rounded-2xl border border-orange-500/20">
+                  <ChefHat className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-black text-foreground tracking-tight">Live Kitchen & Order Board (KDS)</h1>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center gap-1 animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> LIVE
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                    Real-time fulfillment pipeline for bakery chefs, cake artists, and delivery dispatchers.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* Dual View Mode Switcher */}
+              <div className="flex items-center bg-background border border-border-theme rounded-2xl p-1 shadow-xs">
+                <button
+                  onClick={() => setViewMode("pipeline")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    viewMode === "pipeline"
+                      ? "bg-orange-500 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-300 hover:text-foreground"
+                  }`}
+                >
+                  <Columns3 className="w-3.5 h-3.5" />
+                  <span>Kitchen Stages</span>
+                </button>
+                <button
+                  onClick={() => setViewMode("slots")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    viewMode === "slots"
+                      ? "bg-orange-500 text-white shadow-xs"
+                      : "text-slate-600 dark:text-slate-300 hover:text-foreground"
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>By Delivery Slots</span>
+                </button>
+              </div>
+
+              <button
+                onClick={() => setAudioEnabled(!audioEnabled)}
+                className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                  audioEnabled
+                    ? "bg-card border-border-theme text-foreground hover:bg-hover-theme"
+                    : "bg-background border-border-theme/50 text-slate-400"
+                }`}
+                title={audioEnabled ? "Sound Alert ON" : "Sound Alert OFF"}
+              >
+                {audioEnabled ? <Volume2 className="w-4 h-4 text-emerald-500" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+                <span>{audioEnabled ? "Chime ON" : "Muted"}</span>
+              </button>
+
+              <button
+                onClick={loadOrders}
+                className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-xl hover:opacity-95 transition shadow-sm text-xs cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                Refresh Board
+              </button>
+
+              <Link
+                href="/orders"
+                className="px-4 py-2.5 rounded-xl border border-border-theme bg-card hover:bg-hover-theme text-xs font-bold text-foreground transition"
+              >
+                Table View
+              </Link>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setAudioEnabled(!audioEnabled)}
-            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-medium transition ${
-              audioEnabled
-                ? "bg-card border-border text-foreground hover:bg-muted"
-                : "bg-muted border-border/50 text-muted-foreground"
-            }`}
-            title={audioEnabled ? "Sound Alert ON" : "Sound Alert OFF"}
-          >
-            {audioEnabled ? <Volume2 className="w-4 h-4 text-primary" /> : <VolumeX className="w-4 h-4 text-muted-foreground" />}
-            <span>{audioEnabled ? "Sound ON" : "Muted"}</span>
-          </button>
+          {/* Delivery Slot Filter Tabs (when in Pipeline Stages view) */}
+          {viewMode === "pipeline" && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {SLOT_FILTERS.map((f) => {
+                const count = slotCounts[f.id as keyof typeof slotCounts] || 0;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setSlotFilter(f.id)}
+                    className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer flex items-center gap-2 ${
+                      slotFilter === f.id
+                        ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
+                        : "bg-card border border-border-theme text-slate-600 dark:text-slate-300 hover:bg-hover-theme"
+                    }`}
+                  >
+                    <span>{f.icon}</span>
+                    <span>{f.label}</span>
+                    <span
+                      className={`text-[10px] font-black px-1.5 py-0.2 rounded-full ${
+                        slotFilter === f.id ? "bg-white/20 text-white" : "bg-muted text-slate-500"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-          <button
-            onClick={loadOrders}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground font-medium rounded-xl hover:bg-primary/90 transition shadow-sm text-sm"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh Board
-          </button>
+          {/* Kanban Board Layout */}
+          {viewMode === "pipeline" ? (
+            /* VIEW MODE A: Kitchen Stages Pipeline */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 min-h-[650px] items-start">
+              {PIPELINE_COLUMNS.map((col) => {
+                const colOrders = getOrdersForPipelineColumn(col.id);
+                const Icon = col.icon;
 
-          <Link
-            href="/orders"
-            className="px-4 py-2.5 rounded-xl border border-border hover:bg-muted text-sm font-medium text-foreground transition"
-          >
-            Table View
-          </Link>
-        </div>
-      </div>
+                return (
+                  <div
+                    key={col.id}
+                    className="bg-card border border-border-theme rounded-3xl flex flex-col h-full shadow-xs overflow-hidden"
+                  >
+                    {/* Column Header */}
+                    <div className={`p-4 border-b border-border-theme flex items-center justify-between ${col.bg}`}>
+                      <div className="flex items-center gap-2">
+                        <Icon className={`w-4 h-4 ${col.color}`} />
+                        <span className="font-bold text-xs text-foreground uppercase tracking-wider">{col.label}</span>
+                      </div>
+                      <span className="text-xs font-black px-2 py-0.5 rounded-full bg-background text-foreground border border-border-theme shadow-xs">
+                        {colOrders.length}
+                      </span>
+                    </div>
 
-      {/* Kanban Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 min-h-[650px] items-start">
-        {COLUMNS.map((col) => {
-          const colOrders = getOrdersForColumn(col.id);
-          const Icon = col.icon;
-          const next = getNextAction(col.id);
-
-          return (
-            <div
-              key={col.id}
-              className="bg-card border border-border rounded-2xl flex flex-col h-full shadow-sm overflow-hidden"
-            >
-              {/* Column Header */}
-              <div className={`p-4 border-b border-border flex items-center justify-between ${col.bg}`}>
-                <div className="flex items-center gap-2">
-                  <Icon className={`w-5 h-5 ${col.color}`} />
-                  <span className="font-bold text-sm text-foreground">{col.label}</span>
-                </div>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-background/80 text-foreground border border-border shadow-sm">
-                  {colOrders.length}
-                </span>
-              </div>
-
-              {/* Column Cards */}
-              <div className="p-3 space-y-3 overflow-y-auto max-h-[750px] scrollbar-thin">
-                {colOrders.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground text-xs">
-                    No orders in this stage
+                    {/* Column Cards */}
+                    <div className="p-3 space-y-3 overflow-y-auto max-h-[750px] scrollbar-thin">
+                      {colOrders.length === 0 ? (
+                        <div className="text-center py-16 text-slate-400 text-xs">
+                          No orders in this stage
+                        </div>
+                      ) : (
+                        colOrders.map(renderOrderCard)
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  colOrders.map((order) => {
-                    const isUpdating = updatingId === order._id;
-                    const isMidnight = order.deliverySlot?.slotType === "midnight";
-                    const isFixed = order.deliverySlot?.slotType === "fixed_time";
+                );
+              })}
+            </div>
+          ) : (
+            /* VIEW MODE B: Delivery Slot Columns (apne apne slot me) */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 min-h-[650px] items-start">
+              {SLOT_COLUMNS.map((col) => {
+                const colOrders = getOrdersForSlotColumn(col.id);
+                const Icon = col.icon;
 
-                    return (
-                      <div
-                        key={order._id}
-                        className="p-4 rounded-xl border border-border bg-background hover:border-primary/50 transition-all duration-200 space-y-3 shadow-xs"
-                      >
-                        {/* Order ID & Time */}
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono text-xs font-bold text-foreground">
-                            #{String(order._id).slice(-6).toUpperCase()}
+                return (
+                  <div
+                    key={col.id}
+                    className="bg-card border border-border-theme rounded-3xl flex flex-col h-full shadow-xs overflow-hidden"
+                  >
+                    {/* Column Header */}
+                    <div className={`p-4 border-b border-border-theme flex items-center justify-between ${col.bg}`}>
+                      <div className="flex items-center gap-2">
+                        <Icon className={`w-4 h-4 ${col.color}`} />
+                        <div>
+                          <span className="font-bold text-xs text-foreground uppercase tracking-wider block">
+                            {col.label}
                           </span>
-                          <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          <span className="text-[10px] text-slate-500 font-medium block">
+                            {col.sub}
                           </span>
-                        </div>
-
-                        {/* Delivery Slot Badge */}
-                        {order.deliverySlot && (
-                          <div
-                            className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 ${
-                              isMidnight
-                                ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20"
-                                : isFixed
-                                ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
-                                : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            {isMidnight ? <Moon className="w-3.5 h-3.5 shrink-0" /> : <Clock className="w-3.5 h-3.5 shrink-0" />}
-                            <span className="truncate">{order.deliverySlot.timeRange || order.deliverySlot.slotName}</span>
-                          </div>
-                        )}
-
-                        {/* Customer Info */}
-                        <div className="text-xs space-y-0.5">
-                          <p className="font-semibold text-foreground truncate">
-                            {order.shippingAddress?.fullName || order.user?.name || "Customer"}
-                          </p>
-                          {(order.shippingAddress?.phone || order.user?.mobileNumber) && (
-                            <p className="text-muted-foreground flex items-center gap-1">
-                              <Phone className="w-3 h-3 text-muted-foreground/80" />
-                              {order.shippingAddress?.phone || order.user?.mobileNumber}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Items preview */}
-                        <div className="space-y-1 pt-1 border-t border-border">
-                          {order.items.slice(0, 3).map((item, idx) => (
-                            <div key={idx} className="text-xs text-foreground flex items-center justify-between">
-                              <span className="font-medium truncate max-w-[150px]">
-                                {item.name} {item.isEggless ? "🥚(Eggless)" : ""}
-                              </span>
-                              <span className="text-muted-foreground font-mono">×{item.quantity}</span>
-                            </div>
-                          ))}
-                          {order.items.length > 3 && (
-                            <p className="text-[11px] text-muted-foreground font-medium">
-                              +{order.items.length - 3} more items
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Custom Message on Cake */}
-                        {(order.messageOnCake || order.items.some((i) => i.messageOnCake)) && (
-                          <div className="p-2 rounded-lg bg-pink-500/10 border border-pink-500/20 text-xs text-pink-700 dark:text-pink-300">
-                            <span className="font-bold flex items-center gap-1 mb-0.5">
-                              🎂 Cake Message:
-                            </span>
-                            <span className="italic font-serif">
-                              "{order.messageOnCake || order.items.find((i) => i.messageOnCake)?.messageOnCake}"
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Greeting Card Message */}
-                        {order.cardMessage && (
-                          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-700 dark:text-amber-300">
-                            <span className="font-bold flex items-center gap-1 mb-0.5">
-                              💌 Greeting Card:
-                            </span>
-                            <span className="italic">"{order.cardMessage}"</span>
-                          </div>
-                        )}
-
-                        {/* Add-ons */}
-                        {order.addons && order.addons.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {order.addons.map((a, i) => (
-                              <span
-                                key={i}
-                                className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                              >
-                                🎁 {a.name} (×{a.quantity})
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Total amount & Action */}
-                        <div className="pt-2 border-t border-border flex items-center justify-between">
-                          <span className="text-sm font-bold text-foreground">₹{order.totalAmount}</span>
-
-                          <div className="flex items-center gap-1.5">
-                            <Link
-                              href={`/orders?id=${order._id}`}
-                              className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted"
-                              title="View Order"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </Link>
-
-                            {next && (
-                              <button
-                                disabled={isUpdating}
-                                onClick={() => handleAdvanceStatus(order, next.next)}
-                                className="px-2.5 py-1 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition shadow-xs disabled:opacity-50"
-                              >
-                                {isUpdating ? "..." : next.label}
-                              </button>
-                            )}
-                          </div>
                         </div>
                       </div>
-                    );
-                  })
-                )}
-              </div>
+                      <span className="text-xs font-black px-2 py-0.5 rounded-full bg-background text-foreground border border-border-theme shadow-xs">
+                        {colOrders.length}
+                      </span>
+                    </div>
+
+                    {/* Column Cards */}
+                    <div className="p-3 space-y-3 overflow-y-auto max-h-[750px] scrollbar-thin">
+                      {colOrders.length === 0 ? (
+                        <div className="text-center py-16 text-slate-400 text-xs">
+                          No orders scheduled in this slot
+                        </div>
+                      ) : (
+                        colOrders.map(renderOrderCard)
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
-    </div>
-  </AdminMain>
-</ProtectedRoute>
+          )}
+        </div>
+      </AdminMain>
+    </ProtectedRoute>
   );
 }

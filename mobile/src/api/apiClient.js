@@ -8,6 +8,15 @@ const api = axios.create({
   timeout: 15000, // Slightly increased timeout for mobile network
 });
 
+// Normalize request URLs so leading "/api" doesn't collide with baseURL ending in "/api"
+api.interceptors.request.use((config) => {
+  const rawBase = (config.baseURL || baseURL || '').replace(/\/+$/, '');
+  if (rawBase.endsWith('/api') && config.url && config.url.startsWith('/api/')) {
+    config.url = config.url.replace(/^\/api/, '');
+  }
+  return config;
+});
+
 export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
