@@ -74,12 +74,12 @@ export interface InventoryQueryParams {
 }
 
 export const getInventorySummary = async (): Promise<InventorySummary> => {
-  const response = await authApi().get("/inventory/summary");
+  const response = await authApi(getAuthToken()).get("/inventory/summary");
   return response.data.data;
 };
 
 export const getInventoryItems = async (params?: InventoryQueryParams) => {
-  const response = await authApi().get("/inventory", { params });
+  const response = await authApi(getAuthToken()).get("/inventory", { params });
   return response.data;
 };
 
@@ -94,7 +94,7 @@ export const updateProductStock = async (
     variantId?: string;
   }
 ) => {
-  const response = await authApi().put(`/inventory/${id}/stock`, payload);
+  const response = await authApi(getAuthToken()).put(`/inventory/${id}/stock`, payload);
   return response.data;
 };
 
@@ -107,7 +107,7 @@ export const bulkUpdateProductStock = async (
     sku?: string;
   }>
 ) => {
-  const response = await authApi().post("/inventory/bulk-stock", { updates });
+  const response = await authApi(getAuthToken()).post("/inventory/bulk-stock", { updates });
   return response.data;
 };
 

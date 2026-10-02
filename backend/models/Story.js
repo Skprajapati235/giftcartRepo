@@ -11,6 +11,10 @@ const storySchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    subtitle: {
+      type: String,
+      default: "",
+    },
     mediaUrl: {
       type: String,
       required: true,
@@ -19,6 +23,12 @@ const storySchema = new mongoose.Schema(
       type: String,
       enum: ["image", "video"],
       default: "image",
+    },
+    duration: {
+      type: Number,
+      default: 5,
+      min: 3,
+      max: 30,
     },
     tag: {
       type: String,

@@ -171,10 +171,11 @@ router.post("/", upload.any(), async (req, res) => {
       const result = await uploadStreamToCloudinary(file.buffer);
 
       const name =
-        req.body.name ||
-        file.originalname
-          ? file.originalname.replace(/\.[^/.]+$/, "")
-          : "Image-" + Date.now();
+        typeof req.body.name === "string" && req.body.name.trim()
+          ? req.body.name.trim()
+          : file.originalname
+            ? file.originalname.replace(/\.[^/.]+$/, "")
+            : "Image-" + Date.now();
 
       const mediaDoc = await Media.create({
         url: result.secure_url,

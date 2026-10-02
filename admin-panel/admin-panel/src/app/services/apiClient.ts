@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 
-export const baseURL = process.env.NEXT_PUBLIC_API_URL;
+export const baseURL =
+  process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:5000/api";
 
 export const getAuthToken = (): string => {
   if (typeof window === "undefined") return "";

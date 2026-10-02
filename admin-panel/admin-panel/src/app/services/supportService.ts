@@ -59,7 +59,7 @@ export const createSupportTicket = async (payload: {
  * Admin: Get all tickets with pagination & filters
  */
 export const getSupportTickets = async (params?: SupportQueryParams) => {
-  const response = await authApi().get("/support/tickets", { params });
+  const response = await authApi(getAuthToken()).get("/support/tickets", { params });
   return response.data;
 };
 
@@ -67,7 +67,7 @@ export const getSupportTickets = async (params?: SupportQueryParams) => {
  * Admin: Get ticket details
  */
 export const getSupportTicketById = async (id: string) => {
-  const response = await authApi().get(`/support/tickets/${id}`);
+  const response = await authApi(getAuthToken()).get(`/support/tickets/${id}`);
   return response.data;
 };
 
@@ -78,7 +78,7 @@ export const updateSupportTicketStatus = async (
   id: string,
   payload: { status?: string; priority?: string }
 ) => {
-  const response = await authApi().put(`/support/tickets/${id}/status`, payload);
+  const response = await authApi(getAuthToken()).put(`/support/tickets/${id}/status`, payload);
   return response.data;
 };
 
@@ -89,7 +89,7 @@ export const replySupportTicket = async (
   id: string,
   payload: { adminReply: string; markResolved?: boolean }
 ) => {
-  const response = await authApi().put(`/support/tickets/${id}/reply`, payload);
+  const response = await authApi(getAuthToken()).put(`/support/tickets/${id}/reply`, payload);
   return response.data;
 };
 
@@ -97,7 +97,7 @@ export const replySupportTicket = async (
  * Admin: Delete single ticket
  */
 export const deleteSupportTicket = async (id: string) => {
-  const response = await authApi().delete(`/support/tickets/${id}`);
+  const response = await authApi(getAuthToken()).delete(`/support/tickets/${id}`);
   return response.data;
 };
 
@@ -105,6 +105,6 @@ export const deleteSupportTicket = async (id: string) => {
  * Admin: Bulk delete tickets
  */
 export const bulkDeleteSupportTickets = async (ids: string[]) => {
-  const response = await authApi().post("/support/bulk-delete", { ids });
+  const response = await authApi(getAuthToken()).post("/support/bulk-delete", { ids });
   return response.data;
 };

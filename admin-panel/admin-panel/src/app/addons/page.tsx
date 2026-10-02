@@ -19,7 +19,6 @@ import {
 import ProtectedRoute from "../components/ProtectedRoute";
 import AdminMain from "../components/AdminMain";
 import MediaModal from "../components/ui/MediaModal";
-import { uploadMediaFiles } from "../services/adminService";
 import {
   getAdminAddons,
   createAddon,
@@ -72,9 +71,7 @@ export default function AddonsPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Direct upload and Media Modal states
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingDirect, setUploadingDirect] = useState(false);
+  // Media Modal state
   const [showMediaModal, setShowMediaModal] = useState(false);
 
   // Form state
@@ -82,12 +79,15 @@ export default function AddonsPage() {
     name: "",
     category: "candle",
     price: 99,
-    image: PRESET_IMAGES[0].url,
+    image: "",
     description: "",
     isPopular: false,
     isActive: true,
     sortOrder: 1,
   });
+
+  const getTopSortOrder = () =>
+    addons.reduce((minSortOrder, addon) => Math.min(minSortOrder, addon.sortOrder ?? 0), 0) - 1;
 
   const loadAddons = async () => {
     try {
@@ -112,11 +112,11 @@ export default function AddonsPage() {
       name: "",
       category: "candle",
       price: 99,
-      image: PRESET_IMAGES[0].url,
+      image: "",
       description: "",
       isPopular: false,
       isActive: true,
-      sortOrder: addons.length + 1,
+      sortOrder: getTopSortOrder(),
     });
     setShowForm(true);
   };
@@ -131,30 +131,9 @@ export default function AddonsPage() {
       description: addon.description || "",
       isPopular: addon.isPopular,
       isActive: addon.isActive,
-      sortOrder: addon.sortOrder || 1,
+      sortOrder: getTopSortOrder(),
     });
     setShowForm(true);
-  };
-
-  const handleDirectFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setUploadingDirect(true);
-      const res = await uploadMediaFiles([file]);
-      if (res && res.length > 0) {
-        const uploadedUrl = res[0].url || res[0];
-        setForm((prev) => ({ ...prev, image: uploadedUrl }));
-        setMessage({ type: "success", text: "Product image uploaded successfully!" });
-        setTimeout(() => setMessage(null), 3000);
-      }
-    } catch (err: any) {
-      console.error(err);
-      setMessage({ type: "error", text: "Failed to upload image to server." });
-    } finally {
-      setUploadingDirect(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -437,201 +416,86 @@ export default function AddonsPage() {
                   <div className="flex items-center justify-between pb-4 border-b border-border-theme">
                     <div className="flex items-center gap-2.5">
                       <ImageIcon className="w-5 h-5 text-rose-500" />
-                      <h2 className="text-base font-bold text-foreground">Product Image & Live Storefront Preview</h2>
+                      <h2 className="text-base font-bold text-foreground">Product Image Asset</h2>
                     </div>
                     {form.image && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" /> Image Selected
                       </span>
                     )}
                   </div>
 
-                  {/* Hidden Native File Input */}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleDirectFileUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
+                  {/* Standard Category / Product Image Picker Box */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                      Item Image <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative aspect-video w-full rounded-2xl border-2 border-dashed border-border-theme bg-background flex flex-col items-center justify-center overflow-hidden group">
+                      {form.image ? (
+                        <>
+                          <img src={form.image} alt="Addon image" className="h-full w-full object-contain p-2" />
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowMediaModal(true)}
+                              className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-slate-100 transition flex items-center gap-1.5"
+                            >
+                              <ImageIcon className="w-3.5 h-3.5 text-rose-600" />
+                              Change Image
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setForm({ ...form, image: "" })}
+                              className="cursor-pointer bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-rose-700 transition"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowMediaModal(true)}
+                          className="cursor-pointer flex flex-col items-center gap-2 p-8 w-full h-full justify-center hover:bg-hover-theme/50 transition"
+                        >
+                          <div className="p-3 bg-rose-500/10 text-rose-500 rounded-2xl">
+                            <Upload size={24} />
+                          </div>
+                          <span className="text-xs font-bold text-rose-600 dark:text-rose-400">Select Image from Media</span>
+                          <span className="text-[11px] text-slate-400">Browse library or upload new via Media Modal</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-                  {/* Balanced 2-SubColumn Layout: Left = Product Card Preview, Right = Upload Controls & Presets */}
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
-                    {/* Live E-Commerce Storefront Card (No empty sides, un-squished square container!) */}
-                    <div className="sm:col-span-5 flex justify-center">
-                      <div className="relative w-full aspect-square max-w-[220px] rounded-3xl overflow-hidden border-2 border-border-theme bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 shadow-md group flex flex-col justify-between p-3.5 select-none transition-transform hover:scale-[1.01]">
-                        {/* Top Pills */}
-                        <div className="flex items-center justify-between z-10">
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-background/80 backdrop-blur-md text-foreground border border-border-theme capitalize">
+                  {/* Live Storefront Preview */}
+                  {form.image && (
+                    <div className="pt-4 border-t border-border-theme flex flex-col items-center justify-center">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Live Storefront Card Preview</p>
+                      <div className="w-full max-w-[200px] aspect-square rounded-2xl border border-border-theme bg-card shadow-sm p-3 flex flex-col justify-between">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-background border border-border-theme capitalize">
                             {form.category}
                           </span>
                           {form.isPopular && (
-                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[8px] shadow-xs">
-                              <Flame className="w-2.5 h-2.5 fill-slate-950" />
+                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950">
                               BESTSELLER
                             </span>
                           )}
                         </div>
-
-                        {/* Center Product Image */}
-                        <div className="relative flex-1 flex items-center justify-center p-2 overflow-hidden">
-                          {form.image ? (
-                            <>
-                              <img
-                                src={form.image}
-                                alt="Product preview"
-                                className="w-full h-full object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300"
-                              />
-                              {/* Hover quick overlay */}
-                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2 rounded-2xl z-20">
-                                <button
-                                  type="button"
-                                  onClick={() => fileInputRef.current?.click()}
-                                  disabled={uploadingDirect}
-                                  className="w-full py-1.5 px-2 bg-white text-slate-900 rounded-lg text-[10px] font-bold shadow hover:bg-slate-100 flex items-center justify-center gap-1 cursor-pointer"
-                                >
-                                  <Upload className="w-3 h-3 text-rose-600" /> Upload New
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setShowMediaModal(true)}
-                                  className="w-full py-1.5 px-2 bg-slate-900 text-white border border-white/20 rounded-lg text-[10px] font-bold shadow hover:bg-slate-800 flex items-center justify-center gap-1 cursor-pointer"
-                                >
-                                  <ImageIcon className="w-3 h-3" /> Library
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setForm({ ...form, image: "" })}
-                                  className="py-1 px-2 text-rose-300 hover:text-rose-100 text-[10px] font-semibold cursor-pointer"
-                                >
-                                  Clear Image
-                                </button>
-                              </div>
-                            </>
-                          ) : (
-                            <div
-                              onClick={() => fileInputRef.current?.click()}
-                              className="w-full h-full flex flex-col items-center justify-center text-center cursor-pointer group"
-                            >
-                              <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
-                                {uploadingDirect ? (
-                                  <RefreshCw className="w-5 h-5 animate-spin" />
-                                ) : (
-                                  <Upload className="w-5 h-5" />
-                                )}
-                              </div>
-                              <p className="text-[11px] font-bold text-foreground">
-                                {uploadingDirect ? "Uploading..." : "Click to Upload"}
-                              </p>
-                              <p className="text-[9px] text-slate-400">Square photo</p>
-                            </div>
-                          )}
+                        <div className="flex-1 flex items-center justify-center p-2">
+                          <img src={form.image} alt="preview" className="max-h-24 object-contain" />
                         </div>
-
-                        {/* Bottom Customer Info */}
-                        <div className="pt-2 border-t border-border-theme/60 flex items-center justify-between gap-1 z-10">
+                        <div className="pt-2 border-t border-border-theme flex items-center justify-between">
                           <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-bold text-foreground truncate">
-                              {form.name || "Celebration Item"}
-                            </p>
-                            <p className="text-xs font-black text-rose-600 dark:text-rose-400">
-                              ₹{form.price || 0}
-                            </p>
+                            <p className="text-xs font-bold truncate">{form.name || "Item Name"}</p>
+                            <p className="text-xs font-black text-rose-500">₹{form.price}</p>
                           </div>
-                          <span className="px-2 py-0.5 rounded-lg bg-rose-500 text-white font-bold text-[9px] shadow-xs shrink-0">
-                            + Add
-                          </span>
+                          <span className="px-2 py-0.5 rounded bg-rose-500 text-white font-bold text-[9px]">+ Add</span>
                         </div>
                       </div>
                     </div>
-
-                    {/* Right Sub-Column: Direct Upload, Media Library & Presets */}
-                    <div className="sm:col-span-7 space-y-4">
-                      {/* Dual Action Upload Buttons */}
-                      <div className="space-y-2">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Product Image Controls
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingDirect}
-                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white text-xs font-bold shadow-md shadow-rose-500/20 hover:from-rose-600 hover:to-pink-700 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                          {uploadingDirect ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                              Uploading to Server...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4" />
-                              Upload from Device
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setShowMediaModal(true)}
-                          className="w-full py-2.5 px-4 rounded-xl border border-border-theme bg-background hover:bg-hover-theme text-foreground text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          <ImageIcon className="w-4 h-4 text-blue-500" />
-                          Choose from Media Library
-                        </button>
-                      </div>
-
-                      {/* Direct URL Input */}
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                          Or paste direct Image URL:
-                        </label>
-                        <input
-                          type="url"
-                          value={form.image}
-                          onChange={(e) => setForm({ ...form, image: e.target.value })}
-                          placeholder="https://..."
-                          className="w-full px-3 py-2 rounded-xl bg-background border border-border-theme focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 text-xs font-mono text-foreground transition"
-                        />
-                      </div>
-
-                      {/* Curated Presets */}
-                      <div className="pt-2 border-t border-border-theme">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Or pick a preset celebration item:
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          {PRESET_IMAGES.map((preset, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() =>
-                                setForm({
-                                  ...form,
-                                  image: preset.url,
-                                  category: preset.category as AddonItem["category"],
-                                  name: form.name ? form.name : preset.label,
-                                })
-                              }
-                              className={`p-2 rounded-xl border text-left flex items-center gap-2 transition cursor-pointer overflow-hidden ${form.image === preset.url
-                                  ? "border-rose-500 bg-rose-500/10 ring-1 ring-rose-500/30"
-                                  : "border-border-theme bg-background hover:bg-hover-theme"
-                                }`}
-                            >
-                              <img
-                                src={preset.url}
-                                alt={preset.label}
-                                className="w-8 h-8 rounded-lg object-cover shrink-0"
-                              />
-                              <span className="text-[10px] font-semibold text-foreground truncate">
-                                {preset.label.split(" ")[0]}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </form>
@@ -751,14 +615,28 @@ export default function AddonsPage() {
                           <div className="flex items-baseline gap-1">
                             <span className="text-xl font-black text-rose-500">₹{addon.price}</span>
                           </div>
-                          <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${addon.isActive
-                                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                                : "bg-slate-500/10 text-slate-400 border border-slate-500/20"
-                              }`}
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!addon._id) return;
+                              try {
+                                await updateAddon(addon._id, { isActive: !addon.isActive });
+                                setAddons((prev) => prev.map((a) => (a._id === addon._id ? { ...a, isActive: !a.isActive } : a)));
+                                setMessage({ type: "success", text: `"${addon.name}" is now ${!addon.isActive ? "Active" : "Disabled"}` });
+                                setTimeout(() => setMessage(null), 2500);
+                              } catch (e) {
+                                setMessage({ type: "error", text: "Failed to update add-on status" });
+                              }
+                            }}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full border cursor-pointer transition ${
+                              addon.isActive
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
+                                : "bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500/20"
+                            }`}
+                            title="Click to toggle active status"
                           >
                             {addon.isActive ? "Active" : "Disabled"}
-                          </span>
+                          </button>
                         </div>
                       </div>
                     </div>

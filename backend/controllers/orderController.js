@@ -561,15 +561,17 @@ exports.updateKitchenStatus = async (req, res) => {
     }
 
     const updateObj = { kitchenStatus };
-    if (kitchenStatus === "OutForDelivery") {
+    if (kitchenStatus === "Received") {
+      updateObj.status = "Pending";
+    } else if (kitchenStatus === "Preparing" || kitchenStatus === "Packed") {
+      updateObj.status = "Processing";
+      updateObj.processingAt = new Date();
+    } else if (kitchenStatus === "OutForDelivery") {
       updateObj.status = "Shipped";
       updateObj.shippedAt = new Date();
     } else if (kitchenStatus === "Delivered") {
       updateObj.status = "Delivered";
       updateObj.deliveredAt = new Date();
-    } else if (kitchenStatus === "Preparing") {
-      updateObj.status = "Processing";
-      updateObj.processingAt = new Date();
     }
 
     const order = await Order.findByIdAndUpdate(req.params.id, updateObj, { new: true })

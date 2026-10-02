@@ -1,4 +1,4 @@
-import { authApi } from "./apiClient";
+import { authApi, getAuthToken } from "./apiClient";
 
 export interface ChatMessage {
   id?: string;
@@ -36,7 +36,7 @@ export const askAgent = async (
   if (chatId) payload.chatId = chatId;
   else if (history.length > 0) payload.history = history;
 
-  const response = await authApi().post("/ask-agent", payload);
+  const response = await authApi(getAuthToken()).post("/ask-agent", payload);
 
   return response.data as {
     success?: boolean;
@@ -48,21 +48,21 @@ export const askAgent = async (
 };
 
 export const getChats = async (): Promise<AiChatSummary[]> => {
-  const response = await authApi().get("/ai-chat");
+  const response = await authApi(getAuthToken()).get("/ai-chat");
   return (response.data?.chats || []) as AiChatSummary[];
 };
 
 export const getChat = async (chatId: string): Promise<AiChatDetail> => {
-  const response = await authApi().get(`/ai-chat/${encodeURIComponent(chatId)}`);
+  const response = await authApi(getAuthToken()).get(`/ai-chat/${encodeURIComponent(chatId)}`);
   return response.data.chat as AiChatDetail;
 };
 
 export const renameChat = async (chatId: string, title: string): Promise<AiChatSummary> => {
-  const response = await authApi().patch(`/ai-chat/${encodeURIComponent(chatId)}`, { title });
+  const response = await authApi(getAuthToken()).patch(`/ai-chat/${encodeURIComponent(chatId)}`, { title });
   return response.data.chat as AiChatSummary;
 };
 
 export const deleteChat = async (chatId: string) => {
-  const response = await authApi().delete(`/ai-chat/${encodeURIComponent(chatId)}`);
+  const response = await authApi(getAuthToken()).delete(`/ai-chat/${encodeURIComponent(chatId)}`);
   return response.data;
 };

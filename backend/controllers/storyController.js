@@ -68,7 +68,10 @@ exports.getStories = async (req, res) => {
 // POST /api/stories - Admin
 exports.createStory = async (req, res) => {
   try {
-    const story = await Story.create(req.body);
+    const story = await Story.create({
+      ...req.body,
+      thumbnail: req.body.thumbnail || req.body.mediaUrl,
+    });
     res.status(201).json({ success: true, message: "Story created", data: story });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -78,7 +81,11 @@ exports.createStory = async (req, res) => {
 // PUT /api/stories/:id - Admin
 exports.updateStory = async (req, res) => {
   try {
-    const story = await Story.findByIdAndUpdate(req.params.id, req.body, {
+    const updates = { ...req.body };
+    if (!updates.thumbnail && updates.mediaUrl) {
+      updates.thumbnail = updates.mediaUrl;
+    }
+    const story = await Story.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Upload, X, ArrowRight, Sparkles, Smartphone } from "lucide-react";
+import { Upload, X, ArrowRight, Sparkles, Smartphone, Image as ImageIcon, CheckCircle2 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { useToast } from "../../../context/ToastContext";
 import MediaModal from "../ui/MediaModal";
@@ -204,27 +204,53 @@ export default function AddEditHeroSlide({ slide, onClose }: AddEditHeroSlidePro
             </div>
           ) : null}
 
-          {/* Image URL & Upload button */}
+          {/* Banner Image — Standard Dashed Box (same as addons/stories/categories) */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Banner Image URL <span className="text-rose-500">*</span>
-            </label>
-            <div className="flex gap-2">
-              <input
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-                className="flex-1 rounded-2xl border border-border-theme bg-background px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition"
-                placeholder="https://images.unsplash.com/... or upload"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowMediaModal(true)}
-                className="cursor-pointer flex items-center gap-1.5 px-4 py-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-2xl text-xs font-bold transition whitespace-nowrap"
-              >
-                <Upload size={16} />
-                Media Library
-              </button>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Banner Image <span className="text-rose-500">*</span>
+              </label>
+              {image && (
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Image Selected
+                </span>
+              )}
+            </div>
+            <div className="relative aspect-video w-full rounded-2xl border-2 border-dashed border-border-theme bg-background flex flex-col items-center justify-center overflow-hidden group">
+              {image ? (
+                <>
+                  <img src={image} alt="Banner preview" className="h-full w-full object-contain p-2" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowMediaModal(true)}
+                      className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-slate-100 transition flex items-center gap-1.5"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-primary" />
+                      Change Image
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImage("")}
+                      className="cursor-pointer bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-rose-700 transition"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowMediaModal(true)}
+                  className="cursor-pointer flex flex-col items-center gap-2 p-8 w-full h-full justify-center hover:bg-hover-theme/50 transition"
+                >
+                  <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+                    <Upload size={24} />
+                  </div>
+                  <span className="text-xs font-bold text-primary">Select Image from Media Library</span>
+                  <span className="text-[11px] text-slate-400">Browse library or upload new via Media Modal</span>
+                </button>
+              )}
             </div>
           </div>
 

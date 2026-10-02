@@ -31,6 +31,6 @@ export const updateDeliveryHours = async (payload: {
   blockOrders?: boolean;
   allowBrowsing?: boolean;
 }): Promise<DeliveryHoursStatus> => {
-  const response = await authApi().put("/store-settings/delivery-hours", payload);
+  const response = await authApi(getAuthToken()).put("/store-settings/delivery-hours", payload);
   return response.data.data;
 };

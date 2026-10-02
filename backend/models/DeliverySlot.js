@@ -9,8 +9,12 @@ const deliverySlotSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["standard", "fixed_time", "midnight", "early_morning"],
+      enum: ["standard", "fixed_time", "fixed", "midnight", "early_morning"],
       default: "standard",
+    },
+    image: {
+      type: String,
+      default: "",
     },
     startTime: {
       type: String,

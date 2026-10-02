@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { ChefHat } from "lucide-react";
 import { getAllOrders, updateOrderStatus as updateOrderStatusApi, deleteOrder as deleteOrderApi } from "../../services/adminService";
 import { useResource } from "../../hooks/useResource";
 import OrderList from "./orderList";
@@ -112,23 +114,33 @@ export default function OrdersView() {
 
   return (
     <>
-      <div className="mb-6 sm:mb-8 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 sm:mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Customer Orders</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Manage customer checkouts, payments, delivery statuses and invoices</p>
         </div>
         
-        {selectedIds.length > 0 && (
-          <div className="animate-in slide-in-from-bottom-4 fade-in duration-200">
-            <button
-              onClick={() => setIsBulkDeleting(true)}
-              className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-              Delete Selected ({selectedIds.length})
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/orders/board"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 text-white font-bold rounded-xl text-xs sm:text-sm hover:opacity-95 shadow-sm transition"
+          >
+            <ChefHat className="w-4 h-4" />
+            Live Kitchen Board
+          </Link>
+
+          {selectedIds.length > 0 && (
+            <div className="animate-in slide-in-from-bottom-4 fade-in duration-200">
+              <button
+                onClick={() => setIsBulkDeleting(true)}
+                className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-rose-500/20 transition-all cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                Delete Selected ({selectedIds.length})
+              </button>
+            </div>
+          )}
+        </div>
       </div>
       <OrderList
         orders={orders}

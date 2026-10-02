@@ -20,9 +20,12 @@ import {
   Sliders,
   ShieldCheck,
   Calendar,
+  Image as ImageIcon,
+  Upload,
 } from "lucide-react";
 import ProtectedRoute from "../components/ProtectedRoute";
 import AdminMain from "../components/AdminMain";
+import MediaModal from "../components/ui/MediaModal";
 import {
   getAdminDeliverySlots,
   createDeliverySlot,
@@ -70,6 +73,7 @@ export default function DeliverySlotsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showMediaModal, setShowMediaModal] = useState(false);
 
   // Form state
   const [form, setForm] = useState<Partial<DeliverySlotItem>>({
@@ -79,6 +83,7 @@ export default function DeliverySlotsPage() {
     startTime: "09:00",
     endTime: "21:00",
     extraCharge: 0,
+    image: "",
     cutoffTime: "3 hours before slot",
     badge: "",
     maxOrdersPerDay: 50,
@@ -112,6 +117,7 @@ export default function DeliverySlotsPage() {
       startTime: "09:00",
       endTime: "21:00",
       extraCharge: 0,
+      image: "",
       cutoffTime: "2 hours before",
       badge: "Regular",
       maxOrdersPerDay: 50,
@@ -130,6 +136,7 @@ export default function DeliverySlotsPage() {
       startTime: slot.startTime,
       endTime: slot.endTime,
       extraCharge: slot.extraCharge,
+      image: slot.image || "",
       cutoffTime: slot.cutoffTime || "",
       badge: slot.badge || "",
       maxOrdersPerDay: slot.maxOrdersPerDay || 50,
@@ -474,6 +481,56 @@ export default function DeliverySlotsPage() {
                     </div>
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Slot Image (Optional)
+                    </label>
+                    <div className="relative h-40 w-full rounded-2xl border-2 border-dashed border-border-theme bg-background flex items-center justify-center overflow-hidden group">
+                      {form.image ? (
+                        <>
+                          <img
+                            src={form.image}
+                            alt="Delivery slot preview"
+                            className="h-full w-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition group-hover:opacity-100">
+                            <button
+                              type="button"
+                              onClick={() => setShowMediaModal(true)}
+                              className="flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-slate-900"
+                            >
+                              <ImageIcon className="h-3.5 w-3.5" />
+                              Change Image
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setForm((prev) => ({ ...prev, image: "" }))}
+                              className="rounded-xl bg-rose-600 px-3 py-2 text-xs font-bold text-white"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowMediaModal(true)}
+                          className="flex h-full w-full flex-col items-center justify-center gap-2 p-6 transition hover:bg-hover-theme/50"
+                        >
+                          <span className="rounded-2xl bg-cyan-500/10 p-3 text-cyan-600">
+                            <Upload size={24} />
+                          </span>
+                          <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">
+                            Select Image from Media
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            Browse the library or upload a new image
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex items-center justify-between p-4 rounded-2xl bg-background border border-border-theme">
                     <div>
                       <p className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -604,6 +661,13 @@ export default function DeliverySlotsPage() {
                     }`}
                   >
                     <div>
+                      {slot.image && (
+                        <img
+                          src={slot.image}
+                          alt={slot.name}
+                          className="mb-4 h-36 w-full rounded-2xl object-cover"
+                        />
+                      )}
                       {/* Card Top Pill & Icon */}
                       <div className="flex items-start justify-between gap-3 mb-4">
                         <div className="flex items-center gap-3">
@@ -620,11 +684,35 @@ export default function DeliverySlotsPage() {
                           </div>
                         </div>
 
-                        {slot.badge && (
-                          <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 border border-cyan-500/20 shrink-0">
-                            {slot.badge}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!slot._id) return;
+                              try {
+                                await updateDeliverySlot(slot._id, { isActive: !slot.isActive });
+                                setSlots((prev) => prev.map((s) => (s._id === slot._id ? { ...s, isActive: !s.isActive } : s)));
+                                setMessage({ type: "success", text: `"${slot.name}" set to ${!slot.isActive ? "Active" : "Disabled"}` });
+                                setTimeout(() => setMessage(null), 2500);
+                              } catch (e) {
+                                setMessage({ type: "error", text: "Failed to update slot status" });
+                              }
+                            }}
+                            className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border cursor-pointer transition ${
+                              slot.isActive
+                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
+                                : "bg-slate-500/10 text-slate-400 border-slate-500/20 hover:bg-slate-500/20"
+                            }`}
+                            title="Click to toggle status"
+                          >
+                            {slot.isActive ? "Active" : "Disabled"}
+                          </button>
+                          {slot.badge && (
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+                              {slot.badge}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Time & Cutoff info */}
@@ -696,6 +784,18 @@ export default function DeliverySlotsPage() {
               </div>
             )}
           </div>
+        )}
+        {showMediaModal && (
+          <MediaModal
+            onClose={() => setShowMediaModal(false)}
+            onSelect={(urls) => {
+              const selectedUrl = Array.isArray(urls) ? urls[0] : urls;
+              if (selectedUrl) {
+                setForm((prev) => ({ ...prev, image: selectedUrl }));
+              }
+              setShowMediaModal(false);
+            }}
+          />
         )}
       </AdminMain>
     </ProtectedRoute>

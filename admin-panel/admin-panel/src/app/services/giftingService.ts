@@ -1,4 +1,4 @@
-import { authApi, api } from "./apiClient";
+import { authApi, getAuthToken } from "./apiClient";
 
 export interface DeliverySlotItem {
   _id?: string;
@@ -7,6 +7,7 @@ export interface DeliverySlotItem {
   startTime: string;
   endTime: string;
   timeRange: string;
+  image?: string;
   extraCharge: number;
   cutoffTime?: string;
   badge?: string;
@@ -49,73 +50,72 @@ export interface StoryItem {
 // Delivery Slots API
 // ──────────────────────────────────────────────
 export const getAdminDeliverySlots = async (): Promise<DeliverySlotItem[]> => {
-  const res = await authApi().get("/delivery-slots?all=true");
+  const res = await authApi(getAuthToken()).get("/delivery-slots?all=true");
   return res.data?.data || [];
 };
 
 export const createDeliverySlot = async (slot: Partial<DeliverySlotItem>): Promise<DeliverySlotItem> => {
-  const res = await authApi().post("/delivery-slots", slot);
+  const res = await authApi(getAuthToken()).post("/delivery-slots", slot);
   return res.data?.data;
 };
 
 export const updateDeliverySlot = async (id: string, slot: Partial<DeliverySlotItem>): Promise<DeliverySlotItem> => {
-  const res = await authApi().put(`/delivery-slots/${id}`, slot);
+  const res = await authApi(getAuthToken()).put(`/delivery-slots/${id}`, slot);
   return res.data?.data;
 };
 
 export const deleteDeliverySlot = async (id: string): Promise<void> => {
-  await authApi().delete(`/delivery-slots/${id}`);
+  await authApi(getAuthToken()).delete(`/delivery-slots/${id}`);
 };
 
 // ──────────────────────────────────────────────
 // Add-ons API
 // ──────────────────────────────────────────────
 export const getAdminAddons = async (): Promise<AddonItem[]> => {
-  const res = await authApi().get("/addons?all=true");
+  const res = await authApi(getAuthToken()).get("/addons?all=true");
   return res.data?.data || [];
 };
 
 export const createAddon = async (addon: Partial<AddonItem>): Promise<AddonItem> => {
-  const res = await authApi().post("/addons", addon);
+  const res = await authApi(getAuthToken()).post("/addons", addon);
   return res.data?.data;
 };
 
 export const updateAddon = async (id: string, addon: Partial<AddonItem>): Promise<AddonItem> => {
-  const res = await authApi().put(`/addons/${id}`, addon);
+  const res = await authApi(getAuthToken()).put(`/addons/${id}`, addon);
   return res.data?.data;
 };
 
 export const deleteAddon = async (id: string): Promise<void> => {
-  await authApi().delete(`/addons/${id}`);
+  await authApi(getAuthToken()).delete(`/addons/${id}`);
 };
 
 // ──────────────────────────────────────────────
 // Stories API
 // ──────────────────────────────────────────────
 export const getAdminStories = async (): Promise<StoryItem[]> => {
-  const res = await authApi().get("/stories?all=true");
+  const res = await authApi(getAuthToken()).get("/stories?all=true");
   return res.data?.data || [];
 };
 
 export const createStory = async (story: Partial<StoryItem>): Promise<StoryItem> => {
-  const res = await authApi().post("/stories", story);
+  const res = await authApi(getAuthToken()).post("/stories", story);
   return res.data?.data;
 };
 
 export const updateStory = async (id: string, story: Partial<StoryItem>): Promise<StoryItem> => {
-  const res = await authApi().put(`/stories/${id}`, story);
+  const res = await authApi(getAuthToken()).put(`/stories/${id}`, story);
   return res.data?.data;
 };
 
 export const deleteStory = async (id: string): Promise<void> => {
-  await authApi().delete(`/stories/${id}`);
+  await authApi(getAuthToken()).delete(`/stories/${id}`);
 };
 
 // ──────────────────────────────────────────────
 // Live Kitchen Status API (for Kanban Board)
 // ──────────────────────────────────────────────
 export const updateOrderKitchenStatus = async (orderId: string, kitchenStatus: string) => {
-  const res = await authApi().put(`/order/admin/${orderId}/kitchen-status`, { kitchenStatus });
+  const res = await authApi(getAuthToken()).put(`/order/admin/${orderId}/kitchen-status`, { kitchenStatus });
   return res.data;
 };
-

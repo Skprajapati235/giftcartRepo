@@ -157,7 +157,6 @@ export const uploadImage = async (file: File) => {
   formData.append("file", file);
 
   const response = await authApi(getAuthToken()).post("/upload", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
   });
 
   return response.data;
@@ -179,7 +178,6 @@ export const uploadMediaFiles = async (files: File[], folderId?: string | null) 
   if (folderId) formData.append("folderId", folderId);
 
   const response = await authApi(getAuthToken()).post("/upload", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
 };
@@ -190,7 +188,6 @@ export const updateMedia = async (id: string, file?: File, name?: string) => {
   if (name) formData.append("name", name);
 
   const response = await authApi(getAuthToken()).put(`/upload/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
   });
   return response.data;
 };
@@ -459,5 +456,4 @@ export * from "./testimonialService";
 
 // Gallery API re-exports
 export * from "./galleryService";
-
 

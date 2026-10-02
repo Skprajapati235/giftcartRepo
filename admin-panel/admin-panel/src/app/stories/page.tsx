@@ -18,7 +18,6 @@ import {
 import ProtectedRoute from "../components/ProtectedRoute";
 import AdminMain from "../components/AdminMain";
 import MediaModal from "../components/ui/MediaModal";
-import { uploadMediaFiles } from "../services/adminService";
 import {
   getAdminStories,
   createStory,
@@ -63,16 +62,15 @@ export default function StoriesPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Direct upload and Media Modal states
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingDirect, setUploadingDirect] = useState(false);
+  // Media Modal state
   const [showMediaModal, setShowMediaModal] = useState(false);
 
   // Form state
   const [form, setForm] = useState<Partial<StoryItem>>({
     title: "",
     subtitle: "",
-    mediaUrl: PRESET_STORIES[0].mediaUrl,
+    thumbnail: "",
+    mediaUrl: "",
     mediaType: "image",
     duration: 5,
     tag: "Trending",
@@ -104,7 +102,8 @@ export default function StoriesPage() {
     setForm({
       title: "",
       subtitle: "",
-      mediaUrl: PRESET_STORIES[0].mediaUrl,
+      thumbnail: "",
+      mediaUrl: "",
       mediaType: "image",
       duration: 5,
       tag: "Trending",
@@ -121,6 +120,7 @@ export default function StoriesPage() {
     setForm({
       title: story.title,
       subtitle: story.subtitle || "",
+      thumbnail: story.thumbnail || story.mediaUrl || "",
       mediaUrl: story.mediaUrl,
       mediaType: story.mediaType || "image",
       duration: story.duration || 5,
@@ -131,31 +131,6 @@ export default function StoriesPage() {
       isActive: story.isActive,
     });
     setShowForm(true);
-  };
-
-  const handleDirectFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setUploadingDirect(true);
-      const res = await uploadMediaFiles([file]);
-      if (res && res.length > 0) {
-        const uploadedUrl = res[0].url || res[0];
-        setForm((prev) => ({
-          ...prev,
-          mediaUrl: uploadedUrl,
-          mediaType: file.type.startsWith("video") ? "video" : "image",
-        }));
-        setMessage({ type: "success", text: "Media uploaded successfully!" });
-        setTimeout(() => setMessage(null), 3000);
-      }
-    } catch (err: any) {
-      console.error(err);
-      setMessage({ type: "error", text: "Failed to upload file to server." });
-    } finally {
-      setUploadingDirect(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -423,84 +398,72 @@ export default function StoriesPage() {
                   <div className="flex items-center justify-between pb-4 border-b border-border-theme">
                     <div className="flex items-center gap-2.5">
                       <ImageIcon className="w-5 h-5 text-pink-500" />
-                      <h2 className="text-base font-bold text-foreground">Story Media & Live Reel Studio</h2>
+                      <h2 className="text-base font-bold text-foreground">Story Media Asset</h2>
                     </div>
-                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-pink-500/10 text-pink-500 border border-pink-500/20">
-                      9:16 Vertical Format
-                    </span>
+                    {form.mediaUrl && (
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Media Selected
+                      </span>
+                    )}
                   </div>
 
-                  {/* Hidden Native File Input */}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleDirectFileUpload}
-                    accept="image/*,video/*"
-                    className="hidden"
-                  />
-
-                  {/* Balanced 2-SubColumn Layout: Left = Live Phone Reel, Right = Upload Controls & Presets */}
-                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
-                    {/* Live 9:16 Phone Simulation (No empty side space!) */}
-                    <div className="sm:col-span-5 flex justify-center">
-                      <div className="relative w-full aspect-[9/16] max-w-[210px] rounded-[2rem] overflow-hidden shadow-2xl border-4 border-slate-900 bg-slate-950 flex flex-col justify-between p-3 select-none group">
-                        {form.mediaUrl ? (
-                          <>
-                            <img
-                              src={form.mediaUrl}
-                              alt="preview"
-                              className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                              onError={(e) => {
-                                (e.target as any).src =
-                                  "https://images.unsplash.com/photo-1535141192574-5d4897c13136?w=600";
-                              }}
-                            />
-                            {/* Hover quick overlay */}
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-3 z-20">
-                              <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={uploadingDirect}
-                                className="w-full py-1.5 px-2 bg-white text-slate-900 rounded-lg text-[10px] font-bold shadow hover:bg-slate-100 flex items-center justify-center gap-1 cursor-pointer"
-                              >
-                                <Upload className="w-3 h-3 text-pink-600" /> Upload New
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setShowMediaModal(true)}
-                                className="w-full py-1.5 px-2 bg-slate-900 text-white border border-white/20 rounded-lg text-[10px] font-bold shadow hover:bg-slate-800 flex items-center justify-center gap-1 cursor-pointer"
-                              >
-                                <ImageIcon className="w-3 h-3" /> Library
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setForm({ ...form, mediaUrl: "" })}
-                                className="py-1 px-2 text-rose-300 hover:text-rose-100 text-[10px] font-semibold cursor-pointer"
-                              >
-                                Clear Media
-                              </button>
-                            </div>
-                          </>
-                        ) : (
-                          <div
-                            onClick={() => fileInputRef.current?.click()}
-                            className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center cursor-pointer bg-slate-900/60 hover:bg-slate-900/80 transition"
-                          >
-                            <div className="w-10 h-10 rounded-2xl bg-pink-500/20 text-pink-400 flex items-center justify-center mb-2">
-                              {uploadingDirect ? (
-                                <RefreshCw className="w-5 h-5 animate-spin" />
-                              ) : (
-                                <Upload className="w-5 h-5" />
-                              )}
-                            </div>
-                            <p className="text-white text-[11px] font-bold">
-                              {uploadingDirect ? "Uploading..." : "Click to Upload"}
-                            </p>
-                            <p className="text-slate-400 text-[9px] mt-0.5">9:16 Photo/Reel</p>
+                  {/* Standard Category / Product Media Picker Box */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                      Story Media (Image or Video) <span className="text-pink-500">*</span>
+                    </label>
+                    <div className="relative aspect-video w-full rounded-2xl border-2 border-dashed border-border-theme bg-background flex flex-col items-center justify-center overflow-hidden group">
+                      {form.mediaUrl ? (
+                        <>
+                          {form.mediaType === "video" ? (
+                            <video src={form.mediaUrl} className="h-full w-full object-contain p-2" autoPlay muted loop />
+                          ) : (
+                            <img src={form.mediaUrl} alt="Story preview" className="h-full w-full object-contain p-2" />
+                          )}
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowMediaModal(true)}
+                              className="cursor-pointer bg-white text-slate-900 px-4 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-slate-100 transition flex items-center gap-1.5"
+                            >
+                              <ImageIcon className="w-3.5 h-3.5 text-pink-600" />
+                              Change Media
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setForm({ ...form, mediaUrl: "" })}
+                              className="cursor-pointer bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-md hover:bg-rose-700 transition"
+                            >
+                              Remove
+                            </button>
                           </div>
-                        )}
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowMediaModal(true)}
+                          className="cursor-pointer flex flex-col items-center gap-2 p-8 w-full h-full justify-center hover:bg-hover-theme/50 transition"
+                        >
+                          <div className="p-3 bg-pink-500/10 text-pink-500 rounded-2xl">
+                            <Upload size={24} />
+                          </div>
+                          <span className="text-xs font-bold text-pink-600 dark:text-pink-400">Select Media from Library</span>
+                          <span className="text-[11px] text-slate-400">Browse library or upload new via Media Modal</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-                        {/* Top Gradient + Progress Bar + Avatar */}
+                  {/* Live Phone Reel Simulation */}
+                  {form.mediaUrl && (
+                    <div className="pt-4 border-t border-border-theme flex flex-col items-center justify-center">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Live Phone Reel Preview (9:16)</p>
+                      <div className="relative w-full aspect-[9/16] max-w-[200px] rounded-[2rem] overflow-hidden shadow-xl border-4 border-slate-900 bg-slate-950 flex flex-col justify-between p-3 select-none group">
+                        {form.mediaType === "video" ? (
+                          <video src={form.mediaUrl} className="absolute inset-0 w-full h-full object-cover" autoPlay muted loop />
+                        ) : (
+                          <img src={form.mediaUrl} alt="preview" className="absolute inset-0 w-full h-full object-cover" />
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-black/90 pointer-events-none" />
 
                         <div className="relative z-10 space-y-1.5">
@@ -520,7 +483,6 @@ export default function StoriesPage() {
                           </div>
                         </div>
 
-                        {/* Bottom Story Info & Live CTA */}
                         <div className="relative z-10 space-y-1.5">
                           <div>
                             <p className="text-white font-black text-xs drop-shadow leading-tight line-clamp-1">
@@ -540,100 +502,7 @@ export default function StoriesPage() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Right Sub-Column: Direct Upload, Media Library & Presets */}
-                    <div className="sm:col-span-7 space-y-4">
-                      {/* Dual Action Upload Buttons */}
-                      <div className="space-y-2">
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-                          Media Upload Controls
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          disabled={uploadingDirect}
-                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 text-white text-xs font-bold shadow-md shadow-pink-500/20 hover:opacity-95 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                          {uploadingDirect ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 animate-spin" />
-                              Uploading to Server...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="w-4 h-4" />
-                              Upload from Device
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setShowMediaModal(true)}
-                          className="w-full py-2.5 px-4 rounded-xl border border-border-theme bg-background hover:bg-hover-theme text-foreground text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          <ImageIcon className="w-4 h-4 text-pink-500" />
-                          Choose from Media Library
-                        </button>
-                      </div>
-
-                      {/* Direct URL Input */}
-                      <div>
-                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
-                          Or paste direct Media URL:
-                        </label>
-                        <input
-                          type="url"
-                          value={form.mediaUrl}
-                          onChange={(e) => setForm({ ...form, mediaUrl: e.target.value })}
-                          placeholder="https://..."
-                          className="w-full px-3 py-2 rounded-xl bg-background border border-border-theme focus:outline-none focus:ring-2 focus:ring-pink-500/30 focus:border-pink-500 text-xs font-mono text-foreground transition"
-                        />
-                      </div>
-
-                      {/* Curated Presets */}
-                      <div className="pt-2 border-t border-border-theme">
-                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-                          Or pick a preset reel:
-                        </label>
-                        <div className="grid grid-cols-1 gap-1.5">
-                          {PRESET_STORIES.map((preset, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() =>
-                                setForm({
-                                  ...form,
-                                  mediaUrl: preset.mediaUrl,
-                                  title: form.title ? form.title : preset.title,
-                                  subtitle: form.subtitle ? form.subtitle : preset.subtitle,
-                                  tag: preset.tag,
-                                  ctaText: preset.ctaText,
-                                  ctaLink: preset.ctaLink,
-                                })
-                              }
-                              className={`p-2 rounded-xl border text-left flex items-center gap-2.5 transition cursor-pointer overflow-hidden ${form.mediaUrl === preset.mediaUrl
-                                ? "border-pink-500 bg-pink-500/10 ring-1 ring-pink-500/30"
-                                : "border-border-theme bg-background hover:bg-hover-theme"
-                                }`}
-                            >
-                              <img
-                                src={preset.mediaUrl}
-                                alt={preset.title}
-                                className="w-9 h-9 rounded-lg object-cover shrink-0"
-                              />
-                              <div className="min-w-0 flex-1">
-                                <p className="text-[11px] font-bold text-foreground truncate">
-                                  {preset.title}
-                                </p>
-                                <p className="text-[9px] text-slate-400 truncate">{preset.subtitle}</p>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </form>
@@ -721,9 +590,33 @@ export default function StoriesPage() {
                           ) : (
                             <span />
                           )}
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-md">
-                            {story.duration || 5}s
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!story._id) return;
+                                try {
+                                  await updateStory(story._id, { isActive: !story.isActive });
+                                  setStories((prev) => prev.map((s) => (s._id === story._id ? { ...s, isActive: !s.isActive } : s)));
+                                  setMessage({ type: "success", text: `"${story.title}" set to ${!story.isActive ? "Active" : "Disabled"}` });
+                                  setTimeout(() => setMessage(null), 2500);
+                                } catch (e) {
+                                  setMessage({ type: "error", text: "Failed to update story status" });
+                                }
+                              }}
+                              className={`text-[9px] font-black px-2 py-0.5 rounded-full border cursor-pointer backdrop-blur-md transition ${
+                                story.isActive
+                                  ? "bg-emerald-500/80 text-white border-emerald-400 hover:bg-emerald-600"
+                                  : "bg-slate-800/80 text-slate-300 border-slate-600 hover:bg-slate-700"
+                              }`}
+                              title="Click to toggle story active status"
+                            >
+                              {story.isActive ? "Active" : "Disabled"}
+                            </button>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-md">
+                              {story.duration || 5}s
+                            </span>
+                          </div>
                         </div>
 
                         <div className="absolute bottom-3 left-3 right-3 text-white">
@@ -792,7 +685,7 @@ export default function StoriesPage() {
             onSelect={(urls) => {
               const selectedUrl = Array.isArray(urls) ? urls[0] : urls;
               if (selectedUrl) {
-                setForm((prev) => ({ ...prev, mediaUrl: selectedUrl }));
+                setForm((prev) => ({ ...prev, mediaUrl: selectedUrl, thumbnail: selectedUrl }));
               }
               setShowMediaModal(false);
             }}
