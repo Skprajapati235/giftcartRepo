@@ -29,6 +29,8 @@ import {
   Activity,
   MessageSquareQuote,
   Images,
+  ChefHat,
+  Sparkles,
 } from "lucide-react";
 
 export type NavChild = {
@@ -71,6 +73,7 @@ export const adminNavigation: NavItem[] = [
           { key: "flavors", href: "/flavors", label: "Flavors", icon: Pipette },
           { key: "cities", href: "/cities", label: "Cities", icon: MapPin },
           { key: "offers", href: "/coupons", label: "Offers", icon: Gift },
+          { key: "addons", href: "/addons", label: "Gifting Add-ons", icon: Gift },
           { key: "gallery", href: "/gallery", label: "Gallery", icon: Images },
         ],
       },
@@ -80,6 +83,7 @@ export const adminNavigation: NavItem[] = [
         isGroup: true,
         children: [
           { key: "orders", href: "/orders", label: "Orders", icon: ShoppingCart },
+          { key: "kitchenBoard", href: "/orders/board", label: "Kitchen Board (KDS)", icon: ChefHat },
           { key: "reviews", href: "/reviews", label: "Reviews", icon: Star },
           { key: "testimonials", href: "/testimonials", label: "Testimonials", icon: MessageSquareQuote },
         ],
@@ -98,6 +102,8 @@ export const adminNavigation: NavItem[] = [
         label: "Settings",
         isGroup: true,
         children: [
+          { key: "deliverySlots", href: "/delivery-slots", label: "Delivery Slots", icon: Clock },
+          { key: "stories", href: "/stories", label: "Story Highlights", icon: Sparkles },
           { key: "heroSlides", href: "/hero-slides", label: "Hero Slides", icon: SlidersHorizontal },
           { key: "occasions", href: "/occasions", label: "Occasions", icon: PartyPopper },
           { key: "deliveryHours", href: "/delivery-hours", label: "Operating Hours", icon: Clock },

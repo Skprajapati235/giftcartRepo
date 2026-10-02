@@ -47,7 +47,7 @@ export default function Home() {
   const activeNotice =
     sessionExpiredNotice ||
     (urlExpired
-      ? "Session expired due to 30 seconds of inactivity. Please sign in again."
+      ? "Session expired due to inactivity. Please sign in again."
       : null);
 
   const [form, setForm] = useState({

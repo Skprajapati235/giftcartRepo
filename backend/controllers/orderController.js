@@ -160,15 +160,23 @@ exports.createOrder = async (req, res) => {
       });
     }
 
-    const { items, shippingAddress, paymentMethod = 'Online', couponCode: rawCouponCode } = req.body;
+    const {
+      items,
+      shippingAddress,
+      paymentMethod = 'Online',
+      couponCode: rawCouponCode,
+      deliverySlot,
+      messageOnCake,
+      cardMessage,
+      senderName,
+      recipientName,
+      addons,
+    } = req.body;
     const couponCode = normalizeCouponCode(rawCouponCode);
     const userId = req.user.id;
 
-    // Same formula/rounding used everywhere else (cart, checkout, order
-    // saving) — quantity only multiplies the price, tax/discount/shipping
-    // are flat per line, so the coupon's "minOrderAmount" check and the
-    // Razorpay amount always match what the user actually gets charged.
-    const sampleTotal = items.reduce((sum, item) => {
+    // Items total
+    const itemsTotal = items.reduce((sum, item) => {
       const pricing = calculateItemPricing({
         price: item.price,
         salePrice: item.salePrice,
@@ -179,6 +187,10 @@ exports.createOrder = async (req, res) => {
       });
       return sum + pricing.itemTotal;
     }, 0);
+
+    const slotExtraCharge = Number(deliverySlot?.extraCharge || 0);
+    const addonsTotal = (addons || []).reduce((sum, a) => sum + (Number(a.price || 0) * Number(a.quantity || 1)), 0);
+    const sampleTotal = itemsTotal + slotExtraCharge + addonsTotal;
 
     let totalAfterCoupon = sampleTotal;
     let finalDiscount = 0;
@@ -218,7 +230,13 @@ exports.createOrder = async (req, res) => {
       razorpayOrderId: razorpayOrder?.id,
       paymentMethod,
       couponCode: finalDiscount > 0 ? couponCode.toUpperCase() : null,
-      discountAmount: finalDiscount
+      discountAmount: finalDiscount,
+      deliverySlot,
+      messageOnCake,
+      cardMessage,
+      senderName,
+      recipientName,
+      addons,
     });
 
     res.status(201).json({
@@ -532,3 +550,38 @@ exports.getPublicOrderByToken = async (req, res) => {
     res.status(500).json({ success: false, message: "Error fetching order" });
   }
 };
+
+// PUT /api/order/admin/:id/kitchen-status
+exports.updateKitchenStatus = async (req, res) => {
+  try {
+    const { kitchenStatus } = req.body;
+    const valid = ["Received", "Preparing", "Packed", "OutForDelivery", "Delivered"];
+    if (!valid.includes(kitchenStatus)) {
+      return res.status(400).json({ success: false, message: "Invalid kitchen status" });
+    }
+
+    const updateObj = { kitchenStatus };
+    if (kitchenStatus === "OutForDelivery") {
+      updateObj.status = "Shipped";
+      updateObj.shippedAt = new Date();
+    } else if (kitchenStatus === "Delivered") {
+      updateObj.status = "Delivered";
+      updateObj.deliveredAt = new Date();
+    } else if (kitchenStatus === "Preparing") {
+      updateObj.status = "Processing";
+      updateObj.processingAt = new Date();
+    }
+
+    const order = await Order.findByIdAndUpdate(req.params.id, updateObj, { new: true })
+      .populate("user", "name email mobileNumber")
+      .populate("items.product", "name image price");
+
+    if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+
+    res.json({ success: true, message: `Kitchen status updated to ${kitchenStatus}`, order });
+  } catch (error) {
+    console.error("Update Kitchen Status Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+

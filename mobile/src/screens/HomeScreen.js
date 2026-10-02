@@ -38,6 +38,7 @@ import { useLayoutInsets } from '../hooks/useLayoutInsets';
 import useDeliveryHours from '../hooks/useDeliveryHours';
 import { colors, shadows } from '../constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import StoryHighlights from '../components/StoryHighlights';
 
 const { width } = Dimensions.get('window');
 const GRID_H_PADDING = 14;
@@ -489,6 +490,11 @@ export default function HomeScreen({ navigation }) {
                   </TouchableOpacity>
                 ) : null}
               </View>
+
+              {/* ── Instagram-Style Story Highlights ── */}
+              {!selectedCategory && !selectedOccasion && !searchQuery && (
+                <StoryHighlights navigation={navigation} />
+              )}
 
               {/* ── Adaptive Hero Carousel Banner ── */}
               {!selectedCategory && !selectedOccasion && (

@@ -18,6 +18,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import orderService from '../services/orderService';
 import couponService from '../services/couponService';
+import { fetchDeliverySlots, fetchAddons } from '../services/giftingService';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../context/ToastContext';
@@ -41,6 +42,16 @@ export default function CheckoutScreen({ navigation, route }) {
   const [paymentData, setPaymentData] = useState(null);
   const [showWebView, setShowWebView] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('Online');
+
+  // Gifting & Delivery Slot State
+  const [deliverySlots, setDeliverySlots] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [addonsList, setAddonsList] = useState([]);
+  const [selectedAddons, setSelectedAddons] = useState([]);
+  const [messageOnCake, setMessageOnCake] = useState('');
+  const [cardMessage, setCardMessage] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [senderName, setSenderName] = useState(user?.name || '');
 
   // Coupon State
   const [couponCode, setCouponCode] = useState('');
@@ -129,7 +140,24 @@ export default function CheckoutScreen({ navigation, route }) {
     };
     loadSavedAddress();
     fetchActiveCoupons();
+    loadDeliverySlotsAndAddons();
   }, []);
+
+  const loadDeliverySlotsAndAddons = async () => {
+    try {
+      const [slots, addons] = await Promise.all([
+        fetchDeliverySlots(),
+        fetchAddons(),
+      ]);
+      setDeliverySlots(slots);
+      if (slots.length > 0) {
+        setSelectedSlot(slots[0]); // default to standard
+      }
+      setAddonsList(addons);
+    } catch (e) {
+      console.error("Failed to load slots/addons:", e);
+    }
+  };
 
   const fetchActiveCoupons = async () => {
     try {
@@ -140,6 +168,17 @@ export default function CheckoutScreen({ navigation, route }) {
     }
   };
 
+  const toggleAddon = (addon) => {
+    setSelectedAddons((prev) => {
+      const exists = prev.find((a) => a.name === addon.name);
+      if (exists) {
+        return prev.filter((a) => a.name !== addon.name);
+      } else {
+        return [...prev, { name: addon.name, price: addon.price, quantity: 1, image: addon.image, category: addon.category }];
+      }
+    });
+  };
+
   const allItemsCodAvailable = cartItems.every(item => item.isCodAvailable !== false);
 
   React.useEffect(() => {
@@ -148,16 +187,21 @@ export default function CheckoutScreen({ navigation, route }) {
     }
   }, [allItemsCodAvailable, paymentMethod]);
 
+  const slotSurcharge = Number(selectedSlot?.extraCharge || 0);
+  const addonsTotal = selectedAddons.reduce((sum, a) => sum + (Number(a.price || 0) * (a.quantity || 1)), 0);
+
   const orderSummary = {
     subtotal: cartTotals.subTotal,
     savingsTotal: cartTotals.totalDiscount,
     taxTotal: cartTotals.totalTax,
     shippingTotal: cartTotals.totalShipping,
-    grandTotal: cartTotals.grandTotal,
+    slotSurcharge,
+    addonsTotal,
+    grandTotal: cartTotals.grandTotal + slotSurcharge + addonsTotal,
   };
 
   const displayTotal = Number(orderSummary.grandTotal.toFixed(2));
-  const finalTotal = Number((displayTotal - couponDiscount).toFixed(2));
+  const finalTotal = Number(Math.max(0, displayTotal - couponDiscount).toFixed(2));
 
   const handleApplyCoupon = async () => {
     if (!couponCode) {
@@ -242,6 +286,12 @@ export default function CheckoutScreen({ navigation, route }) {
         paymentMethod,
         couponCode: appliedCoupon || undefined,
         discountAmount: couponDiscount,
+        deliverySlot: selectedSlot || undefined,
+        messageOnCake: messageOnCake || undefined,
+        cardMessage: cardMessage || undefined,
+        recipientName: recipientName || undefined,
+        senderName: senderName || undefined,
+        addons: selectedAddons.length > 0 ? selectedAddons : undefined,
       };
 
       const res = await orderService.createOrder(orderData);
@@ -722,6 +772,211 @@ export default function CheckoutScreen({ navigation, route }) {
           </View>
         </Modal>
 
+        {/* ── ⏰ Select Delivery Time Slot ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>⏰ Select Delivery Time Slot</Text>
+          <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 10 }}>
+            Choose your preferred delivery window for this celebration.
+          </Text>
+          <View style={{ gap: 8 }}>
+            {deliverySlots.map((slot) => {
+              const isSelected = selectedSlot?._id === slot._id || selectedSlot?.name === slot.name;
+              const isMidnight = slot.type === 'midnight';
+              return (
+                <TouchableOpacity
+                  key={slot._id || slot.name}
+                  activeOpacity={0.8}
+                  onPress={() => setSelectedSlot(slot)}
+                  style={{
+                    padding: 12,
+                    borderRadius: 14,
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? '#D82B76' : '#E5E7EB',
+                    backgroundColor: isSelected ? '#FFF0F5' : '#FFF',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <View style={{ flex: 1, paddingRight: 8 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '700', color: isSelected ? '#D82B76' : '#1F2937' }}>
+                        {slot.name}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
+                      Window: {slot.timeRange}
+                    </Text>
+                    {slot.badge ? (
+                      <Text style={{ fontSize: 10, color: '#D82B76', fontWeight: '800', marginTop: 3 }}>
+                        ★ {slot.badge}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 14, fontWeight: '800', color: slot.extraCharge > 0 ? '#D97706' : '#16A34A' }}>
+                      {slot.extraCharge > 0 ? `+₹${slot.extraCharge}` : 'FREE'}
+                    </Text>
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={18} color="#D82B76" style={{ marginTop: 4 }} />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── 💌 Cake & Greeting Personalization ── */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>💌 Personalized Message & Card</Text>
+          <View style={{ backgroundColor: '#FFF', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', gap: 12 }}>
+            <View>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151', marginBottom: 4 }}>
+                🎂 Message on Cake (optional, max 25 chars)
+              </Text>
+              <TextInput
+                placeholder="e.g. Happy Birthday Rohit ❤️"
+                placeholderTextColor="#9CA3AF"
+                maxLength={25}
+                value={messageOnCake}
+                onChangeText={setMessageOnCake}
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  borderRadius: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 9,
+                  fontSize: 13,
+                  backgroundColor: '#FAFAFA',
+                  color: '#1F2937',
+                }}
+              />
+            </View>
+
+            <View>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151', marginBottom: 4 }}>
+                💌 Free Greeting Card Wish
+              </Text>
+              <TextInput
+                placeholder="Write your heart-touching message for the recipient..."
+                placeholderTextColor="#9CA3AF"
+                multiline
+                numberOfLines={2}
+                value={cardMessage}
+                onChangeText={setCardMessage}
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  borderRadius: 10,
+                  paddingHorizontal: 12,
+                  paddingVertical: 9,
+                  fontSize: 13,
+                  backgroundColor: '#FAFAFA',
+                  color: '#1F2937',
+                  textAlignVertical: 'top',
+                }}
+              />
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: '#4B5563', marginBottom: 3 }}>
+                  Sender Name
+                </Text>
+                <TextInput
+                  placeholder="Your Name"
+                  placeholderTextColor="#9CA3AF"
+                  value={senderName}
+                  onChangeText={setSenderName}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#E5E7EB',
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 7,
+                    fontSize: 12,
+                    backgroundColor: '#FAFAFA',
+                  }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: '#4B5563', marginBottom: 3 }}>
+                  Recipient Name
+                </Text>
+                <TextInput
+                  placeholder="Lucky Person"
+                  placeholderTextColor="#9CA3AF"
+                  value={recipientName}
+                  onChangeText={setRecipientName}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#E5E7EB',
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 7,
+                    fontSize: 12,
+                    backgroundColor: '#FAFAFA',
+                  }}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* ── 🎁 Celebration Add-on Upsells ── */}
+        {addonsList.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🎁 Make it Extra Special (Add-ons)</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingVertical: 4 }}>
+              {addonsList.map((addon) => {
+                const isAdded = selectedAddons.some((a) => a.name === addon.name);
+                return (
+                  <View
+                    key={addon._id || addon.name}
+                    style={{
+                      width: 140,
+                      backgroundColor: '#FFF',
+                      borderRadius: 14,
+                      borderWidth: 1,
+                      borderColor: isAdded ? '#D82B76' : '#E5E7EB',
+                      overflow: 'hidden',
+                      paddingBottom: 8,
+                    }}
+                  >
+                    <Image
+                      source={{ uri: addon.image }}
+                      style={{ width: '100%', height: 90 }}
+                      resizeMode="cover"
+                    />
+                    <View style={{ paddingHorizontal: 8, paddingTop: 6 }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#1F2937' }} numberOfLines={1}>
+                        {addon.name}
+                      </Text>
+                      <Text style={{ fontSize: 12, fontWeight: '800', color: '#D82B76', marginVertical: 3 }}>
+                        +₹{addon.price}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => toggleAddon(addon)}
+                        style={{
+                          backgroundColor: isAdded ? '#D82B76' : '#F3F4F6',
+                          paddingVertical: 5,
+                          borderRadius: 8,
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: isAdded ? '#FFF' : '#374151' }}>
+                          {isAdded ? '✓ Added' : '+ Add'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary ({cartItems.length} items)</Text>
           <View style={styles.summaryCard}>
@@ -731,8 +986,6 @@ export default function CheckoutScreen({ navigation, route }) {
               const salePrice = Number(item.salePrice ?? item.price ?? 0);
               const tax = Number(item.tax || 0);
               const shippingCost = Number(item.shippingCost || 0);
-              // Every number below (including itemTotal) came straight
-              // from the backend cart response — nothing recomputed here.
               const taxAmount = Number(item.taxAmount || 0);
               const itemTotal = item.itemTotal;
               const hasSaving = mrp > salePrice;
@@ -774,11 +1027,39 @@ export default function CheckoutScreen({ navigation, route }) {
                 </View>
               );
             })}
+
+            {/* Selected Add-ons List */}
+            {selectedAddons.map((addon, idx) => (
+              <View key={idx} style={[styles.orderItem, { backgroundColor: '#FAF5FF', padding: 8, borderRadius: 8 }]}>
+                <View style={styles.orderItemLeft}>
+                  <Text style={[styles.itemName, { color: '#7E22CE' }]}>🎁 {addon.name}</Text>
+                  <Text style={styles.itemMeta}>Celebration Extra · Qty {addon.quantity || 1}</Text>
+                </View>
+                <Text style={[styles.itemPrice, { color: '#7E22CE' }]}>₹{addon.price * (addon.quantity || 1)}</Text>
+              </View>
+            ))}
+
             <View style={styles.divider} />
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Items Total</Text>
               <Text style={styles.summaryValue}>₹{orderSummary.subtotal.toFixed(2)}</Text>
             </View>
+            {orderSummary.slotSurcharge > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: '#D97706', fontWeight: '600' }]}>
+                  Delivery Slot ({selectedSlot?.name?.split('(')[0] || 'Slot'})
+                </Text>
+                <Text style={[styles.summaryValue, { color: '#D97706', fontWeight: '700' }]}>
+                  +₹{orderSummary.slotSurcharge.toFixed(2)}
+                </Text>
+              </View>
+            )}
+            {orderSummary.addonsTotal > 0 && (
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryLabel, { color: '#7E22CE', fontWeight: '600' }]}>Add-ons Total</Text>
+                <Text style={[styles.summaryValue, { color: '#7E22CE', fontWeight: '700' }]}>+₹{orderSummary.addonsTotal.toFixed(2)}</Text>
+              </View>
+            )}
             {orderSummary.taxTotal > 0 && (
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Tax</Text>

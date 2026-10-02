@@ -202,6 +202,66 @@ export default function OrderDetailScreen({ route, navigation }) {
           })}
         </View>
 
+        {/* ── Gifting & Delivery Slot Highlights ── */}
+        {(order.deliverySlot || order.messageOnCake || order.cardMessage || (order.addons && order.addons.length > 0)) && (
+          <View style={{ backgroundColor: '#FFF', borderRadius: 16, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#F1F5F9', gap: 10 }}>
+            {order.deliverySlot && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' }}>
+                <Feather name="clock" size={16} color={colors.brandBerry} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }}>
+                    Delivery Window: {order.deliverySlot.timeRange || order.deliverySlot.slotName}
+                  </Text>
+                  {order.deliverySlot.extraCharge > 0 && (
+                    <Text style={{ fontSize: 11, color: '#D97706', fontWeight: '600' }}>
+                      Slot Surcharge: +₹{order.deliverySlot.extraCharge}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+
+            {order.messageOnCake ? (
+              <View style={{ padding: 10, borderRadius: 10, backgroundColor: '#FFF0F5' }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#D82B76' }}>🎂 MESSAGE ON CAKE:</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#831843', marginTop: 2, fontStyle: 'italic' }}>
+                  "{order.messageOnCake}"
+                </Text>
+              </View>
+            ) : null}
+
+            {order.cardMessage ? (
+              <View style={{ padding: 10, borderRadius: 10, backgroundColor: '#FEF3C7' }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#B45309' }}>💌 GREETING CARD WISH:</Text>
+                <Text style={{ fontSize: 12, color: '#78350F', marginTop: 2 }}>
+                  "{order.cardMessage}"
+                </Text>
+                {(order.senderName || order.recipientName) && (
+                  <Text style={{ fontSize: 11, color: '#92400E', fontWeight: '700', marginTop: 4 }}>
+                    From: {order.senderName || 'Anonymous'} ➔ To: {order.recipientName || 'Special Someone'}
+                  </Text>
+                )}
+              </View>
+            ) : null}
+
+            {order.addons && order.addons.length > 0 && (
+              <View style={{ paddingTop: 4 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#64748B', marginBottom: 6 }}>
+                  Celebration Add-ons ({order.addons.length})
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {order.addons.map((a, i) => (
+                    <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: '#F3E8FF' }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#7E22CE' }}>🎁 {a.name}</Text>
+                      <Text style={{ fontSize: 11, color: '#9333EA', fontWeight: '800' }}>₹{a.price}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Payment + Shipping */}
         <View style={styles.horizontalRow}>
           <View style={[styles.miniCard, { marginRight: 10, flex: 1.4 }]}>

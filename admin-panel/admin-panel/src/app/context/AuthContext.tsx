@@ -35,10 +35,10 @@ export interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-// Security constants: 30 seconds of inactivity auto-logout, 10s warning window
-const INACTIVITY_TIMEOUT_MS = 30 * 1000;
-const WARNING_THRESHOLD_MS = 20 * 1000;
-const HEARTBEAT_INTERVAL_MS = 15 * 1000;
+// Security constants: 2 hours of inactivity auto-logout, 60s warning window
+const INACTIVITY_TIMEOUT_MS = 2 * 60 * 60 * 1000;
+const WARNING_THRESHOLD_MS = INACTIVITY_TIMEOUT_MS - 60 * 1000;
+const HEARTBEAT_INTERVAL_MS = 60 * 1000;
 
 function parseJwt(token: string) {
   try {
@@ -90,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const msg =
         options?.message ||
         (options?.reason === "inactivity"
-          ? "Session expired due to 30 seconds of inactivity. Please sign in again."
+          ? "Session expired due to inactivity. Please sign in again."
           : "Session expired. Please sign in again.");
 
       if (typeof window !== "undefined") {
@@ -306,7 +306,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (idleMs >= INACTIVITY_TIMEOUT_MS) {
         clearSession({
           reason: "inactivity",
-          message: "Session expired due to 30 seconds of inactivity. Please sign in again.",
+          message: "Session expired due to inactivity. Please sign in again.",
         });
       } else if (idleMs >= WARNING_THRESHOLD_MS) {
         setSessionWarning(true);
@@ -314,7 +314,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRemainingSeconds(rem);
       } else {
         setSessionWarning(false);
-        setRemainingSeconds(10);
+        setRemainingSeconds(60);
       }
     }, 1000);
 

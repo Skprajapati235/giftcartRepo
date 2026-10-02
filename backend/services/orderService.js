@@ -376,7 +376,21 @@ async function sendPostPaymentNotifications(updatedOrder) {
 }
 
 // Create a new order record in DB
-exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, paymentMethod = 'Online', couponCode, discountAmount = 0 }) => {
+exports.createOrder = async ({
+  userId,
+  items,
+  shippingAddress,
+  razorpayOrderId,
+  paymentMethod = 'Online',
+  couponCode,
+  discountAmount = 0,
+  deliverySlot,
+  messageOnCake,
+  cardMessage,
+  senderName,
+  recipientName,
+  addons = [],
+}) => {
   const processedItems = items.map((item) => {
     // Same formula/rounding used by the cart, so the total the user saw in
     // the cart is exactly the total they get charged here.
@@ -408,6 +422,8 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
       flavor: item.flavor?.name || item.flavor || null,
       weight: item.weight || null,
       flowerCount: item.flowerCount || null,
+      messageOnCake: item.messageOnCake || "",
+      customImage: item.customImage || "",
     };
   });
 
@@ -420,8 +436,10 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
     }
   }
 
-  const calculatedTotal = processedItems.reduce((sum, item) => sum + item.itemTotal, 0);
-  const finalTotal = Number((calculatedTotal - discountAmount).toFixed(2));
+  const calculatedItemsTotal = processedItems.reduce((sum, item) => sum + item.itemTotal, 0);
+  const slotExtra = Number(deliverySlot?.extraCharge || 0);
+  const addonsTotal = (addons || []).reduce((sum, a) => sum + (Number(a.price || 0) * Number(a.quantity || 1)), 0);
+  const finalTotal = Number((calculatedItemsTotal + slotExtra + addonsTotal - discountAmount).toFixed(2));
 
   const order = new Order({
     user: userId,
@@ -434,7 +452,20 @@ exports.createOrder = async ({ userId, items, shippingAddress, razorpayOrderId, 
     status: 'Pending',
     paymentStatus: 'Pending',
     couponCode,
-    discountAmount
+    discountAmount,
+    deliverySlot: deliverySlot || undefined,
+    messageOnCake: messageOnCake || "",
+    cardMessage: cardMessage || "",
+    senderName: senderName || "",
+    recipientName: recipientName || "",
+    addons: (addons || []).map((a) => ({
+      name: a.name,
+      price: Number(a.price || 0),
+      quantity: Number(a.quantity || 1),
+      image: a.image || "",
+      category: a.category || "accessory",
+    })),
+    kitchenStatus: "Received",
   });
 
   const savedOrder = await order.save();

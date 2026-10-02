@@ -46,6 +46,7 @@ import {
   LogOut,
   Sparkles,
   ShieldCheck,
+  ChefHat,
 } from "lucide-react";
 
 export type NavSubItem = {
@@ -108,6 +109,7 @@ export const linearSidebarNav: NavSectionConfig[] = [
           { key: "products", label: "Products", href: "/products", icon: Box, description: "Catalog inventory items", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
           { key: "category", label: "Categories", href: "/category", icon: Tag, description: "Store taxonomy & groups", color: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
           { key: "flavors", label: "Flavors", href: "/flavors", icon: Pipette, description: "Taste & cake variants", color: "text-pink-500 bg-pink-500/10 border-pink-500/20" },
+          { key: "addons", label: "Gifting Add-ons", href: "/addons", icon: Gift, description: "Candles, cards & celebration upsells", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "New" },
           { key: "cities", label: "Delivery Cities", href: "/cities", icon: MapPin, description: "Pin-code & zones", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
           { key: "offers", label: "Offers & Coupons", href: "/coupons", icon: Gift, description: "Promo codes & discounts", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
           { key: "gallery", label: "Media Gallery", href: "/gallery", icon: Images, description: "Image asset storage", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20" },
@@ -125,6 +127,7 @@ export const linearSidebarNav: NavSectionConfig[] = [
         icon: ShoppingCart,
         children: [
           { key: "orders", label: "Orders Pipeline", href: "/orders", icon: ShoppingCart, description: "Live customer orders", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+          { key: "kitchenBoard", label: "Kitchen Live Board", href: "/orders/board", icon: ChefHat, description: "Real-time kitchen order dispatch", color: "text-orange-500 bg-orange-500/10 border-orange-500/20", badge: "Live" },
           { key: "reviews", label: "Customer Reviews", href: "/reviews", icon: Star, description: "Product feedback & ratings", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
           { key: "testimonials", label: "Testimonials", href: "/testimonials", icon: MessageSquareQuote, description: "Curated store testimonials", color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20" },
         ],
@@ -188,6 +191,8 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Storefront Config",
         icon: SlidersHorizontal,
         children: [
+          { key: "deliverySlots", label: "Delivery Slots", href: "/delivery-slots", icon: Clock, description: "Midnight & express slot rules", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "Pro" },
+          { key: "stories", label: "Story Highlights", href: "/stories", icon: Sparkles, description: "Instagram-style reels & banner stories", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Hot" },
           { key: "heroSlides", label: "Hero Slides", href: "/hero-slides", icon: SlidersHorizontal, description: "Banner promotional carousels", color: "text-purple-500 bg-purple-500/10 border-purple-500/20" },
           { key: "occasions", label: "Occasions", href: "/occasions", icon: PartyPopper, description: "Events & gifting tags", color: "text-pink-500 bg-pink-500/10 border-pink-500/20" },
           { key: "deliveryHours", label: "Operating Hours", href: "/delivery-hours", icon: Clock, description: "Delivery cutoff slots", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
@@ -207,11 +212,32 @@ export const linearSidebarNav: NavSectionConfig[] = [
   },
 ];
 
+function checkChildActive(pathname: string | null, childHref: string, allSiblings?: NavSubItem[]): boolean {
+  if (!pathname) return false;
+  if (pathname === childHref) return true;
+  if (pathname.startsWith(childHref + "/")) {
+    if (allSiblings) {
+      const hasMoreSpecificMatch = allSiblings.some(
+        (sib) =>
+          sib.href !== childHref &&
+          sib.href.startsWith(childHref) &&
+          (pathname === sib.href || pathname.startsWith(sib.href + "/"))
+      );
+      if (hasMoreSpecificMatch) return false;
+    }
+    return true;
+  }
+  return false;
+}
+
 function isItemActive(pathname: string | null, href?: string, children?: NavSubItem[]): boolean {
   if (!pathname) return false;
-  if (href && pathname.startsWith(href)) return true;
+  if (href) {
+    if (pathname === href) return true;
+    if (href !== "/" && pathname.startsWith(href + "/")) return true;
+  }
   if (children) {
-    return children.some((c) => pathname.startsWith(c.href));
+    return children.some((c) => checkChildActive(pathname, c.href, children));
   }
   return false;
 }
@@ -239,7 +265,7 @@ function DesktopSidebar() {
   useEffect(() => {
     linearSidebarNav.forEach((section) => {
       section.items.forEach((item) => {
-        if (item.children?.some((child) => pathname?.startsWith(child.href))) {
+        if (item.children?.some((child) => checkChildActive(pathname, child.href, item.children))) {
           setOpenGroup(item.key);
         }
       });
@@ -620,7 +646,7 @@ function DesktopSidebar() {
                         {!isCollapsed && isExpanded && item.children && (
                           <div className="relative ml-4 pl-3.5 border-l-2 border-primary/20 dark:border-cyan-500/20 space-y-1 mt-1 py-0.5 animate-in fade-in duration-150">
                             {item.children.map((child) => {
-                              const childActive = Boolean(pathname?.startsWith(child.href));
+                              const childActive = checkChildActive(pathname, child.href, item.children);
                               const ChildIcon = child.icon || FileText;
 
                               return (
@@ -711,7 +737,7 @@ function DesktopSidebar() {
               {/* Popover Child Links */}
               <div className="relative space-y-1">
                 {flyoutMenu.item.children?.map((child) => {
-                  const childActive = Boolean(pathname?.startsWith(child.href));
+                  const childActive = checkChildActive(pathname, child.href, flyoutMenu.item.children);
                   const ChildIcon = child.icon || FileText;
                   return (
                     <Link
@@ -961,7 +987,7 @@ function MobileSidebar() {
                       {isExpanded && (
                         <div className="ml-4 pl-3 border-l-2 border-primary/20 space-y-1 mt-1">
                           {item.children.map((child) => {
-                            const childActive = Boolean(pathname?.startsWith(child.href));
+                            const childActive = checkChildActive(pathname, child.href, item.children);
                             const ChildIcon = child.icon || FileText;
                             return (
                               <Link

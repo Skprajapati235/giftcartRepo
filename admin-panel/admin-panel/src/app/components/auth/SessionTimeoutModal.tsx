@@ -9,8 +9,8 @@ export default function SessionTimeoutModal() {
 
   if (!sessionWarning) return null;
 
-  // Percentage for progress bar (remaining out of 10 seconds)
-  const percent = Math.max(0, Math.min(100, (remainingSeconds / 10) * 100));
+  // Percentage for progress bar (remaining out of 60 seconds)
+  const percent = Math.max(0, Math.min(100, (remainingSeconds / 60) * 100));
 
   return (
     <div

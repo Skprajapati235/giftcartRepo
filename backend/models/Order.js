@@ -55,9 +55,36 @@ const orderSchema = new mongoose.Schema({
       expectedDeliveryDate: { type: String },
       flavor: { type: String },
       weight: { type: String },
-      flowerCount: { type: String }
+      flowerCount: { type: String },
+      messageOnCake: { type: String, default: "" },
+      customImage: { type: String, default: "" },
     },
   ],
+  deliverySlot: {
+    slotName: { type: String },
+    slotType: { type: String, default: "standard" },
+    timeRange: { type: String },
+    extraCharge: { type: Number, default: 0 },
+    deliveryDate: { type: String },
+  },
+  messageOnCake: { type: String, default: "" },
+  cardMessage: { type: String, default: "" },
+  senderName: { type: String, default: "" },
+  recipientName: { type: String, default: "" },
+  addons: [
+    {
+      name: { type: String, required: true },
+      price: { type: Number, required: true },
+      quantity: { type: Number, default: 1 },
+      image: { type: String },
+      category: { type: String },
+    },
+  ],
+  kitchenStatus: {
+    type: String,
+    enum: ["Received", "Preparing", "Packed", "OutForDelivery", "Delivered"],
+    default: "Received",
+  },
   totalAmount: { type: Number, required: true },
   shippingAddress: {
     fullName: { type: String, required: true },

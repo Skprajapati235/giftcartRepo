@@ -130,6 +130,9 @@ app.use("/api/testimonials", require("./routes/testimonialRoutes"));
 app.use("/api/testimonial", require("./routes/testimonialRoutes"));
 app.use("/api/gallery", require("./routes/galleryRoutes"));
 app.use("/api/galleries", require("./routes/galleryRoutes"));
+app.use("/api/delivery-slots", require("./routes/deliverySlotRoutes"));
+app.use("/api/addons", require("./routes/addonRoutes"));
+app.use("/api/stories", require("./routes/storyRoutes"));
 // // AI Chat endpoint for Admin Panel
 // const PYTHON_AI_URL = process.env.PYTHON_AI_URL || "http://localhost:8001";
 // const AI_INTERNAL_KEY = process.env.AI_INTERNAL_KEY || "";

@@ -1,0 +1,825 @@
+"use client";
+
+import React, { useEffect, useState, useRef } from "react";
+import {
+  Gift,
+  Plus,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  Sparkles,
+  Flame,
+  Trash2,
+  Edit3,
+  Image as ImageIcon,
+  Save,
+  Upload,
+} from "lucide-react";
+import ProtectedRoute from "../components/ProtectedRoute";
+import AdminMain from "../components/AdminMain";
+import MediaModal from "../components/ui/MediaModal";
+import { uploadMediaFiles } from "../services/adminService";
+import {
+  getAdminAddons,
+  createAddon,
+  updateAddon,
+  deleteAddon,
+  AddonItem,
+} from "../services/giftingService";
+
+const CATEGORIES = [
+  { id: "all", label: "All Items", icon: "✨" },
+  { id: "candle", label: "Candles 🕯️", icon: "🕯️" },
+  { id: "card", label: "Greeting Cards 💌", icon: "💌" },
+  { id: "popper", label: "Party Poppers 🎉", icon: "🎉" },
+  { id: "chocolate", label: "Chocolates 🍫", icon: "🍫" },
+  { id: "teddy", label: "Teddy Bears 🧸", icon: "🧸" },
+  { id: "balloon", label: "Balloons 🎈", icon: "🎈" },
+  { id: "accessory", label: "Accessories ✨", icon: "✨" },
+];
+
+const PRESET_IMAGES: { label: string; url: string; category: string }[] = [
+  {
+    label: "Magic Sparkling Candles",
+    url: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=500&auto=format&fit=crop&q=80",
+    category: "candle",
+  },
+  {
+    label: "Handcrafted Luxury Birthday Card",
+    url: "https://images.unsplash.com/photo-1513151233558-d860c5398176?w=500&auto=format&fit=crop&q=80",
+    category: "card",
+  },
+  {
+    label: "Golden Party Confetti Popper",
+    url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=500&auto=format&fit=crop&q=80",
+    category: "popper",
+  },
+  {
+    label: "Ferrero Rocher Box (16 Pcs)",
+    url: "https://images.unsplash.com/photo-1549007994-cb92caebd54b?w=500&auto=format&fit=crop&q=80",
+    category: "chocolate",
+  },
+];
+
+export default function AddonsPage() {
+  const [addons, setAddons] = useState<AddonItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [showForm, setShowForm] = useState(false);
+  const [editingAddon, setEditingAddon] = useState<AddonItem | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Direct upload and Media Modal states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingDirect, setUploadingDirect] = useState(false);
+  const [showMediaModal, setShowMediaModal] = useState(false);
+
+  // Form state
+  const [form, setForm] = useState<Partial<AddonItem>>({
+    name: "",
+    category: "candle",
+    price: 99,
+    image: PRESET_IMAGES[0].url,
+    description: "",
+    isPopular: false,
+    isActive: true,
+    sortOrder: 1,
+  });
+
+  const loadAddons = async () => {
+    try {
+      setLoading(true);
+      const data = await getAdminAddons();
+      setAddons(data);
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: "error", text: "Failed to load add-ons from server" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAddons();
+  }, []);
+
+  const openCreateForm = () => {
+    setEditingAddon(null);
+    setForm({
+      name: "",
+      category: "candle",
+      price: 99,
+      image: PRESET_IMAGES[0].url,
+      description: "",
+      isPopular: false,
+      isActive: true,
+      sortOrder: addons.length + 1,
+    });
+    setShowForm(true);
+  };
+
+  const openEditForm = (addon: AddonItem) => {
+    setEditingAddon(addon);
+    setForm({
+      name: addon.name,
+      category: addon.category,
+      price: addon.price,
+      image: addon.image,
+      description: addon.description || "",
+      isPopular: addon.isPopular,
+      isActive: addon.isActive,
+      sortOrder: addon.sortOrder || 1,
+    });
+    setShowForm(true);
+  };
+
+  const handleDirectFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingDirect(true);
+      const res = await uploadMediaFiles([file]);
+      if (res && res.length > 0) {
+        const uploadedUrl = res[0].url || res[0];
+        setForm((prev) => ({ ...prev, image: uploadedUrl }));
+        setMessage({ type: "success", text: "Product image uploaded successfully!" });
+        setTimeout(() => setMessage(null), 3000);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: "error", text: "Failed to upload image to server." });
+    } finally {
+      setUploadingDirect(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name?.trim()) {
+      setMessage({ type: "error", text: "Please enter an add-on item name." });
+      return;
+    }
+    if (!form.image?.trim()) {
+      setMessage({ type: "error", text: "Please provide an image for the add-on item." });
+      return;
+    }
+
+    try {
+      setSaving(true);
+      if (editingAddon?._id) {
+        await updateAddon(editingAddon._id, form);
+        setMessage({ type: "success", text: `"${form.name}" updated successfully!` });
+      } else {
+        await createAddon(form);
+        setMessage({ type: "success", text: `"${form.name}" created successfully!` });
+      }
+      setShowForm(false);
+      setEditingAddon(null);
+      await loadAddons();
+      setTimeout(() => setMessage(null), 4000);
+    } catch (err: any) {
+      setMessage({
+        type: "error",
+        text: err?.response?.data?.message || err?.message || "Failed to save add-on item",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteAddon(id);
+      setAddons((prev) => prev.filter((a) => a._id !== id));
+      setDeleteConfirmId(null);
+      setMessage({ type: "success", text: "Add-on deleted successfully." });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (err: any) {
+      setMessage({ type: "error", text: "Failed to delete add-on item" });
+    }
+  };
+
+  const filteredAddons =
+    selectedCategory === "all"
+      ? addons
+      : addons.filter((a) => a.category === selectedCategory);
+
+  return (
+    <ProtectedRoute>
+      <AdminMain>
+        {/* Global Toast Alert */}
+        {message && (
+          <div
+            className={`mb-6 p-4 rounded-2xl flex items-center justify-between border shadow-sm animate-in fade-in slide-in-from-top-2 duration-200 ${message.type === "success"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200"
+                : "bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-200"
+              }`}
+          >
+            <div className="flex items-center gap-3">
+              {message.type === "success" ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 shrink-0" />
+              )}
+              <span className="text-sm font-semibold">{message.text}</span>
+            </div>
+            <button
+              onClick={() => setMessage(null)}
+              className="text-xs font-bold uppercase tracking-wider opacity-70 hover:opacity-100"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════
+            MODE A: FULL-PAGE CREATE / EDIT FORM VIEW (NO MODAL!)
+        ═══════════════════════════════════════════════════════════════════ */}
+        {showForm ? (
+          <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-200">
+            {/* Top Navigation & Action Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border-theme">
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="flex items-center justify-center h-11 w-11 rounded-2xl border border-border-theme bg-card hover:bg-hover-theme transition-all shadow-xs cursor-pointer group"
+                  title="Back to Add-ons"
+                >
+                  <ArrowLeft className="w-5 h-5 text-slate-500 group-hover:text-foreground transition-transform group-hover:-translate-x-0.5" />
+                </button>
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-bold uppercase tracking-wider text-rose-500 bg-rose-500/10 px-2.5 py-0.5 rounded-full border border-rose-500/20">
+                      {editingAddon ? "Edit Add-on" : "New Celebration Item"}
+                    </span>
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight mt-1">
+                    {editingAddon ? `Edit: ${editingAddon.name}` : "Create Celebration Add-on"}
+                  </h1>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-5 py-2.5 rounded-xl border border-border-theme text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-hover-theme transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold text-sm shadow-lg shadow-rose-500/25 hover:from-rose-600 hover:to-pink-700 transition cursor-pointer disabled:opacity-50"
+                >
+                  {saving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      {editingAddon ? "Update Add-on" : "Publish Add-on"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* 2-Column Responsive Layout */}
+            <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left Column: Form Details (5 Cols) */}
+              <div className="lg:col-span-5 space-y-6">
+                <div className="bg-card border border-border-theme rounded-3xl p-6 sm:p-7 shadow-xs space-y-5">
+                  <div className="flex items-center gap-2.5 pb-4 border-b border-border-theme">
+                    <Gift className="w-5 h-5 text-rose-500" />
+                    <h2 className="text-base font-bold text-foreground">Item Information</h2>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Item Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="e.g. Magic Sparkling Candles (Pack of 5)"
+                      className="w-full px-4 py-3 rounded-2xl bg-background border border-border-theme focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 text-sm font-medium text-foreground transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Category Type <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {CATEGORIES.filter((c) => c.id !== "all").map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setForm({ ...form, category: cat.id as AddonItem["category"] })}
+                          className={`p-2 rounded-xl border text-left flex flex-col justify-between transition cursor-pointer ${form.category === cat.id
+                              ? "bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-400 font-bold shadow-2xs"
+                              : "bg-background border-border-theme text-slate-600 dark:text-slate-400 hover:border-slate-400"
+                            }`}
+                        >
+                          <span className="text-base mb-0.5">{cat.icon}</span>
+                          <span className="text-[11px] truncate">{cat.label.split(" ")[0]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                        Selling Price (₹) <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">
+                          ₹
+                        </span>
+                        <input
+                          type="number"
+                          required
+                          min={0}
+                          value={form.price}
+                          onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                          className="w-full pl-8 pr-4 py-3 rounded-2xl bg-background border border-border-theme focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 text-sm font-bold text-foreground transition"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                        Sort Order
+                      </label>
+                      <input
+                        type="number"
+                        value={form.sortOrder}
+                        onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
+                        className="w-full px-4 py-3 rounded-2xl bg-background border border-border-theme focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 text-sm font-medium text-foreground transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                      Description / Occasion Tag
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      placeholder="e.g. Perfect for midnight celebrations, birthday surprises..."
+                      className="w-full px-4 py-2.5 rounded-2xl bg-background border border-border-theme focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 text-xs font-medium text-foreground transition"
+                    />
+                  </div>
+
+                  <div className="pt-2 border-t border-border-theme space-y-3">
+                    <div className="flex items-center justify-between p-3.5 rounded-2xl bg-background border border-border-theme">
+                      <div>
+                        <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                          Feature as Popular Upsell
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Shows highlighted "BESTSELLER" flame badge
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.isPopular}
+                          onChange={(e) => setForm({ ...form, isPopular: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-amber-500"></div>
+                      </label>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3.5 rounded-2xl bg-background border border-border-theme">
+                      <div>
+                        <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                          Active on Storefront
+                        </p>
+                        <p className="text-[11px] text-slate-500">
+                          Available for customers to add at checkout
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={form.isActive}
+                          onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-emerald-500"></div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Product Image Asset & Storefront Preview (7 Cols) */}
+              <div className="lg:col-span-7 space-y-6">
+                <div className="bg-card border border-border-theme rounded-3xl p-6 sm:p-7 shadow-xs space-y-5">
+                  <div className="flex items-center justify-between pb-4 border-b border-border-theme">
+                    <div className="flex items-center gap-2.5">
+                      <ImageIcon className="w-5 h-5 text-rose-500" />
+                      <h2 className="text-base font-bold text-foreground">Product Image & Live Storefront Preview</h2>
+                    </div>
+                    {form.image && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Image Selected
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Hidden Native File Input */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleDirectFileUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+
+                  {/* Balanced 2-SubColumn Layout: Left = Product Card Preview, Right = Upload Controls & Presets */}
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 items-center">
+                    {/* Live E-Commerce Storefront Card (No empty sides, un-squished square container!) */}
+                    <div className="sm:col-span-5 flex justify-center">
+                      <div className="relative w-full aspect-square max-w-[220px] rounded-3xl overflow-hidden border-2 border-border-theme bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 shadow-md group flex flex-col justify-between p-3.5 select-none transition-transform hover:scale-[1.01]">
+                        {/* Top Pills */}
+                        <div className="flex items-center justify-between z-10">
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-background/80 backdrop-blur-md text-foreground border border-border-theme capitalize">
+                            {form.category}
+                          </span>
+                          {form.isPopular && (
+                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[8px] shadow-xs">
+                              <Flame className="w-2.5 h-2.5 fill-slate-950" />
+                              BESTSELLER
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Center Product Image */}
+                        <div className="relative flex-1 flex items-center justify-center p-2 overflow-hidden">
+                          {form.image ? (
+                            <>
+                              <img
+                                src={form.image}
+                                alt="Product preview"
+                                className="w-full h-full object-contain drop-shadow-md group-hover:scale-105 transition-transform duration-300"
+                              />
+                              {/* Hover quick overlay */}
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5 p-2 rounded-2xl z-20">
+                                <button
+                                  type="button"
+                                  onClick={() => fileInputRef.current?.click()}
+                                  disabled={uploadingDirect}
+                                  className="w-full py-1.5 px-2 bg-white text-slate-900 rounded-lg text-[10px] font-bold shadow hover:bg-slate-100 flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <Upload className="w-3 h-3 text-rose-600" /> Upload New
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowMediaModal(true)}
+                                  className="w-full py-1.5 px-2 bg-slate-900 text-white border border-white/20 rounded-lg text-[10px] font-bold shadow hover:bg-slate-800 flex items-center justify-center gap-1 cursor-pointer"
+                                >
+                                  <ImageIcon className="w-3 h-3" /> Library
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setForm({ ...form, image: "" })}
+                                  className="py-1 px-2 text-rose-300 hover:text-rose-100 text-[10px] font-semibold cursor-pointer"
+                                >
+                                  Clear Image
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <div
+                              onClick={() => fileInputRef.current?.click()}
+                              className="w-full h-full flex flex-col items-center justify-center text-center cursor-pointer group"
+                            >
+                              <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                                {uploadingDirect ? (
+                                  <RefreshCw className="w-5 h-5 animate-spin" />
+                                ) : (
+                                  <Upload className="w-5 h-5" />
+                                )}
+                              </div>
+                              <p className="text-[11px] font-bold text-foreground">
+                                {uploadingDirect ? "Uploading..." : "Click to Upload"}
+                              </p>
+                              <p className="text-[9px] text-slate-400">Square photo</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Bottom Customer Info */}
+                        <div className="pt-2 border-t border-border-theme/60 flex items-center justify-between gap-1 z-10">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[11px] font-bold text-foreground truncate">
+                              {form.name || "Celebration Item"}
+                            </p>
+                            <p className="text-xs font-black text-rose-600 dark:text-rose-400">
+                              ₹{form.price || 0}
+                            </p>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-lg bg-rose-500 text-white font-bold text-[9px] shadow-xs shrink-0">
+                            + Add
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Sub-Column: Direct Upload, Media Library & Presets */}
+                    <div className="sm:col-span-7 space-y-4">
+                      {/* Dual Action Upload Buttons */}
+                      <div className="space-y-2">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                          Product Image Controls
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingDirect}
+                          className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white text-xs font-bold shadow-md shadow-rose-500/20 hover:from-rose-600 hover:to-pink-700 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          {uploadingDirect ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              Uploading to Server...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4" />
+                              Upload from Device
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowMediaModal(true)}
+                          className="w-full py-2.5 px-4 rounded-xl border border-border-theme bg-background hover:bg-hover-theme text-foreground text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          <ImageIcon className="w-4 h-4 text-blue-500" />
+                          Choose from Media Library
+                        </button>
+                      </div>
+
+                      {/* Direct URL Input */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                          Or paste direct Image URL:
+                        </label>
+                        <input
+                          type="url"
+                          value={form.image}
+                          onChange={(e) => setForm({ ...form, image: e.target.value })}
+                          placeholder="https://..."
+                          className="w-full px-3 py-2 rounded-xl bg-background border border-border-theme focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 text-xs font-mono text-foreground transition"
+                        />
+                      </div>
+
+                      {/* Curated Presets */}
+                      <div className="pt-2 border-t border-border-theme">
+                        <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                          Or pick a preset celebration item:
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {PRESET_IMAGES.map((preset, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() =>
+                                setForm({
+                                  ...form,
+                                  image: preset.url,
+                                  category: preset.category as AddonItem["category"],
+                                  name: form.name ? form.name : preset.label,
+                                })
+                              }
+                              className={`p-2 rounded-xl border text-left flex items-center gap-2 transition cursor-pointer overflow-hidden ${form.image === preset.url
+                                  ? "border-rose-500 bg-rose-500/10 ring-1 ring-rose-500/30"
+                                  : "border-border-theme bg-background hover:bg-hover-theme"
+                                }`}
+                            >
+                              <img
+                                src={preset.url}
+                                alt={preset.label}
+                                className="w-8 h-8 rounded-lg object-cover shrink-0"
+                              />
+                              <span className="text-[10px] font-semibold text-foreground truncate">
+                                {preset.label.split(" ")[0]}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        ) : (
+          /* ═══════════════════════════════════════════════════════════════════
+              MODE B: MAIN LIST VIEW
+          ═══════════════════════════════════════════════════════════════════ */
+          <div className="space-y-6">
+            {/* Page Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border-theme">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] font-bold text-rose-500">
+                  Impulse Checkout Upsells
+                </p>
+                <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight mt-1">
+                  Gifting Add-ons Store
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">
+                  Manage candles, greeting cards, party poppers, chocolates and teddy bears offered at checkout
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={loadAddons}
+                  className="p-2.5 rounded-xl border border-border-theme hover:bg-hover-theme text-slate-500 hover:text-foreground transition cursor-pointer"
+                  title="Refresh Add-ons"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+                </button>
+                <button
+                  onClick={openCreateForm}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold text-sm shadow-lg shadow-rose-500/25 hover:from-rose-600 hover:to-pink-700 transition cursor-pointer hover:scale-[1.01] active:scale-[0.98]"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Add-on Item
+                </button>
+              </div>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition cursor-pointer ${selectedCategory === cat.id
+                      ? "bg-rose-500 text-white shadow-md shadow-rose-500/20"
+                      : "bg-card border border-border-theme text-slate-600 dark:text-slate-300 hover:bg-hover-theme"
+                    }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Content Cards Grid */}
+            {loading ? (
+              <div className="flex flex-col items-center justify-center p-16 text-slate-400">
+                <RefreshCw className="w-8 h-8 animate-spin text-rose-500 mb-3" />
+                <p className="text-sm font-semibold">Loading celebration add-ons...</p>
+              </div>
+            ) : filteredAddons.length === 0 ? (
+              <div className="text-center py-20 bg-card border border-border-theme rounded-3xl p-8">
+                <div className="w-16 h-16 rounded-3xl bg-rose-500/10 text-rose-500 flex items-center justify-center mx-auto mb-4">
+                  <Gift className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">No add-ons in this category</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-6">
+                  Add high-margin celebration items like sparkling candles or customized cards to boost cart value.
+                </p>
+                <button
+                  onClick={openCreateForm}
+                  className="px-5 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-bold shadow-md hover:opacity-95 cursor-pointer"
+                >
+                  Create First Item
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredAddons.map((addon) => (
+                  <div
+                    key={addon._id}
+                    className={`bg-card border rounded-3xl overflow-hidden transition-all duration-200 group flex flex-col justify-between hover:shadow-lg hover:border-rose-500/40 ${addon.isActive ? "border-border-theme" : "border-border-theme/40 opacity-60"
+                      }`}
+                  >
+                    <div>
+                      {/* Product image container */}
+                      <div className="relative aspect-4/3 overflow-hidden bg-slate-100 dark:bg-slate-800">
+                        <img
+                          src={addon.image}
+                          alt={addon.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {addon.isPopular && (
+                          <div className="absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] shadow-md">
+                            <Flame className="w-3 h-3 fill-slate-950" />
+                            BESTSELLER
+                          </div>
+                        )}
+                        <span className="absolute bottom-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/60 text-white backdrop-blur-md capitalize">
+                          {addon.category}
+                        </span>
+                      </div>
+
+                      <div className="p-5">
+                        <h3 className="font-bold text-base text-foreground group-hover:text-rose-500 transition line-clamp-1">
+                          {addon.name}
+                        </h3>
+                        {addon.description && (
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                            {addon.description}
+                          </p>
+                        )}
+                        <div className="mt-3 flex items-center justify-between">
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-xl font-black text-rose-500">₹{addon.price}</span>
+                          </div>
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${addon.isActive
+                                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                : "bg-slate-500/10 text-slate-400 border border-slate-500/20"
+                              }`}
+                          >
+                            {addon.isActive ? "Active" : "Disabled"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Actions */}
+                    <div className="p-3 border-t border-border-theme bg-background/50 flex items-center justify-between gap-2">
+                      <button
+                        onClick={() => openEditForm(addon)}
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border border-border-theme hover:bg-hover-theme text-xs font-bold text-foreground transition cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-blue-500" />
+                        Edit Item
+                      </button>
+
+                      {deleteConfirmId === addon._id ? (
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => addon._id && handleDelete(addon._id)}
+                            className="px-3 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 cursor-pointer"
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirmId(null)}
+                            className="px-2 py-2 text-xs font-bold text-slate-400 hover:text-foreground cursor-pointer"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setDeleteConfirmId(addon._id || null)}
+                          className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition cursor-pointer"
+                          title="Delete Add-on"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Media Library / Upload Modal */}
+        {showMediaModal && (
+          <MediaModal
+            onClose={() => setShowMediaModal(false)}
+            onSelect={(urls) => {
+              const selectedUrl = Array.isArray(urls) ? urls[0] : urls;
+              if (selectedUrl) {
+                setForm((prev) => ({ ...prev, image: selectedUrl }));
+              }
+              setShowMediaModal(false);
+            }}
+            multiple={false}
+          />
+        )}
+      </AdminMain>
+    </ProtectedRoute>
+  );
+}

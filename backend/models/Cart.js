@@ -18,6 +18,8 @@ const cartItemSchema = new mongoose.Schema(
       default: null,
     },
     isEggless: { type: Boolean, default: false },
+    messageOnCake: { type: String, default: "" },
+    customImage: { type: String, default: "" },
     // Used to tell apart two cart lines for the same product with
     // different variants (weight/flavor/flowerCount combination).
     variantKey: { type: String, required: true },
