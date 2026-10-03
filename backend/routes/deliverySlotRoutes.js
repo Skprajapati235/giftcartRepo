@@ -4,6 +4,7 @@ const controller = require("../controllers/deliverySlotController");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
 router.get("/", controller.getDeliverySlots);
+router.get("/availability", controller.getAvailability);
 router.post("/", adminMiddleware, controller.createDeliverySlot);
 router.put("/:id", adminMiddleware, controller.updateDeliverySlot);
 router.delete("/:id", adminMiddleware, controller.deleteDeliverySlot);

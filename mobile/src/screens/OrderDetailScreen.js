@@ -4,6 +4,7 @@ import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeScreen, ScreenHeader } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
 import orderService from '../services/orderService';
+import { formatDeliveryDateLong } from '../services/giftingService';
 import { colors } from '../constants/theme';
 
 export default function OrderDetailScreen({ route, navigation }) {
@@ -222,7 +223,13 @@ export default function OrderDetailScreen({ route, navigation }) {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: '#F8FAFC' }}>
                 <Feather name="clock" size={16} color={colors.brandBerry} />
                 <View style={{ flex: 1 }}>
+                  {order.deliverySlot.deliveryDate ? (
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#1E293B', marginBottom: 2 }}>
+                      Delivery on {formatDeliveryDateLong(order.deliverySlot.deliveryDate)}
+                    </Text>
+                  ) : null}
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B' }}>
+                    {order.deliverySlot.slotType === 'midnight' ? '🌙 ' : ''}
                     Delivery Window: {order.deliverySlot.timeRange || order.deliverySlot.slotName}
                   </Text>
                   {order.deliverySlot.extraCharge > 0 && (

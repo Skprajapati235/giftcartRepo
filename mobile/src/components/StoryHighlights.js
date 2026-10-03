@@ -53,9 +53,12 @@ export default function StoryHighlights({ navigation }) {
     progress.setValue(0);
     if (progressAnimRef.current) progressAnimRef.current.stop();
 
+    // Each story runs for the duration the admin configured (3–30 s, default 5 s)
+    const seconds = Math.max(3, Math.min(30, Number(stories[index]?.duration) || 5));
+
     progressAnimRef.current = Animated.timing(progress, {
       toValue: 1,
-      duration: 5000, // 5 seconds per story
+      duration: seconds * 1000,
       useNativeDriver: false,
     });
 
@@ -91,13 +94,8 @@ export default function StoryHighlights({ navigation }) {
       navigation?.navigate('Home', { categoryId });
       return;
     }
-    if (!story?.ctaLink) return;
-    // If it's category link, navigate to Collections
-    if (story.ctaLink.includes('category') || story.ctaLink.includes('cake') || story.ctaLink.includes('flower')) {
-      navigation?.navigate('Collections', { initialFilter: story.tag || story.title });
-    } else {
-      navigation?.navigate('Collections');
-    }
+    // No category linked in the admin panel → show the full catalogue
+    navigation?.navigate('Collections');
   };
 
   if (!stories || stories.length === 0) return null;

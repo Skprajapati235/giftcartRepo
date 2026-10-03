@@ -61,6 +61,8 @@ const orderSchema = new mongoose.Schema({
     },
   ],
   deliverySlot: {
+    // Reference to the DeliverySlot used — lets us count capacity per date exactly.
+    slotId: { type: mongoose.Schema.Types.ObjectId, ref: "DeliverySlot" },
     slotName: { type: String },
     slotType: { type: String, default: "standard" },
     timeRange: { type: String },
@@ -135,5 +137,8 @@ const orderSchema = new mongoose.Schema({
   deliveredAt: { type: Date },
   cancelledAt: { type: Date },
 }, { timestamps: true });
+
+// Capacity lookups: "how many orders hold slot X on date Y?"
+orderSchema.index({ "deliverySlot.slotId": 1, "deliverySlot.deliveryDate": 1 });
 
 module.exports = mongoose.model("Order", orderSchema);

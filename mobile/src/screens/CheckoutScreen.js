@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Modal,
   Image,
   BackHandler,
+  AppState,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons, Feather } from '@expo/vector-icons';
@@ -18,7 +19,12 @@ import { AuthContext } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import orderService from '../services/orderService';
 import couponService from '../services/couponService';
-import { fetchDeliverySlots, fetchAddons } from '../services/giftingService';
+import {
+  fetchSlotAvailability,
+  fetchAddons,
+  formatDeliveryDate,
+} from '../services/giftingService';
+import DeliverySchedulePicker from '../components/DeliverySchedulePicker';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useToast } from '../context/ToastContext';
@@ -44,8 +50,15 @@ export default function CheckoutScreen({ navigation, route }) {
   const [paymentMethod, setPaymentMethod] = useState('Online');
 
   // Gifting & Delivery Slot State
-  const [deliverySlots, setDeliverySlots] = useState([]);
-  const [selectedSlot, setSelectedSlot] = useState(null);
+  // Dates / slot availability come from the server (cutoff, sold-out and IST
+  // are decided there); the backend re-validates when the order is created.
+  const [availability, setAvailability] = useState(null);
+  const [availabilityRefreshing, setAvailabilityRefreshing] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedSlotKey, setSelectedSlotKey] = useState(null);
+  const requestSeqRef = useRef(0);
+  const selectedDateRef = useRef(null);
+  const selectedSlotKeyRef = useRef(null);
   const [addonsList, setAddonsList] = useState([]);
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [messageOnCake, setMessageOnCake] = useState('');
@@ -140,24 +153,70 @@ export default function CheckoutScreen({ navigation, route }) {
     };
     loadSavedAddress();
     fetchActiveCoupons();
-    loadDeliverySlotsAndAddons();
+    loadAvailability(undefined);
+    loadAddons();
   }, []);
 
-  const loadDeliverySlotsAndAddons = async () => {
-    try {
-      const [slots, addons] = await Promise.all([
-        fetchDeliverySlots(),
-        fetchAddons(),
-      ]);
-      setDeliverySlots(slots);
-      if (slots.length > 0) {
-        setSelectedSlot(slots[0]); // default to standard
+  useEffect(() => {
+    selectedDateRef.current = selectedDate;
+    selectedSlotKeyRef.current = selectedSlotKey;
+  }, [selectedDate, selectedSlotKey]);
+
+  const slotKeyOf = (slot) => slot._id || slot.name;
+
+  /**
+   * Fetch availability for `date` (or the server's default date) and keep the
+   * selection valid: if the chosen slot just closed, fall back to the first
+   * open slot and tell the customer.
+   */
+  const loadAvailability = useCallback(async (date) => {
+    const seq = ++requestSeqRef.current;
+    const data = await fetchSlotAvailability(date || undefined);
+    if (seq !== requestSeqRef.current) return; // a newer request superseded this one
+    setAvailabilityRefreshing(false);
+    if (!data) return; // keep the last good data
+
+    setAvailability(data);
+    setSelectedDate(data.selectedDate);
+
+    const open = data.slots.filter((sl) => sl.available);
+    const prevKey = selectedSlotKeyRef.current;
+    if (prevKey && open.some((sl) => slotKeyOf(sl) === prevKey)) return;
+
+    if (prevKey && open.length > 0) {
+      const closed = data.slots.find((sl) => slotKeyOf(sl) === prevKey);
+      if (closed) {
+        showToast(`"${closed.name}" is no longer available — we picked ${open[0].name} for you.`, 'warning');
       }
-      setAddonsList(addons);
-    } catch (e) {
-      console.error("Failed to load slots/addons:", e);
     }
+    setSelectedSlotKey(open[0] ? slotKeyOf(open[0]) : null);
+  }, []);
+
+  const loadAddons = async () => {
+    const addons = await fetchAddons();
+    setAddonsList(addons);
+    return addons;
   };
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    setAvailabilityRefreshing(true); // dim the list until the server answers
+    loadAvailability(date);
+  };
+
+  // Keep cutoffs honest while the customer fills the form: refresh every
+  // minute and whenever the app comes back to the foreground.
+  useEffect(() => {
+    const refresh = () => loadAvailability(selectedDateRef.current);
+    const timer = setInterval(refresh, 60000);
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refresh();
+    });
+    return () => {
+      clearInterval(timer);
+      sub.remove();
+    };
+  }, [loadAvailability]);
 
   const fetchActiveCoupons = async () => {
     try {
@@ -174,7 +233,7 @@ export default function CheckoutScreen({ navigation, route }) {
       if (exists) {
         return prev.filter((a) => a.name !== addon.name);
       } else {
-        return [...prev, { name: addon.name, price: addon.price, quantity: 1, image: addon.image, category: addon.category }];
+        return [...prev, { addonId: addon._id, name: addon.name, price: addon.price, quantity: 1, image: addon.image, category: addon.category }];
       }
     });
   };
@@ -187,6 +246,10 @@ export default function CheckoutScreen({ navigation, route }) {
     }
   }, [allItemsCodAvailable, paymentMethod]);
 
+  const slotsConfigured = (availability?.slots?.length ?? 0) > 0;
+  const anySlotOpen = !!availability?.slots?.some((sl) => sl.available);
+  const selectedSlot =
+    availability?.slots?.find((sl) => slotKeyOf(sl) === selectedSlotKey && sl.available) || null;
   const slotSurcharge = Number(selectedSlot?.extraCharge || 0);
   const addonsTotal = selectedAddons.reduce((sum, a) => sum + (Number(a.price || 0) * (a.quantity || 1)), 0);
   const cartProductCategoryIds = new Set(
@@ -259,6 +322,11 @@ export default function CheckoutScreen({ navigation, route }) {
       return;
     }
 
+    if (slotsConfigured && anySlotOpen && !selectedSlot) {
+      showToast('Please choose a delivery date and time slot', 'warning');
+      return;
+    }
+
     const fullAddress = `${hn}, ${st}${activeAddress.landmark ? `, Near ${activeAddress.landmark}` : ''}`;
     const finalShippingInfo = { ...activeAddress, address: fullAddress };
 
@@ -298,12 +366,13 @@ export default function CheckoutScreen({ navigation, route }) {
         paymentMethod,
         couponCode: appliedCoupon || undefined,
         discountAmount: couponDiscount,
+        // Only identifiers go to the server — it looks up the slot, re-checks
+        // the cutoff / capacity and applies the surcharge itself.
         deliverySlot: selectedSlot
           ? {
+              slotId: selectedSlot._id,
               slotName: selectedSlot.name,
-              slotType: selectedSlot.type,
-              timeRange: selectedSlot.timeRange,
-              extraCharge: selectedSlot.extraCharge,
+              deliveryDate: selectedDate || availability?.selectedDate,
             }
           : undefined,
         messageOnCake: messageOnCake || undefined,
@@ -350,7 +419,8 @@ export default function CheckoutScreen({ navigation, route }) {
         setShowWebView(true);
       }
     } catch (error) {
-      if (error?.response?.data?.isDeliveryRestricted || error?.response?.status === 403) {
+      const apiData = error?.response?.data;
+      if (apiData?.isDeliveryRestricted) {
         Alert.alert(
           '🌙 Night Delivery Paused',
           error.response?.data?.message || deliveryHours.message || `Orders cannot be placed during night hours. Delivery resumes after ${deliveryHours.resumeTimeLabel || deliveryHours.formattedEnd || '7:00 AM'}.`,
@@ -358,8 +428,17 @@ export default function CheckoutScreen({ navigation, route }) {
         );
         return;
       }
-      const errorMsg = error?.message || 'Could not place order';
+      const errorMsg = apiData?.message || error?.message || 'Could not place order';
       showToast(errorMsg, 'error');
+
+      // Slot closed / sold out / add-on removed while checking out → refresh
+      // from the server so the screen shows the truth.
+      if (apiData?.code === 'SLOT_UNAVAILABLE') {
+        loadAvailability(selectedDateRef.current);
+      } else if (apiData?.code === 'ADDON_UNAVAILABLE') {
+        const fresh = await loadAddons();
+        setSelectedAddons((prev) => prev.filter((a) => fresh.some((f) => f._id === a.addonId)));
+      }
     } finally {
       setLoading(false);
     }
@@ -791,60 +870,32 @@ export default function CheckoutScreen({ navigation, route }) {
           </View>
         </Modal>
 
-        {/* ── ⏰ Select Delivery Time Slot ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⏰ Select Delivery Time Slot</Text>
-          <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 10 }}>
-            Choose your preferred delivery window for this celebration.
-          </Text>
-          <View style={{ gap: 8 }}>
-            {deliverySlots.map((slot) => {
-              const isSelected = selectedSlot?._id === slot._id || selectedSlot?.name === slot.name;
-              const isMidnight = slot.type === 'midnight';
-              return (
-                <TouchableOpacity
-                  key={slot._id || slot.name}
-                  activeOpacity={0.8}
-                  onPress={() => setSelectedSlot(slot)}
-                  style={{
-                    padding: 12,
-                    borderRadius: 14,
-                    borderWidth: 1.5,
-                    borderColor: isSelected ? '#D82B76' : '#E5E7EB',
-                    backgroundColor: isSelected ? '#FFF0F5' : '#FFF',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <View style={{ flex: 1, paddingRight: 8 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: isSelected ? '#D82B76' : '#1F2937' }}>
-                        {slot.name}
-                      </Text>
-                    </View>
-                    <Text style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>
-                      Window: {slot.timeRange}
-                    </Text>
-                    {slot.badge ? (
-                      <Text style={{ fontSize: 10, color: '#D82B76', fontWeight: '800', marginTop: 3 }}>
-                        ★ {slot.badge}
-                      </Text>
-                    ) : null}
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 14, fontWeight: '800', color: slot.extraCharge > 0 ? '#D97706' : '#16A34A' }}>
-                      {slot.extraCharge > 0 ? `+₹${slot.extraCharge}` : 'FREE'}
-                    </Text>
-                    {isSelected && (
-                      <Ionicons name="checkmark-circle" size={18} color="#D82B76" style={{ marginTop: 4 }} />
-                    )}
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
+        {/* ── ⏰ Delivery Date & Time Slot (hidden when the store has no slots) ── */}
+        {slotsConfigured && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>⏰ Delivery Date & Time Slot</Text>
+            <Text style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>
+              Pick the day and the time window you want your gift to arrive.
+            </Text>
+
+            <DeliverySchedulePicker
+              availability={availability}
+              refreshing={availabilityRefreshing}
+              selectedDate={selectedDate}
+              selectedSlotKey={selectedSlotKey}
+              onDateChange={handleDateChange}
+              onSelectSlot={(slot) => setSelectedSlotKey(slotKeyOf(slot))}
+            />
+
+            {!anySlotOpen && (
+              <View style={styles.noSlotBox}>
+                <Text style={styles.noSlotText}>
+                  All slots are closed for this date. Please pick another date above.
+                </Text>
+              </View>
+            )}
           </View>
-        </View>
+        )}
 
         {/* ── 💌 Cake & Greeting Personalization ── */}
         <View style={styles.section}>
@@ -1063,6 +1114,14 @@ export default function CheckoutScreen({ navigation, route }) {
               <Text style={styles.summaryLabel}>Items Total</Text>
               <Text style={styles.summaryValue}>₹{orderSummary.subtotal.toFixed(2)}</Text>
             </View>
+            {selectedSlot && selectedDate && (
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Delivery</Text>
+                <Text style={[styles.summaryValue, { flexShrink: 1, textAlign: 'right' }]}>
+                  {formatDeliveryDate(selectedDate, availability?.today)} · {selectedSlot.timeRange}
+                </Text>
+              </View>
+            )}
             {orderSummary.slotSurcharge > 0 && (
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryLabel, { color: '#D97706', fontWeight: '600' }]}>
@@ -1160,6 +1219,8 @@ export default function CheckoutScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  noSlotBox: { marginTop: 12, padding: 12, borderRadius: 12, backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A' },
+  noSlotText: { fontSize: 12, fontWeight: '700', color: '#92400E' },
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   scrollFlex: { flex: 1 },
   locationBtn: {
