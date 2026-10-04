@@ -482,7 +482,7 @@ function DesktopSidebar() {
                       onClick={() => setSearchQuery("")}
                       className={`cursor-pointer group flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs transition-all ${
                         active
-                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
+                          ? "bg-pink-500 text-white font-bold shadow-xs border border-pink-500/20"
                           : "text-slate-600 dark:text-slate-300 hover:bg-hover-theme hover:text-foreground hover:translate-x-1"
                       }`}
                     >
@@ -533,14 +533,14 @@ function DesktopSidebar() {
                               : "px-2.5 py-2 text-[12.5px] font-medium gap-2.5"
                           } ${
                             active
-                              ? "bg-primary text-primary-foreground shadow-md font-bold border border-primary/20"
+                              ? "bg-pink-500 text-white shadow-md font-bold border border-pink-500/20"
                               : "text-slate-600 dark:text-slate-400 hover:text-foreground hover:bg-hover-theme/85 hover:translate-x-0.5"
                           }`}
                           title={item.label}
                         >
                           {/* Left Glowing Indicator Notch */}
                           {active && (
-                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white dark:bg-cyan-400 shadow-[0_0_8px_rgba(255,255,255,0.8)] dark:shadow-[0_0_8px_rgba(34,211,238,0.8)]" />
+                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
                           )}
 
                           <div
@@ -550,7 +550,7 @@ function DesktopSidebar() {
                                 : "h-7 w-7 rounded-lg"
                             } ${
                               active
-                                ? "text-white dark:text-cyan-400"
+                                ? "text-white"
                                 : "text-slate-400 group-hover:text-foreground"
                             }`}
                           >
@@ -566,7 +566,7 @@ function DesktopSidebar() {
                                   {item.badge}
                                 </span>
                               )}
-                              {active && <ChevronRight className="h-3 w-3 text-white/70 dark:text-cyan-400" />}
+                              {active && <ChevronRight className="h-3 w-3 text-white" />}
                             </>
                           )}
                         </Link>
@@ -596,14 +596,14 @@ function DesktopSidebar() {
                               : "px-2.5 py-2 text-[12.5px] font-medium gap-2.5"
                           } ${
                             active
-                              ? "text-foreground font-bold bg-primary/8 dark:bg-white/[0.04] border border-primary/25 shadow-2xs"
+                              ? "text-pink-700 dark:text-pink-400 font-bold bg-pink-500/10 dark:bg-pink-500/15 border border-pink-500/20 shadow-2xs"
                               : "text-slate-600 dark:text-slate-400 hover:text-foreground hover:bg-hover-theme/80 hover:translate-x-0.5 border border-transparent"
                           }`}
                           title={isCollapsed ? `${item.label} (Click to expand sidebar, Hover for sub-menu)` : item.label}
                         >
                           {/* Active Dot indicator if child is active */}
                           {active && (
-                            <span className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)] animate-pulse" />
+                            <span className="absolute left-1 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.9)] animate-pulse" />
                           )}
 
                           {/* Collapsed dot badge indicating presence of children */}
@@ -618,7 +618,7 @@ function DesktopSidebar() {
                                 : "h-7 w-7 rounded-lg"
                             } ${
                               active
-                                ? "bg-primary/15 text-primary border border-primary/30"
+                                ? "bg-pink-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/30"
                                 : "bg-background/80 border border-border-theme/70 text-slate-400 group-hover:text-foreground"
                             }`}
                           >
@@ -655,7 +655,7 @@ function DesktopSidebar() {
                                   href={child.href}
                                   className={`cursor-pointer group relative flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-[12px] transition-all duration-150 ${
                                     childActive
-                                      ? "bg-primary/10 text-primary border border-primary/20 font-bold dark:bg-primary/20 dark:text-white"
+                                      ? "bg-pink-500/10 text-pink-700 border border-pink-500/20 font-bold dark:bg-pink-500/15 dark:text-pink-400"
                                       : "text-slate-600 dark:text-slate-400 font-medium hover:text-foreground hover:bg-hover-theme hover:translate-x-1"
                                   }`}
                                 >
@@ -947,7 +947,7 @@ function MobileSidebar() {
                         onClick={closeMobile}
                         className={`cursor-pointer flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition ${
                           active
-                            ? "bg-primary text-primary-foreground shadow-md font-bold"
+                            ? "bg-pink-500 text-white shadow-md font-bold"
                             : "text-slate-600 dark:text-slate-300 hover:bg-hover-theme"
                         }`}
                       >
@@ -969,7 +969,7 @@ function MobileSidebar() {
                         onClick={() => toggleAccordion(item.key)}
                         className={`cursor-pointer flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition ${
                           active
-                            ? "bg-primary/10 text-primary border border-primary/20"
+                            ? "bg-pink-500/10 text-pink-700 border border-pink-500/20 font-bold dark:bg-pink-500/15 dark:text-pink-400"
                             : "text-foreground hover:bg-hover-theme"
                         }`}
                       >
@@ -979,7 +979,7 @@ function MobileSidebar() {
                         </span>
                         <ChevronDown
                           className={`h-4 w-4 transition-transform duration-200 ${
-                            isExpanded ? "rotate-180 text-primary" : "text-slate-400"
+                            isExpanded ? "rotate-180 text-pink-600 dark:text-pink-400" : "text-slate-400"
                           }`}
                         />
                       </button>
@@ -996,7 +996,7 @@ function MobileSidebar() {
                                 onClick={closeMobile}
                                 className={`cursor-pointer flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-xs transition ${
                                   childActive
-                                    ? "bg-primary/10 text-primary border border-primary/20 font-bold dark:bg-primary/20 dark:text-white"
+                                    ? "bg-pink-500/10 text-pink-700 border border-pink-500/20 font-bold dark:bg-pink-500/15 dark:text-pink-400"
                                     : "text-slate-600 dark:text-slate-400 hover:bg-hover-theme"
                                 }`}
                               >
