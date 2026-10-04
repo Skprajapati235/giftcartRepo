@@ -17,9 +17,10 @@ import {
   Headphones,
   Search,
   Crown,
+  Palette,
 } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme, ADMIN_COLOR_PRESETS } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import NotificationCenterDropdown from "./notifications/NotificationCenterDropdown";
 import { getPageRoleInfo, ROLES_CONFIG } from "../utils/rbacConfig";
@@ -78,11 +79,13 @@ const AVAILABLE_SIMULATION_ROLES: RoleOption[] = [
 
 export default function AdminHeader() {
   const { openMobile } = useSidebar();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, adminColor, setAdminColorPreset } = useTheme();
   const { user, switchRole } = useAuth();
   const pathname = usePathname() || "";
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const roleMenuRef = useRef<HTMLDivElement>(null);
+  const [showPaletteMenu, setShowPaletteMenu] = useState(false);
+  const paletteMenuRef = useRef<HTMLDivElement>(null);
 
   const pageRoleInfo = getPageRoleInfo(pathname);
   const currentRoleId = (user?.role || "super_admin").toLowerCase();
@@ -93,6 +96,9 @@ export default function AdminHeader() {
     function handleClickOutside(event: MouseEvent) {
       if (roleMenuRef.current && !roleMenuRef.current.contains(event.target as Node)) {
         setShowRoleMenu(false);
+      }
+      if (paletteMenuRef.current && !paletteMenuRef.current.contains(event.target as Node)) {
+        setShowPaletteMenu(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -262,6 +268,95 @@ export default function AdminHeader() {
 
         {/* Notification Bell Dropdown */}
         <NotificationCenterDropdown />
+
+        {/* Admin Theme Palette Switcher */}
+        <div className="relative" ref={paletteMenuRef}>
+          <button
+            type="button"
+            onClick={() => setShowPaletteMenu(!showPaletteMenu)}
+            className="cursor-pointer relative flex h-10 w-10 items-center justify-center rounded-xl border border-border-theme bg-background text-foreground transition hover:bg-hover-theme"
+            title="Change Admin Dashboard Color Theme"
+            aria-label="Admin Theme Palette"
+          >
+            <Palette className="h-5 w-5 text-slate-700 dark:text-slate-300" />
+            <span
+              className="absolute bottom-1.5 right-1.5 h-2.5 w-2.5 rounded-full ring-2 ring-background shadow-xs transition-colors"
+              style={{ backgroundColor: adminColor.primary }}
+            />
+          </button>
+
+          {showPaletteMenu && (
+            <div className="absolute right-0 top-12 z-50 w-72 rounded-3xl border border-border-theme bg-card/95 backdrop-blur-xl p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between pb-3 border-b border-border-theme mb-3">
+                <div className="flex items-center gap-1.5">
+                  <Palette className="h-4 w-4 text-pink-500" />
+                  <h4 className="text-xs font-black text-foreground">Admin Theme Palette</h4>
+                </div>
+                <span
+                  className="text-[10px] font-black px-2 py-0.5 rounded-full text-white shadow-2xs"
+                  style={{ background: adminColor.primaryGradient }}
+                >
+                  {adminColor.name.split(" ")[0]}
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-400 mb-3">
+                Click to switch dashboard color palette:
+              </p>
+
+              {/* Preset Swatches Grid */}
+              <div className="grid grid-cols-5 gap-2 mb-3">
+                {ADMIN_COLOR_PRESETS.map((p) => {
+                  const isSelected = adminColor.id === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setAdminColorPreset(p.id);
+                        setShowPaletteMenu(false);
+                      }}
+                      className={`group relative flex flex-col items-center justify-center p-1.5 rounded-xl border transition-all ${
+                        isSelected
+                          ? "border-pink-500 bg-pink-500/10 shadow-sm ring-2 ring-pink-500/30 scale-105"
+                          : "border-border-theme hover:bg-hover-theme"
+                      }`}
+                      title={p.name}
+                    >
+                      <span
+                        className="h-6 w-6 rounded-full shadow-xs transition-transform group-hover:scale-110 flex items-center justify-center"
+                        style={{ background: p.primaryGradient }}
+                      >
+                        {isSelected && <Check className="h-3 w-3 text-white stroke-[3]" />}
+                      </span>
+                      <span className="text-[8px] font-bold text-slate-500 dark:text-slate-400 mt-1 truncate max-w-full">
+                        {p.name.split(" ")[0]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="pt-2.5 border-t border-border-theme flex items-center justify-between text-xs">
+                <Link
+                  href="/theme-customizer?tab=admin"
+                  onClick={() => setShowPaletteMenu(false)}
+                  className="text-[11px] font-bold text-primary hover:opacity-80 flex items-center gap-1 transition"
+                >
+                  <span>Full Theme Studio →</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="text-[11px] font-bold text-slate-500 hover:text-foreground flex items-center gap-1 transition"
+                >
+                  {theme === "dark" ? <Sun className="h-3 w-3 text-amber-400" /> : <Moon className="h-3 w-3" />}
+                  <span>{theme === "dark" ? "Light" : "Dark"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Theme Toggle (Dark/Light) */}
         <button

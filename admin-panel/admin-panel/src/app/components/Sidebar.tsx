@@ -195,7 +195,7 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Storefront Config",
         icon: SlidersHorizontal,
         children: [
-          { key: "themeStudio", label: "Storefront Theme Studio", href: "/theme-customizer", icon: Palette, description: "Live branding & festival palettes", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Super Admin" },
+          { key: "themeStudio", label: "Theme & Branding Studio", href: "/theme-customizer", icon: Palette, description: "Admin panel & storefront themes", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Super Admin" },
           { key: "deliverySlots", label: "Delivery Slots", href: "/delivery-slots", icon: Clock, description: "Midnight & express slot rules", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "Fleet" },
           { key: "stories", label: "Story Highlights", href: "/stories", icon: Sparkles, description: "Instagram-style reels & banner stories", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Marketing" },
           { key: "heroSlides", label: "Hero Slides", href: "/hero-slides", icon: SlidersHorizontal, description: "Banner promotional carousels", color: "text-purple-500 bg-purple-500/10 border-purple-500/20", badge: "Marketing" },
