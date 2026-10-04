@@ -367,14 +367,14 @@ function DesktopSidebar() {
   return (
     <div className="hidden h-screen shrink-0 lg:flex select-none">
       <aside
-        className={`relative sticky top-0 z-30 flex h-screen flex-col justify-between border-r border-border-theme/80 bg-card/95 dark:bg-slate-950/95 backdrop-blur-2xl transition-all duration-300 ease-in-out shadow-2xl shadow-black/5 dark:shadow-black/50 overflow-visible ${
+        className={`admin-sidebar relative sticky top-0 z-30 flex h-screen flex-col justify-between border-r border-border-theme/80 bg-card/95 dark:bg-slate-950/95 backdrop-blur-2xl transition-all duration-300 ease-in-out shadow-2xl shadow-black/5 dark:shadow-black/50 overflow-visible ${
           isCollapsed ? "w-[78px]" : "w-72 xl:w-76"
         }`}
       >
         {/* ─── AMBIENT AURORA MESH GLOWS ─── */}
-        <div className="absolute -top-16 -left-16 h-40 w-40 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute top-1/3 -right-16 h-36 w-36 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-16 -left-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-1/3 -right-16 h-36 w-36 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
 
         {/* ─── TOP SECTION: BRAND & SEARCH BAR ─── */}
         <div className="relative shrink-0 p-3 pb-2 border-b border-border-theme/70 bg-gradient-to-b from-background/40 to-transparent">
@@ -400,7 +400,10 @@ function DesktopSidebar() {
               {!isCollapsed && (
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-black tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
+                    <span
+                      className="truncate text-sm font-black tracking-tight bg-clip-text text-transparent"
+                      style={{ backgroundImage: "var(--primary-gradient)" }}
+                    >
                       GiftFestive
                     </span>
                     <span className="rounded-md bg-cyan-500/15 border border-cyan-500/30 px-1.5 py-0.5 text-[8.5px] font-black text-cyan-400 tracking-wider">
@@ -661,19 +664,19 @@ function DesktopSidebar() {
                                   href={child.href}
                                   className={`cursor-pointer group relative flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-[12px] transition-all duration-150 ${
                                     childActive
-                                      ? "bg-pink-500/10 text-pink-700 border border-pink-500/20 font-bold dark:bg-pink-500/15 dark:text-pink-400"
+                                      ? "bg-primary/10 text-primary border border-primary/20 font-bold dark:bg-primary/15"
                                       : "text-slate-600 dark:text-slate-400 font-medium hover:text-foreground hover:bg-hover-theme hover:translate-x-1"
                                   }`}
                                 >
                                   {/* Left Anchor Glowing Node on Track */}
                                   {childActive && (
-                                    <span className="absolute -left-[18px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-blue-500 dark:bg-cyan-400 ring-2 ring-card shadow-[0_0_8px_rgba(59,130,246,0.8)] dark:shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
+                                    <span className="absolute -left-[18px] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-card shadow-[0_0_8px_var(--primary)]" />
                                   )}
 
                                   <div
                                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-colors ${
                                       childActive
-                                        ? "bg-blue-600 text-white dark:bg-cyan-500/20 dark:text-cyan-300 shadow-2xs"
+                                        ? "bg-primary text-white shadow-2xs"
                                         : child.color || "bg-background border border-border-theme/70 text-slate-400 group-hover:text-primary"
                                     }`}
                                   >
@@ -761,14 +764,14 @@ function DesktopSidebar() {
                       }}
                       className={`cursor-pointer group flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs transition-all ${
                         childActive
-                          ? "bg-blue-50 text-blue-700 border border-blue-200/80 font-bold dark:bg-cyan-500/15 dark:text-cyan-300 dark:border dark:border-cyan-500/30 shadow-2xs"
+                          ? "bg-primary/10 text-primary border border-primary/20 font-bold dark:bg-primary/15 dark:border dark:border-primary/30 shadow-2xs"
                           : "text-slate-600 dark:text-slate-400 hover:bg-hover-theme hover:text-foreground hover:translate-x-1"
                       }`}
                     >
                       <div
                         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${
                           childActive
-                            ? "bg-blue-600 text-white dark:bg-white/20 dark:text-white"
+                            ? "bg-primary text-white"
                             : child.color || "bg-background border border-border-theme/70 text-slate-400"
                         }`}
                       >
@@ -911,7 +914,7 @@ function MobileSidebar() {
         onClick={closeMobile}
       />
 
-      <aside className="fixed inset-y-0 left-0 z-50 flex w-[min(100vw-2.5rem,340px)] flex-col border-r border-border-theme bg-card/95 backdrop-blur-2xl shadow-2xl lg:hidden">
+      <aside className="admin-sidebar fixed inset-y-0 left-0 z-50 flex w-[min(100vw-2.5rem,340px)] flex-col border-r border-border-theme bg-card/95 backdrop-blur-2xl shadow-2xl lg:hidden">
         {/* Mobile Header */}
         <div className="flex items-center justify-between border-b border-border-theme px-4 py-3.5 bg-gradient-to-b from-background/40 to-transparent">
           <div className="flex items-center gap-2.5">
@@ -920,7 +923,10 @@ function MobileSidebar() {
               alt="GiftFestive"
               className="h-7 w-7 object-contain"
             />
-            <span className="text-base font-black tracking-tight bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
+            <span
+              className="text-base font-black tracking-tight bg-clip-text text-transparent"
+              style={{ backgroundImage: "var(--primary-gradient)" }}
+            >
               GiftFestive
             </span>
           </div>

@@ -169,10 +169,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const root = document.documentElement;
+
+    // Core palette
     root.style.setProperty("--primary", adminColor.primary);
     root.style.setProperty("--primary-gradient", adminColor.primaryGradient);
     root.style.setProperty("--secondary", adminColor.secondary);
     root.style.setProperty("--accent-color", adminColor.accent);
+
+    // Track active preset on the html element for CSS attribute selectors
+    root.dataset.adminTheme = adminColor.id;
+
     window.localStorage.setItem("giftcartAdminColor", JSON.stringify(adminColor));
   }, [adminColor]);
 

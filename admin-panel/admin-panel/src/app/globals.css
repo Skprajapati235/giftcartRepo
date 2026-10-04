@@ -86,12 +86,12 @@ body {
 }
 
 ::selection {
-  background: rgba(37, 99, 235, 0.2);
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
   color: inherit;
 }
 
 html.dark ::selection {
-  background: rgba(56, 189, 248, 0.25);
+  background: color-mix(in srgb, var(--primary) 25%, transparent);
   color: inherit;
 }
 
@@ -184,8 +184,8 @@ html.light textarea:focus,
 html:not(.dark):not([data-theme='dark']) input:focus,
 html:not(.dark):not([data-theme='dark']) select:focus,
 html:not(.dark):not([data-theme='dark']) textarea:focus {
-  border-color: #2563eb !important;
-  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.15) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--primary) 15%, transparent) !important;
   outline: none !important;
 }
 
@@ -237,8 +237,8 @@ html[data-theme='dark'] textarea:focus,
 .dark input:focus,
 .dark select:focus,
 .dark textarea:focus {
-  border-color: #38bdf8 !important;
-  box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.22) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--primary) 22%, transparent) !important;
   outline: none !important;
 }
 
@@ -560,8 +560,8 @@ html[data-theme='dark'] .auth-input:focus,
 .dark .auth-input:focus {
   background-color: #090e1a !important;
   color: #ffffff !important;
-  border-color: #ec4899 !important;
-  box-shadow: 0 0 0 3.5px rgba(236, 72, 153, 0.2) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--primary) 20%, transparent) !important;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -615,4 +615,178 @@ html.dark .auth-dot-pattern {
 
 .animate-shimmer {
   animation: shimmer 1.8s infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ADMIN PANEL DYNAMIC COLOR PALETTE OVERRIDES
+   When the user switches theme via the Palette picker, the
+   --primary CSS variable is updated on :root. All the pink-*
+   Tailwind hardcoded classes below are overridden so the
+   entire admin dashboard adapts its accent color instantly.
+   This does NOT affect the customer storefront (giftobag).
+   ───────────────────────────────────────────────────────────── */
+
+/* --- Text overrides: pink-* → var(--primary) --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) .text-pink-500,
+html[data-admin-theme]:not([data-admin-theme="rose"]) .text-pink-400,
+html[data-admin-theme]:not([data-admin-theme="rose"]) .text-pink-600,
+html[data-admin-theme]:not([data-admin-theme="rose"]) .text-pink-700 {
+  color: var(--primary) !important;
+}
+
+html[data-admin-theme]:not([data-admin-theme="rose"]) .text-pink-300 {
+  color: color-mix(in srgb, var(--primary) 70%, white) !important;
+}
+
+/* --- Background overrides: retain each tint while using the selected hue --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-50 {
+  background-color: color-mix(in srgb, var(--primary) 5%, white) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-100 {
+  background-color: color-mix(in srgb, var(--primary) 10%, white) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-200 {
+  background-color: color-mix(in srgb, var(--primary) 20%, white) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-300 {
+  background-color: color-mix(in srgb, var(--primary) 35%, white) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-400 {
+  background-color: color-mix(in srgb, var(--primary) 70%, white) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-500:not(.bg-pink-500\/\[):not([class*="bg-pink-500/"]) {
+  background-color: var(--primary) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-600 {
+  background-color: color-mix(in srgb, var(--primary) 90%, black) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-700 {
+  background-color: color-mix(in srgb, var(--primary) 80%, black) !important;
+}
+
+/* --- Soft / transparent bg variants: bg-pink-500/10, /15, /20, /25 --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) [class*="bg-pink-500/"],
+html[data-admin-theme]:not([data-admin-theme="rose"]) [class*="bg-pink-400/"],
+html[data-admin-theme]:not([data-admin-theme="rose"]) [class*="bg-pink-600/"] {
+  background-color: color-mix(in srgb, var(--primary) var(--tw-bg-opacity, 10%), transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-500\/10 {
+  background-color: color-mix(in srgb, var(--primary) 10%, transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-500\/15 {
+  background-color: color-mix(in srgb, var(--primary) 15%, transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-500\/20 {
+  background-color: color-mix(in srgb, var(--primary) 20%, transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-500\/25 {
+  background-color: color-mix(in srgb, var(--primary) 25%, transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .bg-pink-500\/30 {
+  background-color: color-mix(in srgb, var(--primary) 30%, transparent) !important;
+}
+
+/* --- Border overrides: border-pink-* → var(--primary) --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) .border-pink-500 {
+  border-color: var(--primary) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .border-pink-100,
+html[data-admin-theme]:not([data-admin-theme="rose"]) .border-pink-200 {
+  border-color: color-mix(in srgb, var(--primary) 20%, transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .border-pink-300 {
+  border-color: color-mix(in srgb, var(--primary) 35%, white) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .border-pink-400 {
+  border-color: color-mix(in srgb, var(--primary) 70%, white) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .border-pink-600 {
+  border-color: color-mix(in srgb, var(--primary) 90%, black) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) [class*="border-pink-500/"] {
+  border-color: color-mix(in srgb, var(--primary) 20%, transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .border-pink-500\/20 {
+  border-color: color-mix(in srgb, var(--primary) 20%, transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .border-pink-500\/30 {
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .border-pink-500\/40 {
+  border-color: color-mix(in srgb, var(--primary) 40%, transparent) !important;
+}
+
+/* --- Ring overrides: ring-pink-* --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) .ring-pink-500,
+html[data-admin-theme]:not([data-admin-theme="rose"]) [class*="ring-pink-500/"] {
+  --tw-ring-color: color-mix(in srgb, var(--primary) 40%, transparent) !important;
+}
+
+/* --- Hover text: hover:text-pink-* --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) .hover\:text-pink-500:hover,
+html[data-admin-theme]:not([data-admin-theme="rose"]) .hover\:text-pink-600:hover,
+html[data-admin-theme]:not([data-admin-theme="rose"]) .hover\:text-pink-700:hover,
+html[data-admin-theme]:not([data-admin-theme="rose"]) .hover\:text-pink-400:hover {
+  color: var(--primary) !important;
+}
+
+/* --- Hover bg: hover:bg-pink-* --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) .hover\:bg-pink-500:hover,
+html[data-admin-theme]:not([data-admin-theme="rose"]) .hover\:bg-pink-600:hover,
+html[data-admin-theme]:not([data-admin-theme="rose"]) .hover\:bg-pink-700:hover {
+  background-color: color-mix(in srgb, var(--primary) 90%, black) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) [class*="hover:bg-pink-500/"]:hover {
+  background-color: color-mix(in srgb, var(--primary) 20%, transparent) !important;
+}
+
+/* --- Shadow overrides: shadow-pink-* --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) .shadow-pink-500\/25 {
+  --tw-shadow-color: color-mix(in srgb, var(--primary) 25%, transparent) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .shadow-pink-500\/15 {
+  --tw-shadow-color: color-mix(in srgb, var(--primary) 15%, transparent) !important;
+}
+
+/* --- Focus overrides for branded controls --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) .focus\:border-pink-500:focus {
+  border-color: var(--primary) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) .focus\:ring-pink-500:focus {
+  --tw-ring-color: color-mix(in srgb, var(--primary) 40%, transparent) !important;
+}
+
+/* --- Peer-checked toggle: peer-checked:bg-pink-500 --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) .peer:checked ~ .peer-checked\:bg-pink-500 {
+  background-color: var(--primary) !important;
+}
+
+/* --- Checkbox / Radio active fill --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) input[type="checkbox"]:checked,
+html[data-admin-theme]:not([data-admin-theme="rose"]) input[type="radio"]:checked {
+  accent-color: var(--primary) !important;
+}
+
+/* --- Input focus glow: use primary var --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):focus,
+html[data-admin-theme]:not([data-admin-theme="rose"]) select:focus,
+html[data-admin-theme]:not([data-admin-theme="rose"]) textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent) !important;
+}
+
+/* --- Gradient FROM pink: from-pink-* --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) [class*="from-pink-"] {
+  --tw-gradient-from: var(--primary) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) [class*="to-pink-"] {
+  --tw-gradient-to: color-mix(in srgb, var(--primary) 85%, black) !important;
+}
+html[data-admin-theme]:not([data-admin-theme="rose"]) [class*="via-pink-"] {
+  --tw-gradient-via: color-mix(in srgb, var(--primary) 90%, white) !important;
+}
+
+/* --- Scrollbar thumb active color --- */
+html[data-admin-theme]:not([data-admin-theme="rose"]) ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary) !important;
 }
