@@ -1,7 +1,10 @@
 import axios, { AxiosInstance } from "axios";
 
 export const baseURL =
-  process.env.NEXT_PUBLIC_API_URL?.trim() || "http://localhost:5000/api";
+  process.env.NEXT_PUBLIC_API_URL?.trim() ||
+  (process.env.NODE_ENV === "production"
+    ? "https://giftcartrepo.onrender.com/api"
+    : "http://localhost:5000/api");
 
 export const getAuthToken = (): string => {
   if (typeof window === "undefined") return "";

@@ -1,38 +1,55 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { getUnviewedOrders, markOrderAsViewed } from "../services/adminService";
 import { useToast } from "../../context/ToastContext";
-import { Bell, Package, X, Moon } from "lucide-react";
+import { Package, X, Moon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { soundEffects } from "../utils/soundEffects";
+import { useLiveNotifications } from "../context/LiveNotificationContext";
+import type { UnviewedOrder } from "../services/adminService";
 
 export default function NotificationManager() {
-  const [newOrders, setNewOrders] = useState<any[]>([]);
-  const newOrdersRef = React.useRef<any[]>([]);
+  const [newOrders, setNewOrders] = useState<UnviewedOrder[]>([]);
+  const newOrdersRef = React.useRef<UnviewedOrder[]>([]);
   const { showToast } = useToast();
   const router = useRouter();
+  const { addNotification, markAsRead } = useLiveNotifications();
+  const isCheckingRef = React.useRef(false);
 
   // Sync ref with state
   useEffect(() => {
     newOrdersRef.current = newOrders;
   }, [newOrders]);
 
-  const checkOrders = async () => {
+  const checkOrders = useCallback(async () => {
+    if (isCheckingRef.current || document.visibilityState === "hidden") return;
+    isCheckingRef.current = true;
     try {
       const orders = await getUnviewedOrders();
-      if (orders && orders.length > 0) {
+      if (orders.length > 0) {
         // Filter out orders we already have in our local state to avoid multiple toasts for same order
-        const freshOrders = orders.filter((o: any) => !newOrdersRef.current.find((no) => no._id === o._id));
+        const freshOrders = orders.filter((order) => !newOrdersRef.current.some((seen) => seen._id === order._id));
 
         if (freshOrders.length > 0) {
-          freshOrders.forEach((order: any) => {
+          newOrdersRef.current = [...freshOrders, ...newOrdersRef.current];
+          setNewOrders((prev) => [...freshOrders, ...prev]);
+          freshOrders.forEach((order) => {
             const isMidnight = Boolean(order.deliverySlot?.name?.toLowerCase().includes("midnight"));
+            const customer = order.user?.name || "Customer";
+            addNotification({
+              id: `order-${order._id}`,
+              type: isMidnight ? "midnight" : "order",
+              title: `New Order #${String(order._id).slice(-5).toUpperCase()}`,
+              message: `${customer} placed an order worth ₹${order.totalAmount || 0}`,
+              link: `/orders/${order._id}`,
+              orderId: order._id,
+              amount: order.totalAmount,
+              customer,
+              createdAt: order.createdAt || new Date().toISOString(),
+            });
             if (isMidnight) {
-              soundEffects.playUrgentAlert();
               showToast(`🌙 Urgent Midnight Order from ${order.user?.name || "Customer"}!`, "info");
             } else {
-              soundEffects.playOrderChime();
               showToast(`🎂 New Order from ${order.user?.name || "Customer"}!`, "success");
             }
 
@@ -43,31 +60,41 @@ export default function NotificationManager() {
                   body: `${order.user?.name || "Customer"} - Total: ₹${order.totalAmount || 0}`,
                   icon: "/images/GiftFestive.png",
                 });
-              } catch (_) {}
+              } catch (error) {
+                console.warn("Browser notification display error:", error);
+              }
             }
           });
-          setNewOrders(orders);
         }
-      } else {
-        setNewOrders([]);
       }
     } catch (error) {
       console.error("Failed to check for new orders", error);
+    } finally {
+      isCheckingRef.current = false;
     }
-  };
+  }, [addNotification, showToast]);
 
   useEffect(() => {
-    checkOrders(); // Check immediately on mount
-    const interval = setInterval(() => {
-      checkOrders();
-    }, 15000); // Check every 15 seconds
+    void checkOrders();
+    const interval = window.setInterval(() => void checkOrders(), 15000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") void checkOrders();
+    };
+    window.addEventListener("focus", handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleVisibilityChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [checkOrders]);
 
   const handleDismiss = async (id: string) => {
     // Optimistically remove the notification first so the UI responds instantly
     setNewOrders((prev) => prev.filter((o) => o._id !== id));
+    newOrdersRef.current = newOrdersRef.current.filter((order) => order._id !== id);
+    markAsRead(`order-${id}`);
     
     try {
       await markOrderAsViewed(id);

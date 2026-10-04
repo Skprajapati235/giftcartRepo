@@ -270,15 +270,22 @@ export const deleteMultipleOrders = async (ids: string[]) => {
   return response.data;
 };
 
-export const getUnviewedOrders = async () => {
+export interface UnviewedOrder {
+  _id: string;
+  deliverySlot?: { name?: string };
+  user?: { name?: string };
+  totalAmount?: number;
+  createdAt?: string;
+}
+
+export const getUnviewedOrders = async (): Promise<UnviewedOrder[]> => {
   const token = getAuthToken();
   if (!token) return [];
-  try {
-    const response = await authApi(token).get("/order/admin/unviewed");
-    return response.data;
-  } catch (error) {
-    return [];
+  const response = await authApi(token).get("/order/admin/unviewed");
+  if (!Array.isArray(response.data)) {
+    throw new Error("Unexpected response while fetching unviewed orders");
   }
+  return response.data;
 };
 
 export const markOrderAsViewed = async (id: string) => {
@@ -456,4 +463,3 @@ export * from "./testimonialService";
 
 // Gallery API re-exports
 export * from "./galleryService";
-

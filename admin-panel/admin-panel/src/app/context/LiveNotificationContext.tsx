@@ -1,8 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from "react";
 import { soundEffects } from "../utils/soundEffects";
-import { getUnviewedOrders, markOrderAsViewed } from "../services/adminService";
 
 export interface LiveNotification {
   id: string;
@@ -28,6 +27,7 @@ interface LiveNotificationContextType {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearAll: () => void;
+  addNotification: (notification: Omit<LiveNotification, "id" | "read"> & { id?: string }) => void;
   triggerTestOrder: () => void;
 }
 
@@ -41,49 +41,16 @@ const LiveNotificationContext = createContext<LiveNotificationContextType>({
   markAsRead: () => {},
   markAllAsRead: () => {},
   clearAll: () => {},
+  addNotification: () => {},
   triggerTestOrder: () => {},
 });
 
 export const LiveNotificationProvider = ({ children }: { children: ReactNode }) => {
-  const [notifications, setNotifications] = useState<LiveNotification[]>([
-    {
-      id: "init-1",
-      type: "midnight",
-      title: "Midnight Cake Priority Alert",
-      message: "Order #9824 requires dispatch by 11:30 PM for Sector 15 Faridabad.",
-      createdAt: Date.now() - 10 * 60 * 1000,
-      timestamp: "10 mins ago",
-      read: false,
-      link: "/orders",
-      amount: 899,
-      customer: "Aarav Sharma",
-    },
-    {
-      id: "init-2",
-      type: "order",
-      title: "New Pre-paid Order",
-      message: "Payment confirmed via Razorpay for Chocolate Truffle Cake.",
-      createdAt: Date.now() - 25 * 60 * 1000,
-      timestamp: "25 mins ago",
-      read: false,
-      link: "/orders",
-      amount: 649,
-      customer: "Pooja Malhotra",
-    },
-    {
-      id: "init-3",
-      type: "stock",
-      title: "Low Inventory Warning",
-      message: "Red Velvet Flavor Stock is below threshold (only 2 left).",
-      createdAt: Date.now() - 60 * 60 * 1000,
-      timestamp: "1 hour ago",
-      read: true,
-      link: "/inventory",
-    },
-  ]);
+  const [notifications, setNotifications] = useState<LiveNotification[]>([]);
 
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission | "default">("default");
+  const notificationIds = useRef(new Set<string>());
 
   useEffect(() => {
     setIsMuted(soundEffects.getMuted());
@@ -128,11 +95,15 @@ export const LiveNotificationProvider = ({ children }: { children: ReactNode }) 
     }
   };
 
-  const addNotification = (notif: Omit<LiveNotification, "id" | "read"> & { id?: string; createdAt?: number | string }) => {
+  const addNotification = (notif: Omit<LiveNotification, "id" | "read"> & { id?: string }) => {
     const now = Date.now();
+    const id = notif.id || `notif-${now}`;
+    if (notificationIds.current.has(id)) return;
+    notificationIds.current.add(id);
+
     const newEntry: LiveNotification = {
       ...notif,
-      id: notif.id || ("notif-" + now),
+      id,
       createdAt: notif.createdAt || now,
       timestamp: notif.timestamp || "Just now",
       read: false,
@@ -151,37 +122,6 @@ export const LiveNotificationProvider = ({ children }: { children: ReactNode }) 
     // Push notification
     sendBrowserNotification(notif.title, notif.message);
   };
-
-  // Poll for actual unviewed orders
-  useEffect(() => {
-    let isMounted = true;
-    const checkLiveOrders = async () => {
-      try {
-        const orders = await getUnviewedOrders();
-        if (orders && orders.length > 0 && isMounted) {
-          orders.forEach((order: any) => {
-            addNotification({
-              type: order.deliverySlot?.name?.toLowerCase().includes("midnight") ? "midnight" : "order",
-              title: `New Order #${(order._id || "").slice(-5).toUpperCase()}`,
-              message: `${order.user?.name || "Customer"} placed an order worth ₹${order.totalAmount || 0}`,
-              link: `/orders/${order._id}`,
-              orderId: order._id,
-              amount: order.totalAmount,
-              customer: order.user?.name || "Customer",
-              createdAt: order.createdAt || new Date().toISOString(),
-            });
-            markOrderAsViewed(order._id).catch(() => {});
-          });
-        }
-      } catch (_) {}
-    };
-
-    const interval = setInterval(checkLiveOrders, 20000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, []);
 
   const triggerTestOrder = () => {
     const names = ["Simran Kaur", "Vikas Verma", "Deepak Gupta", "Rohan Mehta", "Ananya Joshi"];
@@ -228,6 +168,7 @@ export const LiveNotificationProvider = ({ children }: { children: ReactNode }) 
         markAsRead,
         markAllAsRead,
         clearAll,
+        addNotification,
         triggerTestOrder,
       }}
     >
