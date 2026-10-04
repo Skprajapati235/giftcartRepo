@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Bell,
   Volume2,
@@ -16,10 +17,14 @@ import {
   ExternalLink,
   Trash2,
   Send,
+  Clock,
+  ArrowRight,
 } from "lucide-react";
 import { useLiveNotifications, LiveNotification } from "../../context/LiveNotificationContext";
+import { getRelativeTime } from "../../utils/timeAgo";
 
 export default function NotificationCenterDropdown() {
+  const router = useRouter();
   const {
     notifications,
     unreadCount,
@@ -36,6 +41,13 @@ export default function NotificationCenterDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "order" | "midnight" | "stock">("all");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleNotificationClick = (item: LiveNotification) => {
+    markAsRead(item.id);
+    setIsOpen(false);
+    const targetUrl = item.link || (item.orderId ? `/orders/${item.orderId}` : "/orders");
+    router.push(targetUrl);
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -183,12 +195,13 @@ export default function NotificationCenterDropdown() {
               filteredList.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => markAsRead(item.id)}
+                  onClick={() => handleNotificationClick(item)}
                   className={`group relative flex items-start gap-3 rounded-2xl p-3 transition cursor-pointer ${
                     item.read
                       ? "hover:bg-hover-theme/60 opacity-80"
                       : "bg-pink-500/5 hover:bg-pink-500/10 border border-pink-500/10"
                   }`}
+                  title="Click to view order and details"
                 >
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${
@@ -204,26 +217,37 @@ export default function NotificationCenterDropdown() {
 
                   <div className="flex-1 min-w-0 space-y-0.5">
                     <div className="flex items-center justify-between gap-1">
-                      <p className="text-xs font-bold text-foreground truncate">{item.title}</p>
-                      <span className="text-[9px] text-slate-400 shrink-0">{item.timestamp}</span>
+                      <p className="text-xs font-bold text-foreground truncate group-hover:text-pink-600 transition-colors">
+                        {item.title}
+                      </p>
+                      <span className="text-[10px] font-semibold text-pink-600 dark:text-pink-400 shrink-0 flex items-center gap-1 bg-pink-500/10 px-1.5 py-0.5 rounded">
+                        <Clock size={10} className="text-pink-500" />
+                        {getRelativeTime(item.createdAt || item.timestamp)}
+                      </span>
                     </div>
 
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
                       {item.message}
                     </p>
 
-                    {item.amount && (
-                      <div className="flex items-center gap-2 pt-1">
-                        <span className="text-[10px] font-extrabold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
-                          ₹{item.amount}
-                        </span>
-                        {item.customer && (
-                          <span className="text-[10px] text-slate-400 truncate">
-                            by {item.customer}
+                    <div className="flex items-center justify-between pt-1 text-[10px]">
+                      {item.amount ? (
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-extrabold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded-md">
+                            ₹{item.amount}
                           </span>
-                        )}
-                      </div>
-                    )}
+                          {item.customer && (
+                            <span className="text-slate-400 truncate max-w-[110px]">
+                              by {item.customer}
+                            </span>
+                          )}
+                        </div>
+                      ) : <span />}
+
+                      <span className="text-pink-500 font-bold flex items-center gap-0.5 opacity-90 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+                        View Order <ArrowRight size={11} />
+                      </span>
+                    </div>
                   </div>
 
                   {!item.read && (
@@ -238,21 +262,35 @@ export default function NotificationCenterDropdown() {
           <div className="p-3 border-t border-border-theme flex items-center justify-between bg-card text-xs">
             <button
               type="button"
-              onClick={markAllAsRead}
-              className="flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-foreground transition"
+              onClick={() => {
+                setIsOpen(false);
+                router.push("/orders");
+              }}
+              className="flex items-center gap-1 text-[11px] font-bold text-pink-600 hover:text-pink-700 dark:text-pink-400 transition"
             >
-              <CheckCheck className="h-3.5 w-3.5 text-pink-500" />
-              <span>Mark all read</span>
+              <Package className="h-3.5 w-3.5" />
+              <span>View All Orders →</span>
             </button>
 
-            <button
-              type="button"
-              onClick={clearAll}
-              className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-rose-500 transition"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              <span>Clear</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={markAllAsRead}
+                className="flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-foreground transition"
+              >
+                <CheckCheck className="h-3.5 w-3.5 text-pink-500" />
+                <span>Mark all read</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={clearAll}
+                className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-rose-500 transition"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Clear</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

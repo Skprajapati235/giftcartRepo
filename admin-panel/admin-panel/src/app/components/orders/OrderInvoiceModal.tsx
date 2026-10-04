@@ -216,6 +216,26 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
                         </td>
                       </tr>
                     ))}
+                    {Array.isArray(order.addons) && order.addons.map((ad: any, idx: number) => (
+                      <tr key={`addon-${idx}`} className="bg-pink-50/40">
+                        <td className="py-2.5 px-3 text-pink-500 font-bold">{items.length + idx + 1}</td>
+                        <td className="py-2.5 px-3">
+                          <p className="font-bold text-slate-900">{ad.name}</p>
+                          <span className="text-[10px] text-pink-600 font-bold">
+                            ✨ Celebration Add-on {ad.category ? `• ${ad.category}` : ''}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center font-bold text-slate-800">
+                          {ad.quantity || 1}
+                        </td>
+                        <td className="py-2.5 px-3 text-right text-slate-700">
+                          ₹{ad.price || 0}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-black text-slate-900">
+                          ₹{(ad.price || 0) * (ad.quantity || 1)}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -308,7 +328,7 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
                           Message on Cake Inscription:
                         </span>
                         <p className="text-sm font-black text-slate-900 italic">
-                          "{it.cakeMessage || "Happy Birthday!"}"
+                          "{order.messageOnCake || it.cakeMessage || "Happy Birthday!"}"
                         </p>
                       </div>
                     </div>
@@ -318,6 +338,30 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
                   </div>
                 ))}
               </div>
+
+              {/* Celebration Add-ons to Pack */}
+              {Array.isArray(order.addons) && order.addons.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                    <span>✨ Celebration Add-ons to Pack:</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {order.addons.map((ad: any, idx: number) => (
+                      <div key={idx} className="p-3 rounded-xl border border-purple-300 bg-purple-50/70 flex items-center justify-between">
+                        <div>
+                          <span className="font-bold text-slate-900 text-sm block">{ad.name}</span>
+                          {ad.category && (
+                            <span className="text-[10px] text-purple-600 font-semibold">{ad.category}</span>
+                          )}
+                        </div>
+                        <span className="rounded-lg bg-purple-700 text-white text-xs font-black px-2.5 py-1">
+                          x{ad.quantity || 1}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Kitchen Checklist */}
               <div className="rounded-2xl border border-slate-300 bg-slate-50 p-4 space-y-2">

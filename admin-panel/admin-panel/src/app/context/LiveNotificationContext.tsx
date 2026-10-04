@@ -9,9 +9,11 @@ export interface LiveNotification {
   type: "order" | "midnight" | "stock" | "support";
   title: string;
   message: string;
-  timestamp: string;
+  timestamp?: string;
+  createdAt: number | string;
   read: boolean;
   link?: string;
+  orderId?: string;
   amount?: number;
   customer?: string;
 }
@@ -49,6 +51,7 @@ export const LiveNotificationProvider = ({ children }: { children: ReactNode }) 
       type: "midnight",
       title: "Midnight Cake Priority Alert",
       message: "Order #9824 requires dispatch by 11:30 PM for Sector 15 Faridabad.",
+      createdAt: Date.now() - 10 * 60 * 1000,
       timestamp: "10 mins ago",
       read: false,
       link: "/orders",
@@ -60,6 +63,7 @@ export const LiveNotificationProvider = ({ children }: { children: ReactNode }) 
       type: "order",
       title: "New Pre-paid Order",
       message: "Payment confirmed via Razorpay for Chocolate Truffle Cake.",
+      createdAt: Date.now() - 25 * 60 * 1000,
       timestamp: "25 mins ago",
       read: false,
       link: "/orders",
@@ -71,6 +75,7 @@ export const LiveNotificationProvider = ({ children }: { children: ReactNode }) 
       type: "stock",
       title: "Low Inventory Warning",
       message: "Red Velvet Flavor Stock is below threshold (only 2 left).",
+      createdAt: Date.now() - 60 * 60 * 1000,
       timestamp: "1 hour ago",
       read: true,
       link: "/inventory",
@@ -123,12 +128,15 @@ export const LiveNotificationProvider = ({ children }: { children: ReactNode }) 
     }
   };
 
-  const addNotification = (notif: Omit<LiveNotification, "id" | "timestamp" | "read">) => {
+  const addNotification = (notif: Omit<LiveNotification, "id" | "read"> & { id?: string; createdAt?: number | string }) => {
+    const now = Date.now();
     const newEntry: LiveNotification = {
       ...notif,
-      id: "notif-" + Date.now(),
-      timestamp: "Just now",
+      id: notif.id || ("notif-" + now),
+      createdAt: notif.createdAt || now,
+      timestamp: notif.timestamp || "Just now",
       read: false,
+      link: notif.link || "/orders",
     };
 
     setNotifications((prev) => [newEntry, ...prev]);
@@ -156,9 +164,11 @@ export const LiveNotificationProvider = ({ children }: { children: ReactNode }) 
               type: order.deliverySlot?.name?.toLowerCase().includes("midnight") ? "midnight" : "order",
               title: `New Order #${(order._id || "").slice(-5).toUpperCase()}`,
               message: `${order.user?.name || "Customer"} placed an order worth ₹${order.totalAmount || 0}`,
-              link: "/orders",
+              link: `/orders/${order._id}`,
+              orderId: order._id,
               amount: order.totalAmount,
               customer: order.user?.name || "Customer",
+              createdAt: order.createdAt || new Date().toISOString(),
             });
             markOrderAsViewed(order._id).catch(() => {});
           });
@@ -188,6 +198,7 @@ export const LiveNotificationProvider = ({ children }: { children: ReactNode }) 
       link: "/orders",
       amount: randomAmount,
       customer: randomName,
+      createdAt: Date.now(),
     });
   };
 

@@ -80,11 +80,12 @@ export default function ForgotPasswordPage() {
                 <input
                   type="email"
                   required
+                  autoComplete="email"
                   placeholder="admin@giftfestive.com"
                   value={email}
                   disabled={sent}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-11 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 pl-10 pr-3.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all font-medium disabled:opacity-60"
+                  className="auth-input w-full h-11 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 pl-10 pr-3.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all font-medium disabled:opacity-60"
                 />
               </div>
             </div>
@@ -102,7 +103,7 @@ export default function ForgotPasswordPage() {
                     placeholder="6-digit OTP code"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                    className="w-full h-11 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 px-3.5 text-sm text-center font-mono tracking-widest text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all"
+                    className="auth-input w-full h-11 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 px-3.5 text-sm text-center font-mono tracking-widest text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all"
                   />
                 </div>
 
@@ -115,10 +116,11 @@ export default function ForgotPasswordPage() {
                     <input
                       type="password"
                       required
+                      autoComplete="new-password"
                       placeholder="At least 8+ characters"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full h-11 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 pl-10 pr-3.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all font-medium"
+                      className="auth-input w-full h-11 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 pl-10 pr-3.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all font-medium"
                     />
                   </div>
                 </div>
@@ -132,10 +134,11 @@ export default function ForgotPasswordPage() {
                     <input
                       type="password"
                       required
+                      autoComplete="new-password"
                       placeholder="Repeat new password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full h-11 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 pl-10 pr-3.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all font-medium"
+                      className="auth-input w-full h-11 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 pl-10 pr-3.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 focus:ring-4 focus:ring-pink-500/10 transition-all font-medium"
                     />
                   </div>
                 </div>

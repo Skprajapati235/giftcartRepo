@@ -2,12 +2,13 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ShoppingCart, MoreHorizontal, Eye, Download, AlertTriangle, CheckCircle2, XCircle, Clock, Truck, ShieldAlert, FileSpreadsheet, Printer } from "lucide-react";
+import { Search, ShoppingCart, MoreHorizontal, Eye, Download, AlertTriangle, CheckCircle2, XCircle, Clock, Truck, ShieldAlert, FileSpreadsheet, Printer, Sparkles } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 import { adminTableWrapClass, adminTableWideClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
 import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 import OrderInvoiceModal from "./OrderInvoiceModal";
+import { getRelativeTime } from "../../utils/timeAgo";
 
 export const isOrderPaymentIncomplete = (order: any): boolean => {
   if (!order) return false;
@@ -308,20 +309,43 @@ export default function OrderList({
                         className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/30 cursor-pointer"
                       />
                     </td>
-                    <td className="px-6 py-5 w-[18%]">
+                    <td className="px-6 py-5 w-[20%]">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg shrink-0 ${
+                        <div className={`p-2.5 rounded-xl shrink-0 ${
                           isIncomplete 
                             ? 'bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400' 
                             : 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400'
                         }`}>
                           <ShoppingCart size={16} />
                         </div>
-                        <div>
-                          <span className="font-mono text-xs text-slate-500 uppercase font-bold tracking-widest">#{order._id.slice(-6)}</span>
-                          {isIncomplete && (
-                            <div className="text-[9px] font-black text-rose-500 uppercase tracking-tighter">
-                              Uncompleted
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <Link
+                              href={`/orders/${order._id}`}
+                              className="font-mono text-xs text-primary hover:underline font-extrabold uppercase tracking-wider"
+                              title="Click to view order details"
+                            >
+                              #{order._id.slice(-6)}
+                            </Link>
+                            {isIncomplete && (
+                              <span className="text-[9px] font-black text-rose-500 uppercase tracking-tighter bg-rose-50 px-1 py-0.5 rounded">
+                                Unpaid
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Time Elapsed Badge ("kitne time ho gaye") */}
+                          <div 
+                            className="mt-1 inline-flex items-center gap-1 text-[10px] font-extrabold text-pink-600 dark:text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-md border border-pink-500/20"
+                            title={order.createdAt ? `Placed: ${new Date(order.createdAt).toLocaleString('en-IN')}` : 'Order time'}
+                          >
+                            <Clock size={10} className="shrink-0 text-pink-500 animate-pulse" />
+                            <span>{getRelativeTime(order.createdAt)}</span>
+                          </div>
+
+                          {order.createdAt && (
+                            <div className="text-[10px] text-slate-400 font-medium pl-0.5 mt-0.5">
+                              {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           )}
                         </div>
@@ -337,6 +361,25 @@ export default function OrderList({
                            </span>
                          )}
                       </div>
+                      {/* Celebration Add-ons Badge */}
+                      {Array.isArray(order.addons) && order.addons.length > 0 && (
+                        <div 
+                          className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-purple-500/10 border border-purple-500/25 text-purple-700 dark:text-purple-300 text-[10px] font-extrabold shadow-2xs"
+                          title={`Add-ons: ${order.addons.map((a: any) => a.name + (a.quantity ? ` (x${a.quantity})` : '')).join(', ')}`}
+                        >
+                          <Sparkles size={11} className="text-purple-500 shrink-0" />
+                          <span>+{order.addons.length} Add-on{order.addons.length > 1 ? 's' : ''}</span>
+                        </div>
+                      )}
+                      {/* Cake Message Indicator */}
+                      {order.messageOnCake && (
+                        <div 
+                          className="mt-1 text-[10px] font-semibold text-pink-600 dark:text-pink-400 truncate max-w-[170px]"
+                          title={`Cake message: "${order.messageOnCake}"`}
+                        >
+                          🎂 "{order.messageOnCake}"
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-5 w-[14%]">
                       <div className="flex flex-col gap-1">

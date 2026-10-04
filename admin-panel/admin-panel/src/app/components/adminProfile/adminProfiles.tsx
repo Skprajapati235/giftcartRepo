@@ -18,6 +18,10 @@ import {
   Save,
   CheckCircle2,
   ShieldAlert,
+  UserPlus,
+  User,
+  Mail,
+  Plus,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../context/AuthContext";
@@ -109,6 +113,36 @@ const DEFAULT_PERMISSIONS: RolePermission[] = [
   },
 ];
 
+const getRoleBadgeStyle = (role: string = "") => {
+  switch (role.toLowerCase()) {
+    case "kitchen_manager":
+      return "bg-orange-500/10 text-orange-500 border-orange-500/20";
+    case "delivery_coordinator":
+      return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+    case "support_agent":
+      return "bg-cyan-500/10 text-cyan-500 border-cyan-500/20";
+    case "seo_specialist":
+      return "bg-purple-500/10 text-purple-500 border-purple-500/20";
+    default:
+      return "bg-pink-500/10 text-pink-500 border-pink-500/20";
+  }
+};
+
+const getRoleDisplayName = (role: string = "") => {
+  switch (role.toLowerCase()) {
+    case "kitchen_manager":
+      return "👨‍🍳 Kitchen Manager";
+    case "delivery_coordinator":
+      return "🛵 Fleet Coordinator";
+    case "support_agent":
+      return "🎧 Support Agent";
+    case "seo_specialist":
+      return "📈 SEO Specialist";
+    default:
+      return "👑 Super Admin";
+  }
+};
+
 export default function AdminsPage() {
   const {
     data: admins,
@@ -132,8 +166,46 @@ export default function AdminsPage() {
   const [deleting, setDeleting] = useState(false);
   const [permissions, setPermissions] = useState<RolePermission[]>(DEFAULT_PERMISSIONS);
   const [savingMatrix, setSavingMatrix] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [creatingStaff, setCreatingStaff] = useState(false);
+  const [staffForm, setStaffForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "kitchen_manager",
+    city: "Faridabad Hub",
+  });
   const { showToast } = useToast();
   const router = useRouter();
+
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!staffForm.name || !staffForm.email || !staffForm.password) {
+      showToast("Please fill all required fields", "error");
+      return;
+    }
+    setCreatingStaff(true);
+    try {
+      await service.registerAdmin(staffForm);
+      showToast(`Staff account created for ${staffForm.name}!`, "success");
+      setShowAddModal(false);
+      setStaffForm({
+        name: "",
+        email: "",
+        password: "",
+        role: "kitchen_manager",
+        city: "Faridabad Hub",
+      });
+      refresh();
+    } catch (err: any) {
+      showToast(
+        err.response?.data?.message || err.message || "Failed to create staff account",
+        "error"
+      );
+    } finally {
+      setCreatingStaff(false);
+    }
+  };
 
   useRowActionMenu(openMenuId, setOpenMenuId);
 
@@ -380,8 +452,18 @@ export default function AdminsPage() {
                 className="w-full pl-4 pr-4 py-2.5 rounded-2xl border border-border-theme bg-background text-sm outline-none focus:ring-2 focus:ring-pink-500/20"
               />
             </div>
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-background px-4 py-2.5 rounded-2xl border border-border-theme font-sans">
-              Total Admins: {total}
+            <div className="flex items-center gap-3">
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest bg-background px-4 py-2.5 rounded-2xl border border-border-theme font-sans">
+                Total Staff: {total}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 rounded-2xl bg-pink-500 px-4 py-2.5 text-xs font-bold text-white shadow-md shadow-pink-500/20 hover:bg-pink-600 active:scale-95 transition cursor-pointer"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span>+ Add Staff Account</span>
+              </button>
             </div>
           </div>
 
@@ -418,8 +500,8 @@ export default function AdminsPage() {
                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400 truncate">{admin.email}</td>
                       <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{admin.city || "—"}</td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex rounded-xl bg-pink-500/10 border border-pink-500/20 px-2.5 py-1 text-xs font-bold text-pink-500">
-                          {admin.role || "Admin"}
+                        <span className={`inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1 text-xs font-bold shadow-2xs ${getRoleBadgeStyle(admin.role)}`}>
+                          {getRoleDisplayName(admin.role)}
                         </span>
                       </td>
                       <td className={`${adminTableBodyCellClass} text-right`}>
@@ -482,6 +564,131 @@ export default function AdminsPage() {
             itemName={adminToDelete?.name}
             isLoading={deleting}
           />
+        </div>
+      )}
+
+      {/* Add Staff Account Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-lg rounded-3xl border border-border-theme bg-card p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-border-theme pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-pink-500/10 text-pink-500 border border-pink-500/20">
+                  <UserPlus className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-foreground">Create Staff Account</h3>
+                  <p className="text-xs text-slate-400">Assign dedicated credentials and role permissions</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="rounded-xl p-2 text-slate-400 hover:bg-hover-theme transition cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateStaff} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500 mb-1.5 block">Staff Full Name</label>
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    value={staffForm.name}
+                    onChange={(e) => setStaffForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g. Ramesh Chef or Sunil Rider"
+                    className="w-full rounded-2xl border border-border-theme bg-background pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-pink-500/20"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 mb-1.5 block">Staff Work Email (Login ID)</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    value={staffForm.email}
+                    onChange={(e) => setStaffForm((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="e.g. ramesh.chef@giftfestive.com"
+                    className="w-full rounded-2xl border border-border-theme bg-background pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-pink-500/20"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 mb-1.5 block">Account Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    value={staffForm.password}
+                    onChange={(e) => setStaffForm((prev) => ({ ...prev, password: e.target.value }))}
+                    placeholder="Minimum 6 characters"
+                    className="w-full rounded-2xl border border-border-theme bg-background pl-10 pr-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-pink-500/20"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-500 mb-1.5 block">Assign Department Role</label>
+                  <div className="relative">
+                    <select
+                      value={staffForm.role}
+                      onChange={(e) => setStaffForm((prev) => ({ ...prev, role: e.target.value }))}
+                      className="w-full rounded-2xl border border-border-theme bg-background px-3 py-2.5 text-xs text-foreground font-semibold outline-none focus:ring-2 focus:ring-pink-500/20"
+                    >
+                      <option value="kitchen_manager">👨‍🍳 Kitchen Manager (Baking Board)</option>
+                      <option value="delivery_coordinator">🛵 Fleet Coordinator (Delivery)</option>
+                      <option value="support_agent">🎧 Support Agent (Abandoned Carts)</option>
+                      <option value="seo_specialist">📈 SEO Specialist (Theme & Promos)</option>
+                      <option value="super_admin">👑 Super Admin (Full Control)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-500 mb-1.5 block">Operating Branch / Hub</label>
+                  <input
+                    type="text"
+                    value={staffForm.city}
+                    onChange={(e) => setStaffForm((prev) => ({ ...prev, city: e.target.value }))}
+                    placeholder="e.g. Faridabad Hub"
+                    className="w-full rounded-2xl border border-border-theme bg-background px-4 py-2.5 text-xs text-foreground outline-none focus:ring-2 focus:ring-pink-500/20"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-2xl bg-background/80 border border-border-theme text-[11px] text-slate-400 space-y-1">
+                <p className="font-bold text-foreground">🔒 RBAC Security Enforced:</p>
+                <p>This staff member will ONLY be able to access their assigned workstations and will be blocked with a 403 Forbidden screen on other modules.</p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="rounded-xl border border-border-theme bg-background px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-hover-theme transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={creatingStaff}
+                  className="flex items-center gap-2 rounded-xl bg-pink-500 px-5 py-2 text-xs font-bold text-white shadow-md shadow-pink-500/20 hover:bg-pink-600 active:scale-95 transition cursor-pointer disabled:opacity-50"
+                >
+                  {creatingStaff ? "Creating Account..." : "Create Staff Account"}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

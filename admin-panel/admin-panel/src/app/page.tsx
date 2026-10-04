@@ -227,6 +227,7 @@ export default function Home() {
                     <input
                       type="email"
                       required
+                      autoComplete="email"
                       placeholder="Enter your email"
                       value={form.email}
                       onChange={(e) =>
@@ -235,7 +236,7 @@ export default function Home() {
                           email: e.target.value,
                         })
                       }
-                      className="w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
+                      className="auth-input w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
                     />
                   </div>
                 </div>
@@ -260,6 +261,7 @@ export default function Home() {
                     <input
                       type={showPassword ? "text" : "password"}
                       required
+                      autoComplete="current-password"
                       placeholder="Enter password"
                       value={form.password}
                       onChange={(e) =>
@@ -268,7 +270,7 @@ export default function Home() {
                           password: e.target.value,
                         })
                       }
-                      className="w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
+                      className="auth-input w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
                     />
                     <button
                       type="button"

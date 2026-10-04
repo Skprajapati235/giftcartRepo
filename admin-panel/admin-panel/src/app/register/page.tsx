@@ -151,10 +151,11 @@ export default function RegisterPage() {
                     <input
                       type="text"
                       required
+                      autoComplete="name"
                       placeholder="Enter username"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
+                      className="auth-input w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
                     />
                   </div>
                 </div>
@@ -171,10 +172,11 @@ export default function RegisterPage() {
                     <input
                       type="email"
                       required
+                      autoComplete="email"
                       placeholder="Enter your email"
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
+                      className="auth-input w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
                     />
                   </div>
                 </div>
@@ -192,10 +194,11 @@ export default function RegisterPage() {
                       <input
                         type={showPassword ? "text" : "password"}
                         required
+                        autoComplete="new-password"
                         placeholder="Enter password"
                         value={form.password}
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        className="w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
+                        className="auth-input w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
                       />
                       <button
                         type="button"
@@ -219,10 +222,11 @@ export default function RegisterPage() {
                       <input
                         type={showConfirmPassword ? "text" : "password"}
                         required
+                        autoComplete="new-password"
                         placeholder="Confirm password"
                         value={form.confirmPassword}
                         onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                        className="w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
+                        className="auth-input w-full h-11 rounded-xl bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 pl-10 pr-10 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 outline-none focus:border-pink-500 dark:focus:border-pink-500 focus:ring-4 focus:ring-pink-500/15 transition-all font-medium shadow-sm"
                       />
                       <button
                         type="button"

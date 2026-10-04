@@ -5,7 +5,17 @@ import { useParams, useRouter } from "next/navigation";
 import { getOrderDetail } from "../../services/adminService";
 import { useTheme } from "../../context/ThemeContext";
 import { RowSkeleton } from "../skeletonLoader/commonSkeleton";
-import { AlertTriangle, CheckCircle2, XCircle, Clock, Truck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, Clock, Truck, Sparkles, Gift, Heart, MessageSquare } from "lucide-react";
+import { getRelativeTime, getDetailedElapsedTime, formatOrderDateTime } from "../../utils/timeAgo";
+
+export interface AddonItem {
+  _id?: string;
+  name: string;
+  price: number;
+  quantity?: number;
+  image?: string;
+  category?: string;
+}
 
 interface OrderItem {
   product: { image: string; name: string };
@@ -52,6 +62,18 @@ interface OrderDetailData {
     pinCode: string;
   };
   items: OrderItem[];
+  addons?: AddonItem[];
+  messageOnCake?: string;
+  cardMessage?: string;
+  senderName?: string;
+  recipientName?: string;
+  deliverySlot?: {
+    slotName?: string;
+    slotType?: string;
+    timeRange?: string;
+    extraCharge?: number;
+    deliveryDate?: string;
+  };
   createdAt: string;
   whatsappLogs?: Array<{
     event?: string;
@@ -142,6 +164,10 @@ export default function OrderDetailView() {
   // Shipping is a flat, one-time charge per cart line (not per unit).
   const totalShipping = itemsBreakdown.reduce((s, b) => s + b.shipping, 0);
   const couponDiscount = Number(order.discountAmount || 0);
+  const addonsTotal = (order.addons || []).reduce(
+    (acc, a) => acc + (Number(a.price || 0) * (Number(a.quantity) || 1)),
+    0
+  );
 
   const isOrderPaymentIncomplete = (order: OrderDetailData): boolean => {
     if (!order) return false;
@@ -164,13 +190,13 @@ export default function OrderDetailView() {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Order Details</h1>
-          <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             <span>Home</span>
             <span>›</span>
             <span>Orders</span>
             <span>›</span>
-            <span className="font-mono text-slate-700">#{order._id.slice(-8).toUpperCase()}</span>
-            <span className={`ml-2 rounded-lg px-3 py-1 text-xs font-bold text-white ${
+            <span className="font-mono text-slate-700 dark:text-slate-200 font-bold">#{order._id.slice(-8).toUpperCase()}</span>
+            <span className={`ml-1 rounded-lg px-3 py-1 text-xs font-bold text-white ${
               orderStatus === 'Delivered' ? 'bg-green-600' :
               orderStatus === 'Cancelled' ? 'bg-red-600' :
               orderStatus === 'Out for Delivery' ? 'bg-orange-500' :
@@ -183,10 +209,24 @@ export default function OrderDetailView() {
               {orderStatus}
             </span>
             {isIncomplete && (
-              <span className="ml-2 inline-flex items-center gap-1 rounded-lg bg-rose-500/10 px-2.5 py-1 text-xs font-black text-rose-600 border border-rose-500/20">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-rose-500/10 px-2.5 py-1 text-xs font-black text-rose-600 border border-rose-500/20">
                 <AlertTriangle size={12} />
                 User Backed Out
               </span>
+            )}
+
+            {/* Arrived Elapsed Time Badge */}
+            {order.createdAt && (
+              <div 
+                className="inline-flex items-center gap-1.5 rounded-xl bg-pink-500/10 border border-pink-500/20 px-3 py-1 text-xs font-extrabold text-pink-600 dark:text-pink-400 shadow-xs"
+                title={`Order arrival time: ${new Date(order.createdAt).toLocaleString('en-IN')}`}
+              >
+                <Clock size={13} className="text-pink-500 animate-pulse" />
+                <span>Arrived: {getRelativeTime(order.createdAt)}</span>
+                <span className="text-slate-400 font-medium hidden sm:inline">
+                  • {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -301,6 +341,105 @@ export default function OrderDetailView() {
             </div>
           </section>
 
+          {/* ── Celebration Add-ons ── */}
+          {order.addons && order.addons.length > 0 && (
+            <section className={`rounded-2xl border p-6 shadow-sm ${cardBg}`}>
+              <div className="flex items-center justify-between mb-6 pb-3 border-b border-border-theme">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-500/10 text-pink-500">
+                    <Sparkles className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-foreground">Celebration Add-ons</h2>
+                    <p className="text-xs text-slate-400">Extra party items & accessories requested with this order</p>
+                  </div>
+                </div>
+                <span className="rounded-xl bg-pink-500/10 border border-pink-500/20 px-3 py-1 text-xs font-black text-pink-600 dark:text-pink-400">
+                  {order.addons.length} Add-on{order.addons.length > 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {order.addons.map((addon, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3.5 p-3.5 rounded-xl border border-border-theme bg-background/50 hover:bg-hover-theme/60 transition"
+                  >
+                    <div className="h-14 w-14 rounded-xl bg-slate-100 dark:bg-slate-800 border border-border-theme overflow-hidden shrink-0 flex items-center justify-center relative">
+                      {addon.image ? (
+                        <img src={addon.image} alt={addon.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <Gift className="h-6 w-6 text-pink-500" />
+                      )}
+                      {addon.quantity && addon.quantity > 1 && (
+                        <span className="absolute bottom-1 right-1 bg-pink-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                          x{addon.quantity}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-bold text-foreground truncate">{addon.name}</h4>
+                      {addon.category && (
+                        <span className="inline-block mt-0.5 text-[10px] font-extrabold uppercase tracking-wider text-pink-500 bg-pink-500/10 px-1.5 py-0.5 rounded">
+                          {addon.category}
+                        </span>
+                      )}
+                      <div className="flex items-center justify-between mt-1 text-xs">
+                        <span className="text-slate-400 font-medium">
+                          Qty: <strong className="text-slate-700 dark:text-slate-300">{addon.quantity || 1}</strong>
+                        </span>
+                        <span className="font-black text-pink-600 dark:text-pink-400">
+                          ₹{Number(addon.price || 0) * (Number(addon.quantity) || 1)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── Custom Messages & Greetings ── */}
+          {(order.messageOnCake || order.cardMessage || order.recipientName || order.senderName) && (
+            <section className={`rounded-2xl border p-6 shadow-sm ${cardBg}`}>
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border-theme">
+                <Heart className="h-5 w-5 text-rose-500" />
+                <h2 className="text-lg font-bold text-foreground">Celebration Customization & Message</h2>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {order.messageOnCake && (
+                  <div className="p-4 rounded-xl border border-pink-500/20 bg-pink-500/5">
+                    <div className="text-[11px] font-extrabold uppercase tracking-wider text-pink-600 dark:text-pink-400 mb-1 flex items-center gap-1.5">
+                      <span>🎂 Message on Cake</span>
+                    </div>
+                    <p className="text-sm font-black text-foreground italic">
+                      "{order.messageOnCake}"
+                    </p>
+                  </div>
+                )}
+
+                {order.cardMessage && (
+                  <div className="p-4 rounded-xl border border-purple-500/20 bg-purple-500/5">
+                    <div className="text-[11px] font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400 mb-1 flex items-center gap-1.5">
+                      <span>💌 Greeting Card Message</span>
+                    </div>
+                    <p className="text-sm font-medium text-foreground italic">
+                      "{order.cardMessage}"
+                    </p>
+                    {(order.senderName || order.recipientName) && (
+                      <div className="mt-2 pt-2 border-t border-purple-500/20 flex items-center justify-between text-xs text-slate-500">
+                        {order.senderName && <span>From: <strong className="text-foreground">{order.senderName}</strong></span>}
+                        {order.recipientName && <span>To: <strong className="text-foreground">{order.recipientName}</strong></span>}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* ── Payment Info ── */}
           <section className={`rounded-2xl border p-6 shadow-sm ${cardBg}`}>
             <div className="flex items-center justify-between mb-6">
@@ -325,6 +464,15 @@ export default function OrderDetailView() {
                 <span className="text-slate-500">Subtotal ({order.items.length} items)</span>
                 <span className="font-semibold">₹{subtotal.toFixed(2)}</span>
               </div>
+              {addonsTotal > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-pink-600 dark:text-pink-400 flex items-center gap-1 font-medium">
+                    <Sparkles size={13} className="text-pink-500" />
+                    Celebration Add-ons ({order.addons?.length || 0} items)
+                  </span>
+                  <span className="font-semibold text-pink-600 dark:text-pink-400">+₹{addonsTotal.toFixed(2)}</span>
+                </div>
+              )}
               {totalDiscount > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-emerald-600">Product Discount</span>
@@ -409,10 +557,44 @@ export default function OrderDetailView() {
               </div>
             </div>
 
-            <div className="border-t border-slate-100 pt-6">
-              <h4 className="mb-3 text-xs font-bold text-slate-400 uppercase tracking-widest">Order Date</h4>
-              <p className="text-sm font-bold text-slate-700">
-                {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+            {order.deliverySlot && (
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-6 mb-6">
+                <h4 className="mb-3 text-xs font-bold text-slate-400 uppercase tracking-widest">Delivery Slot</h4>
+                <div className="p-3 rounded-xl bg-pink-500/10 border border-pink-500/20 text-xs font-bold text-pink-700 dark:text-pink-300 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="uppercase tracking-wider text-[11px]">{order.deliverySlot.slotName || order.deliverySlot.slotType || "Slot"}</span>
+                    {order.deliverySlot.extraCharge ? (
+                      <span className="text-pink-600">+₹{order.deliverySlot.extraCharge}</span>
+                    ) : null}
+                  </div>
+                  {order.deliverySlot.timeRange && (
+                    <div className="text-slate-600 dark:text-slate-400 font-medium flex items-center gap-1">
+                      <Clock size={11} className="text-pink-500" />
+                      <span>{order.deliverySlot.timeRange}</span>
+                    </div>
+                  )}
+                  {order.deliverySlot.deliveryDate && (
+                    <div className="text-[11px] text-slate-500 font-medium">
+                      Date: {order.deliverySlot.deliveryDate}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Order Arrived</h4>
+                <span className="text-xs font-black text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40 px-2.5 py-1 rounded-lg flex items-center gap-1 border border-pink-500/20 shadow-xs">
+                  <Clock size={12} className="text-pink-500 animate-pulse" />
+                  {getRelativeTime(order.createdAt)}
+                </span>
+              </div>
+              <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                {formatOrderDateTime(order.createdAt)}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Order placed {getDetailedElapsedTime(order.createdAt)}
               </p>
             </div>
           </section>

@@ -21,6 +21,7 @@
 }
 
 html.dark {
+  color-scheme: dark;
   --background: #060913;
   --foreground: #f8fafc;
   --card: #0d1322;
@@ -34,6 +35,7 @@ html.dark {
 }
 
 html.light {
+  color-scheme: light;
   --background: #f8fafc;
   --foreground: #0f172a;
   --card: #ffffff;
@@ -150,9 +152,9 @@ textarea {
 html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 html.light select,
 html.light textarea,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
-select,
-textarea {
+html:not(.dark):not([data-theme='dark']) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+html:not(.dark):not([data-theme='dark']) select,
+html:not(.dark):not([data-theme='dark']) textarea {
   background-color: #ffffff !important;
   border: 1.5px solid #cbd5e1 !important;
   color: #0f172a !important;
@@ -161,21 +163,27 @@ textarea {
 
 html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"])::placeholder,
 html.light textarea::placeholder,
-input::placeholder,
-textarea::placeholder {
+html:not(.dark):not([data-theme='dark']) input::placeholder,
+html:not(.dark):not([data-theme='dark']) textarea::placeholder {
   color: #94a3b8 !important;
   font-weight: 400 !important;
 }
 
 html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):hover:not(:focus),
 html.light select:hover:not(:focus),
-html.light textarea:hover:not(:focus) {
+html.light textarea:hover:not(:focus),
+html:not(.dark):not([data-theme='dark']) input:hover:not(:focus),
+html:not(.dark):not([data-theme='dark']) select:hover:not(:focus),
+html:not(.dark):not([data-theme='dark']) textarea:hover:not(:focus) {
   border-color: #94a3b8 !important;
 }
 
 html.light input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus,
 html.light select:focus,
-html.light textarea:focus {
+html.light textarea:focus,
+html:not(.dark):not([data-theme='dark']) input:focus,
+html:not(.dark):not([data-theme='dark']) select:focus,
+html:not(.dark):not([data-theme='dark']) textarea:focus {
   border-color: #2563eb !important;
   box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.15) !important;
   outline: none !important;
@@ -187,17 +195,23 @@ html.dark select,
 html.dark textarea,
 html[data-theme='dark'] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
 html[data-theme='dark'] select,
-html[data-theme='dark'] textarea {
+html[data-theme='dark'] textarea,
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+.dark select,
+.dark textarea {
   background-color: #090e1a !important;
   border: 1.5px solid #1e293b !important;
   color: #f8fafc !important;
+  caret-color: #f8fafc !important;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.4) !important;
 }
 
 html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"])::placeholder,
 html.dark textarea::placeholder,
 html[data-theme='dark'] input::placeholder,
-html[data-theme='dark'] textarea::placeholder {
+html[data-theme='dark'] textarea::placeholder,
+.dark input::placeholder,
+.dark textarea::placeholder {
   color: #64748b !important;
   font-weight: 400 !important;
 }
@@ -207,7 +221,10 @@ html.dark select:hover:not(:focus),
 html.dark textarea:hover:not(:focus),
 html[data-theme='dark'] input:hover:not(:focus),
 html[data-theme='dark'] select:hover:not(:focus),
-html[data-theme='dark'] textarea:hover:not(:focus) {
+html[data-theme='dark'] textarea:hover:not(:focus),
+.dark input:hover:not(:focus),
+.dark select:hover:not(:focus),
+.dark textarea:hover:not(:focus) {
   border-color: #334155 !important;
 }
 
@@ -216,7 +233,10 @@ html.dark select:focus,
 html.dark textarea:focus,
 html[data-theme='dark'] input:focus,
 html[data-theme='dark'] select:focus,
-html[data-theme='dark'] textarea:focus {
+html[data-theme='dark'] textarea:focus,
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
   border-color: #38bdf8 !important;
   box-shadow: 0 0 0 3.5px rgba(56, 189, 248, 0.22) !important;
   outline: none !important;
@@ -477,26 +497,71 @@ td {
   scrollbar-color: var(--border) transparent !important;
 }
 
-/* Fix for Webkit Autofill Text Color Issue */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
-input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px white inset !important;
+/* Fix for Webkit & Standard Autofill Text & Background Issues */
+html.light input:-webkit-autofill,
+html.light input:-webkit-autofill:hover, 
+html.light input:-webkit-autofill:focus, 
+html.light input:-webkit-autofill:active,
+html.light input:autofill,
+html:not(.dark):not([data-theme='dark']) input:-webkit-autofill,
+html:not(.dark):not([data-theme='dark']) input:-webkit-autofill:hover,
+html:not(.dark):not([data-theme='dark']) input:-webkit-autofill:focus,
+html:not(.dark):not([data-theme='dark']) input:-webkit-autofill:active,
+html:not(.dark):not([data-theme='dark']) input:autofill {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
   -webkit-text-fill-color: #0f172a !important;
-  transition: background-color 5000s ease-in-out 0s;
+  color: #0f172a !important;
+  caret-color: #0f172a !important;
+  transition: background-color 5000000s ease-in-out 0s !important;
 }
 
+/* Dark Mode Autofill - prevents input turning white when typing or autofilling */
 html.dark input:-webkit-autofill,
 html.dark input:-webkit-autofill:hover, 
 html.dark input:-webkit-autofill:focus, 
 html.dark input:-webkit-autofill:active,
+html.dark input:autofill,
+html.dark input:-internal-autofill-selected,
 html[data-theme='dark'] input:-webkit-autofill,
 html[data-theme='dark'] input:-webkit-autofill:hover, 
 html[data-theme='dark'] input:-webkit-autofill:focus, 
-html[data-theme='dark'] input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 30px #090e1a inset !important;
+html[data-theme='dark'] input:-webkit-autofill:active,
+html[data-theme='dark'] input:autofill,
+html[data-theme='dark'] input:-internal-autofill-selected,
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active,
+.dark input:autofill,
+.dark input:-internal-autofill-selected {
+  -webkit-box-shadow: 0 0 0 1000px #090e1a inset !important;
+  box-shadow: 0 0 0 1000px #090e1a inset !important;
   -webkit-text-fill-color: #f8fafc !important;
+  color: #f8fafc !important;
+  caret-color: #f8fafc !important;
+  transition: background-color 5000000s ease-in-out 0s !important;
+}
+
+/* Dedicated Auth Input Helper (Login, Register & Forgot Password) */
+.auth-input {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease !important;
+}
+html.dark .auth-input,
+html[data-theme='dark'] .auth-input,
+.dark .auth-input {
+  background-color: #090e1a !important;
+  color: #f8fafc !important;
+  border-color: #1e293b !important;
+  caret-color: #f8fafc !important;
+}
+html.dark .auth-input:focus,
+html[data-theme='dark'] .auth-input:focus,
+.dark .auth-input:focus {
+  background-color: #090e1a !important;
+  color: #ffffff !important;
+  border-color: #ec4899 !important;
+  box-shadow: 0 0 0 3.5px rgba(236, 72, 153, 0.2) !important;
 }
 
 /* ─────────────────────────────────────────────────────────────

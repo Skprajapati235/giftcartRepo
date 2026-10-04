@@ -248,16 +248,16 @@ export default function AdminHeader() {
           <span>Kitchen Live</span>
         </Link>
 
-        {/* View Live Customer Storefront */}
+        {/* View Live Customer Website */}
         <a
-          href="http://localhost:3000"
+          href="https://giftfestive.com"
           target="_blank"
           rel="noopener noreferrer"
           className="hidden sm:flex items-center gap-1.5 rounded-xl border border-border-theme bg-background px-3 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-hover-theme transition"
-          title="Open Storefront in New Tab"
+          title="Open Live Website (giftfestive.com) in New Tab"
         >
           <ExternalLink className="h-3.5 w-3.5" />
-          <span>Storefront</span>
+          <span>Go Website</span>
         </a>
 
         {/* Notification Bell Dropdown */}

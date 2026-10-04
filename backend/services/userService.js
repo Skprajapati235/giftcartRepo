@@ -64,11 +64,13 @@ exports.updateUser = async (id, data) => {
     city: data.city,
     profilePic: data.profilePic,
   };
+  if (data.role) updateFields.role = data.role;
+  if (data.department) updateFields.department = data.department;
 
-  let updated = await User.findByIdAndUpdate(id, updateFields, { new: true }).select("name email city profilePic createdAt");
+  let updated = await User.findByIdAndUpdate(id, updateFields, { new: true }).select("name email city profilePic role department createdAt");
   if (updated) return updated;
 
-  updated = await Admin.findByIdAndUpdate(id, updateFields, { new: true }).select("name email city profilePic role createdAt");
+  updated = await Admin.findByIdAndUpdate(id, updateFields, { new: true }).select("name email city profilePic role department createdAt");
   if (updated) return updated;
 
   throw new Error("User not found");

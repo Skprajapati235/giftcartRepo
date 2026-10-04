@@ -30,6 +30,15 @@ interface Order {
   paymentCancelReason?: string;
   couponCode?: string;
   discountAmount?: number;
+  addons?: Array<{
+    name: string;
+    price: number;
+    quantity?: number;
+    image?: string;
+    category?: string;
+  }>;
+  messageOnCake?: string;
+  cardMessage?: string;
   createdAt: string;
   whatsappLogs?: Array<{
     event?: string;

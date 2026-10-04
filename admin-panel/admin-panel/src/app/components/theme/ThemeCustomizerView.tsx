@@ -31,6 +31,7 @@ export default function ThemeCustomizerView() {
 
   const [theme, setTheme] = useState<StoreThemeConfig>(THEME_PRESETS[0].config as StoreThemeConfig);
   const [activePreset, setActivePreset] = useState<string>("festive-pink");
+  const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
   useEffect(() => {
     async function load() {
@@ -133,13 +134,14 @@ export default function ThemeCustomizerView() {
 
         <div className="flex flex-wrap items-center gap-2.5">
           <a
-            href="http://localhost:3000"
+            href="https://giftfestive.com"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 rounded-xl border border-border-theme bg-background px-3.5 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-hover-theme transition"
+            title="Open Live Website (giftfestive.com) in New Tab"
           >
             <ExternalLink className="h-3.5 w-3.5" />
-            <span>Open User Store</span>
+            <span>Go Website</span>
           </a>
 
           <button
@@ -172,33 +174,56 @@ export default function ThemeCustomizerView() {
         {/* Left Column: Theme Presets & Customizer Options (7 cols) */}
         <div className="space-y-6 lg:col-span-7">
           {/* Preset Selector */}
-          <div className="rounded-3xl border border-border-theme bg-card p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="rounded-3xl border border-border-theme bg-card p-6 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-pink-500" />
-                  Festival & Event Presets
+                  Curated Festive & Brand Palettes
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Instantly switch between curated season and festival designs.
+                  Select from 14 signature themes or filter by celebration style.
                 </p>
               </div>
-              <span className="rounded-full bg-pink-500/10 px-2.5 py-1 text-[11px] font-extrabold text-pink-500">
-                {activePreset.toUpperCase()}
+              <span className="rounded-full bg-pink-500/10 px-3 py-1 text-[11px] font-black text-pink-500 border border-pink-500/20 self-start sm:self-auto">
+                ACTIVE: {activePreset.toUpperCase()}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {THEME_PRESETS.map((preset) => {
+            {/* Category Filter Pills */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1">
+              {(["All", "Festivals", "Luxury", "Pastels", "Vibrant", "Dark Mode", "Gourmet"] as const).map((cat) => {
+                const isCatActive = selectedCategory === cat;
+                const count = cat === "All" ? THEME_PRESETS.length : THEME_PRESETS.filter((p) => p.category === cat).length;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                      isCatActive
+                        ? "bg-pink-500 text-white shadow-xs"
+                        : "border border-border-theme bg-background text-slate-500 hover:text-foreground hover:bg-hover-theme"
+                    }`}
+                  >
+                    <span>{cat}</span>
+                    <span className="ml-1.5 text-[10px] opacity-75">({count})</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 max-h-[600px] overflow-y-auto pr-1">
+              {THEME_PRESETS.filter((p) => selectedCategory === "All" || p.category === selectedCategory).map((preset) => {
                 const isSelected = activePreset === preset.id;
                 return (
                   <button
                     key={preset.id}
                     type="button"
                     onClick={() => handleApplyPreset(preset)}
-                    className={`group relative flex flex-col justify-between rounded-2xl border p-4 text-left transition-all ${
+                    className={`group relative flex flex-col justify-between rounded-2xl border p-4 text-left transition-all cursor-pointer ${
                       isSelected
-                        ? "border-pink-500 bg-pink-500/5 shadow-md shadow-pink-500/10"
+                        ? "border-pink-500 bg-pink-500/10 shadow-md shadow-pink-500/15 ring-1 ring-pink-500/40"
                         : "border-border-theme bg-background/50 hover:border-pink-500/40 hover:bg-hover-theme"
                     }`}
                   >
@@ -207,39 +232,48 @@ export default function ThemeCustomizerView() {
                       <div
                         className={`h-2.5 w-full rounded-full bg-gradient-to-r ${preset.previewGradient} mb-3 shadow-xs`}
                       />
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-foreground">{preset.name}</span>
-                        {isSelected && (
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-bold text-sm text-foreground leading-tight">{preset.name}</span>
+                        {isSelected ? (
                           <CheckCircle2 className="h-4 w-4 text-pink-500 shrink-0" />
+                        ) : (
+                          <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-background border border-border-theme text-slate-400">
+                            {preset.category}
+                          </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
                         {preset.tagline}
                       </p>
                     </div>
 
                     {/* Color Swatch Dots */}
-                    <div className="mt-3 flex items-center gap-1.5 pt-2 border-t border-border-theme/40">
-                      <span
-                        className="h-4 w-4 rounded-full border border-black/10 shadow-xs"
-                        style={{ backgroundColor: preset.config.primaryColor }}
-                        title="Primary"
-                      />
-                      <span
-                        className="h-4 w-4 rounded-full border border-black/10 shadow-xs"
-                        style={{ backgroundColor: preset.config.secondaryColor }}
-                        title="Secondary"
-                      />
-                      <span
-                        className="h-4 w-4 rounded-full border border-black/10 shadow-xs"
-                        style={{ backgroundColor: preset.config.brandBerry }}
-                        title="Brand Berry"
-                      />
-                      <span
-                        className="h-4 w-4 rounded-full border border-black/10 shadow-xs"
-                        style={{ backgroundColor: preset.config.brandGold }}
-                        title="Brand Gold"
-                      />
+                    <div className="mt-3 flex items-center justify-between pt-2 border-t border-border-theme/40">
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="h-4 w-4 rounded-full border border-black/10 shadow-xs"
+                          style={{ backgroundColor: preset.config.primaryColor }}
+                          title={`Primary: ${preset.config.primaryColor}`}
+                        />
+                        <span
+                          className="h-4 w-4 rounded-full border border-black/10 shadow-xs"
+                          style={{ backgroundColor: preset.config.secondaryColor }}
+                          title={`Secondary: ${preset.config.secondaryColor}`}
+                        />
+                        <span
+                          className="h-4 w-4 rounded-full border border-black/10 shadow-xs"
+                          style={{ backgroundColor: preset.config.brandBerry }}
+                          title={`Brand Berry: ${preset.config.brandBerry}`}
+                        />
+                        <span
+                          className="h-4 w-4 rounded-full border border-black/10 shadow-xs"
+                          style={{ backgroundColor: preset.config.brandGold }}
+                          title={`Brand Gold: ${preset.config.brandGold}`}
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-400 group-hover:text-pink-500 font-bold transition">
+                        Apply & Preview →
+                      </span>
                     </div>
                   </button>
                 );
