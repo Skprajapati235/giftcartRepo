@@ -3,9 +3,10 @@
 import { ReactNode, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
-import MobileHeader from "./MobileHeader";
+import AdminHeader from "./AdminHeader";
 import { ThemeProvider } from "../context/ThemeContext";
 import { SidebarProvider } from "../context/SidebarContext";
+import { LiveNotificationProvider } from "../context/LiveNotificationContext";
 import NotificationManager from "./NotificationManager";
 import { AiChatProvider } from "../context/AiChatContext";
 import { useAuth } from "../context/AuthContext";
@@ -35,20 +36,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <GlobalLoader />
       ) : (
         <SidebarProvider>
-          <AiChatProvider>
-            {/* 30-Second Inactivity Warning & Countdown Modal */}
-            <SessionTimeoutModal />
-            <NotificationManager />
-            <div className="flex h-screen overflow-hidden bg-background">
-              <Sidebar aria-label="Sidebar for administration functions" />
-              <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-                <MobileHeader />
-                <div className="flex-1 overflow-x-hidden overflow-y-auto bg-background">
-                  {children}
+          <LiveNotificationProvider>
+            <AiChatProvider>
+              {/* 30-Second Inactivity Warning & Countdown Modal */}
+              <SessionTimeoutModal />
+              <NotificationManager />
+              <div className="flex h-screen overflow-hidden bg-background">
+                <Sidebar aria-label="Sidebar for administration functions" />
+                <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                  <AdminHeader />
+                  <div className="flex-1 overflow-x-hidden overflow-y-auto bg-background">
+                    {children}
+                  </div>
                 </div>
               </div>
-            </div>
-          </AiChatProvider>
+            </AiChatProvider>
+          </LiveNotificationProvider>
         </SidebarProvider>
       )}
     </ThemeProvider>

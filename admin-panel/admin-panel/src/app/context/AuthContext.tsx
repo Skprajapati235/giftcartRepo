@@ -31,6 +31,7 @@ export interface AuthState {
   stayLoggedIn: () => void;
   sessionExpiredNotice: string | null;
   clearExpiredNotice: () => void;
+  switchRole: (newRole: string) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -156,6 +157,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Verify session with backend to ensure connection is healthy
     service.verifyAdminSession().catch(() => {});
   }, []);
+
+  const switchRole = useCallback(
+    (newRole: string) => {
+      setUser((prev: any) => {
+        if (!prev) return prev;
+        const updated = { ...prev, role: newRole };
+        if (typeof window !== "undefined") {
+          localStorage.setItem("giftcartAdminUser", JSON.stringify(updated));
+        }
+        return updated;
+      });
+      showToast(
+        `Switched active role to: ${newRole.replace(/_/g, " ").toUpperCase()}`,
+        "info"
+      );
+    },
+    [showToast]
+  );
 
   const login = async (payload: { email: string; password: string }) => {
     setLoading(true);
@@ -427,6 +446,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       stayLoggedIn,
       sessionExpiredNotice,
       clearExpiredNotice,
+      switchRole,
     }),
     [
       user,
@@ -440,6 +460,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearExpiredNotice,
       setSession,
       clearSession,
+      switchRole,
     ]
   );
 

@@ -92,7 +92,16 @@ exports.verifySession = async (req, res) => {
       return res.status(401).json({ success: false, message: "Admin account not found" });
     }
 
-    if (admin.role !== "admin") {
+    const VALID_ADMIN_ROLES = [
+      "super_admin",
+      "admin",
+      "kitchen_manager",
+      "delivery_coordinator",
+      "support_agent",
+      "seo_specialist",
+    ];
+
+    if (!VALID_ADMIN_ROLES.includes(admin.role)) {
       return res.status(403).json({ success: false, message: "Admin privileges required" });
     }
 

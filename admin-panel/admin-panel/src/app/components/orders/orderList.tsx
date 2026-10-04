@@ -2,11 +2,12 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, ShoppingCart, MoreHorizontal, Eye, Download, AlertTriangle, CheckCircle2, XCircle, Clock, Truck, ShieldAlert } from "lucide-react";
+import { Search, ShoppingCart, MoreHorizontal, Eye, Download, AlertTriangle, CheckCircle2, XCircle, Clock, Truck, ShieldAlert, FileSpreadsheet, Printer } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 import { adminTableWrapClass, adminTableWideClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
 import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
+import OrderInvoiceModal from "./OrderInvoiceModal";
 
 export const isOrderPaymentIncomplete = (order: any): boolean => {
   if (!order) return false;
@@ -52,11 +53,37 @@ export default function OrderList({
   onSelectChange
 }: OrderListProps) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any | null>(null);
   useRowActionMenu(openMenuId, setOpenMenuId);
 
   const handleDelete = (id: string) => {
     setOpenMenuId(null);
     onDelete(id);
+  };
+
+  const exportOrdersCsv = () => {
+    if (!orders || orders.length === 0) {
+      alert("No orders to export.");
+      return;
+    }
+    const headers = ["Order ID", "Customer Name", "Phone", "Total Amount", "Payment Method", "Payment Status", "Order Status", "Created At"];
+    const rows = (displayedOrders || []).map((o: any) => [
+      `"${o._id}"`,
+      `"${o.user?.name || 'Customer'}"`,
+      `"${o.user?.mobileNumber || ''}"`,
+      `"${o.totalAmount || 0}"`,
+      `"${o.paymentMethod || 'Online'}"`,
+      `"${o.paymentStatus || 'Pending'}"`,
+      `"${o.status || 'Pending'}"`,
+      `"${o.createdAt ? new Date(o.createdAt).toLocaleString() : ''}"`,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = `Orders_Report_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleDownloadInvoice = async (id: string) => {
@@ -128,6 +155,15 @@ export default function OrderList({
             />
           </div>
           <div className="flex items-center gap-2 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={exportOrdersCsv}
+              className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-3 rounded-2xl bg-pink-500/10 border border-pink-500/25 text-pink-600 dark:text-pink-400 text-xs font-bold hover:bg-pink-500/20 transition-colors"
+              title="Export displayed orders to CSV"
+            >
+              <FileSpreadsheet size={15} />
+              <span>Export CSV</span>
+            </button>
             {incompleteCount > 0 && (
               <button
                 type="button"
@@ -474,11 +510,14 @@ export default function OrderList({
                         </Link>
                         <div className="mx-2 my-1 border-t border-slate-100" />
                         <button
-                          className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
-                          onClick={() => handleDownloadInvoice(order._id)}
+                          className="flex items-center gap-3 w-full px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            setSelectedInvoiceOrder(order);
+                          }}
                         >
-                          <Download size={16} className="text-slate-400" />
-                          Download Invoice
+                          <Printer size={16} className="text-pink-500" />
+                          Print Invoice & Slip
                         </button>
                         <div className="mx-2 my-1 border-t border-slate-100" />
                         <button
@@ -499,12 +538,19 @@ export default function OrderList({
         </div>
       )}
 
-      <div className="p-6 border-t border-slate-100 bg-white flex items-center justify-between">
+      <div className="p-6 border-t border-slate-100 bg-white dark:bg-card flex items-center justify-between">
         <div className="text-xs font-bold text-slate-400 uppercase tracking-widest font-sans">
           {total === 0 ? "Showing 0 of 0" : `Showing ${(currentPage - 1) * 10 + 1}-${Math.min(currentPage * 10, total)} of ${total}`}
         </div>
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
       </div>
+
+      {/* Printable Invoice & Kitchen Slip Modal */}
+      <OrderInvoiceModal
+        order={selectedInvoiceOrder}
+        isOpen={Boolean(selectedInvoiceOrder)}
+        onClose={() => setSelectedInvoiceOrder(null)}
+      />
     </div>
   );
 }

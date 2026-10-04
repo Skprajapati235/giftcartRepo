@@ -136,6 +136,12 @@ const orderSchema = new mongoose.Schema({
   shippedAt: { type: Date },
   deliveredAt: { type: Date },
   cancelledAt: { type: Date },
+  assignedRider: { type: mongoose.Schema.Types.ObjectId, ref: "DeliveryRider", default: null },
+  assignedRiderName: { type: String, default: null },
+  assignedRiderPhone: { type: String, default: null },
+  riderAssignedAt: { type: Date, default: null },
+  whatsappRecoverySentAt: { type: Date, default: null },
+  recoveryCoupon: { type: String, default: null },
 }, { timestamps: true });
 
 // Capacity lookups: "how many orders hold slot X on date Y?"

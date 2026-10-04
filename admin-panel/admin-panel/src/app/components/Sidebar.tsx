@@ -47,6 +47,8 @@ import {
   Sparkles,
   ShieldCheck,
   ChefHat,
+  Palette,
+  Truck,
 } from "lucide-react";
 
 export type NavSubItem = {
@@ -106,12 +108,12 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Catalog",
         icon: Box,
         children: [
-          { key: "products", label: "Products", href: "/products", icon: Box, description: "Catalog inventory items", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
+          { key: "products", label: "Products", href: "/products", icon: Box, description: "Catalog inventory items", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Kitchen" },
           { key: "category", label: "Categories", href: "/category", icon: Tag, description: "Store taxonomy & groups", color: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
-          { key: "flavors", label: "Flavors", href: "/flavors", icon: Pipette, description: "Taste & cake variants", color: "text-pink-500 bg-pink-500/10 border-pink-500/20" },
+          { key: "flavors", label: "Flavors", href: "/flavors", icon: Pipette, description: "Taste & cake variants", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Kitchen" },
           { key: "addons", label: "Gifting Add-ons", href: "/addons", icon: Gift, description: "Candles, cards & celebration upsells", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "New" },
           { key: "cities", label: "Delivery Cities", href: "/cities", icon: MapPin, description: "Pin-code & zones", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { key: "offers", label: "Offers & Coupons", href: "/coupons", icon: Gift, description: "Promo codes & discounts", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+          { key: "offers", label: "Offers & Coupons", href: "/coupons", icon: Gift, description: "Promo codes & discounts", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Growth" },
           { key: "gallery", label: "Media Gallery", href: "/gallery", icon: Images, description: "Image asset storage", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20" },
         ],
       },
@@ -126,8 +128,10 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Orders & Reviews",
         icon: ShoppingCart,
         children: [
-          { key: "orders", label: "Orders Pipeline", href: "/orders", icon: ShoppingCart, description: "Live customer orders", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { key: "kitchenBoard", label: "Kitchen Live Board", href: "/orders/board", icon: ChefHat, description: "Real-time kitchen order dispatch", color: "text-orange-500 bg-orange-500/10 border-orange-500/20", badge: "Live" },
+          { key: "orders", label: "Orders Pipeline", href: "/orders", icon: ShoppingCart, description: "Live customer orders", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Sales" },
+          { key: "kitchenBoard", label: "Kitchen Live Board", href: "/orders/board", icon: ChefHat, description: "Real-time kitchen order dispatch", color: "text-orange-500 bg-orange-500/10 border-orange-500/20", badge: "Kitchen" },
+          { key: "abandonedCarts", label: "Abandoned Carts", href: "/abandoned-carts", icon: ShoppingCart, description: "Automated WhatsApp recovery", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "Support" },
+          { key: "deliveryFleet", label: "Delivery Fleet", href: "/delivery-fleet", icon: Truck, description: "Rider dispatch & logistics", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Fleet" },
           { key: "reviews", label: "Customer Reviews", href: "/reviews", icon: Star, description: "Product feedback & ratings", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
           { key: "testimonials", label: "Testimonials", href: "/testimonials", icon: MessageSquareQuote, description: "Curated store testimonials", color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20" },
         ],
@@ -137,8 +141,8 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Inventory & Billing",
         icon: Boxes,
         children: [
-          { key: "inventory", label: "Stock Inventory", href: "/inventory", icon: Boxes, description: "Warehouse quantities", color: "text-sky-500 bg-sky-500/10 border-sky-500/20" },
-          { key: "payments", label: "Payments & Txns", href: "/payments", icon: CreditCard, description: "Gateway settlements", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+          { key: "inventory", label: "Stock Inventory", href: "/inventory", icon: Boxes, description: "Warehouse quantities", color: "text-sky-500 bg-sky-500/10 border-sky-500/20", badge: "Kitchen" },
+          { key: "payments", label: "Payments & Txns", href: "/payments", icon: CreditCard, description: "Gateway settlements", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Admin" },
         ],
       },
     ],
@@ -147,7 +151,7 @@ export const linearSidebarNav: NavSectionConfig[] = [
     sectionTitle: "Growth & SEO",
     dotColor: "bg-cyan-400",
     items: [
-      { key: "users", label: "User Directory", href: "/users", icon: Users },
+      { key: "users", label: "User Directory", href: "/users", icon: Users, badge: "CRM" },
       {
         key: "seo",
         label: "SEO Suite",
@@ -155,11 +159,11 @@ export const linearSidebarNav: NavSectionConfig[] = [
         badge: "Growth",
         badgeVariant: "neon-cyan",
         children: [
-          { key: "seo-global", label: "Global & Schema", href: "/seo/global", icon: Settings, description: "JSON-LD & OpenGraph", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20" },
-          { key: "seo-pages", label: "Page-by-Page SEO", href: "/seo/pages", icon: FileText, description: "On-page metadata", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
-          { key: "seo-redirects", label: "URL Redirects", href: "/seo/redirects", icon: ArrowRightLeft, description: "301 & 302 rules", color: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
-          { key: "seo-robots", label: "Robots & Sitemap", href: "/seo/robots-sitemap", icon: Bot, description: "XML sitemap generation", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { key: "seo-audit", label: "SEO Health Audit", href: "/seo/audit", icon: Activity, description: "Score & error checker", color: "text-rose-500 bg-rose-500/10 border-rose-500/20" },
+          { key: "seo-global", label: "Global & Schema", href: "/seo/global", icon: Settings, description: "JSON-LD & OpenGraph", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "SEO" },
+          { key: "seo-pages", label: "Page-by-Page SEO", href: "/seo/pages", icon: FileText, description: "On-page metadata", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "SEO" },
+          { key: "seo-redirects", label: "URL Redirects", href: "/seo/redirects", icon: ArrowRightLeft, description: "301 & 302 rules", color: "text-violet-500 bg-violet-500/10 border-violet-500/20", badge: "SEO" },
+          { key: "seo-robots", label: "Robots & Sitemap", href: "/seo/robots-sitemap", icon: Bot, description: "XML sitemap generation", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "SEO" },
+          { key: "seo-audit", label: "SEO Health Audit", href: "/seo/audit", icon: Activity, description: "Score & error checker", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "SEO" },
         ],
       },
       {
@@ -167,8 +171,8 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Lead Insights & CRM",
         icon: Lightbulb,
         children: [
-          { key: "leads", label: "Leads Funnel", href: "/leads", icon: UserPlus, description: "Captured shopper inquiries", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
-          { key: "crm", label: "CRM Directory", href: "/crm", icon: Users, description: "Customer relationships", color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20" },
+          { key: "leads", label: "Leads Funnel", href: "/leads", icon: UserPlus, description: "Captured shopper inquiries", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Support" },
+          { key: "crm", label: "CRM Directory", href: "/crm", icon: Users, description: "Customer relationships", color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20", badge: "Support" },
         ],
       },
       {
@@ -176,8 +180,8 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Inquiries & Support",
         icon: Phone,
         children: [
-          { key: "websiteContacts", label: "Website Contacts", href: "/websitecontact", icon: Mail, description: "Contact form leads", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { key: "customerSupport", label: "Support Tickets", href: "/support", icon: LifeBuoy, description: "Customer issues", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20" },
+          { key: "websiteContacts", label: "Website Contacts", href: "/websitecontact", icon: Mail, description: "Contact form leads", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Support" },
+          { key: "customerSupport", label: "Support Tickets", href: "/support", icon: LifeBuoy, description: "Customer issues", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "Support" },
         ],
       },
     ],
@@ -191,11 +195,12 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Storefront Config",
         icon: SlidersHorizontal,
         children: [
-          { key: "deliverySlots", label: "Delivery Slots", href: "/delivery-slots", icon: Clock, description: "Midnight & express slot rules", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "Pro" },
-          { key: "stories", label: "Story Highlights", href: "/stories", icon: Sparkles, description: "Instagram-style reels & banner stories", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Hot" },
-          { key: "heroSlides", label: "Hero Slides", href: "/hero-slides", icon: SlidersHorizontal, description: "Banner promotional carousels", color: "text-purple-500 bg-purple-500/10 border-purple-500/20" },
+          { key: "themeStudio", label: "Storefront Theme Studio", href: "/theme-customizer", icon: Palette, description: "Live branding & festival palettes", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Super Admin" },
+          { key: "deliverySlots", label: "Delivery Slots", href: "/delivery-slots", icon: Clock, description: "Midnight & express slot rules", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "Fleet" },
+          { key: "stories", label: "Story Highlights", href: "/stories", icon: Sparkles, description: "Instagram-style reels & banner stories", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Marketing" },
+          { key: "heroSlides", label: "Hero Slides", href: "/hero-slides", icon: SlidersHorizontal, description: "Banner promotional carousels", color: "text-purple-500 bg-purple-500/10 border-purple-500/20", badge: "Marketing" },
           { key: "occasions", label: "Occasions", href: "/occasions", icon: PartyPopper, description: "Events & gifting tags", color: "text-pink-500 bg-pink-500/10 border-pink-500/20" },
-          { key: "deliveryHours", label: "Operating Hours", href: "/delivery-hours", icon: Clock, description: "Delivery cutoff slots", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+          { key: "deliveryHours", label: "Operating Hours", href: "/delivery-hours", icon: Clock, description: "Delivery cutoff slots", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Fleet" },
         ],
       },
       {
@@ -203,8 +208,9 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Administration",
         icon: Settings,
         children: [
-          { key: "adminProfile", label: "Admin Profiles", href: "/admins", icon: Users, description: "Team accounts & roles", color: "text-rose-500 bg-rose-500/10 border-rose-500/20" },
-          { key: "developer", label: "Developer API & Logs", href: "/developer", icon: Code, description: "Webhooks & server logs", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
+          { key: "adminProfile", label: "Admin Profiles & RBAC", href: "/admins", icon: Users, description: "Team accounts & roles matrix", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "Super Admin" },
+          { key: "auditLogs", label: "Security & Audit Logs", href: "/audit-logs", icon: ShieldCheck, description: "Immutable activity & security audit", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Super Admin" },
+          { key: "developer", label: "Developer API & Logs", href: "/developer", icon: Code, description: "Webhooks & server logs", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Dev" },
           { key: "termsPolicy", label: "Terms & Privacy Policy", href: "/terms", icon: FileText, description: "Legal compliance pages", color: "text-slate-500 bg-slate-500/10 border-slate-500/20" },
         ],
       },
@@ -674,8 +680,13 @@ function DesktopSidebar() {
                                     <ChildIcon className="h-3.5 w-3.5" />
                                   </div>
                                   <span className="truncate flex-1">{child.label}</span>
+                                  {child.badge && (
+                                    <span className="text-[9.5px] font-black uppercase tracking-tight px-1.5 py-0.2 rounded-md bg-background border border-border-theme/80 text-slate-400 group-hover:text-pink-500 group-hover:border-pink-500/30 transition shrink-0">
+                                      {child.badge}
+                                    </span>
+                                  )}
                                   {childActive && (
-                                    <ChevronRight className="ml-auto h-3 w-3 text-slate-700 dark:text-cyan-400" />
+                                    <ChevronRight className="ml-1 h-3 w-3 text-pink-500 shrink-0" />
                                   )}
                                 </Link>
                               );
@@ -1000,8 +1011,13 @@ function MobileSidebar() {
                                     : "text-slate-600 dark:text-slate-400 hover:bg-hover-theme"
                                 }`}
                               >
-                                <ChildIcon className="h-3.5 w-3.5" />
-                                <span>{child.label}</span>
+                                <ChildIcon className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate flex-1">{child.label}</span>
+                                {child.badge && (
+                                  <span className="text-[9.5px] font-black uppercase tracking-tight px-1.5 py-0.2 rounded-md bg-background border border-border-theme/80 text-slate-400">
+                                    {child.badge}
+                                  </span>
+                                )}
                               </Link>
                             );
                           })}

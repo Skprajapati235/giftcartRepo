@@ -63,7 +63,7 @@ exports.updateUserProfile = async (userId, data) => {
 };
 
 exports.registerAdmin = async (data) => {
-  const { name, password } = data;
+  const { name, password, role, department } = data;
   const email = validateEmail(data.email);
   validatePassword(password);
 
@@ -73,8 +73,22 @@ exports.registerAdmin = async (data) => {
   if (adminExists) throw new Error("Admin already exists");
 
   const hashed = await bcrypt.hash(password, 10);
+  const assignedRole = role || "admin";
+  const assignedDept = department || (
+    assignedRole === "kitchen_manager" ? "Bakery & Kitchen" :
+    assignedRole === "delivery_coordinator" ? "Logistics & Fleet" :
+    assignedRole === "support_agent" ? "Customer Experience" :
+    assignedRole === "seo_specialist" ? "Growth & Marketing" :
+    "Executive Management"
+  );
 
-  return await Admin.create({ name, email, password: hashed, role: "admin" });
+  return await Admin.create({
+    name,
+    email,
+    password: hashed,
+    role: assignedRole,
+    department: assignedDept,
+  });
 };
 
 exports.loginAdmin = async (data) => {

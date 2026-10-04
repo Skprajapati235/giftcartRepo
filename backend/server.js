@@ -134,6 +134,9 @@ app.use("/api/delivery-slots", require("./routes/deliverySlotRoutes"));
 app.use("/api/addons", require("./routes/addonRoutes"));
 app.use("/api/addon-categories", require("./routes/addonCategoryRoutes"));
 app.use("/api/stories", require("./routes/storyRoutes"));
+app.use("/api/audit-logs", require("./routes/auditLogRoutes"));
+app.use("/api/delivery-riders", require("./routes/deliveryRiderRoutes"));
+app.use("/api/abandoned-carts", require("./routes/abandonedCartRoutes"));
 // // AI Chat endpoint for Admin Panel
 // const PYTHON_AI_URL = process.env.PYTHON_AI_URL || "http://localhost:8001";
 // const AI_INTERNAL_KEY = process.env.AI_INTERNAL_KEY || "";

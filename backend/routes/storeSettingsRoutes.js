@@ -10,4 +10,10 @@ router.get("/delivery-hours", controller.getDeliveryHours);
 // Admin-only endpoint to update delivery operating hours
 router.put("/delivery-hours", authMiddleware, adminMiddleware, controller.updateDeliveryHours);
 
+// Public endpoint to fetch storefront theme
+router.get("/theme", controller.getStoreTheme);
+
+// Admin-only endpoint to update storefront theme (Super Admin & SEO Specialist only)
+router.put("/theme", authMiddleware, adminMiddleware, adminMiddleware.requireRole(["super_admin", "admin", "seo_specialist"]), controller.updateStoreTheme);
+
 module.exports = router;

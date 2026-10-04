@@ -34,20 +34,24 @@ function MainApp() {
   );
 }
 
+import { ThemeProvider } from './src/context/ThemeContext';
+
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <WishlistProvider>
-            <CartProvider>
-              <LoadingProvider>
-                <MainApp />
-              </LoadingProvider>
-            </CartProvider>
-          </WishlistProvider>
-        </AuthProvider>
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <WishlistProvider>
+              <CartProvider>
+                <LoadingProvider>
+                  <MainApp />
+                </LoadingProvider>
+              </CartProvider>
+            </WishlistProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }
