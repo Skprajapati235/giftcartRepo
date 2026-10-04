@@ -50,7 +50,6 @@ export default function StatsGrid({
         icon={IndianRupee}
         gradient="from-emerald-500/15 via-teal-500/5 to-transparent"
         iconColor="text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-        trend={{ value: "+18.4%", isPositive: true }}
         badge="Live"
         badgeColor="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20"
         onClick={() => router.push("/payments")}
@@ -64,7 +63,6 @@ export default function StatsGrid({
         icon={ShoppingBag}
         gradient="from-blue-500/15 via-indigo-500/5 to-transparent"
         iconColor="text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20"
-        trend={{ value: "+12.5%", isPositive: true }}
         onClick={() => router.push("/orders")}
       />
 
@@ -101,7 +99,6 @@ export default function StatsGrid({
         icon={Users}
         gradient="from-purple-500/15 via-fuchsia-500/5 to-transparent"
         iconColor="text-purple-600 dark:text-purple-400 bg-purple-500/10 border-purple-500/20"
-        trend={{ value: "+8.7%", isPositive: true }}
         onClick={() => router.push("/users")}
       />
     </div>

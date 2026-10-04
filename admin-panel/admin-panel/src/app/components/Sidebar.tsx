@@ -482,7 +482,7 @@ function DesktopSidebar() {
                       onClick={() => setSearchQuery("")}
                       className={`cursor-pointer group flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs transition-all ${
                         active
-                          ? "bg-slate-900 text-white dark:bg-cyan-500/15 dark:text-cyan-300 dark:border dark:border-cyan-500/30 font-bold shadow-xs"
+                          ? "bg-primary text-primary-foreground font-bold shadow-xs"
                           : "text-slate-600 dark:text-slate-300 hover:bg-hover-theme hover:text-foreground hover:translate-x-1"
                       }`}
                     >
@@ -533,7 +533,7 @@ function DesktopSidebar() {
                               : "px-2.5 py-2 text-[12.5px] font-medium gap-2.5"
                           } ${
                             active
-                              ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/25 border border-blue-500/30 dark:bg-cyan-500/15 dark:text-cyan-300 dark:border-cyan-500/30 dark:shadow-[0_0_12px_rgba(6,182,212,0.15)] font-semibold"
+                              ? "bg-primary text-primary-foreground shadow-md font-bold border border-primary/20"
                               : "text-slate-600 dark:text-slate-400 hover:text-foreground hover:bg-hover-theme/85 hover:translate-x-0.5"
                           }`}
                           title={item.label}
@@ -655,7 +655,7 @@ function DesktopSidebar() {
                                   href={child.href}
                                   className={`cursor-pointer group relative flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-[12px] transition-all duration-150 ${
                                     childActive
-                                      ? "bg-blue-50 text-blue-700 border border-blue-200/80 font-bold dark:bg-cyan-500/12 dark:text-cyan-300 dark:border-cyan-500/30"
+                                      ? "bg-primary/10 text-primary border border-primary/20 font-bold dark:bg-primary/20 dark:text-white"
                                       : "text-slate-600 dark:text-slate-400 font-medium hover:text-foreground hover:bg-hover-theme hover:translate-x-1"
                                   }`}
                                 >
@@ -947,7 +947,7 @@ function MobileSidebar() {
                         onClick={closeMobile}
                         className={`cursor-pointer flex items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold transition ${
                           active
-                            ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20 dark:bg-cyan-500/15 dark:text-cyan-300 dark:border dark:border-cyan-500/30"
+                            ? "bg-primary text-primary-foreground shadow-md font-bold"
                             : "text-slate-600 dark:text-slate-300 hover:bg-hover-theme"
                         }`}
                       >
@@ -996,7 +996,7 @@ function MobileSidebar() {
                                 onClick={closeMobile}
                                 className={`cursor-pointer flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-xs transition ${
                                   childActive
-                                    ? "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-cyan-500/15 dark:text-cyan-300 font-bold"
+                                    ? "bg-primary/10 text-primary border border-primary/20 font-bold dark:bg-primary/20 dark:text-white"
                                     : "text-slate-600 dark:text-slate-400 hover:bg-hover-theme"
                                 }`}
                               >
