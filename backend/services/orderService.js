@@ -6,6 +6,7 @@
 // const crypto = require("crypto");
 // const whatsappService = require("../utils/whatsappService");
 // const { calculateItemPricing } = require("../utils/priceCalculator");
+// const deliverySlotService = require("./deliverySlotService");
 
 // async function appendWhatsAppLogs(orderId, event, results) {
 //   if (!orderId || !Array.isArray(results) || results.length === 0) return;
@@ -157,6 +158,10 @@
 //   });
 
 //   const savedOrder = await order.save();
+
+//   // Two customers can pass the slot check at the same moment — roll back the
+//   // later one if the slot is over capacity (throws 409 SLOT_UNAVAILABLE).
+//   await deliverySlotService.enforceCapacity(savedOrder);
 
 //   if (couponCode) {
 //     await Coupon.findOneAndUpdate({ code: couponCode }, { $inc: { usedCount: 1 } });
@@ -354,34 +359,49 @@
 
 // // Public: fetch limited order info by tracking token
 // exports.getPublicOrderByTrackingToken = async (trackingToken) => {
-//   if (!trackingToken) return null;
+//   if (!trackingToken || typeof trackingToken !== "string") return null;
 
 //   const order = await Order.findOne({ trackingToken })
 //     .populate("items.product", "image name salePrice price")
 //     .select(
-//       "trackingToken status paymentMethod paymentStatus totalAmount shippingAddress items processingAt shippedAt deliveredAt cancelledAt createdAt updatedAt"
-//     );
+//       "trackingToken status paymentMethod paymentStatus isPaymentAbandoned totalAmount discountAmount shippingAddress items deliverySlot addons " +
+//       "receivedAt pendingAt inKitchenAt processingAt packedAt outForDeliveryAt shippingAt shippedAt deliveredAt cancelledAt createdAt updatedAt"
+//     )
+//     .lean();
 
 //   if (!order) return null;
 
-//   // Reduce shipping fields to safe subset (no full address)
+//   // Public link → expose only a safe subset of the address (no street, no full phone).
 //   const safeShipping = {
 //     fullName: order.shippingAddress?.fullName,
-//     phone: order.shippingAddress?.phone,
+//     city: order.shippingAddress?.city,
+//     state: order.shippingAddress?.state,
 //     pinCode: order.shippingAddress?.pinCode,
 //     landmark: order.shippingAddress?.landmark,
+//     phoneLast4: String(order.shippingAddress?.phone || "").replace(/\D/g, "").slice(-4) || undefined,
 //   };
 
 //   return {
 //     _id: order._id,
+//     orderNumber: String(order._id).substring(0, 8).toUpperCase(),
 //     trackingToken: order.trackingToken,
 //     status: order.status,
 //     paymentMethod: order.paymentMethod,
 //     paymentStatus: order.paymentStatus,
+//     isPaymentAbandoned: Boolean(order.isPaymentAbandoned),
 //     totalAmount: order.totalAmount,
+//     discountAmount: order.discountAmount || 0,
 //     shippingAddress: safeShipping,
 //     items: order.items,
+//     addons: (order.addons || []).map((a) => ({ name: a.name, quantity: a.quantity })),
+//     deliverySlot: order.deliverySlot || null,
+//     receivedAt: order.receivedAt,
+//     pendingAt: order.pendingAt,
+//     inKitchenAt: order.inKitchenAt,
 //     processingAt: order.processingAt,
+//     packedAt: order.packedAt,
+//     outForDeliveryAt: order.outForDeliveryAt,
+//     shippingAt: order.shippingAt,
 //     shippedAt: order.shippedAt,
 //     deliveredAt: order.deliveredAt,
 //     cancelledAt: order.cancelledAt,
@@ -501,7 +521,6 @@
 //   const result = await Order.deleteMany({ _id: { $in: ids } });
 //   return { success: true, deletedCount: result.deletedCount };
 // };
-
 
 
 const Order = require("../models/Order");
@@ -958,6 +977,27 @@ exports.updateOrderStatus = async (id, status) => {
   if (normalizedStatus === "Cancelled") updateData.cancelledAt = now;
 
   const updated = await Order.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).populate("user");
+
+  // Order band hua (Delivered / Cancelled) to rider ka load aur status refresh karo,
+  // chahe change Orders page se hua ho ya Delivery Fleet page se.
+  if (updated && updated.assignedRider && ["Delivered", "Cancelled"].includes(normalizedStatus)) {
+    try {
+      const DeliveryRider = require("../models/DeliveryRider");
+      const [activeOrders, deliveredCount, rider] = await Promise.all([
+        Order.countDocuments({ assignedRider: updated.assignedRider, status: { $nin: ["Delivered", "Cancelled"] } }),
+        Order.countDocuments({ assignedRider: updated.assignedRider, status: "Delivered" }),
+        DeliveryRider.findById(updated.assignedRider),
+      ]);
+      if (rider) {
+        rider.activeOrders = activeOrders;
+        rider.totalDeliveriesCompleted = deliveredCount;
+        if (rider.status !== "Offline") rider.status = activeOrders > 0 ? "En Route" : "Available";
+        await rider.save();
+      }
+    } catch (err) {
+      console.warn("[fleet] rider release failed:", err?.message || err);
+    }
+  }
 
   if (updated) {
     try {
