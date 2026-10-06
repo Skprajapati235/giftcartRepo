@@ -16,6 +16,12 @@ exports.getCart = async (req, res) => {
 
 exports.addItem = async (req, res) => {
   try {
+    if (Array.isArray(req.body?.items) || Array.isArray(req.body)) {
+      const items = Array.isArray(req.body?.items) ? req.body.items : req.body;
+      const data = await service.addMultipleItems(getUserId(req), items);
+      return res.json({ success: true, ...data });
+    }
+
     const { productId, quantity, weight, flowerCount, flavor, isEggless } = req.body;
     if (!productId) {
       return res.status(400).json({ success: false, message: "productId is required" });
@@ -23,6 +29,19 @@ exports.addItem = async (req, res) => {
     const data = await service.addItem(getUserId(req), {
       productId, quantity, weight, flowerCount, flavor, isEggless,
     });
+    res.json({ success: true, ...data });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+};
+
+exports.addMultipleItems = async (req, res) => {
+  try {
+    const items = Array.isArray(req.body?.items) ? req.body.items : (Array.isArray(req.body) ? req.body : []);
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, message: "items array is required" });
+    }
+    const data = await service.addMultipleItems(getUserId(req), items);
     res.json({ success: true, ...data });
   } catch (error) {
     res.status(error.statusCode || 500).json({ success: false, message: error.message });

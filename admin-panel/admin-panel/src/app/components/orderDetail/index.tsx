@@ -492,9 +492,11 @@ export default function OrderDetailView() {
                 </div>
               )}
               {couponDiscount > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-pink-600">Coupon {order.couponCode && `(${order.couponCode})`}</span>
-                  <span className="font-semibold text-pink-600">-₹{couponDiscount.toFixed(2)}</span>
+                <div className="flex justify-between text-sm bg-emerald-50 dark:bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900/40">
+                  <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
+                    🎉 Coupon {order.couponCode ? `(${order.couponCode})` : 'Discount'}
+                  </span>
+                  <span className="font-extrabold text-emerald-700 dark:text-emerald-400">-₹{couponDiscount.toFixed(2)}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-slate-100 pt-4 mt-2">

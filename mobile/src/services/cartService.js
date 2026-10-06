@@ -135,9 +135,44 @@ const mergeGuestCartIntoAccount = async () => {
   return { items: data.items, totals: data.totals };
 };
 
+const addMultipleToCart = async (products) => {
+  const items = (products || []).map((p) => {
+    const prod = p?.product || p;
+    return {
+      productId: prod?._id || prod?.productId || prod,
+      quantity: Number(p?.quantity || 1),
+      weight: p?.selectedVariant?.weight || prod?.weight || null,
+      flowerCount: p?.selectedVariant?.flowerCount || prod?.flowerCount || null,
+      flavor: prod?.flavor?._id || prod?.flavor || null,
+      isEggless: Boolean(p?.selectedVariant?.isEggless || p?.isEggless),
+    };
+  }).filter((i) => Boolean(i.productId));
+
+  if (items.length === 0) return getCart();
+
+  if (await isLoggedIn()) {
+    const { data } = await api.post('/cart/add-multiple', { items });
+    return { items: data.items, totals: data.totals };
+  }
+
+  const lines = await getGuestLines();
+  for (const item of items) {
+    const key = lineKey(item);
+    const existing = lines.find((l) => lineKey(l) === key);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      lines.push(item);
+    }
+  }
+  await saveGuestLines(lines);
+  return quoteGuestCart();
+};
+
 export default {
   getCart,
   addToCart,
+  addMultipleToCart,
   updateQuantity,
   removeFromCart,
   clearCart,

@@ -602,6 +602,7 @@
 const crypto = require("crypto");
 const Coupon = require("../models/Coupon");
 const Order = require("../models/Order");
+const Product = require("../models/Product");
 const orderService = require("../services/orderService");
 const paymentService = require("../services/paymentService");
 const { calculateItemPricing } = require("../utils/priceCalculator");
@@ -740,23 +741,29 @@ function normalizeCouponCode(couponCode) {
 // skipping the /coupons/validate call and going straight to order creation.
 async function isCouponEligible(coupon, { userId, items }) {
   if (coupon.isNewUserOnly) {
-    const priorOrder = await Order.exists({ user: userId });
+    const priorOrder = await Order.exists({ user: userId, status: { $ne: "Cancelled" } });
     if (priorOrder) return false;
   }
 
+  const cartItems = items || [];
+  const productIds = cartItems.map((i) => String(i._id || i.product || "")).filter(Boolean);
+
   if (Array.isArray(coupon.applicableProducts) && coupon.applicableProducts.length > 0) {
     const allowed = new Set(coupon.applicableProducts.map((p) => String(p)));
-    const productIds = (items || []).map((i) => String(i._id || i.product || ""));
-    if (productIds.length === 0 || !productIds.every((id) => allowed.has(id))) return false;
+    const hasMatch = productIds.length > 0 && productIds.some((id) => allowed.has(id));
+    if (!hasMatch) return false;
   }
 
   if (Array.isArray(coupon.applicableOccasions) && coupon.applicableOccasions.length > 0) {
     const allowed = new Set(coupon.applicableOccasions.map((o) => String(o)));
-    const cartItems = items || [];
-    const allMatch =
-      cartItems.length > 0 &&
-      cartItems.every((i) => (i.occasions || []).some((occ) => allowed.has(String(occ?._id || occ))));
-    if (!allMatch) return false;
+    let hasMatch = cartItems.some((i) => (i.occasions || []).some((occ) => allowed.has(String(occ?._id || occ))));
+
+    if (!hasMatch && productIds.length > 0) {
+      const dbProducts = await Product.find({ _id: { $in: productIds } }).select("occasions");
+      hasMatch = dbProducts.some((p) => (p.occasions || []).some((occ) => allowed.has(String(occ?._id || occ))));
+    }
+
+    if (!hasMatch) return false;
   }
 
   return true;
@@ -822,11 +829,12 @@ exports.createOrder = async (req, res) => {
       const coupon = await Coupon.findOne({ code: couponCode.toUpperCase(), isActive: true });
       if (coupon) {
         // Re-validate on server
-        const isExpiried = new Date() > new Date(coupon.expiryDate);
-        const eligible = !isExpiried
-          && coupon.usedCount < coupon.usageLimit
-          && sampleTotal >= coupon.minOrderAmount
-          && (await isCouponEligible(coupon, { userId, items }));
+        const isExpired = new Date() > new Date(coupon.expiryDate);
+        const limitReached = coupon.usedCount >= coupon.usageLimit;
+        const belowMin = sampleTotal < coupon.minOrderAmount;
+        const eligibleRule = await isCouponEligible(coupon, { userId, items });
+
+        const eligible = !isExpired && !limitReached && !belowMin && eligibleRule;
         if (eligible) {
           if (coupon.discountType === "percentage") {
             finalDiscount = (sampleTotal * coupon.discountValue) / 100;
@@ -836,8 +844,19 @@ exports.createOrder = async (req, res) => {
           } else {
             finalDiscount = coupon.discountValue;
           }
-          totalAfterCoupon = Math.max(0, sampleTotal - finalDiscount);
+          finalDiscount = Math.min(finalDiscount, sampleTotal);
+          finalDiscount = Number(finalDiscount.toFixed(2));
+          totalAfterCoupon = Math.max(0, Number((sampleTotal - finalDiscount).toFixed(2)));
+        } else {
+          console.warn(`[orderController] Coupon ${couponCode} was not eligible during order creation:`, {
+            isExpired,
+            limitReached,
+            belowMin,
+            eligibleRule,
+          });
         }
+      } else {
+        console.warn(`[orderController] Coupon ${couponCode} not found or inactive`);
       }
     }
 

@@ -386,12 +386,12 @@ export default function OrderList({
                         <span className="bg-pink-50 text-pink-600 dark:bg-pink-950 dark:text-pink-300 px-3 py-1.5 rounded-lg font-bold text-xs whitespace-nowrap w-fit">
                           ₹{order.totalAmount}
                         </span>
-                        {order.couponCode && (
-                          <div className="flex items-center gap-1">
-                             <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100 italic">
-                               {order.couponCode}
+                        {(order.couponCode || Number(order.discountAmount || 0) > 0) && (
+                          <div className="flex items-center gap-1 flex-wrap">
+                             <span className="text-[9px] font-black text-emerald-600 uppercase tracking-tighter bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 italic">
+                               {order.couponCode || "DISCOUNT"}
                              </span>
-                             <span className="text-[10px] font-bold text-slate-400">(-₹{order.discountAmount})</span>
+                             <span className="text-[10px] font-bold text-emerald-600">(-₹{Number(order.discountAmount || 0).toFixed(2)})</span>
                           </div>
                         )}
                       </div>

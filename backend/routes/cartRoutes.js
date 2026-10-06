@@ -15,6 +15,7 @@ router.use(authMiddleware);
 
 router.get("/", controller.getCart);
 router.post("/add", controller.addItem);
+router.post("/add-multiple", controller.addMultipleItems);
 router.post("/merge", controller.mergeCart);
 router.put("/item/:itemId", controller.updateItem);
 router.delete("/item/:itemId", controller.removeItem);

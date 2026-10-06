@@ -1,5 +1,6 @@
 const Coupon = require("../models/Coupon");
 const Order = require("../models/Order");
+const Product = require("../models/Product");
 
 // Admin: Create Coupon
 exports.create = async (req, res) => {
@@ -89,39 +90,40 @@ exports.validate = async (req, res) => {
       return res.status(400).json({ message: `Minimum order amount for this coupon is ₹${coupon.minOrderAmount}` });
     }
 
-    // New-user-only offers — "new" means this account has never had a
-    // paid/placed order before (Pending counts too — it means they've
-    // already completed checkout once).
+    // New-user-only offers — "new" means this account has never had an active/placed order
     if (coupon.isNewUserOnly) {
       if (!req.user?.id) {
         return res.status(401).json({ message: "Please login to use this offer" });
       }
-      const priorOrder = await Order.exists({ user: req.user.id });
+      const priorOrder = await Order.exists({ user: req.user.id, status: { $ne: "Cancelled" } });
       if (priorOrder) {
         return res.status(400).json({ message: "This offer is only valid for new users" });
       }
     }
 
-    // Product-specific offers — every item in the cart must be one of the
-    // allowed products.
+    const cartItems = items || [];
+    const cartProductIds = cartItems.map((i) => String(i.productId || i._id || i.product || "")).filter(Boolean);
+
+    // Product-specific offers — at least one product in the cart must be in applicableProducts
     if (Array.isArray(coupon.applicableProducts) && coupon.applicableProducts.length > 0) {
       const allowed = new Set(coupon.applicableProducts.map((p) => String(p)));
-      const cartProductIds = (items || []).map((i) => String(i.productId || i._id || ""));
-      const allMatch = cartProductIds.length > 0 && cartProductIds.every((id) => allowed.has(id));
-      if (!allMatch) {
-        return res.status(400).json({ message: "This offer applies only to specific products in your cart" });
+      const hasMatch = cartProductIds.length > 0 && cartProductIds.some((id) => allowed.has(id));
+      if (!hasMatch) {
+        return res.status(400).json({ message: "This offer applies only to specific products" });
       }
     }
 
-    // Occasion-specific offers — every item in the cart must belong to at
-    // least one of the allowed occasions.
+    // Occasion-specific offers — at least one product in the cart must match the occasion
     if (Array.isArray(coupon.applicableOccasions) && coupon.applicableOccasions.length > 0) {
       const allowed = new Set(coupon.applicableOccasions.map((o) => String(o)));
-      const cartItems = items || [];
-      const allMatch =
-        cartItems.length > 0 &&
-        cartItems.every((i) => (i.occasions || []).some((occId) => allowed.has(String(occId))));
-      if (!allMatch) {
+      let hasMatch = cartItems.some((i) => (i.occasions || []).some((occId) => allowed.has(String(occId?._id || occId))));
+
+      if (!hasMatch && cartProductIds.length > 0) {
+        const dbProducts = await Product.find({ _id: { $in: cartProductIds } }).select("occasions");
+        hasMatch = dbProducts.some((p) => (p.occasions || []).some((occId) => allowed.has(String(occId?._id || occId))));
+      }
+
+      if (!hasMatch) {
         return res.status(400).json({ message: "This offer applies only to specific occasions" });
       }
     }
@@ -136,6 +138,9 @@ exports.validate = async (req, res) => {
     } else {
       discountAmount = coupon.discountValue;
     }
+
+    discountAmount = Math.min(discountAmount, amount);
+    discountAmount = Number(discountAmount.toFixed(2));
 
     res.json({
       message: "Coupon applied successfully",

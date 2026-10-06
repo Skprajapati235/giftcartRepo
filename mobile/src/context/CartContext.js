@@ -64,6 +64,17 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  const addMultipleToCart = async (products) => {
+    try {
+      const priced = await cartService.addMultipleToCart(products);
+      setCart(priced.items);
+      setTotals(priced.totals);
+      showToast(`Added ${(products || []).length} gifts to cart! 🛍️`, 'success');
+    } catch (err) {
+      showToast(err?.response?.data?.message || 'Could not add items to cart', 'error');
+    }
+  };
+
   const removeFromCart = async (item) => {
     try {
       const priced = await cartService.removeFromCart({ itemId: item._id, productId: item.product, variantKey: item.variantKey });
@@ -99,7 +110,7 @@ export const CartProvider = ({ children }) => {
 
   return (
     <CartContext.Provider
-      value={{ cart, totals, cartLoading, addToCart, removeFromCart, updateQuantity, clearCart, getCartTotal, refreshCart }}
+      value={{ cart, totals, cartLoading, addToCart, addMultipleToCart, removeFromCart, updateQuantity, clearCart, getCartTotal, refreshCart }}
     >
       {children}
     </CartContext.Provider>

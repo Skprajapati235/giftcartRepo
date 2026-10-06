@@ -260,3 +260,43 @@ exports.mergeGuestCart = async (userId, guestItems = []) => {
   await cart.populate({ path: "items.product", populate: [{ path: "flavor" }, { path: "occasions" }] });
   return serializeCart(cart);
 };
+
+// Add multiple items in a single atomic pass (e.g. wishlist "Move All to Cart")
+exports.addMultipleItems = async (userId, itemsArray = []) => {
+  const cart = await getOrCreateCart(userId);
+
+  for (const itemPayload of itemsArray) {
+    const productId = itemPayload.productId || itemPayload._id;
+    if (!productId) continue;
+
+    const product = await Product.findById(productId).populate("flavor").populate("occasions");
+    if (!product) continue;
+
+    const variantKey = buildVariantKey({
+      productId,
+      weight: itemPayload.weight || product.weight || null,
+      flowerCount: itemPayload.flowerCount || product.flowerCount || null,
+      flavor: itemPayload.flavor?._id || itemPayload.flavor || product.flavor || null,
+      isEggless: Boolean(itemPayload.isEggless),
+    });
+
+    const existing = cart.items.find((item) => item.variantKey === variantKey);
+    if (existing) {
+      existing.quantity += Math.max(1, Number(itemPayload.quantity || 1));
+    } else {
+      cart.items.push({
+        product: productId,
+        quantity: Math.max(1, Number(itemPayload.quantity || 1)),
+        weight: itemPayload.weight || product.weight || null,
+        flowerCount: itemPayload.flowerCount || product.flowerCount || null,
+        flavor: itemPayload.flavor?._id || itemPayload.flavor || product.flavor || null,
+        isEggless: Boolean(itemPayload.isEggless),
+        variantKey,
+      });
+    }
+  }
+
+  await cart.save();
+  await cart.populate({ path: "items.product", populate: [{ path: "flavor" }, { path: "occasions" }] });
+  return serializeCart(cart);
+};

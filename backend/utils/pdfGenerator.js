@@ -105,16 +105,32 @@ exports.generateInvoicePDF = (order, stream) => {
       position += 20;
 
       // --- Totals ---
-      const subtotal = order.totalAmount || items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0);
-      const discount = order.discount || 0;
-      const finalAmount = order.finalAmount || (subtotal - discount);
+      const itemsSubtotal = items.reduce((sum, item) => sum + (Number(item.itemTotal) || (Number(item.price || 0) * Number(item.quantity || 1))), 0);
+      const slotExtra = Number(order.deliverySlot?.extraCharge || 0);
+      const addonsTotal = (order.addons || []).reduce((sum, a) => sum + (Number(a.price || 0) * Number(a.quantity || 1)), 0);
+      const discount = Number(order.discountAmount || order.discount || 0);
+      const subtotal = itemsSubtotal + slotExtra + addonsTotal;
+      const finalAmount = Number(order.totalAmount != null ? order.totalAmount : (subtotal - discount));
 
       doc.font("Helvetica-Bold").text("Subtotal:", 350, position, { width: 100, align: "right" });
       doc.font("Helvetica").text("₹" + subtotal.toFixed(2), 460, position, { width: 90, align: "right" });
       position += 20;
 
+      if (slotExtra > 0) {
+          doc.font("Helvetica-Bold").text("Slot Surcharge:", 350, position, { width: 100, align: "right" });
+          doc.font("Helvetica").text("+ ₹" + slotExtra.toFixed(2), 460, position, { width: 90, align: "right" });
+          position += 20;
+      }
+
+      if (addonsTotal > 0) {
+          doc.font("Helvetica-Bold").text("Add-ons:", 350, position, { width: 100, align: "right" });
+          doc.font("Helvetica").text("+ ₹" + addonsTotal.toFixed(2), 460, position, { width: 90, align: "right" });
+          position += 20;
+      }
+
       if (discount > 0) {
-          doc.font("Helvetica-Bold").text("Discount:", 350, position, { width: 100, align: "right" });
+          const discountLabel = order.couponCode ? `Coupon (${order.couponCode}):` : "Discount:";
+          doc.font("Helvetica-Bold").text(discountLabel, 350, position, { width: 100, align: "right" });
           doc.font("Helvetica").text("- ₹" + discount.toFixed(2), 460, position, { width: 90, align: "right" });
           position += 20;
       }

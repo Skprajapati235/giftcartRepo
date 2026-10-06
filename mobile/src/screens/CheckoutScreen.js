@@ -360,6 +360,7 @@ export default function CheckoutScreen({ navigation, route }) {
           flavor: item.flavor,
           weight: item.weight,
           flowerCount: item.flowerCount,
+          occasions: (item.occasions || []).map((o) => o?._id || o),
         })),
         totalAmount: finalTotal,
         shippingAddress: finalShippingInfo,

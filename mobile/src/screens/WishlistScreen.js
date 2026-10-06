@@ -30,7 +30,7 @@ const GRID_GAP = 12;
 export default function WishlistScreen({ navigation }) {
   const { user } = useContext(AuthContext);
   const { isWishlisted, refresh: refreshWishlistCtx } = useWishlist();
-  const { addToCart } = useCart();
+  const { addToCart, addMultipleToCart } = useCart();
   const { showToast } = useToast();
   const deliveryHours = useDeliveryHours();
   const { bottom } = useLayoutInsets();
@@ -39,6 +39,7 @@ export default function WishlistScreen({ navigation }) {
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState(null);
+  const [movingAll, setMovingAll] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
 
   const fetchWishlist = async () => {
@@ -88,7 +89,7 @@ export default function WishlistScreen({ navigation }) {
     }
   };
 
-  const handleMoveAllToCart = () => {
+  const handleMoveAllToCart = async () => {
     if (deliveryHours.isCurrentlyRestricted) {
       Alert.alert(
         '🌙 Night Delivery Paused',
@@ -97,11 +98,17 @@ export default function WishlistScreen({ navigation }) {
       );
       return;
     }
-    if (wishlistItems.length === 0) return;
-    wishlistItems.forEach((item) => {
-      if (item.product) addToCart(item.product);
-    });
-    showToast(`Added all ${wishlistItems.length} gifts to cart! 🛍️`, 'success');
+    if (wishlistItems.length === 0 || movingAll) return;
+    const validProducts = wishlistItems.map((item) => item.product).filter(Boolean);
+    if (validProducts.length === 0) return;
+    setMovingAll(true);
+    try {
+      await addMultipleToCart(validProducts);
+    } catch {
+      showToast('Could not add items to cart', 'error');
+    } finally {
+      setMovingAll(false);
+    }
   };
 
   const renderWishItem = ({ item }) => {
@@ -113,8 +120,8 @@ export default function WishlistScreen({ navigation }) {
         product={product}
         cardWidth={productCardWidth}
         onPress={() => navigation.navigate('ProductDetail', { product })}
-        onAddToCart={() => {
-          addToCart(product);
+        onAddToCart={async () => {
+          await addToCart(product);
           showToast(`Added ${product.name} to cart! 🛍️`, 'success');
         }}
         isWishlist={true}
@@ -160,10 +167,11 @@ export default function WishlistScreen({ navigation }) {
               <TouchableOpacity
                 style={styles.moveAllBtn}
                 onPress={handleMoveAllToCart}
+                disabled={movingAll}
                 activeOpacity={0.8}
               >
                 <Feather name="shopping-bag" size={13} color="#FFF" />
-                <Text style={styles.moveAllText}>Move All to Cart</Text>
+                <Text style={styles.moveAllText}>{movingAll ? "Adding All..." : "Move All to Cart"}</Text>
               </TouchableOpacity>
             </View>
           }
