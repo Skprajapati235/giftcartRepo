@@ -14,13 +14,15 @@ router.get("/summary", inventoryController.getSummary);
 router.get("/export/excel", inventoryController.exportExcel);
 router.get("/export/pdf", inventoryController.exportPdf);
 
+const inventoryManage = adminMiddleware.requireRole(["super_admin", "admin", "kitchen_manager"]);
+
 // Bulk stock update
-router.post("/bulk-stock", inventoryController.bulkUpdateStock);
+router.post("/bulk-stock", inventoryManage, inventoryController.bulkUpdateStock);
 
 // Paginated, searchable, filterable items list
 router.get("/", inventoryController.getItems);
 
 // Quick stock update for a single product
-router.put("/:id/stock", inventoryController.updateStock);
+router.put("/:id/stock", inventoryManage, inventoryController.updateStock);
 
 module.exports = router;

@@ -34,6 +34,14 @@ exports.update = async (req, res) => {
 };
 
 exports.delete = async (req, res) => {
-  await service.deleteUser(req.params.id);
-  res.json({ message: "Deleted" });
+  try {
+    const currentUserId = req.user?.id || req.user?._id;
+    if (currentUserId && String(currentUserId) === String(req.params.id)) {
+      return res.status(400).json({ message: "You cannot delete your own active Super Admin account" });
+    }
+    await service.deleteUser(req.params.id);
+    res.json({ message: "Admin account deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

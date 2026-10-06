@@ -31,7 +31,6 @@ export interface AuthState {
   stayLoggedIn: () => void;
   sessionExpiredNotice: string | null;
   clearExpiredNotice: () => void;
-  switchRole: (newRole: string) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -127,6 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name: userValue.name,
           email: userValue.email,
           role: userValue.role,
+          department: userValue.department || "Executive Management",
+          permissions: userValue.permissions || (userValue.role === "super_admin" || userValue.role === "admin" ? ["*"] : []),
           profilePic: userValue.profilePic,
           city: userValue.city,
           state: userValue.state,
@@ -154,27 +155,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSessionWarning(false);
     setRemainingSeconds(10);
 
-    // Verify session with backend to ensure connection is healthy
-    service.verifyAdminSession().catch(() => {});
-  }, []);
-
-  const switchRole = useCallback(
-    (newRole: string) => {
-      setUser((prev: any) => {
-        if (!prev) return prev;
-        const updated = { ...prev, role: newRole };
-        if (typeof window !== "undefined") {
-          localStorage.setItem("giftcartAdminUser", JSON.stringify(updated));
+    // Verify session with backend to sync authentic database role & permissions
+    service
+      .verifyAdminSession()
+      .then((res) => {
+        if (res?.valid && res?.admin) {
+          const verifiedUser = {
+            _id: res.admin._id || res.admin.id,
+            name: res.admin.name,
+            email: res.admin.email,
+            role: res.admin.role,
+            department: res.admin.department || "Executive Management",
+            permissions: res.admin.permissions || (res.admin.role === "super_admin" || res.admin.role === "admin" ? ["*"] : []),
+            profilePic: res.admin.profilePic,
+            city: res.admin.city,
+            state: res.admin.state,
+          };
+          setUser(verifiedUser);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("giftcartAdminUser", JSON.stringify(verifiedUser));
+          }
         }
-        return updated;
-      });
-      showToast(
-        `Switched active role to: ${newRole.replace(/_/g, " ").toUpperCase()}`,
-        "info"
-      );
-    },
-    [showToast]
-  );
+      })
+      .catch(() => {});
+  }, []);
 
   const login = async (payload: { email: string; password: string }) => {
     setLoading(true);
@@ -250,6 +254,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(storedToken);
         setUser(parsedUser);
         localStorage.setItem("giftcartAdminLastActive", String(lastActiveRef.current));
+
+        // Sync authentic database role & permissions to prevent local role spoofing
+        service
+          .verifyAdminSession()
+          .then((res) => {
+            if (res?.valid && res?.admin) {
+              const verified = {
+                _id: res.admin._id || res.admin.id,
+                name: res.admin.name,
+                email: res.admin.email,
+                role: res.admin.role,
+                department: res.admin.department || "Executive Management",
+                permissions: res.admin.permissions || (res.admin.role === "super_admin" || res.admin.role === "admin" ? ["*"] : []),
+                profilePic: res.admin.profilePic,
+                city: res.admin.city,
+                state: res.admin.state,
+              };
+              setUser(verified);
+              localStorage.setItem("giftcartAdminUser", JSON.stringify(verified));
+            }
+          })
+          .catch(() => {});
       }
     } else {
       if (storedToken || storedUser) {
@@ -446,7 +472,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       stayLoggedIn,
       sessionExpiredNotice,
       clearExpiredNotice,
-      switchRole,
     }),
     [
       user,
@@ -460,7 +485,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearExpiredNotice,
       setSession,
       clearSession,
-      switchRole,
     ]
   );
 

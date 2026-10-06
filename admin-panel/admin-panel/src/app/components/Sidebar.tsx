@@ -6,6 +6,7 @@ import { useEffect, useState, useMemo, useRef, type ElementType } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import { useSidebar } from "../context/SidebarContext";
+import { canAccessPage } from "../utils/rbacConfig";
 import {
   Home,
   Bot,
@@ -248,10 +249,65 @@ function isItemActive(pathname: string | null, href?: string, children?: NavSubI
   return false;
 }
 
+function useFilteredNav(user: any): NavSectionConfig[] {
+  return useMemo(() => {
+    const role = user?.role;
+    const permissions = user?.permissions;
+
+    // Super Admin has full unrestricted root access to all navigation modules
+    if (role === "super_admin" || role === "admin") {
+      return linearSidebarNav;
+    }
+
+    return linearSidebarNav
+      .map((section) => {
+        const filteredItems = section.items
+          .map((item) => {
+            // If item has children, filter individual child links strictly
+            if (item.children && item.children.length > 0) {
+              const allowedChildren = item.children.filter((child) =>
+                canAccessPage(role, child.href, permissions)
+              );
+              if (allowedChildren.length === 0) {
+                return null;
+              }
+              return {
+                ...item,
+                children: allowedChildren,
+              };
+            }
+
+            // If item has a direct single href link
+            if (item.href) {
+              if (canAccessPage(role, item.href, permissions)) {
+                return item;
+              }
+              return null;
+            }
+
+            return null;
+          })
+          .filter(Boolean) as NavItemConfig[];
+
+        if (filteredItems.length === 0) {
+          return null;
+        }
+
+        return {
+          ...section,
+          items: filteredItems,
+        };
+      })
+      .filter(Boolean) as NavSectionConfig[];
+  }, [user?.role, user?.permissions]);
+}
+
 function DesktopSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+
+  const filteredNav = useFilteredNav(user);
 
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -269,14 +325,14 @@ function DesktopSidebar() {
 
   // Auto-expand the accordion group containing the active page
   useEffect(() => {
-    linearSidebarNav.forEach((section) => {
+    filteredNav.forEach((section) => {
       section.items.forEach((item) => {
         if (item.children?.some((child) => checkChildActive(pathname, child.href, item.children))) {
           setOpenGroup(item.key);
         }
       });
     });
-  }, [pathname]);
+  }, [pathname, filteredNav]);
 
   // Accordion toggle: closes other groups to keep sidebar compact without scrolling
   const toggleAccordion = (key: string) => {
@@ -332,13 +388,13 @@ function DesktopSidebar() {
     }, 450);
   };
 
-  // Real-time search filter across all navigation
+  // Real-time search filter across all accessible navigation
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return null;
     const q = searchQuery.toLowerCase().trim();
     const results: { sectionTitle: string; item: NavSubItem }[] = [];
 
-    linearSidebarNav.forEach((section) => {
+    filteredNav.forEach((section) => {
       section.items.forEach((item) => {
         if (item.href && (item.label.toLowerCase().includes(q) || item.key.toLowerCase().includes(q))) {
           results.push({
@@ -362,7 +418,7 @@ function DesktopSidebar() {
     });
 
     return results;
-  }, [searchQuery]);
+  }, [searchQuery, filteredNav]);
 
   return (
     <div className="hidden h-screen shrink-0 lg:flex select-none">
@@ -510,7 +566,7 @@ function DesktopSidebar() {
             </div>
           ) : (
             /* NORMAL CATEGORIZED NAVIGATION */
-            linearSidebarNav.map((section) => (
+            filteredNav.map((section) => (
               <div key={section.sectionTitle} className="space-y-1">
                 {/* Section Header with Indicator Dot and Divider */}
                 {!isCollapsed && (
@@ -887,17 +943,18 @@ function MobileSidebar() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
+  const filteredNav = useFilteredNav(user);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
 
   useEffect(() => {
-    linearSidebarNav.forEach((section) => {
+    filteredNav.forEach((section) => {
       section.items.forEach((item) => {
         if (item.children?.some((child) => pathname?.startsWith(child.href))) {
           setOpenGroup(item.key);
         }
       });
     });
-  }, [pathname]);
+  }, [pathname, filteredNav]);
 
   if (!mobileOpen) return null;
 
@@ -942,7 +999,7 @@ function MobileSidebar() {
 
         {/* Mobile Navigation List */}
         <nav className="flex-1 space-y-3.5 overflow-y-auto p-3 scrollbar-thin">
-          {linearSidebarNav.map((section) => (
+          {filteredNav.map((section) => (
             <div key={section.sectionTitle} className="space-y-1">
               <div className="flex items-center gap-2 px-2 py-0.5">
                 <span className={`h-1.5 w-1.5 rounded-full ${section.dotColor}`} />

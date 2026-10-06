@@ -20,8 +20,14 @@ export const registerAdmin = async (payload: {
   name: string;
   email: string;
   password: string;
+  role?: string;
+  department?: string;
+  city?: string;
+  permissions?: string[];
 }) => {
-  const response = await api.post("/admin/auth/register", payload);
+  const token = getAuthToken();
+  const client = token ? authApi(token) : api;
+  const response = await client.post("/admin/auth/register", payload);
   return response.data;
 };
 
@@ -229,7 +235,18 @@ export const deleteUser = async (id: string) => {
   return response.data;
 };
 
-export const updateAdmin = async (id: string, payload: { name?: string; email?: string; city?: string; profilePic?: string; role?: string }) => {
+export const updateAdmin = async (
+  id: string,
+  payload: {
+    name?: string;
+    email?: string;
+    city?: string;
+    profilePic?: string;
+    role?: string;
+    department?: string;
+    permissions?: string[];
+  }
+) => {
   const response = await authApi(getAuthToken()).put(`/admin/users/${id}`, payload);
   return response.data;
 };

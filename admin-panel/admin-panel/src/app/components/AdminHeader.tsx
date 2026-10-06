@@ -18,6 +18,7 @@ import {
   Search,
   Crown,
   Palette,
+  Lock,
 } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
 import { useTheme, ADMIN_COLOR_PRESETS } from "../context/ThemeContext";
@@ -25,65 +26,11 @@ import { useAuth } from "../context/AuthContext";
 import NotificationCenterDropdown from "./notifications/NotificationCenterDropdown";
 import { getPageRoleInfo, ROLES_CONFIG } from "../utils/rbacConfig";
 
-interface RoleOption {
-  id: string;
-  name: string;
-  department: string;
-  icon: string;
-  avatarColor: string;
-  description: string;
-}
-
-const AVAILABLE_SIMULATION_ROLES: RoleOption[] = [
-  {
-    id: "super_admin",
-    name: "Super Admin (Owner)",
-    department: "Executive Management",
-    icon: "👑",
-    avatarColor: "bg-pink-500 text-white",
-    description: "Full root control across all modules, theme studio, billing & security.",
-  },
-  {
-    id: "kitchen_manager",
-    name: "Kitchen Manager",
-    department: "Bakery & Kitchen",
-    icon: "👨‍🍳",
-    avatarColor: "bg-orange-500 text-white",
-    description: "Baking queues, cake weights, custom inscriptions, and dispatch board.",
-  },
-  {
-    id: "delivery_coordinator",
-    name: "Fleet Coordinator",
-    department: "Logistics & Fleet",
-    icon: "🛵",
-    avatarColor: "bg-blue-500 text-white",
-    description: "Assign riders, track dispatch in transit, and send WhatsApp route links.",
-  },
-  {
-    id: "support_agent",
-    name: "Support Agent",
-    department: "Customer Support & Recovery",
-    icon: "🎧",
-    avatarColor: "bg-rose-500 text-white",
-    description: "Abandoned checkout recovery, 15% discount coupons & customer tickets.",
-  },
-  {
-    id: "seo_specialist",
-    name: "SEO Specialist",
-    department: "Growth & Search Marketing",
-    icon: "📈",
-    avatarColor: "bg-purple-500 text-white",
-    description: "Brand storefront theme studio, meta tags, Google JSON-LD schema & promos.",
-  },
-];
-
 export default function AdminHeader() {
   const { openMobile } = useSidebar();
   const { theme, toggleTheme, adminColor, setAdminColorPreset } = useTheme();
-  const { user, switchRole } = useAuth();
+  const { user } = useAuth();
   const pathname = usePathname() || "";
-  const [showRoleMenu, setShowRoleMenu] = useState(false);
-  const roleMenuRef = useRef<HTMLDivElement>(null);
   const [showPaletteMenu, setShowPaletteMenu] = useState(false);
   const paletteMenuRef = useRef<HTMLDivElement>(null);
 
@@ -94,9 +41,6 @@ export default function AdminHeader() {
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (roleMenuRef.current && !roleMenuRef.current.contains(event.target as Node)) {
-        setShowRoleMenu(false);
-      }
       if (paletteMenuRef.current && !paletteMenuRef.current.contains(event.target as Node)) {
         setShowPaletteMenu(false);
       }
@@ -172,76 +116,15 @@ export default function AdminHeader() {
 
       {/* Right Action Tools */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-        {/* Interactive Role Switcher / Simulator Dropdown */}
-        <div className="relative" ref={roleMenuRef}>
-          <button
-            type="button"
-            onClick={() => setShowRoleMenu((prev) => !prev)}
-            className="flex items-center gap-1.5 rounded-xl border border-pink-500/25 bg-pink-500/10 px-2.5 py-1.5 text-xs font-bold text-pink-500 hover:bg-pink-500/20 transition cursor-pointer"
-            title="Simulate Role / Test Permissions"
-          >
-            <UserCheck className="h-3.5 w-3.5" />
-            <span className="hidden lg:inline text-[11px] font-medium text-pink-500/80">Role:</span>
-            <span className="font-black text-xs">{currentRoleConfig?.name || "Super Admin"}</span>
-            <ChevronDown className="h-3 w-3 opacity-70" />
-          </button>
-
-          {showRoleMenu && (
-            <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-border-theme bg-card shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="p-2 border-b border-border-theme">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-black text-foreground">Switch / Test Team Role</p>
-                  <span className="text-[10px] font-bold text-pink-500 bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/20">
-                    RBAC Active
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Simulate any department role to test page assignments and 403 access control in real-time.
-                </p>
-              </div>
-
-              <div className="p-1 space-y-1 mt-1 max-h-72 overflow-y-auto">
-                {AVAILABLE_SIMULATION_ROLES.map((r) => {
-                  const isCurrent = currentRoleId === r.id;
-                  return (
-                    <button
-                      key={r.id}
-                      type="button"
-                      onClick={() => {
-                        switchRole(r.id);
-                        setShowRoleMenu(false);
-                      }}
-                      className={`w-full flex items-start gap-2.5 p-2 rounded-xl text-left transition cursor-pointer ${
-                        isCurrent
-                          ? "bg-pink-500/15 border border-pink-500/30 text-foreground"
-                          : "hover:bg-hover-theme text-foreground"
-                      }`}
-                    >
-                      <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${r.avatarColor}`}>
-                        <span>{r.icon}</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-bold leading-tight">{r.name}</p>
-                          {isCurrent && <Check className="h-3.5 w-3.5 text-pink-500 shrink-0" />}
-                        </div>
-                        <p className="text-[10px] text-pink-500 dark:text-pink-400 font-medium mt-0.5">
-                          {r.department}
-                        </p>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                          {r.description}
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="p-2 border-t border-border-theme bg-background/50 rounded-b-xl text-[10px] text-slate-400">
-                🔒 In production, team members log in using their dedicated staff email credentials with locked roles.
-              </div>
-            </div>
-          )}
+        {/* Assigned Staff Role Badge (Security Locked) */}
+        <div
+          className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold shadow-2xs select-none ${currentRoleConfig.badgeColor}`}
+          title={`Active Role: ${currentRoleConfig.name}\nDepartment: ${user?.department || currentRoleConfig.department}\nSecurity: System assigned and locked by Super Administrator.`}
+        >
+          <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+          <span className="hidden lg:inline text-[11px] font-medium opacity-75">Role:</span>
+          <span className="font-black text-xs">{currentRoleConfig.name}</span>
+          <Lock className="h-3 w-3 opacity-60 ml-0.5" />
         </div>
 
         {/* Quick Link to Kitchen Board */}

@@ -1,14 +1,14 @@
 "use client";
 
-import AdminDetails from "@/app/components/adminProfile/admin-detail/adminDetails";
+import AdminCreatePage from "@/app/components/adminProfile/AdminCreatePage";
 import ProtectedRoute from "@/app/components/ProtectedRoute";
 import AdminMain from "@/app/components/AdminMain";
 
-export default function AdminDetail() {
+export default function CreateAdminRoute() {
   return (
     <ProtectedRoute>
       <AdminMain>
-        <AdminDetails />
+        <AdminCreatePage />
       </AdminMain>
     </ProtectedRoute>
   );

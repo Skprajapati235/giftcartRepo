@@ -11,23 +11,25 @@ router.get("/sitemap-data", controller.getSitemapData);
 router.get("/robots-data", controller.getRobotsData);
 router.get("/check-redirect", controller.checkRedirect);
 
-// Admin endpoints (protected by adminMiddleware)
-router.put("/global", adminMiddleware, controller.updateGlobal);
+const seoManage = adminMiddleware.requireRole(["super_admin", "admin", "seo_specialist"]);
+
+// Admin endpoints (protected by adminMiddleware and seoManage)
+router.put("/global", adminMiddleware, seoManage, controller.updateGlobal);
 
 // Page SEO CRUD
-router.get("/pages", adminMiddleware, controller.getAllPages);
-router.post("/pages", adminMiddleware, controller.createPage);
-router.post("/seed", adminMiddleware, controller.seedPages);
-router.put("/pages/:id", adminMiddleware, controller.updatePage);
-router.delete("/pages/:id", adminMiddleware, controller.deletePage);
+router.get("/pages", adminMiddleware, seoManage, controller.getAllPages);
+router.post("/pages", adminMiddleware, seoManage, controller.createPage);
+router.post("/seed", adminMiddleware, seoManage, controller.seedPages);
+router.put("/pages/:id", adminMiddleware, seoManage, controller.updatePage);
+router.delete("/pages/:id", adminMiddleware, seoManage, controller.deletePage);
 
 // Redirects CRUD
-router.get("/redirects", adminMiddleware, controller.getAllRedirects);
-router.post("/redirects", adminMiddleware, controller.createRedirect);
-router.put("/redirects/:id", adminMiddleware, controller.updateRedirect);
-router.delete("/redirects/:id", adminMiddleware, controller.deleteRedirect);
+router.get("/redirects", adminMiddleware, seoManage, controller.getAllRedirects);
+router.post("/redirects", adminMiddleware, seoManage, controller.createRedirect);
+router.put("/redirects/:id", adminMiddleware, seoManage, controller.updateRedirect);
+router.delete("/redirects/:id", adminMiddleware, seoManage, controller.deleteRedirect);
 
 // SEO Health Audit
-router.get("/audit", adminMiddleware, controller.getAudit);
+router.get("/audit", adminMiddleware, seoManage, controller.getAudit);
 
 module.exports = router;

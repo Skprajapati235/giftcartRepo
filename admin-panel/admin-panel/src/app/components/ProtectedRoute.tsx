@@ -12,7 +12,7 @@ export default function ProtectedRoute({
 }: {
   children: React.ReactNode;
 }) {
-  const { authenticated, loading, user, switchRole } = useAuth();
+  const { authenticated, loading, user } = useAuth();
   const router = useRouter();
   const pathname = usePathname() || "";
 
@@ -46,14 +46,18 @@ export default function ProtectedRoute({
   }
 
   // Check RBAC permissions for the current page
-  const hasAccess = canAccessPage(user?.role, pathname);
+  const hasAccess = canAccessPage(user?.role, pathname, user?.permissions);
 
   if (!hasAccess) {
     const pageInfo = getPageRoleInfo(pathname);
-    const userRoleDisplay = (user?.role || "Team Member").replace(/_/g, " ").toUpperCase();
+    const userRoleDisplay = (user?.role || "Staff Member").replace(/_/g, " ").toUpperCase();
 
-    const getDefaultRouteForRole = (role: string = "") => {
-      switch (role.toLowerCase()) {
+    const getDefaultRouteForRole = (role: string = "", permissions?: string[]) => {
+      if (Array.isArray(permissions) && permissions.length > 0 && !permissions.includes("*")) {
+        const firstPerm = permissions.find((p) => p && p.startsWith("/"));
+        if (firstPerm) return firstPerm;
+      }
+      switch ((role || "").toLowerCase()) {
         case "kitchen_manager":
           return "/orders/board";
         case "delivery_coordinator":
@@ -61,7 +65,7 @@ export default function ProtectedRoute({
         case "support_agent":
           return "/abandoned-carts";
         case "seo_specialist":
-          return "/seo/global";
+          return "/seo";
         default:
           return "/dashboard";
       }
@@ -74,24 +78,25 @@ export default function ProtectedRoute({
         </div>
 
         <h2 className="text-xl font-black text-foreground sm:text-2xl">
-          403 Access Denied: Role Restricted
+          403 Access Denied: Screen Not Assigned
         </h2>
 
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-md">
-          This workstation is strictly assigned to <strong className="text-foreground">{pageInfo.assignedTo}</strong>.
+          This workstation is strictly restricted to <strong className="text-foreground">{pageInfo.assignedTo}</strong>.
+          Your account has not been granted access to this module.
         </p>
 
         <div className="mt-5 rounded-2xl bg-background border border-border-theme p-4 text-xs space-y-1.5 max-w-sm w-full text-left">
           <div className="flex justify-between">
-            <span className="text-slate-400">Your Current Role:</span>
+            <span className="text-slate-400">Your Account Role:</span>
             <span className="font-bold text-rose-500">{userRoleDisplay}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Assigned Department:</span>
-            <span className="font-bold text-foreground">{pageInfo.department}</span>
+            <span className="font-bold text-foreground">{user?.department || pageInfo.department}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-400">Required Roles:</span>
+            <span className="text-slate-400">Workstation Required Roles:</span>
             <span className="font-mono text-pink-500 font-bold">{pageInfo.allowedRoles.join(", ")}</span>
           </div>
         </div>
@@ -99,21 +104,17 @@ export default function ProtectedRoute({
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <button
             type="button"
-            onClick={() => router.push(getDefaultRouteForRole(user?.role))}
-            className="flex items-center gap-2 rounded-xl bg-pink-500 px-5 py-2.5 text-xs font-bold text-white hover:bg-pink-600 active:scale-95 transition shadow-md shadow-pink-500/20"
+            onClick={() => router.push(getDefaultRouteForRole(user?.role, user?.permissions))}
+            className="flex items-center gap-2 rounded-xl bg-pink-500 px-5 py-2.5 text-xs font-bold text-white hover:bg-pink-600 active:scale-95 transition shadow-md shadow-pink-500/20 cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Go to Your Assigned Workstation</span>
           </button>
+        </div>
 
-          <button
-            type="button"
-            onClick={() => switchRole("super_admin")}
-            className="flex items-center gap-2 rounded-xl border border-pink-500/20 bg-pink-500/10 px-4 py-2.5 text-xs font-bold text-pink-500 hover:bg-pink-500/20 active:scale-95 transition"
-            title="Switch back to Super Admin root role"
-          >
-            <span>👑 Switch to Super Admin</span>
-          </button>
+        <div className="mt-4 flex items-center gap-1.5 text-[11px] text-slate-400">
+          <Lock className="h-3 w-3" />
+          <span>Need access? Please contact your Super Administrator.</span>
         </div>
       </div>
     );

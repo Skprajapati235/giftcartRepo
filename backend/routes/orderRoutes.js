@@ -58,8 +58,8 @@ router.get("/admin/unviewed", authMiddleware, adminMiddleware, controller.getUnv
 router.get("/admin/detail/:id", authMiddleware, adminMiddleware, controller.getOrderById);
 router.put("/admin/:id/status", authMiddleware, adminMiddleware, controller.updateOrderStatus);
 router.put("/admin/:id/kitchen-status", authMiddleware, adminMiddleware, controller.updateKitchenStatus);
-router.post("/admin/bulk-delete", authMiddleware, adminMiddleware, controller.deleteMultipleOrders);
-router.delete("/admin/:id", authMiddleware, adminMiddleware, controller.deleteOrder);
+router.post("/admin/bulk-delete", authMiddleware, adminMiddleware, adminMiddleware.requireRole(["super_admin", "admin"]), controller.deleteMultipleOrders);
+router.delete("/admin/:id", authMiddleware, adminMiddleware, adminMiddleware.requireRole(["super_admin", "admin"]), controller.deleteOrder);
 router.put("/admin/:id/viewed", authMiddleware, adminMiddleware, controller.markOrderAsViewed);
 router.get("/admin/payments", authMiddleware, adminMiddleware, controller.getPaymentHistory);
 router.get("/admin/:id/invoice", authMiddleware, adminMiddleware, controller.downloadInvoice);

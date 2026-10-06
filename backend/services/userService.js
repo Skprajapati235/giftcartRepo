@@ -42,7 +42,7 @@ exports.getAdmins = async ({ page = 1, limit = 10, search = "" } = {}) => {
   } : {};
 
   const admins = await Admin.find(query)
-    .select("name email city state mobileNumber profilePic role createdAt")
+    .select("name email city state mobileNumber profilePic role department permissions createdAt")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -66,22 +66,23 @@ exports.updateUser = async (id, data) => {
   };
   if (data.role) updateFields.role = data.role;
   if (data.department) updateFields.department = data.department;
+  if (data.permissions !== undefined) updateFields.permissions = data.permissions;
 
-  let updated = await User.findByIdAndUpdate(id, updateFields, { new: true }).select("name email city profilePic role department createdAt");
+  let updated = await Admin.findByIdAndUpdate(id, updateFields, { new: true }).select("name email city profilePic role department permissions createdAt");
   if (updated) return updated;
 
-  updated = await Admin.findByIdAndUpdate(id, updateFields, { new: true }).select("name email city profilePic role department createdAt");
+  updated = await User.findByIdAndUpdate(id, updateFields, { new: true }).select("name email city profilePic role department permissions createdAt");
   if (updated) return updated;
 
-  throw new Error("User not found");
+  throw new Error("Account not found");
 };
 
 exports.deleteUser = async (id) => {
-  const deletedUser = await User.findByIdAndDelete(id);
-  if (deletedUser) return deletedUser;
-
   const deletedAdmin = await Admin.findByIdAndDelete(id);
   if (deletedAdmin) return deletedAdmin;
 
-  throw new Error("User not found");
+  const deletedUser = await User.findByIdAndDelete(id);
+  if (deletedUser) return deletedUser;
+
+  throw new Error("Account not found");
 };

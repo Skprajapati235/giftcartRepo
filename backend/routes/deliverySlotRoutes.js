@@ -3,10 +3,12 @@ const router = express.Router();
 const controller = require("../controllers/deliverySlotController");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
+const slotManage = adminMiddleware.requireRole(["super_admin", "admin", "delivery_coordinator"]);
+
 router.get("/", controller.getDeliverySlots);
 router.get("/availability", controller.getAvailability);
-router.post("/", adminMiddleware, controller.createDeliverySlot);
-router.put("/:id", adminMiddleware, controller.updateDeliverySlot);
-router.delete("/:id", adminMiddleware, controller.deleteDeliverySlot);
+router.post("/", adminMiddleware, slotManage, controller.createDeliverySlot);
+router.put("/:id", adminMiddleware, slotManage, controller.updateDeliverySlot);
+router.delete("/:id", adminMiddleware, slotManage, controller.deleteDeliverySlot);
 
 module.exports = router;

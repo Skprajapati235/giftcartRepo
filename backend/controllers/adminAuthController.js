@@ -2,6 +2,7 @@ const authService = require("../services/authService");
 const generateToken = require("../utils/generateToken");
 const Admin = require("../models/Admin");
 const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 
 const sanitizeAdmin = (admin) => {
   if (!admin) return null;
@@ -14,6 +15,25 @@ const sanitizeAdmin = (admin) => {
 
 exports.register = async (req, res) => {
   try {
+    const adminCount = await Admin.countDocuments();
+    // If an admin already exists in the system, only a logged-in Super Admin can create accounts
+    if (adminCount > 0) {
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.startsWith("Bearer ") ? authHeader.split(" ")[1] : authHeader;
+      if (!token) {
+        return res.status(401).json({ message: "Super Admin authorization required to create accounts" });
+      }
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const role = (decoded.role || "").toLowerCase();
+        if (role !== "super_admin" && role !== "admin") {
+          return res.status(403).json({ message: "Access denied. Only Super Admin can register staff accounts" });
+        }
+      } catch (tokenErr) {
+        return res.status(401).json({ message: "Invalid or expired Super Admin session token" });
+      }
+    }
+
     const admin = await authService.registerAdmin(req.body);
     res.status(201).json({ admin: sanitizeAdmin(admin) });
   } catch (err) {
@@ -114,6 +134,8 @@ exports.verifySession = async (req, res) => {
         name: admin.name,
         email: admin.email,
         role: admin.role,
+        department: admin.department || "Executive Management",
+        permissions: admin.permissions || (admin.role === "super_admin" || admin.role === "admin" ? ["*"] : []),
         profilePic: admin.profilePic,
         city: admin.city,
         state: admin.state,

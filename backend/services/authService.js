@@ -63,7 +63,7 @@ exports.updateUserProfile = async (userId, data) => {
 };
 
 exports.registerAdmin = async (data) => {
-  const { name, password, role, department } = data;
+  const { name, password, role, department, permissions } = data;
   const email = validateEmail(data.email);
   validatePassword(password);
 
@@ -73,7 +73,7 @@ exports.registerAdmin = async (data) => {
   if (adminExists) throw new Error("Admin already exists");
 
   const hashed = await bcrypt.hash(password, 10);
-  const assignedRole = role || "admin";
+  const assignedRole = role || "kitchen_manager";
   const assignedDept = department || (
     assignedRole === "kitchen_manager" ? "Bakery & Kitchen" :
     assignedRole === "delivery_coordinator" ? "Logistics & Fleet" :
@@ -82,12 +82,30 @@ exports.registerAdmin = async (data) => {
     "Executive Management"
   );
 
+  let assignedPermissions = permissions;
+  if (!assignedPermissions || !Array.isArray(assignedPermissions) || assignedPermissions.length === 0) {
+    if (assignedRole === "super_admin" || assignedRole === "admin") {
+      assignedPermissions = ["*"];
+    } else if (assignedRole === "kitchen_manager") {
+      assignedPermissions = ["/dashboard", "/orders/board", "/orders", "/products", "/category", "/flavors", "/addons", "/inventory"];
+    } else if (assignedRole === "delivery_coordinator") {
+      assignedPermissions = ["/dashboard", "/delivery-fleet", "/delivery-slots", "/delivery-hours", "/orders", "/cities"];
+    } else if (assignedRole === "support_agent") {
+      assignedPermissions = ["/dashboard", "/abandoned-carts", "/crm", "/support", "/websitecontact", "/leads", "/reviews", "/orders"];
+    } else if (assignedRole === "seo_specialist") {
+      assignedPermissions = ["/dashboard", "/seo", "/seo/global", "/seo/pages", "/seo/redirects", "/seo/robots-sitemap", "/seo/audit", "/coupons", "/theme-customizer", "/stories", "/hero-slides", "/testimonials", "/gallery"];
+    } else {
+      assignedPermissions = ["/dashboard"];
+    }
+  }
+
   return await Admin.create({
     name,
     email,
     password: hashed,
     role: assignedRole,
     department: assignedDept,
+    permissions: assignedPermissions,
   });
 };
 
