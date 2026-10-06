@@ -35,6 +35,15 @@ exports.register = async (req, res) => {
     }
 
     const admin = await authService.registerAdmin(req.body);
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      action: `Created Staff Account`,
+      module: "Admin Management",
+      details: `Created new admin account "${admin.name}" (${admin.email}) with role: ${admin.role}.`,
+      severity: "warning",
+      metadata: { createdAdminId: admin._id, email: admin.email, role: admin.role },
+    });
     res.status(201).json({ admin: sanitizeAdmin(admin) });
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -45,6 +54,15 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const admin = await authService.loginAdmin({ email, password });
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      admin: { id: admin._id, name: admin.name, email: admin.email, role: admin.role },
+      action: `Admin Logged In`,
+      module: "Authentication",
+      details: `Admin "${admin.name}" (${admin.role}) signed in successfully from IP ${req.ip || "unknown"}.`,
+      severity: "info",
+    });
     res.json({ admin: sanitizeAdmin(admin), token: generateToken(admin._id, admin.role) });
   } catch (err) {
     res.status(400).json({ message: err.message });

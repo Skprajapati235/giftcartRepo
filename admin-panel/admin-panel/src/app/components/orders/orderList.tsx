@@ -9,6 +9,7 @@ import { adminTableWrapClass, adminTableWideClass, adminTableHeadCellClass, admi
 import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 import OrderInvoiceModal from "./OrderInvoiceModal";
 import { getRelativeTime } from "../../utils/timeAgo";
+import { auditLogsService } from "../../services/auditLogsService";
 
 export const isOrderPaymentIncomplete = (order: any): boolean => {
   if (!order) return false;
@@ -62,52 +63,19 @@ export default function OrderList({
     onDelete(id);
   };
 
-  const exportOrdersCsv = () => {
-    if (!orders || orders.length === 0) {
-      alert("No orders to export.");
-      return;
+  const exportOrdersCsv = async () => {
+    try {
+      await auditLogsService.exportOrders("csv");
+    } catch (err: any) {
+      alert(err?.message || "Failed to export orders via API.");
     }
-    const headers = ["Order ID", "Customer Name", "Phone", "Total Amount", "Payment Method", "Payment Status", "Order Status", "Created At"];
-    const rows = (displayedOrders || []).map((o: any) => [
-      `"${o._id}"`,
-      `"${o.user?.name || 'Customer'}"`,
-      `"${o.user?.mobileNumber || ''}"`,
-      `"${o.totalAmount || 0}"`,
-      `"${o.paymentMethod || 'Online'}"`,
-      `"${o.paymentStatus || 'Pending'}"`,
-      `"${o.status || 'Pending'}"`,
-      `"${o.createdAt ? new Date(o.createdAt).toLocaleString() : ''}"`,
-    ]);
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
-    const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
-    link.download = `Orders_Report_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const handleDownloadInvoice = async (id: string) => {
     try {
-      const token = localStorage.getItem("giftcartAdminToken") || "";
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/order/admin/${id}/invoice`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (!res.ok) throw new Error("Failed to generate invoice");
-      
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Invoice-${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      await auditLogsService.downloadInvoice(id);
     } catch (error) {
-      alert("Failed to download invoice.");
+      alert("Failed to download invoice via API.");
     }
   };
 

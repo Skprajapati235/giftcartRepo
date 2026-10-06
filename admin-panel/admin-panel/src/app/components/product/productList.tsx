@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, LayoutGrid, List, MoreHorizontal, Trash2, Edit3, Box, Eye, Moon, Clock } from "lucide-react";
+import { Search, LayoutGrid, List, MoreHorizontal, Trash2, Edit3, Box, Eye, Moon, Clock, Download } from "lucide-react";
 import Pagination from "../Pagination";
 import { TableSkeleton, CardGridSkeleton } from "../skeletonLoader/commonSkeleton";
 import {
@@ -12,6 +12,7 @@ import {
 } from "../ui/adminTable";
 import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 import { getDeliveryHours, DeliveryHoursStatus } from "../../services/deliveryHoursService";
+import { auditLogsService } from "../../services/auditLogsService";
 
 interface ProductListProps {
   products: any[];
@@ -80,6 +81,22 @@ export default function ProductList({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                await auditLogsService.exportProducts("csv");
+              } catch (err: any) {
+                alert(err?.message || "Failed to export catalog");
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-theme bg-background hover:bg-hover-theme text-foreground text-xs font-bold transition shadow-2xs cursor-pointer"
+            title="Export products catalog as CSV via API"
+          >
+            <Download size={14} className="text-primary" />
+            <span className="hidden sm:inline">Export CSV</span>
+          </button>
+
           <div className="flex bg-background p-1 rounded-xl border border-border-theme">
             <button
               type="button"

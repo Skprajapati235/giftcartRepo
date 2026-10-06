@@ -127,6 +127,17 @@ exports.exportExcel = async (req, res) => {
     const csvContent = "\uFEFF" + [headers.map(escapeCsv).join(","), ...rows.map((r) => r.join(","))].join("\r\n");
 
     const dateStr = new Date().toISOString().slice(0, 10);
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      action: "Exported Inventory Stock (EXCEL/CSV)",
+      module: "Warehouse & Stock",
+      details: `Exported complete inventory stock ledger containing ${items.length} SKUs in Excel CSV format.`,
+      format: "csv",
+      severity: "info",
+      metadata: { count: items.length, format: "csv" },
+    });
+
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="giftfestive-inventory-${dateStr}.csv"`);
     return res.status(200).send(csvContent);
@@ -146,6 +157,17 @@ exports.exportPdf = async (req, res) => {
     const summary = await inventoryService.getInventorySummary();
 
     const dateStr = new Date().toISOString().slice(0, 10);
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      action: "Exported Inventory Report (PDF)",
+      module: "Warehouse & Stock",
+      details: `Generated and streamed official Inventory Stock & Valuation PDF Report for ${items.length} items.`,
+      format: "pdf",
+      severity: "info",
+      metadata: { count: items.length, format: "pdf" },
+    });
+
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="giftfestive-inventory-${dateStr}.pdf"`);
 

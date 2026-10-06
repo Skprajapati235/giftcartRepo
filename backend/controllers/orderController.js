@@ -1119,6 +1119,17 @@ exports.updateOrderStatus = async (req, res) => {
     const { status } = req.body;
     const order = await orderService.updateOrderStatus(req.params.id, status);
     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
+
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      action: `Updated Order Status`,
+      module: "Orders",
+      details: `Order #${order.orderId || req.params.id} status changed to "${status}".`,
+      severity: "info",
+      metadata: { orderId: order._id, status },
+    });
+
     res.json({ success: true, message: "Order status updated" });
   } catch (error) {
     console.error("Update Order Status Error:", error);
@@ -1130,6 +1141,17 @@ exports.updateOrderStatus = async (req, res) => {
 exports.deleteOrder = async (req, res) => {
   try {
     await orderService.deleteOrder(req.params.id);
+
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      action: `Deleted Order`,
+      module: "Orders",
+      details: `Permanently removed Order ID ${req.params.id}.`,
+      severity: "warning",
+      metadata: { deletedId: req.params.id },
+    });
+
     res.json({ success: true, message: "Order deleted" });
   } catch (error) {
     console.error("Delete Order Error:", error);
@@ -1142,6 +1164,17 @@ exports.deleteMultipleOrders = async (req, res) => {
   try {
     const { ids } = req.body;
     const result = await orderService.deleteMultipleOrders(ids);
+
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      action: `Bulk Deleted Orders`,
+      module: "Orders",
+      details: `Deleted ${result?.deletedCount || 0} orders simultaneously.`,
+      severity: "danger",
+      metadata: { ids, count: result?.deletedCount },
+    });
+
     res.json({ success: true, message: `${result.deletedCount} orders deleted`, deletedCount: result.deletedCount });
   } catch (error) {
     console.error("Bulk Delete Order Error:", error);
@@ -1171,6 +1204,82 @@ exports.getUnviewedOrders = async (req, res) => {
   }
 };
 
+// Helper to escape CSV values
+const escapeCsv = (val) => {
+  if (val === undefined || val === null) return '""';
+  const str = String(val).replace(/"/g, '""');
+  return `"${str}"`;
+};
+
+// GET /api/order/admin/export/:format
+exports.exportOrders = async (req, res) => {
+  try {
+    const format = (req.params.format || "csv").toLowerCase();
+    const orders = await Order.find().sort({ createdAt: -1 }).populate("user", "name email mobileNumber").limit(1000).lean();
+
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      action: `Exported Orders (${format.toUpperCase()})`,
+      module: "Orders & Kitchen",
+      details: `Exported ${orders.length} order records with customer details, order statuses, and transaction totals.`,
+      format,
+      severity: "success",
+      metadata: { count: orders.length, format },
+    });
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+
+    if (format === "json") {
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="giftfestive-orders-${dateStr}.json"`);
+      return res.status(200).send(JSON.stringify(orders, null, 2));
+    }
+
+    // CSV format
+    const headers = [
+      "Order ID",
+      "Created At",
+      "Customer Name",
+      "Customer Email",
+      "Customer Phone",
+      "Total Amount (INR)",
+      "Order Status",
+      "Kitchen Status",
+      "Payment Status",
+      "Payment Method",
+      "Delivery Slot",
+      "Shipping City",
+      "Item Count",
+    ];
+
+    const rows = orders.map((o) => [
+      escapeCsv(o.orderId || o._id),
+      escapeCsv(o.createdAt ? new Date(o.createdAt).toISOString() : ""),
+      escapeCsv(o.shippingAddress?.fullName || o.user?.name || "Customer"),
+      escapeCsv(o.user?.email || ""),
+      escapeCsv(o.shippingAddress?.phone || o.user?.mobileNumber || ""),
+      escapeCsv(o.totalAmount || 0),
+      escapeCsv(o.status || "Received"),
+      escapeCsv(o.kitchenStatus || "Received"),
+      escapeCsv(o.paymentStatus || "Pending"),
+      escapeCsv(o.paymentMethod || "Online"),
+      escapeCsv(o.deliverySlot?.slotName || o.deliverySlot?.timeRange || "Standard"),
+      escapeCsv(o.shippingAddress?.city || "Faridabad"),
+      escapeCsv(Array.isArray(o.items) ? o.items.length : 1),
+    ]);
+
+    const csvContent = "\uFEFF" + [headers.map(escapeCsv).join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="giftfestive-orders-${dateStr}.csv"`);
+    return res.status(200).send(csvContent);
+  } catch (error) {
+    console.error("Export Orders Error:", error);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // GET /api/order/admin/:id/invoice
 exports.downloadInvoice = async (req, res) => {
   try {
@@ -1178,6 +1287,17 @@ exports.downloadInvoice = async (req, res) => {
     if (!order) {
       return res.status(404).json({ success: false, message: "Order not found" });
     }
+
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      action: "Downloaded Tax Invoice (PDF)",
+      module: "Orders & Kitchen",
+      details: `Downloaded official Tax Invoice PDF for Order #${order.orderId || order._id} (₹${order.totalAmount}).`,
+      format: "pdf",
+      severity: "info",
+      metadata: { orderId: order._id, totalAmount: order.totalAmount, format: "pdf" },
+    });
 
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename=Invoice-${order.orderId || order._id}.pdf`);

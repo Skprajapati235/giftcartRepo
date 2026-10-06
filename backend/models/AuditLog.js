@@ -27,25 +27,20 @@ const auditLogSchema = new mongoose.Schema(
     module: {
       type: String,
       required: true,
-      enum: [
-        "Theme Studio",
-        "Orders & Kitchen",
-        "Catalog",
-        "Discounts",
-        "Security & Auth",
-        "Delivery Fleet",
-        "Abandoned Carts",
-        "System",
-      ],
       default: "System",
     },
     details: {
       type: String,
       default: "",
     },
+    format: {
+      type: String,
+      enum: ["csv", "pdf", "json", "excel", "none"],
+      default: "none",
+    },
     severity: {
       type: String,
-      enum: ["info", "warning", "success"],
+      enum: ["info", "warning", "success", "danger", "error"],
       default: "info",
     },
     ipAddress: {
@@ -62,5 +57,8 @@ const auditLogSchema = new mongoose.Schema(
 
 auditLogSchema.index({ createdAt: -1 });
 auditLogSchema.index({ module: 1 });
+auditLogSchema.index({ format: 1 });
+// Automatically purge records older than 10 days (10 * 24 * 60 * 60 seconds)
+auditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 864000 });
 
 module.exports = mongoose.model("AuditLog", auditLogSchema);

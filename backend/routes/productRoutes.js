@@ -10,6 +10,7 @@ router.post("/", adminMiddleware, productManage, (req, res, next) => {
 }, controller.create);
 
 router.get("/", controller.getAll);
+router.get("/export/:format", adminMiddleware, controller.exportProducts);
 router.get("/:id", controller.getOne);
 
 router.put("/:id", adminMiddleware, productManage, (req, res, next) => {

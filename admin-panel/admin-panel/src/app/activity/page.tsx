@@ -1,10 +1,10 @@
 "use client";
 
-import ActivityView from "../components/activity/ActivityView";
 import ProtectedRoute from "../components/ProtectedRoute";
 import AdminMain from "../components/AdminMain";
+import ActivityView from "../components/activity/ActivityView";
 
-export default function AuditLogsPage() {
+export default function ActivityPage() {
   return (
     <ProtectedRoute>
       <AdminMain>

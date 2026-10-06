@@ -13,6 +13,7 @@ import StatsGrid from "./statsGrid";
 import RecentOrder from "./recentOrder";
 import PaymentHistory from "./paymentHistory";
 import DashboardCharts, { DashboardTab } from "./dashboardCharts";
+import DashboardActivityTab from "./DashboardActivityTab";
 import Link from "next/link";
 import {
   Sparkles,
@@ -36,6 +37,8 @@ import {
   Search,
   X,
   Zap,
+  Activity,
+  HardDriveDownload,
 } from "lucide-react";
 
 export interface Order {
@@ -879,36 +882,61 @@ export default function DashboardView() {
                 {leadsCount} leads
               </span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => handleDashboardTabChange("activity")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "activity"
+                  ? "bg-rose-600 text-white shadow-2xs"
+                  : "text-slate-600 dark:text-slate-300 hover:bg-rose-500/10 hover:text-rose-600"
+                }`}
+            >
+              <Activity className="h-3.5 w-3.5" />
+              <span>Activity & Export</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold ${activeTab === "activity" ? "bg-white/20 text-white" : "bg-rose-500/15 text-rose-700 dark:text-rose-300"
+                }`}>
+                Live
+              </span>
+            </button>
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium px-1">
             <span>Filter mode:</span>
             <span className="font-bold text-slate-900 dark:text-white capitalize">
-              {activeTab === "all" ? "Viewing All 4 Hubs" : `${activeTab} Hub Only`}
+              {activeTab === "all"
+                ? "Viewing All Hubs"
+                : activeTab === "activity"
+                ? "Live Activity & Export Hub"
+                : `${activeTab} Hub Only`}
             </span>
           </div>
         </div>
-
-
       </div>
 
-      {/* 5. Interactive Order Volume & Fulfillment Charts */}
-      <DashboardCharts
-        orders={orders}
-        payments={payments}
-        leads={leads}
-        inventorySummary={inventorySummary}
-        supportData={supportData}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
+      {/* 5. Main Dashboard Content Area */}
+      {activeTab === "activity" ? (
+        <DashboardActivityTab onRefreshParent={fetchData} />
+      ) : (
+        <>
+          {/* Interactive Order Volume & Fulfillment Charts */}
+          <DashboardCharts
+            orders={orders}
+            payments={payments}
+            leads={leads}
+            inventorySummary={inventorySummary}
+            supportData={supportData}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
 
-      {/* 6. Recent Activity: Orders & Payments Tables */}
-      {(activeTab === "all" || activeTab === "kitchen" || activeTab === "sales") && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <RecentOrder orders={orders} />
-          <PaymentHistory payments={payments} />
-        </div>
+          {/* Recent Activity: Orders & Payments Tables */}
+          {(activeTab === "all" || activeTab === "kitchen" || activeTab === "sales") && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <RecentOrder orders={orders} />
+              <PaymentHistory payments={payments} />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

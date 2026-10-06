@@ -37,7 +37,7 @@ import {
 } from "lucide-react";
 import { InventorySummary } from "../../services/inventoryService";
 
-export type DashboardTab = "all" | "kitchen" | "sales" | "inventory" | "crm" | "support";
+export type DashboardTab = "all" | "kitchen" | "sales" | "inventory" | "crm" | "support" | "activity";
 
 export interface ChartOrder {
   _id?: string;

@@ -53,6 +53,7 @@ router.get("/email-action/:id/:status", controller.emailActionPreview);
 router.post("/email-action/:id/:status", controller.emailActionConfirm);
 
 // Admin routes
+router.get("/admin/export/:format", authMiddleware, adminMiddleware, controller.exportOrders);
 router.get("/admin/all", authMiddleware, adminMiddleware, controller.getAllOrders);
 router.get("/admin/unviewed", authMiddleware, adminMiddleware, controller.getUnviewedOrders);
 router.get("/admin/detail/:id", authMiddleware, adminMiddleware, controller.getOrderById);
