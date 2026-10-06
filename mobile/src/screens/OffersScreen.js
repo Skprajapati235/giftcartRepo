@@ -105,11 +105,35 @@ export default function OffersScreen({ navigation }) {
                   )}
                 </View>
 
-                {item.minOrderAmount > 0 && (
-                  <Text style={styles.minOrderText}>
-                    Valid on orders above <Text style={{ fontWeight: '800', color: '#1E293B' }}>₹{item.minOrderAmount}</Text>
+                {item.title ? (
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: '#1E293B', marginTop: 6, marginBottom: 2 }}>
+                    {item.title}
                   </Text>
-                )}
+                ) : null}
+
+                {item.description ? (
+                  <Text style={{ fontSize: 12, color: '#64748B', marginBottom: 6, lineHeight: 16 }}>
+                    {item.description}
+                  </Text>
+                ) : null}
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {item.minOrderAmount > 0 ? (
+                    <Text style={styles.minOrderText}>
+                      Min order: <Text style={{ fontWeight: '800', color: '#1E293B' }}>₹{item.minOrderAmount}</Text>
+                    </Text>
+                  ) : null}
+                  {item.discountType === 'percentage' && item.maxDiscount > 0 ? (
+                    <Text style={[styles.minOrderText, { color: '#64748B' }]}>
+                      Max save: <Text style={{ fontWeight: '800', color: '#1E293B' }}>₹{item.maxDiscount}</Text>
+                    </Text>
+                  ) : null}
+                  {item.isNewUserOnly ? (
+                    <Text style={[styles.minOrderText, { color: '#B45309', backgroundColor: '#FEF3C7', paddingHorizontal: 6, borderRadius: 4 }]}>
+                      First order only
+                    </Text>
+                  ) : null}
+                </View>
 
                 <View style={styles.codeContainer}>
                   <View style={styles.codeBox}>

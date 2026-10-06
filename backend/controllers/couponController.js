@@ -87,17 +87,34 @@ exports.validate = async (req, res) => {
 
     // Check minimum order amount
     if (amount < coupon.minOrderAmount) {
-      return res.status(400).json({ message: `Minimum order amount for this coupon is ₹${coupon.minOrderAmount}` });
+      const diff = Math.ceil(coupon.minOrderAmount - amount);
+      return res.status(400).json({ 
+        message: `Add ₹${diff} more to unlock coupon ${coupon.code} (Min order: ₹${coupon.minOrderAmount})` 
+      });
     }
 
     // New-user-only offers — "new" means this account has never had an active/placed order
     if (coupon.isNewUserOnly) {
       if (!req.user?.id) {
-        return res.status(401).json({ message: "Please login to use this offer" });
+        return res.status(401).json({ message: "Please login to use this new-user exclusive offer" });
       }
       const priorOrder = await Order.exists({ user: req.user.id, status: { $ne: "Cancelled" } });
       if (priorOrder) {
-        return res.status(400).json({ message: "This offer is only valid for new users" });
+        return res.status(400).json({ message: "This offer is only valid on your first order" });
+      }
+    }
+
+    // Per-user usage limit check
+    if (coupon.perUserLimit && coupon.perUserLimit > 0 && req.user?.id) {
+      const userUsageCount = await Order.countDocuments({
+        user: req.user.id,
+        couponCode: coupon.code,
+        status: { $ne: "Cancelled" },
+      });
+      if (userUsageCount >= coupon.perUserLimit) {
+        return res.status(400).json({
+          message: `You have already used this coupon the maximum allowed number of times (${coupon.perUserLimit} time${coupon.perUserLimit > 1 ? "s" : ""})`,
+        });
       }
     }
 
@@ -109,7 +126,7 @@ exports.validate = async (req, res) => {
       const allowed = new Set(coupon.applicableProducts.map((p) => String(p)));
       const hasMatch = cartProductIds.length > 0 && cartProductIds.some((id) => allowed.has(id));
       if (!hasMatch) {
-        return res.status(400).json({ message: "This offer applies only to specific products" });
+        return res.status(400).json({ message: "This coupon is not applicable to any items currently in your cart" });
       }
     }
 
@@ -124,7 +141,7 @@ exports.validate = async (req, res) => {
       }
 
       if (!hasMatch) {
-        return res.status(400).json({ message: "This offer applies only to specific occasions" });
+        return res.status(400).json({ message: "This coupon is only valid for specific occasions" });
       }
     }
 
@@ -143,9 +160,19 @@ exports.validate = async (req, res) => {
     discountAmount = Number(discountAmount.toFixed(2));
 
     res.json({
-      message: "Coupon applied successfully",
+      success: true,
+      message: `Coupon applied! You saved ₹${discountAmount}`,
       discountAmount,
-      coupon: coupon.code
+      coupon: coupon.code,
+      couponDetails: {
+        code: coupon.code,
+        title: coupon.title,
+        description: coupon.description,
+        discountType: coupon.discountType,
+        discountValue: coupon.discountValue,
+        maxDiscount: coupon.maxDiscount,
+        minOrderAmount: coupon.minOrderAmount,
+      },
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -157,16 +184,17 @@ exports.getActive = async (req, res) => {
   try {
     const { page, limit } = req.query;
     const p = parseInt(page) || 1;
-    const l = parseInt(limit) || 10;
+    const l = parseInt(limit) || 20;
     const skip = (p - 1) * l;
 
     const query = { 
       isActive: true, 
-      expiryDate: { $gt: new Date() } 
+      expiryDate: { $gt: new Date() },
+      $expr: { $lt: ["$usedCount", "$usageLimit"] },
     };
 
     const coupons = await Coupon.find(query)
-      .select("code discountType discountValue minOrderAmount maxDiscount expiryDate image isNewUserOnly applicableProducts applicableOccasions")
+      .select("code title description discountType discountValue minOrderAmount maxDiscount expiryDate image isNewUserOnly perUserLimit usageLimit usedCount applicableProducts applicableOccasions")
       .populate("applicableProducts", "name image")
       .populate("applicableOccasions", "name image")
       .sort({ createdAt: -1 })

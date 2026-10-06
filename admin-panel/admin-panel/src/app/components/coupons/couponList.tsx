@@ -83,15 +83,22 @@ export default function CouponList({
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs uppercase overflow-hidden shrink-0 border border-border-theme">
                         {coupon.image ? (
-                          <img src={coupon.image} className="w-full h-full object-cover" />
+                          <img src={coupon.image} alt={coupon.code} className="w-full h-full object-cover" />
                         ) : (
                           coupon.code.substring(0, 2)
                         )}
                       </div>
-                      <span className="font-bold text-slate-900 tracking-tight trancate">{coupon.code}</span>
-                      {coupon.isNewUserOnly && (
-                        <span className="text-[9px] font-black uppercase tracking-tight bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-md">New users</span>
-                      )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-foreground tracking-wide text-sm">{coupon.code}</span>
+                          {coupon.isNewUserOnly && (
+                            <span className="text-[9px] font-black uppercase tracking-tight bg-amber-50 text-amber-600 border border-amber-200 px-1.5 py-0.5 rounded-md">New users</span>
+                          )}
+                        </div>
+                        {coupon.title && (
+                          <p className="text-xs font-semibold text-slate-500 truncate max-w-xs">{coupon.title}</p>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-5">
@@ -99,13 +106,17 @@ export default function CouponList({
                       <span className="font-black text-pink-600 text-sm whitespace-nowrap">
                         {coupon.discountType === "percentage" ? `${coupon.discountValue}% Off` : `₹${coupon.discountValue} Off`}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{coupon.discountType}</span>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
+                        {coupon.discountType} {coupon.maxDiscount > 0 ? `(Max ₹${coupon.maxDiscount})` : ""}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-5">
                     <div className="space-y-1">
                       <p className="text-xs font-bold text-slate-700">Min Order: ₹{coupon.minOrderAmount}</p>
-                      {coupon.maxDiscount > 0 && <p className="text-[10px] text-slate-400 font-bold">Max Cap: ₹{coupon.maxDiscount}</p>}
+                      <p className="text-[10px] text-slate-400 font-bold">
+                        Limit: {coupon.perUserLimit > 0 ? `${coupon.perUserLimit}x per user` : "Unlimited per user"}
+                      </p>
                     </div>
                   </td>
                   <td className="px-6 py-5">

@@ -1,11 +1,11 @@
 const router = require("express").Router();
 const controller = require("../controllers/couponController");
 const adminMiddleware = require("../middleware/adminMiddleware");
-const authMiddleware = require("../middleware/authMiddleware");
+const optionalAuthMiddleware = require("../middleware/optionalAuthMiddleware");
 
 // Public/User routes
-router.post("/validate", authMiddleware, controller.validate);
-router.get("/active", controller.getActive);
+router.post("/validate", optionalAuthMiddleware, controller.validate);
+router.get("/active", optionalAuthMiddleware, controller.getActive);
 
 // Admin routes
 router.post("/", adminMiddleware, controller.create);

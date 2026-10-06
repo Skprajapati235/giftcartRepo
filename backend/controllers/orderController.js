@@ -745,6 +745,15 @@ async function isCouponEligible(coupon, { userId, items }) {
     if (priorOrder) return false;
   }
 
+  if (coupon.perUserLimit && coupon.perUserLimit > 0 && userId) {
+    const userUsageCount = await Order.countDocuments({
+      user: userId,
+      couponCode: coupon.code,
+      status: { $ne: "Cancelled" },
+    });
+    if (userUsageCount >= coupon.perUserLimit) return false;
+  }
+
   const cartItems = items || [];
   const productIds = cartItems.map((i) => String(i._id || i.product || "")).filter(Boolean);
 
@@ -880,6 +889,13 @@ exports.createOrder = async (req, res) => {
       recipientName,
       addons,
     });
+
+    if (finalDiscount > 0 && couponCode) {
+      await Coupon.findOneAndUpdate(
+        { code: couponCode.toUpperCase() },
+        { $inc: { usedCount: 1 } }
+      ).catch((err) => console.error("Failed to increment coupon usedCount:", err));
+    }
 
     res.status(201).json({
       success: true,

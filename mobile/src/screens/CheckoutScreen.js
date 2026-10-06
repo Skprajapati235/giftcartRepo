@@ -278,22 +278,30 @@ export default function CheckoutScreen({ navigation, route }) {
   const displayTotal = Number(orderSummary.grandTotal.toFixed(2));
   const finalTotal = Number(Math.max(0, displayTotal - couponDiscount).toFixed(2));
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode) {
+  const handleApplyCoupon = async (codeOverride) => {
+    const code = (codeOverride || couponCode || '').trim().toUpperCase();
+    if (!code) {
       showToast('Please enter a coupon code', 'warning');
       return;
     }
+    setCouponCode(code);
     setValidatingCoupon(true);
     try {
+      const items = cartItems.map((item) => ({
+        productId: item.product?._id || item.product,
+        occasions: (item.occasions || []).map((o) => o?._id || o),
+      }));
       const res = await couponService.validateCoupon({
-        code: couponCode,
-        amount: displayTotal
+        code,
+        amount: displayTotal,
+        items,
       });
-      setCouponDiscount(res.discountAmount);
-      setAppliedCoupon(res.coupon);
-      showToast('Coupon applied successfully!', 'success');
+      setCouponDiscount(Number(res.discountAmount || 0));
+      setAppliedCoupon(res.coupon || code);
+      showToast(res.message || 'Coupon applied successfully! 🎉', 'success');
+      setShowCouponModal(false);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Invalid coupon code';
+      const msg = err.response?.data?.message || 'Invalid or inactive coupon code';
       showToast(msg, 'error');
       setCouponDiscount(0);
       setAppliedCoupon(null);
@@ -834,34 +842,72 @@ export default function CheckoutScreen({ navigation, route }) {
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                {activeCoupons.length > 0 ? activeCoupons.map((item) => (
-                  <View key={item._id} style={styles.couponItemNew}>
-                    {item.image && (
-                      <Image source={{ uri: item.image }} style={styles.modalCouponImg} />
-                    )}
-                    <View style={styles.couponDetailBox}>
-                      <View style={styles.couponItemHeader}>
-                        <View style={styles.couponTag}>
-                          <Ionicons name="pricetag" size={14} color="#D82B76" />
-                          <Text style={styles.couponTagText}>{item.code}</Text>
+                {activeCoupons.length > 0 ? activeCoupons.map((item) => {
+                  const eligible = displayTotal >= (item.minOrderAmount || 0);
+                  const shortfall = Math.ceil((item.minOrderAmount || 0) - displayTotal);
+                  const isApplied = appliedCoupon === item.code;
+
+                  return (
+                    <View key={item._id} style={styles.couponItemNew}>
+                      {item.image && (
+                        <Image source={{ uri: item.image }} style={styles.modalCouponImg} />
+                      )}
+                      <View style={styles.couponDetailBox}>
+                        <View style={styles.couponItemHeader}>
+                          <View style={styles.couponTag}>
+                            <Ionicons name="pricetag" size={14} color="#D82B76" />
+                            <Text style={styles.couponTagText}>{item.code}</Text>
+                          </View>
+                          <Text style={styles.couponValue}>
+                            Save {item.discountType === 'percentage' ? `${item.discountValue}%` : `₹${item.discountValue}`}
+                          </Text>
                         </View>
-                        <Text style={styles.couponValue}>
-                          Save {item.discountType === 'percentage' ? `${item.discountValue}%` : `₹${item.discountValue}`}
-                        </Text>
+                        {item.title ? (
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: '#1E293B', marginTop: 4 }}>
+                            {item.title}
+                          </Text>
+                        ) : null}
+                        {item.description ? (
+                          <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                            {item.description}
+                          </Text>
+                        ) : null}
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                          {item.minOrderAmount > 0 ? (
+                            <Text style={styles.couponMinOrderModal}>Min order: ₹{item.minOrderAmount}</Text>
+                          ) : null}
+                          {item.discountType === 'percentage' && item.maxDiscount > 0 ? (
+                            <Text style={[styles.couponMinOrderModal, { color: '#64748B' }]}>Max: ₹{item.maxDiscount}</Text>
+                          ) : null}
+                          {item.isNewUserOnly ? (
+                            <Text style={[styles.couponMinOrderModal, { color: '#B45309' }]}>First order only</Text>
+                          ) : null}
+                        </View>
+
+                        {isApplied ? (
+                          <View style={[styles.modalApplyBtn, { backgroundColor: '#DCFCE7' }]}>
+                            <Text style={[styles.modalApplyBtnText, { color: '#166534' }]}>APPLIED ✓</Text>
+                          </View>
+                        ) : eligible ? (
+                          <TouchableOpacity
+                            style={styles.modalApplyBtn}
+                            onPress={() => {
+                              handleApplyCoupon(item.code);
+                            }}
+                          >
+                            <Text style={styles.modalApplyBtnText}>APPLY CODE</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <View style={[styles.modalApplyBtn, { backgroundColor: '#FEF3C7' }]}>
+                            <Text style={[styles.modalApplyBtnText, { color: '#B45309', fontSize: 11 }]}>
+                              ADD ₹{shortfall} MORE TO UNLOCK
+                            </Text>
+                          </View>
+                        )}
                       </View>
-                      <Text style={styles.couponMinOrderModal}>Valid on orders above ₹{item.minOrderAmount}</Text>
-                      <TouchableOpacity
-                        style={styles.modalApplyBtn}
-                        onPress={() => {
-                          setCouponCode(item.code);
-                          setShowCouponModal(false);
-                        }}
-                      >
-                        <Text style={styles.modalApplyBtnText}>APPLY CODE</Text>
-                      </TouchableOpacity>
                     </View>
-                  </View>
-                )) : (
+                  );
+                }) : (
                   <View style={{ padding: 40, alignItems: 'center' }}>
                     <Text style={{ color: '#999' }}>No coupons available right now.</Text>
                   </View>
