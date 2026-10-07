@@ -84,7 +84,49 @@ function normalizeToWhatsAppAddress(raw) {
 // META WHATSAPP CLOUD API (Official Meta / Facebook)
 // ─────────────────────────────────────────────────────────────
 
-async function sendMetaWhatsAppMessage({ to, body, template }) {
+function buildOrderTemplate({ order, statusOverride }) {
+  const customerName = order?.shippingAddress?.fullName || order?.user?.name || "Customer";
+  const orderId = order?._id ? `#${String(order._id).slice(-6).toUpperCase()}` : "#ORDER";
+  const statusLabel = mapOrderStatusToLabel(statusOverride || order?.status);
+  const total = order?.totalAmount != null ? `₹${order.totalAmount}` : "";
+
+  const customTemplate = process.env.META_TEMPLATE_NAME;
+  if (customTemplate === "giftfestive_order_update") {
+    return {
+      name: "giftfestive_order_update",
+      languageCode: "en_US",
+      components: [
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: customerName },
+            { type: "text", text: orderId },
+            { type: "text", text: statusLabel },
+            { type: "text", text: total || "N/A" },
+          ],
+        },
+      ],
+    };
+  }
+
+  // Pre-approved fallback utility template: jaspers_market_order_confirmation_v1
+  return {
+    name: "jaspers_market_order_confirmation_v1",
+    languageCode: "en_US",
+    components: [
+      {
+        type: "body",
+        parameters: [
+          { type: "text", text: customerName },
+          { type: "text", text: orderId },
+          { type: "text", text: `${statusLabel} (${total})` },
+        ],
+      },
+    ],
+  };
+}
+
+async function sendMetaWhatsAppMessage({ to, body, template, order, statusOverride, _isRetry }) {
   const token = process.env.META_WHATSAPP_TOKEN;
   const phoneId = process.env.META_PHONE_NUMBER_ID;
 
@@ -162,6 +204,21 @@ async function sendMetaWhatsAppMessage({ to, body, template }) {
     const metaError = err.response?.data?.error || {};
     const errorCode = metaError.code;
     const errorMessage = metaError.message || err.message;
+
+    if (errorCode === 131047 && (!template || !template.name) && !_isRetry) {
+      console.log("[meta-whatsapp] 24-hr window restriction encountered (code 131047). Auto-retrying with approved Template...");
+      const fallbackTemplate = buildOrderTemplate({ order, statusOverride });
+      if (fallbackTemplate) {
+        return await sendMetaWhatsAppMessage({
+          to,
+          body,
+          template: fallbackTemplate,
+          order,
+          statusOverride,
+          _isRetry: true,
+        });
+      }
+    }
 
     let diagnosticHint = "";
     if (errorCode === 131030) {
@@ -258,7 +315,7 @@ async function sendTwilioWhatsAppMessage({ to, body }) {
 // MAIN UNIFIED SENDER
 // ─────────────────────────────────────────────────────────────
 
-async function sendWhatsAppMessage({ to, body, template }) {
+async function sendWhatsAppMessage({ to, body, template, order, statusOverride }) {
   const enabled = isTruthyEnv(process.env.WHATSAPP_ENABLED);
   if (!enabled) {
     console.log("[whatsapp dry-run] send skipped (WHATSAPP_ENABLED is false)", { to, body });
@@ -268,18 +325,17 @@ async function sendWhatsAppMessage({ to, body, template }) {
   const provider = getProvider();
 
   if (provider === "meta") {
-    // If META_TEMPLATE_NAME is defined and no explicit template was passed, build template payload
     let metaTemplate = template;
     if (!metaTemplate && process.env.META_TEMPLATE_NAME) {
-      metaTemplate = { name: process.env.META_TEMPLATE_NAME };
+      metaTemplate = buildOrderTemplate({ order, statusOverride });
     }
-    return await sendMetaWhatsAppMessage({ to, body, template: metaTemplate });
+    return await sendMetaWhatsAppMessage({ to, body, template: metaTemplate, order, statusOverride });
   }
 
   return await sendTwilioWhatsAppMessage({ to, body });
 }
 
-async function sendWhatsAppMessageToMany({ toList, body, template }) {
+async function sendWhatsAppMessageToMany({ toList, body, template, order, statusOverride }) {
   const unique = Array.from(
     new Set(
       (toList || [])
@@ -291,7 +347,7 @@ async function sendWhatsAppMessageToMany({ toList, body, template }) {
   const results = [];
   for (const to of unique) {
     // eslint-disable-next-line no-await-in-loop
-    results.push(await sendWhatsAppMessage({ to, body, template }));
+    results.push(await sendWhatsAppMessage({ to, body, template, order, statusOverride }));
   }
   return results;
 }

@@ -53,6 +53,8 @@ async function sendPostPaymentNotifications(updatedOrder) {
     ].filter(Boolean);
     const results = await whatsappService.sendWhatsAppMessageToMany({
       toList,
+      order: updatedOrder,
+      statusOverride: "Processing",
       body: whatsappService.formatOrderUpdateMessage({
         order: updatedOrder,
         statusOverride: "Processing",
@@ -196,6 +198,8 @@ exports.createOrder = async ({
     const toList = [user?.mobileNumber, savedOrder?.shippingAddress?.phone].filter(Boolean);
     const results = await whatsappService.sendWhatsAppMessageToMany({
       toList,
+      order: savedOrder,
+      statusOverride: "Pending",
       body: whatsappService.formatOrderUpdateMessage({
         order: savedOrder,
         statusOverride: "Pending",
@@ -480,6 +484,8 @@ exports.updateOrderStatus = async (id, status) => {
       const toList = [updated?.user?.mobileNumber, updated?.shippingAddress?.phone].filter(Boolean);
       const results = await whatsappService.sendWhatsAppMessageToMany({
         toList,
+        order: updated,
+        statusOverride: normalizedStatus,
         body: whatsappService.formatOrderUpdateMessage({
           order: updated,
           statusOverride: normalizedStatus,
