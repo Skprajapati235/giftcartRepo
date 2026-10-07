@@ -1,32 +1,3 @@
-// const router = require("express").Router();
-// const controller = require("../controllers/orderController");
-// const authMiddleware = require("../middleware/authMiddleware");
-// const adminMiddleware = require("../middleware/adminMiddleware");
-
-// // User routes
-// router.post("/create", authMiddleware, controller.createOrder);
-// router.post("/verify", authMiddleware, controller.verifyPayment);
-// router.get("/user", authMiddleware, controller.getUserOrders);
-// router.get("/user/:id", authMiddleware, controller.getOrderById);
-// router.delete("/user/:id", authMiddleware, controller.deleteUserOrder);
-
-// // Public customer tracking (token-based)
-// router.get("/public/:token", controller.getPublicOrderByToken);
-
-// // Admin routes
-// router.get("/admin/all", authMiddleware, adminMiddleware, controller.getAllOrders);
-// router.get("/admin/unviewed", authMiddleware, adminMiddleware, controller.getUnviewedOrders);
-// router.get("/admin/detail/:id", authMiddleware, adminMiddleware, controller.getOrderById);
-// router.put("/admin/:id/status", authMiddleware, adminMiddleware, controller.updateOrderStatus);
-// router.post("/admin/bulk-delete", authMiddleware, adminMiddleware, controller.deleteMultipleOrders);
-// router.delete("/admin/:id", authMiddleware, adminMiddleware, controller.deleteOrder);
-// router.put("/admin/:id/viewed", authMiddleware, adminMiddleware, controller.markOrderAsViewed);
-// router.get("/admin/payments", authMiddleware, adminMiddleware, controller.getPaymentHistory);
-// router.get("/admin/:id/invoice", authMiddleware, adminMiddleware, controller.downloadInvoice);
-
-// module.exports = router;
-
-
 
 const router = require("express").Router();
 const controller = require("../controllers/orderController");
@@ -58,6 +29,7 @@ router.get("/admin/all", authMiddleware, adminMiddleware, controller.getAllOrder
 router.get("/admin/unviewed", authMiddleware, adminMiddleware, controller.getUnviewedOrders);
 router.get("/admin/detail/:id", authMiddleware, adminMiddleware, controller.getOrderById);
 router.put("/admin/:id/status", authMiddleware, adminMiddleware, controller.updateOrderStatus);
+router.post("/admin/test-whatsapp", authMiddleware, adminMiddleware, controller.testWhatsApp);
 router.put("/admin/:id/kitchen-status", authMiddleware, adminMiddleware, controller.updateKitchenStatus);
 router.post("/admin/bulk-delete", authMiddleware, adminMiddleware, adminMiddleware.requireRole(["super_admin", "admin"]), controller.deleteMultipleOrders);
 router.delete("/admin/:id", authMiddleware, adminMiddleware, adminMiddleware.requireRole(["super_admin", "admin"]), controller.deleteOrder);

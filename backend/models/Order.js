@@ -17,6 +17,7 @@ const orderSchema = new mongoose.Schema({
       event: { type: String }, // e.g. order_placed, order_processing, order_status_update
       to: { type: String },
       sid: { type: String },
+      status: { type: String }, // queued, sent, delivered, failed, undelivered
       success: { type: Boolean },
       skipped: { type: Boolean },
       reason: { type: String },
