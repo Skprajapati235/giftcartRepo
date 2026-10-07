@@ -144,6 +144,7 @@ exports.createAuditLog = async (req, res) => {
  */
 exports.exportAuditLogs = async (req, res) => {
   try {
+    const format = (req.params.format || "csv").toLowerCase();
     const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
     const logs = await AuditLog.find({ createdAt: { $gte: tenDaysAgo } }).sort({ createdAt: -1 }).limit(1000).lean();
 

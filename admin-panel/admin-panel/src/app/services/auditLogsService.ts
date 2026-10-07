@@ -161,6 +161,15 @@ export const auditLogsService = {
       window.URL.revokeObjectURL(downloadUrl);
       return true;
     } catch (err: any) {
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const json = JSON.parse(text);
+          if (json.message) {
+            err.message = json.message;
+          }
+        } catch (_) {}
+      }
       console.error(`Download failed from ${endpoint}:`, err);
       throw err;
     }
