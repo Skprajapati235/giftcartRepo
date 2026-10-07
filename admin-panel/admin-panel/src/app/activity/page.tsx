@@ -1,15 +1,14 @@
 "use client";
 
-import ProtectedRoute from "../components/ProtectedRoute";
-import AdminMain from "../components/AdminMain";
-import ActivityView from "../components/activity/ActivityView";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ActivityPage() {
-  return (
-    <ProtectedRoute>
-      <AdminMain>
-        <ActivityView />
-      </AdminMain>
-    </ProtectedRoute>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/audit-logs");
+  }, [router]);
+
+  return null;
 }

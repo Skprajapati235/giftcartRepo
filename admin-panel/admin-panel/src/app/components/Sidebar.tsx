@@ -91,14 +91,6 @@ export const linearSidebarNav: NavSectionConfig[] = [
         icon: Home,
       },
       {
-        key: "activity",
-        label: "Activity & Telemetry",
-        href: "/activity",
-        icon: Activity,
-        badge: "Live",
-        badgeVariant: "neon-cyan",
-      },
-      {
         key: "chat",
         label: "AI Assistant",
         href: "/chat",
@@ -218,8 +210,7 @@ export const linearSidebarNav: NavSectionConfig[] = [
         icon: Settings,
         children: [
           { key: "adminProfile", label: "Admin Profiles & RBAC", href: "/admins", icon: Users, description: "Team accounts & roles matrix", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "Super Admin" },
-          { key: "activityLogs", label: "Live Activity & Exports", href: "/activity", icon: Activity, description: "Real-time activity telemetry & API file exports", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "Live" },
-          { key: "auditLogs", label: "Security & Audit Logs", href: "/audit-logs", icon: ShieldCheck, description: "Immutable activity & security audit", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Super Admin" },
+          { key: "auditLogs", label: "Security & Activity Logs", href: "/audit-logs", icon: ShieldCheck, description: "Immutable activity audit trail, live telemetry & API exports", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Super Admin" },
           { key: "developer", label: "Developer API & Logs", href: "/developer", icon: Code, description: "Webhooks & server logs", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Dev" },
           { key: "termsPolicy", label: "Terms & Privacy Policy", href: "/terms", icon: FileText, description: "Legal compliance pages", color: "text-slate-500 bg-slate-500/10 border-slate-500/20" },
         ],

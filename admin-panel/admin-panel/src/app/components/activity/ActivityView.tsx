@@ -292,7 +292,7 @@ export default function ActivityView() {
               </span>
               <div>
                 <h1 className="text-xl font-black tracking-tight text-foreground sm:text-2xl">
-                  Live Activity & Central Export Center
+                  Security & Activity Audit Logs
                 </h1>
                 <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                   <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -306,7 +306,7 @@ export default function ActivityView() {
               </div>
             </div>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-3xl pt-1">
-              Complete, production-level administrative telemetry. Every download (CSV, PDF, JSON) hits real backend microservices. Strict 10-day retention with automated cleanup in MongoDB.
+              Centralized administrative telemetry, system audit trail, and backend file exports. Every team action, export (CSV, PDF, JSON), and operation is tracked in real-time with automated 10-day MongoDB retention.
             </p>
           </div>
 

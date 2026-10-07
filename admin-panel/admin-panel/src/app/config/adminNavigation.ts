@@ -31,6 +31,7 @@ import {
   Images,
   ChefHat,
   Sparkles,
+  ShieldCheck,
 } from "lucide-react";
 
 export type NavChild = {
@@ -152,6 +153,7 @@ export const adminNavigation: NavItem[] = [
     icon: Settings,
     children: [
       { key: "adminProfile", href: "/admins", label: "Admin Profile", description: "Account & credentials", icon: Users },
+      { key: "auditLogs", href: "/audit-logs", label: "Security & Activity Logs", description: "Immutable activity audit trail & telemetry", icon: ShieldCheck },
       { key: "developer", href: "/developer", label: "Developer", description: "API keys & system logs", icon: Users },
       { key: "termsPolicy", href: "/terms", label: "Terms & Policy", description: "Legal docs & compliance", icon: FileText },
     ],
