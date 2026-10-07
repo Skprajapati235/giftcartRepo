@@ -84,32 +84,75 @@ function normalizeToWhatsAppAddress(raw) {
 // META WHATSAPP CLOUD API (Official Meta / Facebook)
 // ─────────────────────────────────────────────────────────────
 
-function buildOrderTemplate({ order, statusOverride }) {
-  const customerName = order?.shippingAddress?.fullName || order?.user?.name || "Customer";
+function buildOrderTemplate({ order, statusOverride } = {}) {
+  const customerName = (order?.shippingAddress?.fullName || order?.user?.name || "Customer")
+    .replace(/[\r\n]+/g, " ")
+    .trim();
   const orderId = order?._id ? `#${String(order._id).slice(-6).toUpperCase()}` : "#ORDER";
   const statusLabel = mapOrderStatusToLabel(statusOverride || order?.status);
   const total = order?.totalAmount != null ? `₹${order.totalAmount}` : "";
 
-  const customTemplate = process.env.META_TEMPLATE_NAME;
-  if (customTemplate === "giftfestive_order_update") {
+  // Items & Addons summary
+  const items = Array.isArray(order?.items) ? order.items : [];
+  const topItems = items.slice(0, 5).map((it) => `${(it?.name || "Item").trim()} x${Number(it?.quantity || 1)}`);
+  const addons = Array.isArray(order?.addons) ? order.addons : [];
+  const addonNames = addons.slice(0, 5).map((a) => `${(a?.name || "Addon").trim()} x${Number(a?.quantity || 1)}`);
+  const allProducts = [...topItems, ...addonNames].join(", ").replace(/[\r\n]+/g, " ") || "Order items";
+
+  // Custom cake/greeting card message if any
+  const rawMsg =
+    order?.messageOnCake ||
+    order?.cardMessage ||
+    items.find((i) => i?.messageOnCake)?.messageOnCake ||
+    "";
+  const customMsg = String(rawMsg).replace(/[\r\n]+/g, " ").trim().slice(0, 60);
+
+  // Delivery slot / date
+  let deliveryInfo = "Standard Delivery";
+  const slotDate = order?.deliverySlot?.deliveryDate || items[0]?.expectedDeliveryDate;
+  const slotTime = order?.deliverySlot?.timeRange || order?.deliverySlot?.slotName || items[0]?.deliveryTime;
+  if (slotDate || slotTime) {
+    deliveryInfo = [slotDate, slotTime].filter(Boolean).join(" ").replace(/[\r\n]+/g, " ").trim();
+  }
+
+  // Tracking link
+  const trackUrl = buildTrackUrl(order?.trackingToken) || "https://giftcartrepo.onrender.com";
+
+  const templateName = process.env.META_TEMPLATE_NAME;
+
+  // Custom GiftFestive comprehensive notification template
+  if (templateName === "giftfestive_order_notification") {
+    const itemsDescription = (customMsg ? `${allProducts} (Msg: "${customMsg}")` : allProducts).slice(0, 200);
     return {
-      name: "giftfestive_order_update",
+      name: "giftfestive_order_notification",
       languageCode: "en_US",
       components: [
         {
           type: "body",
           parameters: [
-            { type: "text", text: customerName },
+            { type: "text", text: customerName.slice(0, 50) },
             { type: "text", text: orderId },
             { type: "text", text: statusLabel },
+            { type: "text", text: itemsDescription },
             { type: "text", text: total || "N/A" },
+            { type: "text", text: deliveryInfo.slice(0, 80) },
+            { type: "text", text: trackUrl },
           ],
         },
       ],
     };
   }
 
-  // Pre-approved fallback utility template: jaspers_market_order_confirmation_v1
+  // Fallback approved utility template: jaspers_market_order_confirmation_v1
+  // Parameter 3 contains delivery date, items, addons, custom msg, price, and status
+  const detailParts = [];
+  if (deliveryInfo) detailParts.push(`Del: ${deliveryInfo}`);
+  if (allProducts) detailParts.push(`Items: ${allProducts}`);
+  if (customMsg) detailParts.push(`Msg: "${customMsg}"`);
+  if (total) detailParts.push(`Total: ${total}`);
+  if (statusLabel) detailParts.push(`Status: ${statusLabel}`);
+  const combinedSummary = detailParts.join(" | ").slice(0, 300);
+
   return {
     name: "jaspers_market_order_confirmation_v1",
     languageCode: "en_US",
@@ -117,9 +160,9 @@ function buildOrderTemplate({ order, statusOverride }) {
       {
         type: "body",
         parameters: [
-          { type: "text", text: customerName },
+          { type: "text", text: customerName.slice(0, 50) },
           { type: "text", text: orderId },
-          { type: "text", text: `${statusLabel} (${total})` },
+          { type: "text", text: combinedSummary },
         ],
       },
     ],
@@ -326,7 +369,7 @@ async function sendWhatsAppMessage({ to, body, template, order, statusOverride }
 
   if (provider === "meta") {
     let metaTemplate = template;
-    if (!metaTemplate && process.env.META_TEMPLATE_NAME) {
+    if (!metaTemplate) {
       metaTemplate = buildOrderTemplate({ order, statusOverride });
     }
     return await sendMetaWhatsAppMessage({ to, body, template: metaTemplate, order, statusOverride });
