@@ -85,6 +85,7 @@ export const AVAILABLE_SCREENS: ScreenOption[] = [
   { route: "/flavors", label: "Flavors & Sponge Variants", department: "Bakery Production", category: "Catalog", defaultRoles: ["super_admin", "admin", "kitchen_manager"] },
   { route: "/addons", label: "Gifting Add-ons & Candles", department: "Bakery & Catalog", category: "Catalog", defaultRoles: ["super_admin", "admin", "kitchen_manager"] },
   { route: "/cities", label: "Delivery Cities & Pin-codes", department: "Logistics Fleet", category: "Catalog", defaultRoles: ["super_admin", "admin", "delivery_coordinator"] },
+  { route: "/stores", label: "Partner Stores (Tie-ups)", department: "Catalog & Partners", category: "Catalog", defaultRoles: ["super_admin", "admin", "kitchen_manager", "delivery_coordinator"] },
   { route: "/coupons", label: "Offers & Coupons", department: "Growth & Marketing", category: "Catalog", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
   { route: "/gallery", label: "Media Gallery & Assets", department: "Brand Assets", category: "Catalog", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
 
@@ -231,6 +232,13 @@ export const PAGE_ASSIGNMENT_MAP: Record<string, PageRoleInfo> = {
     allowedRoles: ["super_admin", "admin", "kitchen_manager"],
     badgeColor: "bg-sky-500/10 text-sky-500 border-sky-500/20",
     description: "Track raw baking ingredients, cake boxes, ribbons, and stock counts.",
+  },
+  "/stores": {
+    assignedTo: "🤝 Partner & Store Manager",
+    department: "Partner Tie-ups",
+    allowedRoles: ["super_admin", "admin", "kitchen_manager", "delivery_coordinator"],
+    badgeColor: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+    description: "Manage local bakeries, florists and gift partner tie-ups, WhatsApp dispatches and store profiles.",
   },
   "/payments": {
     assignedTo: "👑 Super Admin (Financial Settlements)",

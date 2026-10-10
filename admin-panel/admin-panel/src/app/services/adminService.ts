@@ -561,3 +561,81 @@ export const resetFooterDefaults = async () => {
   const response = await authApi(getAuthToken()).post("/footer/reset-defaults");
   return response.data;
 };
+
+// ==========================================
+// PARTNER / TIE-UP STORES (CLOUD HUB) APIS
+// ==========================================
+
+export const getStores = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  city?: string;
+}) => {
+  const response = await authApi(getAuthToken()).get("/stores", { params });
+  return response.data;
+};
+
+export const getStoreById = async (id: string) => {
+  const response = await authApi(getAuthToken()).get(`/stores/${id}`);
+  return response.data;
+};
+
+export const createStore = async (payload: {
+  name: string;
+  image?: string;
+  ownerFirstName: string;
+  ownerLastName?: string;
+  ownerPhone: string;
+  whatsappNumber: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  googleMapsUrl?: string;
+  description?: string;
+  categories?: string[];
+  commissionPercentage?: number;
+  status?: string;
+  notes?: string;
+}) => {
+  const response = await authApi(getAuthToken()).post("/stores", payload);
+  return response.data;
+};
+
+export const updateStore = async (
+  id: string,
+  payload: Partial<{
+    name: string;
+    image?: string;
+    ownerFirstName: string;
+    ownerLastName?: string;
+    ownerPhone: string;
+    whatsappNumber: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    googleMapsUrl?: string;
+    description?: string;
+    categories?: string[];
+    commissionPercentage?: number;
+    status?: string;
+    notes?: string;
+  }>
+) => {
+  const response = await authApi(getAuthToken()).put(`/stores/${id}`, payload);
+  return response.data;
+};
+
+export const deleteStore = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/stores/${id}`);
+  return response.data;
+};
+
+export const toggleStoreStatus = async (id: string) => {
+  const response = await authApi(getAuthToken()).patch(`/stores/${id}/toggle-status`);
+  return response.data;
+};
+

@@ -138,6 +138,8 @@ app.use("/api/stories", require("./routes/storyRoutes"));
 app.use("/api/audit-logs", require("./routes/auditLogRoutes"));
 app.use("/api/delivery-riders", require("./routes/deliveryRiderRoutes"));
 app.use("/api/abandoned-carts", require("./routes/abandonedCartRoutes"));
+app.use("/api/stores", require("./routes/partnerStoreRoutes"));
+app.use("/api/partner-stores", require("./routes/partnerStoreRoutes"));
 app.use("/api/webhook/twilio", require("./routes/twilioWebhookRoutes"));
 app.use("/api/webhook/meta-whatsapp", require("./routes/metaWebhookRoutes"));
 // // AI Chat endpoint for Admin Panel

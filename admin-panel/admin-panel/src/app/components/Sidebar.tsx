@@ -52,6 +52,7 @@ import {
   Truck,
   PanelBottom,
   Link as LinkIcon,
+  Store as StoreIcon,
 } from "lucide-react";
 
 export type NavSubItem = {
@@ -116,6 +117,7 @@ export const linearSidebarNav: NavSectionConfig[] = [
           { key: "flavors", label: "Flavors", href: "/flavors", icon: Pipette, description: "Taste & cake variants", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Kitchen" },
           { key: "addons", label: "Gifting Add-ons", href: "/addons", icon: Gift, description: "Candles, cards & celebration upsells", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "New" },
           { key: "cities", label: "Delivery Cities", href: "/cities", icon: MapPin, description: "Pin-code & zones", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+          { key: "partner-stores", label: "Partner Stores (Tie-ups)", href: "/stores", icon: StoreIcon, description: "Local bakeries & gift tie-ups", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Tie-Up" },
           { key: "offers", label: "Offers & Coupons", href: "/coupons", icon: Gift, description: "Promo codes & discounts", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Growth" },
           { key: "gallery", label: "Media Gallery", href: "/gallery", icon: Images, description: "Image asset storage", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20" },
         ],
