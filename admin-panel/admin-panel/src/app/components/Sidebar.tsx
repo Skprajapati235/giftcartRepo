@@ -50,6 +50,8 @@ import {
   ChefHat,
   Palette,
   Truck,
+  PanelBottom,
+  Link as LinkIcon,
 } from "lucide-react";
 
 export type NavSubItem = {
@@ -202,6 +204,22 @@ export const linearSidebarNav: NavSectionConfig[] = [
           { key: "heroSlides", label: "Hero Slides", href: "/hero-slides", icon: SlidersHorizontal, description: "Banner promotional carousels", color: "text-purple-500 bg-purple-500/10 border-purple-500/20", badge: "Marketing" },
           { key: "occasions", label: "Occasions", href: "/occasions", icon: PartyPopper, description: "Events & gifting tags", color: "text-pink-500 bg-pink-500/10 border-pink-500/20" },
           { key: "deliveryHours", label: "Operating Hours", href: "/delivery-hours", icon: Clock, description: "Delivery cutoff slots", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Fleet" },
+        ],
+      },
+      {
+        key: "footer-mgmt",
+        label: "Footer Management",
+        icon: PanelBottom,
+        badge: "Live",
+        badgeVariant: "neon-cyan",
+        children: [
+          { key: "footer-overview", label: "Footer Overview", href: "/footer", icon: PanelBottom, description: "Live preview & quick summary", color: "text-pink-500 bg-pink-500/10 border-pink-500/20" },
+          { key: "footer-brand", label: "Brand & Contact", href: "/footer/brand", icon: Phone, description: "Logo, phone, email & address", color: "text-rose-500 bg-rose-500/10 border-rose-500/20" },
+          { key: "footer-badges", label: "Trust Badges", href: "/footer/badges", icon: ShieldCheck, description: "Features strip & delivery perks", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+          { key: "footer-links", label: "Nav Columns & Links", href: "/footer/links", icon: LinkIcon, description: "Explore, Company & dynamic links", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
+          { key: "footer-newsletter", label: "Club & Newsletter", href: "/footer/newsletter", icon: Mail, description: "Subscription box & disclaimer", color: "text-purple-500 bg-purple-500/10 border-purple-500/20" },
+          { key: "footer-bottom", label: "Bottom Strip & Legal", href: "/footer/bottom", icon: FileText, description: "Copyright & accepted payments", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+          { key: "footer-seo", label: "Footer SEO & Schema", href: "/footer/seo", icon: Globe, description: "Schema JSON-LD & search ranking", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "SEO" },
         ],
       },
       {

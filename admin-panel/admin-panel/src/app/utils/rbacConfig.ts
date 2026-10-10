@@ -117,6 +117,13 @@ export const AVAILABLE_SCREENS: ScreenOption[] = [
   { route: "/audit-logs", label: "Security & Activity Logs", department: "System Audit & Operations", category: "Storefront & System", defaultRoles: ["super_admin", "admin"] },
   { route: "/developer", label: "Developer API & Logs", department: "Engineering", category: "Storefront & System", defaultRoles: ["super_admin", "admin"] },
   { route: "/terms", label: "Terms & Legal Policies", department: "Legal Compliance", category: "Storefront & System", defaultRoles: ["super_admin", "admin"] },
+  { route: "/footer", label: "Footer Management Overview", department: "Storefront & SEO", category: "Storefront & System", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
+  { route: "/footer/brand", label: "Footer Brand & Contact", department: "Storefront & SEO", category: "Storefront & System", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
+  { route: "/footer/badges", label: "Footer Trust Badges", department: "Storefront & SEO", category: "Storefront & System", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
+  { route: "/footer/links", label: "Footer Navigation Columns & Links", department: "Storefront & SEO", category: "Storefront & System", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
+  { route: "/footer/newsletter", label: "Footer Club & Newsletter", department: "Storefront & SEO", category: "Storefront & System", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
+  { route: "/footer/bottom", label: "Footer Bottom Strip & Legal", department: "Storefront & SEO", category: "Storefront & System", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
+  { route: "/footer/seo", label: "Footer SEO & Schema", department: "Storefront & SEO", category: "Storefront & System", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
 ];
 
 export const PAGE_ASSIGNMENT_MAP: Record<string, PageRoleInfo> = {
@@ -357,6 +364,13 @@ export const PAGE_ASSIGNMENT_MAP: Record<string, PageRoleInfo> = {
     allowedRoles: ["super_admin", "admin"],
     badgeColor: "bg-slate-500/10 text-slate-500 border-slate-500/20",
     description: "Privacy policy, refund policy, and customer terms of service.",
+  },
+  "/footer": {
+    assignedTo: "🌐 Storefront & SEO Specialist",
+    department: "Storefront & Branding",
+    allowedRoles: ["super_admin", "admin", "seo_specialist"],
+    badgeColor: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+    description: "Manage storefront footer brand details, trust badges, navigation columns, and SEO schemas.",
   },
 };
 

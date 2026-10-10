@@ -480,3 +480,84 @@ export * from "./testimonialService";
 
 // Gallery API re-exports
 export * from "./galleryService";
+
+// Footer Management API
+export const getFooterAdmin = async () => {
+  const response = await authApi(getAuthToken()).get("/footer/admin");
+  return response.data;
+};
+
+export const updateFooter = async (payload: any) => {
+  const response = await authApi(getAuthToken()).put("/footer", payload);
+  return response.data;
+};
+
+export const updateFooterBrand = async (payload: any) => {
+  const response = await authApi(getAuthToken()).put("/footer/brand", payload);
+  return response.data;
+};
+
+export const updateFooterNewsletter = async (payload: any) => {
+  const response = await authApi(getAuthToken()).put("/footer/newsletter", payload);
+  return response.data;
+};
+
+export const updateFooterBottom = async (payload: any) => {
+  const response = await authApi(getAuthToken()).put("/footer/bottom", payload);
+  return response.data;
+};
+
+export const updateFooterSeo = async (payload: any) => {
+  const response = await authApi(getAuthToken()).put("/footer/seo", payload);
+  return response.data;
+};
+
+export const addFooterBadge = async (payload: any) => {
+  const response = await authApi(getAuthToken()).post("/footer/badges", payload);
+  return response.data;
+};
+
+export const updateFooterBadge = async (id: string, payload: any) => {
+  const response = await authApi(getAuthToken()).put(`/footer/badges/${id}`, payload);
+  return response.data;
+};
+
+export const deleteFooterBadge = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/footer/badges/${id}`);
+  return response.data;
+};
+
+export const addFooterColumn = async (payload: any) => {
+  const response = await authApi(getAuthToken()).post("/footer/columns", payload);
+  return response.data;
+};
+
+export const updateFooterColumn = async (id: string, payload: any) => {
+  const response = await authApi(getAuthToken()).put(`/footer/columns/${id}`, payload);
+  return response.data;
+};
+
+export const deleteFooterColumn = async (id: string) => {
+  const response = await authApi(getAuthToken()).delete(`/footer/columns/${id}`);
+  return response.data;
+};
+
+export const addFooterLink = async (columnId: string, payload: any) => {
+  const response = await authApi(getAuthToken()).post(`/footer/columns/${columnId}/links`, payload);
+  return response.data;
+};
+
+export const updateFooterLink = async (columnId: string, linkId: string, payload: any) => {
+  const response = await authApi(getAuthToken()).put(`/footer/columns/${columnId}/links/${linkId}`, payload);
+  return response.data;
+};
+
+export const deleteFooterLink = async (columnId: string, linkId: string) => {
+  const response = await authApi(getAuthToken()).delete(`/footer/columns/${columnId}/links/${linkId}`);
+  return response.data;
+};
+
+export const resetFooterDefaults = async () => {
+  const response = await authApi(getAuthToken()).post("/footer/reset-defaults");
+  return response.data;
+};

@@ -126,6 +126,7 @@ app.use("/api/crm", require("./routes/crmRoutes"));
 app.use("/api/heroslides", require("./routes/heroSlideRoutes"));
 app.use("/api/hero-slides", require("./routes/heroSlideRoutes"));
 app.use("/api/seo", require("./routes/seoRoutes"));
+app.use("/api/footer", require("./routes/footerRoutes"));
 app.use("/api/testimonials", require("./routes/testimonialRoutes"));
 app.use("/api/testimonial", require("./routes/testimonialRoutes"));
 app.use("/api/gallery", require("./routes/galleryRoutes"));
