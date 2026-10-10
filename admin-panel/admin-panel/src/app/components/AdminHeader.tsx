@@ -19,6 +19,7 @@ import {
   Crown,
   Palette,
   Lock,
+  Sparkles,
 } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
 import { useTheme, ADMIN_COLOR_PRESETS } from "../context/ThemeContext";
@@ -126,6 +127,16 @@ export default function AdminHeader() {
           <span className="font-black text-xs">{currentRoleConfig.name}</span>
           <Lock className="h-3 w-3 opacity-60 ml-0.5" />
         </div>
+
+        {/* Quick Link to Decoration Studio */}
+        <Link
+          href="/decoration-panel"
+          className="hidden md:flex items-center gap-1.5 rounded-xl border border-pink-500/25 bg-pink-500/10 px-3 py-2 text-xs font-bold text-pink-600 dark:text-pink-400 hover:bg-pink-500/20 transition shadow-2xs"
+          title="Open Faridabad Decoration Studio Dashboard"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-pink-500" />
+          <span>Decoration Studio</span>
+        </Link>
 
         {/* Quick Link to Kitchen Board */}
         <Link

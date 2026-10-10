@@ -26,6 +26,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
     }
   }, [hideSidebar, loading, authenticated]);
 
+  const isDecoration = pathname?.startsWith("/decoration-panel") || pathname?.startsWith("/decoration");
+
   return (
     <ThemeProvider>
       {hideSidebar ? (
@@ -34,6 +36,22 @@ export default function AppShell({ children }: { children: ReactNode }) {
         <GlobalLoader />
       ) : !authenticated ? (
         <GlobalLoader />
+      ) : isDecoration ? (
+        <SidebarProvider>
+          <LiveNotificationProvider>
+            <AiChatProvider>
+              <SessionTimeoutModal />
+              <NotificationManager />
+              <div className="flex h-screen overflow-hidden bg-background">
+                <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+                  <div className="flex-1 overflow-x-hidden overflow-y-auto bg-background">
+                    {children}
+                  </div>
+                </div>
+              </div>
+            </AiChatProvider>
+          </LiveNotificationProvider>
+        </SidebarProvider>
       ) : (
         <SidebarProvider>
           <LiveNotificationProvider>

@@ -86,6 +86,8 @@ export const AVAILABLE_SCREENS: ScreenOption[] = [
   { route: "/addons", label: "Gifting Add-ons & Candles", department: "Bakery & Catalog", category: "Catalog", defaultRoles: ["super_admin", "admin", "kitchen_manager"] },
   { route: "/cities", label: "Delivery Cities & Pin-codes", department: "Logistics Fleet", category: "Catalog", defaultRoles: ["super_admin", "admin", "delivery_coordinator"] },
   { route: "/stores", label: "Partner Stores (Tie-ups)", department: "Catalog & Partners", category: "Catalog", defaultRoles: ["super_admin", "admin", "kitchen_manager", "delivery_coordinator"] },
+  { route: "/decorations", label: "Party & Venue Decor", department: "Event Decorations", category: "Catalog", defaultRoles: ["super_admin", "admin", "kitchen_manager", "delivery_coordinator", "support_agent"] },
+  { route: "/decoration-panel", label: "🎪 Decoration Command Center (Dedicated Portal)", department: "Event Decorations", category: "Catalog", defaultRoles: ["super_admin", "admin"] },
   { route: "/coupons", label: "Offers & Coupons", department: "Growth & Marketing", category: "Catalog", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
   { route: "/gallery", label: "Media Gallery & Assets", department: "Brand Assets", category: "Catalog", defaultRoles: ["super_admin", "admin", "seo_specialist"] },
 
@@ -240,6 +242,13 @@ export const PAGE_ASSIGNMENT_MAP: Record<string, PageRoleInfo> = {
     badgeColor: "bg-amber-500/10 text-amber-500 border-amber-500/20",
     description: "Manage local bakeries, florists and gift partner tie-ups, WhatsApp dispatches and store profiles.",
   },
+  "/decorations": {
+    assignedTo: "🎈 Event & Venue Decoration Manager",
+    department: "Party & Venue Decor",
+    allowedRoles: ["super_admin", "admin", "kitchen_manager", "delivery_coordinator", "support_agent"],
+    badgeColor: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+    description: "Manage hotel room, surprise birthday and anniversary venue balloon decoration setups and bookings.",
+  },
   "/payments": {
     assignedTo: "👑 Super Admin (Financial Settlements)",
     department: "Executive Finance",
@@ -379,6 +388,20 @@ export const PAGE_ASSIGNMENT_MAP: Record<string, PageRoleInfo> = {
     allowedRoles: ["super_admin", "admin", "seo_specialist"],
     badgeColor: "bg-pink-500/10 text-pink-500 border-pink-500/20",
     description: "Manage storefront footer brand details, trust badges, navigation columns, and SEO schemas.",
+  },
+  "/decoration": {
+    assignedTo: "👑 Super Admin & Event Director",
+    department: "Decoration Command Center",
+    allowedRoles: ["super_admin", "admin"],
+    badgeColor: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+    description: "Dedicated dashboard for party & hotel venue setups in Faridabad, live bookings, decorator partners, and net profit.",
+  },
+  "/decoration-panel": {
+    assignedTo: "👑 Super Admin & Event Director",
+    department: "Decoration Command Center",
+    allowedRoles: ["super_admin", "admin"],
+    badgeColor: "bg-pink-500/10 text-pink-500 border-pink-500/20",
+    description: "Dedicated dashboard for party & hotel venue setups, live bookings, decorator partners, and net profit.",
   },
 };
 

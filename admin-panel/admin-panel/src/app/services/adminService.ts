@@ -639,3 +639,10 @@ export const toggleStoreStatus = async (id: string) => {
   return response.data;
 };
 
+// ==========================================
+// DECORATION PACKAGES & VENUE BOOKINGS APIS
+// ==========================================
+// ==========================================
+// DECORATION SERVICES (MODULARIZED IN ./decoration/)
+// ==========================================
+export * from "./decoration";

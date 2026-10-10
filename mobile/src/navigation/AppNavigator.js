@@ -24,6 +24,8 @@ import ManagePaymentsScreen from '../screens/ManagePaymentsScreen';
 import DeveloperScreen from '../screens/DeveloperScreen';
 import SupportScreen from '../screens/SupportScreen';
 import GalleryScreen from '../screens/GalleryScreen';
+import DecorationScreen from '../screens/DecorationScreen';
+import DecorationTrackScreen from '../screens/decoration/DecorationTrackScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -70,6 +72,8 @@ export default function AppNavigator() {
       <Stack.Screen name="Developer" component={DeveloperScreen} />
       <Stack.Screen name="CustomerSupport" component={SupportScreen} />
       <Stack.Screen name="Gallery" component={GalleryScreen} />
+      <Stack.Screen name="Decorations" component={DecorationScreen} />
+      <Stack.Screen name="DecorationTrack" component={DecorationTrackScreen} />
 
       {/* Guest-only entry points */}
       <Stack.Screen name="Login" component={LoginScreen} />

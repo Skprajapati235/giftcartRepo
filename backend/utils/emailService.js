@@ -501,3 +501,129 @@ exports.sendPasswordResetOtp = async ({ email, name, otp }) => {
     throw new Error("Unable to send OTP email. Please verify the email service configuration and try again.");
   }
 };
+
+// ==========================================
+// DECORATION BOOKING EMAIL NOTIFICATIONS
+// ==========================================
+function buildDecorationActionButton(booking, status, label, color) {
+  const base = (process.env.BASE_URL || process.env.TRACK_BASE_URL || "https://giftcartrepo.onrender.com").replace(/\/$/, "");
+  const token = generateActionToken(booking._id, status);
+  const url = `${base}/api/decorations/email-action/${booking._id}/${encodeURIComponent(status)}?token=${token}`;
+  return `<a href="${url}" target="_blank" style="display:inline-block;margin:4px 6px 4px 0;padding:9px 14px;background:${color};color:#ffffff;text-decoration:none;border-radius:6px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:bold;">${label}</a>`;
+}
+
+exports.sendDecorationBookingNotification = async (booking) => {
+  try {
+    const base = (process.env.BASE_URL || process.env.TRACK_BASE_URL || "https://giftcartrepo.onrender.com").replace(/\/$/, "");
+    
+    const actionButtons = `
+      <div style="margin-top:22px;padding-top:16px;border-top:1px dashed #cbd5e1;">
+        <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#475569;">
+          ⚡ Admin Quick Status Actions (Update in 1 Click):
+        </p>
+        <div>
+          ${buildDecorationActionButton(booking, "Confirmed", "✓ Confirm", "#16A34A")}
+          ${buildDecorationActionButton(booking, "Decorator Assigned", "🤝 Assign Decorator", "#4F46E5")}
+          ${buildDecorationActionButton(booking, "In Setup", "🛠️ In Setup", "#D97706")}
+          ${buildDecorationActionButton(booking, "Decorated & Ready", "✨ Ready For Entry", "#059669")}
+          ${buildDecorationActionButton(booking, "Completed", "🎉 Completed", "#0D9488")}
+          ${buildDecorationActionButton(booking, "Cancelled", "✕ Cancel", "#DC2626")}
+          ${buildDecorationActionButton(booking, "Pending", "⏳ Mark Pending", "#64748B")}
+        </div>
+        <p style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#94a3b8;margin-top:8px;">
+          Clicking an action button opens a secure one-click confirmation screen to prevent accidental clicks.
+        </p>
+      </div>`;
+
+    const html = `
+      <!doctype html>
+      <html>
+      <head>
+        <meta charset="utf-8"/>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px 12px; color: #1e293b; }
+          .container { max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+          .header { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); color: #ffffff; padding: 24px 28px; }
+          .content { padding: 24px 28px; }
+          .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <span style="background:rgba(255,255,255,0.25);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">
+              ✨ NEW VENUE DECORATION BOOKING
+            </span>
+            <h1 style="margin:8px 0 0;font-size:22px;font-weight:800;letter-spacing:-0.5px;">
+              ${booking.packageTitle}
+            </h1>
+            <p style="margin:4px 0 0;font-size:14px;opacity:0.95;">
+              Booking ID: <strong>${booking.bookingId}</strong> • Total: <strong>₹${Number(booking.totalAmount).toLocaleString("en-IN")}</strong>
+            </p>
+          </div>
+
+          <div class="content">
+            <!-- Customer Box -->
+            <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13px;line-height:1.6;">
+              <p style="margin:0;"><strong>👤 Customer:</strong> ${booking.customerName} (${booking.customerEmail || "No email"})</p>
+              <p style="margin:4px 0 0;"><strong>📞 Calling Phone:</strong> <a href="tel:${booking.customerPhone}" style="color:#db2777;font-weight:bold;">${booking.customerPhone}</a></p>
+              <p style="margin:4px 0 0;"><strong>💬 WhatsApp:</strong> <a href="https://wa.me/91${booking.customerWhatsapp.replace(/\D/g,'')}" style="color:#16a34a;font-weight:bold;">${booking.customerWhatsapp}</a></p>
+              <p style="margin:4px 0 0;"><strong>💳 Payment:</strong> <span class="badge" style="background:#dbeafe;color:#1e40af;">${booking.paymentMethod}</span> • Status: <strong>${booking.paymentStatus}</strong></p>
+            </div>
+
+            <!-- Venue Details Box -->
+            <div style="background:#fdf2f8;border-left:4px solid #db2777;padding:14px 16px;border-radius:8px;margin-bottom:18px;font-size:13px;line-height:1.6;color:#831843;">
+              <h4 style="margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;color:#9d174d;">📍 Venue & Hotel Details</h4>
+              <p style="margin:0;"><strong>Venue Type:</strong> ${booking.venueType}</p>
+              ${booking.hotelName ? `<p style="margin:2px 0 0;"><strong>Hotel / Resort:</strong> ${booking.hotelName}</p>` : ""}
+              ${booking.roomNumber ? `<p style="margin:2px 0 0;"><strong>Room Number:</strong> ${booking.roomNumber}</p>` : ""}
+              ${booking.bookingHolderName ? `<p style="margin:2px 0 0;"><strong>Hotel Booking Name:</strong> ${booking.bookingHolderName}</p>` : ""}
+              <p style="margin:2px 0 0;"><strong>Address & City:</strong> ${booking.venueAddress}, ${booking.city}</p>
+            </div>
+
+            <!-- Timing & Setup Box -->
+            <div style="background:#faf5ff;border-left:4px solid #9333ea;padding:14px 16px;border-radius:8px;margin-bottom:18px;font-size:13px;line-height:1.6;color:#581c87;">
+              <h4 style="margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;color:#7e22ce;">⏱️ Setup Schedule & Customization</h4>
+              <p style="margin:0;"><strong>📅 Setup Date:</strong> ${booking.setupDate}</p>
+              <p style="margin:2px 0 0;"><strong>⏰ Decorator Slot:</strong> ${booking.setupTimeSlot}</p>
+              ${booking.surpriseEntryTime ? `<p style="margin:2px 0 0;"><strong>🎉 Surprise Entry Time:</strong> ${booking.surpriseEntryTime}</p>` : ""}
+              ${booking.customMessage ? `<p style="margin:2px 0 0;"><strong>🎈 Wall Balloon Foil Text:</strong> "${booking.customMessage}"</p>` : ""}
+              ${booking.colorTheme ? `<p style="margin:2px 0 0;"><strong>🎨 Color Theme:</strong> ${booking.colorTheme}</p>` : ""}
+              ${booking.specialInstructions ? `<p style="margin:2px 0 0;"><strong>📝 Notes:</strong> ${booking.specialInstructions}</p>` : ""}
+            </div>
+
+            ${actionButtons}
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const subject = `🎈 New Decoration Booking: ${booking.bookingId} - ${booking.packageTitle} (${booking.city}) - ₹${booking.totalAmount}`;
+
+    const recipientEmails = [ADMIN_NOTIFY_EMAIL];
+    if (booking.customerEmail && booking.customerEmail.includes("@") && !recipientEmails.includes(booking.customerEmail)) {
+      recipientEmails.push(booking.customerEmail);
+    }
+
+    for (const toEmail of recipientEmails) {
+      try {
+        if (usingBrevoApi()) {
+          await sendViaBrevoApi({ to: toEmail, subject, html });
+        } else {
+          await (await getTransporter()).sendMail({
+            from: `"GiftCart Decorations" <${process.env.EMAIL_USER}>`,
+            to: toEmail,
+            subject,
+            html,
+          });
+        }
+        console.log(`[email] Decoration booking email sent to ${toEmail} for booking ${booking.bookingId}`);
+      } catch (err) {
+        console.error(`[email] Failed sending decoration email to ${toEmail}:`, err.message);
+      }
+    }
+  } catch (err) {
+    console.error("[email] Error in sendDecorationBookingNotification:", err.message);
+  }
+};

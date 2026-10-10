@@ -94,6 +94,14 @@ export const linearSidebarNav: NavSectionConfig[] = [
         icon: Home,
       },
       {
+        key: "decoration-panel",
+        label: "Decoration",
+        href: "/decoration-panel",
+        icon: Sparkles,
+        badge: "Studio",
+        badgeVariant: "neon-purple",
+      },
+      {
         key: "chat",
         label: "AI Assistant",
         href: "/chat",

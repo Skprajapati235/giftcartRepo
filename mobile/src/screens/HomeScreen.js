@@ -616,6 +616,55 @@ export default function HomeScreen({ navigation }) {
                 </View>
               </View>
 
+              {/* ── Hotel & Venue Decoration Highlight Banner ── */}
+              <TouchableOpacity
+                style={{
+                  marginHorizontal: 14,
+                  marginVertical: 10,
+                  borderRadius: 20,
+                  backgroundColor: '#FFF0F5',
+                  borderWidth: 1.5,
+                  borderColor: '#FBCFE8',
+                  padding: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  shadowColor: '#EC4899',
+                  shadowOffset: { width: 0, height: 3 },
+                  shadowOpacity: 0.08,
+                  shadowRadius: 6,
+                  elevation: 2,
+                }}
+                onPress={() => navigation.navigate('Decorations')}
+                activeOpacity={0.88}
+              >
+                <View style={{ flex: 1, paddingRight: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                    <Text style={{ fontSize: 9.5, fontWeight: '900', color: '#DB2777', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      ✨ NEW EXPERIENCE SERVICE
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 15, fontWeight: '900', color: '#831843' }}>
+                    Hotel Room & Party Decor
+                  </Text>
+                  <Text style={{ fontSize: 11, color: '#9D174D', marginTop: 2 }}>
+                    Rose petal bed, balloons & fairy lights ready before surprise entry!
+                  </Text>
+                </View>
+                <View style={{
+                  backgroundColor: '#EC4899',
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  borderRadius: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                }}>
+                  <Text style={{ color: '#FFF', fontSize: 11.5, fontWeight: '800' }}>Book</Text>
+                  <Feather name="arrow-right" size={12} color="#FFF" />
+                </View>
+              </TouchableOpacity>
+
               {/* ── Shop by Category Section ── */}
               <View style={styles.sectionContainer}>
                 <View style={styles.sectionHeaderRow}>
