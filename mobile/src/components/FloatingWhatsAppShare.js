@@ -9,12 +9,15 @@ import {
   Linking,
   Share,
   Platform,
+  PanResponder,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons, Feather, FontAwesome } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function FloatingWhatsAppShare({ navigationRef }) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [modalVisible, setModalVisible] = useState(false);
   const [pageInfo, setPageInfo] = useState({
     title: 'GiftFestive — Premier Cakes & Gifts',
@@ -22,51 +25,24 @@ export default function FloatingWhatsAppShare({ navigationRef }) {
     screenName: 'Home',
   });
 
-  // Pulse & Scale Animation
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnim = useRef(new Animated.Value(0)).current;
+  // Calculate default starting bottom offset
+  const bottomOffset = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 12) + 75;
+  const defaultX = windowWidth > 0 ? Math.max(8, windowWidth - 44 - 16) : 310;
+  const defaultY = windowHeight > 0 ? Math.max(20, windowHeight - bottomOffset - 44) : 560;
+
+  // Draggable Pan Position
+  const pan = useRef(new Animated.ValueXY({ x: defaultX, y: defaultY })).current;
+  const hasBeenDragged = useRef(false);
 
   useEffect(() => {
-    // Breathing scale animation
-    const scaleLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.09,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    // Ripple pulse ring animation
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 0,
-          duration: 0,
-          useNativeDriver: true,
-        }),
-      ])
-    );
-
-    scaleLoop.start();
-    pulseLoop.start();
-
-    return () => {
-      scaleLoop.stop();
-      pulseLoop.stop();
-    };
-  }, []);
+    // Keep aligned to bottom right on initial load or resize until user drags
+    if (!hasBeenDragged.current && windowWidth > 0 && windowHeight > 0) {
+      pan.setValue({
+        x: Math.max(8, windowWidth - 44 - 16),
+        y: Math.max(20, windowHeight - bottomOffset - 44),
+      });
+    }
+  }, [windowWidth, windowHeight, bottomOffset]);
 
   const resolveCurrentPage = () => {
     try {
@@ -115,6 +91,129 @@ export default function FloatingWhatsAppShare({ navigationRef }) {
     resolveCurrentPage();
     setModalVisible(true);
   };
+
+  const handleOpenToolsRef = useRef(handleOpenTools);
+  handleOpenToolsRef.current = handleOpenTools;
+
+  const touchStartTime = useRef(0);
+
+  // Pulse & Scale Animation
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  // PanResponder to allow dragging FAB anywhere across the screen & handling instant tap
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const dx = Math.abs(Number(gestureState?.dx) || 0);
+        const dy = Math.abs(Number(gestureState?.dy) || 0);
+        return dx > 4 || dy > 4;
+      },
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+        const dx = Math.abs(Number(gestureState?.dx) || 0);
+        const dy = Math.abs(Number(gestureState?.dy) || 0);
+        return dx > 4 || dy > 4;
+      },
+      onPanResponderGrant: () => {
+        touchStartTime.current = Date.now();
+        hasBeenDragged.current = true;
+        pan.setOffset({
+          x: pan.x._value,
+          y: pan.y._value,
+        });
+        pan.setValue({ x: 0, y: 0 });
+        Animated.spring(scaleAnim, { toValue: 0.92, useNativeDriver: true }).start();
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        pan.x.setValue(Number(gestureState.dx) || 0);
+        pan.y.setValue(Number(gestureState.dy) || 0);
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        pan.flattenOffset();
+        Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+
+        const duration = Date.now() - touchStartTime.current;
+        const dx = Number(gestureState?.dx) || 0;
+        const dy = Number(gestureState?.dy) || 0;
+        const distance = Math.hypot(dx, dy);
+
+        // Instant tap detection
+        if (distance < 8 && duration < 600) {
+          handleOpenToolsRef.current?.();
+          return;
+        }
+
+        // Viewport safe boundary clamping
+        const minX = 8;
+        const maxX = windowWidth - 44 - 8;
+        const minY = Math.max(insets.top, 24) + 6;
+        const maxY = windowHeight - Math.max(insets.bottom, 24) - 44 - 6;
+
+        const currentX = pan.x._value;
+        const currentY = pan.y._value;
+
+        const clampedX = Math.max(minX, Math.min(maxX, currentX));
+        const clampedY = Math.max(minY, Math.min(maxY, currentY));
+
+        if (clampedX !== currentX || clampedY !== currentY) {
+          Animated.spring(pan, {
+            toValue: { x: clampedX, y: clampedY },
+            bounciness: 6,
+            speed: 14,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        pan.flattenOffset();
+        Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
+
+  useEffect(() => {
+    // Breathing scale animation
+    const scaleLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 1.09,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    // Ripple pulse ring animation
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0,
+          duration: 0,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    scaleLoop.start();
+    pulseLoop.start();
+
+    return () => {
+      scaleLoop.stop();
+      pulseLoop.stop();
+    };
+  }, []);
 
   const getShareMessage = () => {
     return `Hey! Check this out on GiftFestive:\n*${pageInfo.title}*\n${pageInfo.url}`;
@@ -165,9 +264,6 @@ export default function FloatingWhatsAppShare({ navigationRef }) {
     setModalVisible(false);
   };
 
-  // Calculate bottom offset: sits cleanly above bottom tab bar and screen safe area
-  const bottomOffset = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 12) + 75;
-
   // Don't render floating button over full-screen booking wizards that have bottom action buttons
   const activeRouteName = navigationRef?.isReady?.() ? navigationRef?.getCurrentRoute?.()?.name : null;
   if (activeRouteName === 'DecorationBooking') {
@@ -176,23 +272,29 @@ export default function FloatingWhatsAppShare({ navigationRef }) {
 
   const pulseScale = pulseAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [1, 1.5],
+    outputRange: [1, 1.4],
   });
 
   const pulseOpacity = pulseAnim.interpolate({
     inputRange: [0, 0.7, 1],
-    outputRange: [0.6, 0.2, 0],
+    outputRange: [0.55, 0.2, 0],
   });
 
   return (
     <>
-      {/* ── Floating WhatsApp Action Button ── */}
-      <View
-        pointerEvents="box-none"
-        style={[styles.floatingContainer, { bottom: bottomOffset }]}
+      {/* ── Draggable Floating WhatsApp Action Button (Compact & Movable) ── */}
+      <Animated.View
+        style={[
+          styles.floatingContainer,
+          {
+            transform: pan.getTranslateTransform(),
+          },
+        ]}
+        {...panResponder.panHandlers}
       >
         {/* Animated Ripple Pulse Ring */}
         <Animated.View
+          pointerEvents="none"
           style={[
             styles.pulseRing,
             {
@@ -203,22 +305,24 @@ export default function FloatingWhatsAppShare({ navigationRef }) {
         />
 
         <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-          <TouchableOpacity
-            style={styles.floatingButton}
-            onPress={handleOpenTools}
-            activeOpacity={0.85}
+          <View
+            style={[
+              styles.floatingButton,
+              Platform.OS === 'web' && { cursor: 'pointer', userSelect: 'none' },
+            ]}
+            accessibilityRole="button"
             accessibilityLabel="Share this page via WhatsApp"
           >
-            {/* WhatsApp Icon */}
-            <Ionicons name="logo-whatsapp" size={32} color="#FFFFFF" />
+            {/* Compact WhatsApp Icon */}
+            <Ionicons name="logo-whatsapp" size={24} color="#FFFFFF" />
 
-            {/* Share Indicator Badge */}
+            {/* Compact Share Indicator Badge */}
             <View style={styles.shareBadge}>
-              <Feather name="share-2" size={9} color="#FFFFFF" />
+              <Feather name="share-2" size={8} color="#FFFFFF" />
             </View>
-          </TouchableOpacity>
+          </View>
         </Animated.View>
-      </View>
+      </Animated.View>
 
       {/* ── Share Tools Modal / Action Sheet ── */}
       <Modal
@@ -330,40 +434,44 @@ export default function FloatingWhatsAppShare({ navigationRef }) {
 const styles = StyleSheet.create({
   floatingContainer: {
     position: 'absolute',
-    right: 18,
+    top: 0,
+    left: 0,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
+    elevation: 9999,
   },
   pulseRing: {
     position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#25D366',
   },
   floatingButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#25D366',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#25D366',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
     elevation: 8,
   },
   shareBadge: {
     position: 'absolute',
     top: -2,
-    left: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    right: -2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#741343',
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
