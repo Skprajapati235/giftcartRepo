@@ -161,8 +161,14 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
                   <p className="text-sm font-black text-slate-900">{customerName}</p>
                   <p className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
                     <Phone className="h-3 w-3 text-slate-400" />
-                    +91 {customerPhone}
+                    <span>+91 {customerPhone}</span>
                   </p>
+                  {order.shippingAddress?.alternatePhone && (
+                    <p className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
+                      <Phone className="h-3 w-3 text-blue-500" />
+                      <span>Alt: +91 {order.shippingAddress.alternatePhone}</span>
+                    </p>
+                  )}
                   <p className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
                     <MapPin className="h-3 w-3 text-slate-400" />
                     {address}, Pincode: {pincode}

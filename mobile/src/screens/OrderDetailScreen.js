@@ -296,8 +296,13 @@ export default function OrderDetailScreen({ route, navigation }) {
             )}
             <Text style={styles.miniSubText}>PIN: {order.shippingAddress?.pinCode}</Text>
             <Text style={[styles.miniSubText, { marginTop: 4, color: '#1E293B', fontWeight: '700' }]}>
-              📞 {order.shippingAddress?.phone}
+              📞 Primary: {order.shippingAddress?.phone}
             </Text>
+            {order.shippingAddress?.alternatePhone ? (
+              <Text style={[styles.miniSubText, { marginTop: 2, color: '#2563EB', fontWeight: '700' }]}>
+                📱 Alternate: {order.shippingAddress.alternatePhone}
+              </Text>
+            ) : null}
           </View>
 
           <View style={styles.miniCard}>

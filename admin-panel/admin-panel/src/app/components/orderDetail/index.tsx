@@ -55,6 +55,7 @@ interface OrderDetailData {
   shippingAddress: {
     fullName: string;
     phone: string;
+    alternatePhone?: string;
     address?: string;
     houseNo?: string;
     street?: string;
@@ -540,9 +541,19 @@ export default function OrderDetailView() {
                   <span className="font-bold">{order.user?.name}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Phone</span>
-                  <span className="font-bold">{order.user?.mobileNumber || "N/A"}</span>
+                  <span className="text-slate-400">Login Mobile</span>
+                  <a href={`tel:${order.user?.mobileNumber || order.shippingAddress.phone || ""}`} className="font-bold text-pink-600 hover:underline">
+                    {order.user?.mobileNumber || order.shippingAddress.phone || "N/A"}
+                  </a>
                 </div>
+                {order.shippingAddress.alternatePhone && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Alternate Phone</span>
+                    <a href={`tel:${order.shippingAddress.alternatePhone}`} className="font-bold text-blue-600 hover:underline">
+                      {order.shippingAddress.alternatePhone}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -555,7 +566,22 @@ export default function OrderDetailView() {
                   {order.shippingAddress.landmark ? `, Near ${order.shippingAddress.landmark}` : ''}
                 </p>
                 <p className="text-slate-600">PIN: <strong>{order.shippingAddress.pinCode}</strong></p>
-                <p className="text-slate-600">📞 {order.shippingAddress.phone}</p>
+                <div className="pt-2 space-y-1">
+                  <p className="text-slate-700 flex items-center gap-1.5 font-medium">
+                    <span className="text-emerald-600 font-bold">📞 Primary:</span>
+                    <a href={`tel:${order.shippingAddress.phone}`} className="font-bold text-slate-900 hover:text-pink-600">
+                      {order.shippingAddress.phone}
+                    </a>
+                  </p>
+                  {order.shippingAddress.alternatePhone && (
+                    <p className="text-slate-700 flex items-center gap-1.5 font-medium">
+                      <span className="text-blue-600 font-bold">📱 Alternate:</span>
+                      <a href={`tel:${order.shippingAddress.alternatePhone}`} className="font-bold text-slate-900 hover:text-pink-600">
+                        {order.shippingAddress.alternatePhone}
+                      </a>
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 

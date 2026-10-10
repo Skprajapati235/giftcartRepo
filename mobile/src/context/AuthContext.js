@@ -86,13 +86,10 @@ export const AuthProvider = ({ children }) => {
     return nextUser;
   };
 
-  // Step 1 of mobile OTP flow — sends OTP. If existing user, backend returns token + user immediately.
+  // Step 1 of mobile OTP flow — sends OTP to customer's mobile
   const sendOtp = async (name, mobileNumber) => {
     try {
       const response = await authService.sendOtp(name, mobileNumber);
-      if (response.isOldUser && response.token && response.user) {
-        await saveSession(response.token, response.user);
-      }
       return response;
     } catch (error) {
       const err = handleApiError(error);

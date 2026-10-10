@@ -132,12 +132,9 @@ exports.requestLoginOtp = async ({ name, mobileNumber }) => {
   const trimmedName = String(name || "").trim();
 
   const user = await User.findOne({ mobileNumber: mobile });
-  
-  if (user) {
-    return { isOldUser: true, user };
-  }
 
-  if (!trimmedName) {
+  // If new user and name wasn't entered, prompt for name
+  if (!user && !trimmedName) {
     throw new Error("Name is required for new users");
   }
 
@@ -149,13 +146,14 @@ exports.requestLoginOtp = async ({ name, mobileNumber }) => {
     throw new Error(`Please wait ${waitSeconds}s before requesting another OTP`);
   }
 
+  // Secure: OTP is always sent to the customer's mobile number on login
   const { sessionId } = await otpService.sendOtp(mobile);
 
   await OtpVerification.findOneAndUpdate(
     { mobileNumber: mobile },
     {
       mobileNumber: mobile,
-      name: trimmedName || (user ? user.name : ""),
+      name: trimmedName || (user ? user.name : "Customer"),
       sessionId,
       attempts: 0,
       lastSentAt: new Date(),
@@ -164,7 +162,7 @@ exports.requestLoginOtp = async ({ name, mobileNumber }) => {
     { upsert: true, new: true }
   );
 
-  return { mobileNumber: mobile };
+  return { mobileNumber: mobile, isExistingUser: !!user };
 };
 
 exports.verifyLoginOtp = async ({ mobileNumber, otp }) => {

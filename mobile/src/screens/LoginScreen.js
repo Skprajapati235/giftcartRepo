@@ -71,12 +71,6 @@ export default function LoginScreen({ navigation, route }) {
     try {
       const response = await sendOtp(showNameField ? name.trim() : '', mobileNumber.trim());
 
-      if (response?.isOldUser) {
-        showToast('Welcome back! Logged in successfully 🎉', 'success');
-        goAfterLogin();
-        return;
-      }
-
       showToast('OTP sent successfully to your mobile 📲', 'success');
       setStep('otp');
       setOtp('');

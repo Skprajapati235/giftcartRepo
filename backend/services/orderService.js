@@ -50,6 +50,7 @@ async function sendPostPaymentNotifications(updatedOrder) {
     const toList = [
       updatedOrder?.user?.mobileNumber,
       updatedOrder?.shippingAddress?.phone,
+      updatedOrder?.shippingAddress?.alternatePhone,
     ].filter(Boolean);
     const results = await whatsappService.sendWhatsAppMessageToMany({
       toList,
@@ -322,6 +323,7 @@ exports.getAllOrders = async ({ page = 1, limit = 10, search = "" } = {}) => {
       $or: [
         { "shippingAddress.fullName": { $regex: escapedSearch, $options: "i" } },
         { "shippingAddress.phone": { $regex: escapedSearch, $options: "i" } },
+        { "shippingAddress.alternatePhone": { $regex: escapedSearch, $options: "i" } },
         { "items.name": { $regex: escapedSearch, $options: "i" } },
         { user: { $in: users.map((user) => user._id) } },
         ...(isObjectId ? [{ _id: new mongoose.Types.ObjectId(normalizedSearch) }] : []),
@@ -383,6 +385,7 @@ exports.getPublicOrderByTrackingToken = async (trackingToken) => {
     pinCode: order.shippingAddress?.pinCode,
     landmark: order.shippingAddress?.landmark,
     phoneLast4: String(order.shippingAddress?.phone || "").replace(/\D/g, "").slice(-4) || undefined,
+    alternatePhoneLast4: String(order.shippingAddress?.alternatePhone || "").replace(/\D/g, "").slice(-4) || undefined,
   };
 
   return {
@@ -481,7 +484,11 @@ exports.updateOrderStatus = async (id, status) => {
 
   if (updated) {
     try {
-      const toList = [updated?.user?.mobileNumber, updated?.shippingAddress?.phone].filter(Boolean);
+      const toList = [
+        updated?.user?.mobileNumber,
+        updated?.shippingAddress?.phone,
+        updated?.shippingAddress?.alternatePhone,
+      ].filter(Boolean);
       const results = await whatsappService.sendWhatsAppMessageToMany({
         toList,
         order: updated,

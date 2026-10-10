@@ -52,7 +52,11 @@ exports.generateInvoicePDF = (order, stream) => {
           300,
           customerInfoTop + 45
         )
-        .text(order.shippingAddress?.phone || order.user?.mobileNumber || "", 300, customerInfoTop + 60)
+        .text(
+          `Phone: ${order.shippingAddress?.phone || order.user?.mobileNumber || ""}${order.shippingAddress?.alternatePhone ? ` | Alt: ${order.shippingAddress.alternatePhone}` : ""}`,
+          300,
+          customerInfoTop + 60
+        )
         .moveDown();
 
       // --- Table Header ---

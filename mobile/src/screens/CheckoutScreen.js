@@ -80,7 +80,8 @@ export default function CheckoutScreen({ navigation, route }) {
   // Shipping Address Form State
   const [shippingInfo, setShippingInfo] = useState({
     fullName: user?.name || '',
-    phone: '',
+    phone: user?.mobileNumber || user?.phone || '',
+    alternatePhone: '',
     houseNo: '',
     street: '',
     pinCode: '',
@@ -131,8 +132,13 @@ export default function CheckoutScreen({ navigation, route }) {
           const list = JSON.parse(savedList);
           if (list.length > 0) {
             const addr = list[0];
-            setSavedAddress(addr);
-            setShippingInfo(addr); // Pre-fill form too
+            const fullAddr = {
+              ...addr,
+              phone: addr.phone || user?.mobileNumber || user?.phone || '',
+              alternatePhone: addr.alternatePhone || '',
+            };
+            setSavedAddress(fullAddr);
+            setShippingInfo(fullAddr);
             setShowAddressForm(false);
             return;
           }
@@ -141,8 +147,13 @@ export default function CheckoutScreen({ navigation, route }) {
         const raw = await AsyncStorage.getItem('@giftcart_saved_address');
         if (raw) {
           const addr = JSON.parse(raw);
-          setSavedAddress(addr);
-          setShippingInfo(addr);
+          const fullAddr = {
+            ...addr,
+            phone: addr.phone || user?.mobileNumber || user?.phone || '',
+            alternatePhone: addr.alternatePhone || '',
+          };
+          setSavedAddress(fullAddr);
+          setShippingInfo(fullAddr);
           setShowAddressForm(false);
         } else {
           setShowAddressForm(true);
@@ -324,9 +335,21 @@ export default function CheckoutScreen({ navigation, route }) {
     // Validation is handled below after resolving active address
 
     const activeAddress = showAddressForm ? shippingInfo : (savedAddress || shippingInfo);
-    const { fullName: fn, phone: ph, houseNo: hn, street: st, pinCode: pc } = activeAddress;
-    if (!fn || !ph || !hn || !st || !pc) {
-      showToast('Please fill all required shipping details', 'warning');
+    const { fullName: fn, phone: ph, alternatePhone: aph, houseNo: hn, street: st, pinCode: pc } = activeAddress;
+    if (!fn || !ph || !aph || !hn || !st || !pc) {
+      showToast('Please fill all required details including alternate phone', 'warning');
+      return;
+    }
+    if (ph.length < 10) {
+      showToast('Please enter a valid 10-digit primary phone', 'warning');
+      return;
+    }
+    if (aph.length < 10) {
+      showToast('Please enter a valid 10-digit alternate phone', 'warning');
+      return;
+    }
+    if (ph === aph) {
+      showToast('Alternate phone must be different from primary phone', 'warning');
       return;
     }
 
@@ -687,7 +710,10 @@ export default function CheckoutScreen({ navigation, route }) {
                 </TouchableOpacity>
               </View>
               <Text style={styles.savedName}>{savedAddress.fullName}</Text>
-              <Text style={styles.savedPhone}>{savedAddress.phone}</Text>
+              <Text style={styles.savedPhone}>📞 Primary: {savedAddress.phone}</Text>
+              {savedAddress.alternatePhone ? (
+                <Text style={styles.savedPhone}>📱 Alternate: {savedAddress.alternatePhone}</Text>
+              ) : null}
               <Text style={styles.savedAddr}>
                 {savedAddress.houseNo}, {savedAddress.street}
                 {savedAddress.landmark ? `, Near ${savedAddress.landmark}` : ''}
@@ -731,16 +757,25 @@ export default function CheckoutScreen({ navigation, route }) {
               <View style={styles.addressForm}>
                 <TextInput
                   style={styles.input}
-                  placeholder="Full Name (Required)"
+                  placeholder="Full Name (Required) *"
                   value={shippingInfo.fullName}
                   onChangeText={(t) => setShippingInfo({ ...shippingInfo, fullName: t })}
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Phone Number (Required)"
+                  placeholder="Primary Phone (Login Mobile) *"
                   keyboardType="phone-pad"
+                  maxLength={10}
                   value={shippingInfo.phone}
-                  onChangeText={(t) => setShippingInfo({ ...shippingInfo, phone: t })}
+                  onChangeText={(t) => setShippingInfo({ ...shippingInfo, phone: t.replace(/\D/g, '').slice(0, 10) })}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Alternate Phone Number (Required) *"
+                  keyboardType="phone-pad"
+                  maxLength={10}
+                  value={shippingInfo.alternatePhone}
+                  onChangeText={(t) => setShippingInfo({ ...shippingInfo, alternatePhone: t.replace(/\D/g, '').slice(0, 10) })}
                 />
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <TextInput

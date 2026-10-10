@@ -69,6 +69,7 @@ interface OrderData {
   shippingAddress?: {
     fullName: string;
     phone: string;
+    alternatePhone?: string;
     houseNo?: string;
     street?: string;
     pinCode?: string;
@@ -402,16 +403,35 @@ export default function KitchenBoardPage() {
             <p className="text-sm font-bold text-foreground truncate">
               {order.shippingAddress?.fullName || order.user?.name || "Customer"}
             </p>
+            <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500 mt-0.5">
+              <span>📞 {order.shippingAddress?.phone || order.user?.mobileNumber || "N/A"}</span>
+              {order.shippingAddress?.alternatePhone && (
+                <span className="text-blue-600 font-semibold">• Alt: {order.shippingAddress.alternatePhone}</span>
+              )}
+            </div>
           </div>
-          {(order.shippingAddress?.phone || order.user?.mobileNumber) && (
-            <a
-              href={`tel:${order.shippingAddress?.phone || order.user?.mobileNumber}`}
-              className="shrink-0 rounded-lg border border-border-theme p-2 text-slate-500 hover:text-orange-500 hover:border-orange-300 transition"
-              aria-label={`Call ${order.shippingAddress?.fullName || order.user?.name || "customer"}`}
-            >
-              <Phone className="w-3.5 h-3.5" />
-            </a>
-          )}
+          <div className="flex items-center gap-1 shrink-0">
+            {(order.shippingAddress?.phone || order.user?.mobileNumber) && (
+              <a
+                href={`tel:${order.shippingAddress?.phone || order.user?.mobileNumber}`}
+                className="rounded-lg border border-border-theme p-2 text-slate-500 hover:text-emerald-600 hover:border-emerald-300 transition"
+                title={`Call Primary: ${order.shippingAddress?.phone || order.user?.mobileNumber}`}
+                aria-label={`Call primary phone`}
+              >
+                <Phone className="w-3.5 h-3.5" />
+              </a>
+            )}
+            {order.shippingAddress?.alternatePhone && (
+              <a
+                href={`tel:${order.shippingAddress.alternatePhone}`}
+                className="rounded-lg border border-blue-200 bg-blue-50/50 p-2 text-blue-600 hover:bg-blue-100 transition"
+                title={`Call Alternate: ${order.shippingAddress.alternatePhone}`}
+                aria-label={`Call alternate phone`}
+              >
+                <Phone className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Items preview */}
