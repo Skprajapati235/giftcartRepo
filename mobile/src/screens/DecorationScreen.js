@@ -11,8 +11,10 @@ import {
   Dimensions,
   StatusBar,
   Linking,
+  Platform,
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../components/layout';
 import {
   fetchDecorationPackages,
@@ -31,6 +33,7 @@ const CATEGORIES = [
 ];
 
 export default function DecorationScreen({ navigation }) {
+  const insets = useSafeAreaInsets();
   const [packages, setPackages] = useState([]);
   const [samples, setSamples] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,14 +80,14 @@ export default function DecorationScreen({ navigation }) {
 
   return (
     <SafeScreen style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation?.goBack ? navigation.goBack() : null}
           style={styles.backBtn}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
         >
           <Ionicons name="arrow-back" size={22} color="#0F172A" />
         </TouchableOpacity>
@@ -111,7 +114,10 @@ export default function DecorationScreen({ navigation }) {
       {/* Main Scrollable View */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(90, insets.bottom + (Platform.OS === 'android' ? 60 : 40)) },
+        ]}
       >
         {/* Faridabad Pilot City Tag */}
         <View style={styles.cityBanner}>
@@ -315,10 +321,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    minHeight: 58,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   backBtn: {
     padding: 6,

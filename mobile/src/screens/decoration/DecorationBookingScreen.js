@@ -13,8 +13,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Linking,
+  StatusBar,
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/layout';
 import { createDecorationBooking } from '../../services/decorationService';
 
@@ -71,6 +73,12 @@ export default function DecorationBookingScreen({ route, navigation }) {
   };
 
   const finalPrice = pkg.salePrice || pkg.price;
+  const insets = useSafeAreaInsets();
+
+  // Solid safe bottom padding ensuring buttons sit completely above Android on-screen navigation buttons (48dp height)
+  const safeBottomPadding = Platform.OS === 'android'
+    ? Math.max(insets.bottom, 36) + 12
+    : Math.max(insets.bottom, 16) + 10;
 
   // Step Tracker State
   const [currentStep, setCurrentStep] = useState(1);
@@ -272,8 +280,16 @@ export default function DecorationBookingScreen({ route, navigation }) {
       `Please confirm decorator dispatch and keep removable glue dots ready. Thank you!`;
 
     return (
-      <SafeScreen>
-        <ScrollView style={styles.container} contentContainerStyle={styles.successScroll}>
+      <SafeScreen edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={[
+            styles.successScroll,
+            { paddingBottom: Math.max(80, insets.bottom + (Platform.OS === 'android' ? 50 : 30)) },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Big Success Header */}
           <View style={styles.successCard}>
             <View style={styles.successBadge}>
@@ -400,21 +416,32 @@ export default function DecorationBookingScreen({ route, navigation }) {
   // STANDARD STEP-BY-STEP PAGE FLOW
   // ----------------------------------------------------
   return (
-    <SafeScreen>
+    <SafeScreen edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
         {/* Top Navbar */}
         <View style={styles.navBar}>
-          <TouchableOpacity onPress={handlePrevStep} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity
+            onPress={handlePrevStep}
+            style={styles.backBtn}
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+          >
             <Ionicons name="arrow-back" size={22} color="#0F172A" />
           </TouchableOpacity>
-          <View style={{ flex: 1, paddingHorizontal: 8 }}>
-            <Text style={styles.navTitle} numberOfLines={1}>Booking {pkg.title}</Text>
+          <View style={{ flex: 1, paddingHorizontal: 12 }}>
+            <Text style={styles.navTitle} numberOfLines={1}>
+              Booking {pkg.title}
+            </Text>
             <Text style={styles.navSub}>Step {currentStep} of 4 • Faridabad Express</Text>
           </View>
-          <TouchableOpacity onPress={() => openWhatsApp(`Hi GiftFestive, I need help booking ${pkg.title}`)} style={styles.navHelpBtn}>
+          <TouchableOpacity
+            onPress={() => openWhatsApp(`Hi GiftFestive, I need help booking ${pkg.title}`)}
+            style={styles.navHelpBtn}
+            hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+          >
             <Ionicons name="logo-whatsapp" size={20} color="#10B981" />
           </TouchableOpacity>
         </View>
@@ -469,7 +496,10 @@ export default function DecorationBookingScreen({ route, navigation }) {
 
         <ScrollView
           style={styles.container}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(160, 110 + insets.bottom + (Platform.OS === 'android' ? 36 : 16)) },
+          ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -998,7 +1028,15 @@ export default function DecorationBookingScreen({ route, navigation }) {
         </ScrollView>
 
         {/* Bottom Floating Action Bar */}
-        <View style={styles.bottomBar}>
+        <View
+          style={[
+            styles.bottomBar,
+            {
+              paddingBottom: safeBottomPadding,
+              paddingTop: 12,
+            },
+          ]}
+        >
           <TouchableOpacity
             style={styles.bottomBackBtn}
             onPress={handlePrevStep}
@@ -1064,9 +1102,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFF',
+    minHeight: 58,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    borderBottomColor: '#F1F5F9',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   backBtn: {
     width: 36,
@@ -1581,15 +1625,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E2E8F0',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 8,
   },
   bottomBackBtn: {
     flexDirection: 'row',

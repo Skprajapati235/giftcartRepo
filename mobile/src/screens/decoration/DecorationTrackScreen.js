@@ -11,14 +11,17 @@ import {
   Linking,
   Dimensions,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/layout';
 import { trackDecorationBooking } from '../../services/decorationService';
 
 const { width } = Dimensions.get('window');
 
 export default function DecorationTrackScreen({ route, navigation }) {
+  const insets = useSafeAreaInsets();
   const initialId = route?.params?.bookingId || '';
   const [bookingId, setBookingId] = useState(initialId);
   const [loading, setLoading] = useState(false);
@@ -64,12 +67,13 @@ export default function DecorationTrackScreen({ route, navigation }) {
 
   return (
     <SafeScreen style={styles.container} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       {/* Top Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation?.goBack ? navigation.goBack() : null}
           style={styles.backBtn}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
         >
           <Ionicons name="arrow-back" size={22} color="#0F172A" />
         </TouchableOpacity>
@@ -77,12 +81,22 @@ export default function DecorationTrackScreen({ route, navigation }) {
           <Text style={styles.headerTitle}>Track Setup Status</Text>
           <Text style={styles.headerSub}>Live venue decoration telemetry</Text>
         </View>
-        <TouchableOpacity onPress={openWhatsAppSupport} style={styles.supportBtn}>
+        <TouchableOpacity
+          onPress={openWhatsAppSupport}
+          style={styles.supportBtn}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+        >
           <Ionicons name="logo-whatsapp" size={20} color="#10B981" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollBody,
+          { paddingBottom: Math.max(80, insets.bottom + (Platform.OS === 'android' ? 60 : 40)) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Search Input Box */}
         <View style={styles.searchCard}>
           <Text style={styles.searchLabel}>Enter Booking ID</Text>
@@ -274,9 +288,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
+    minHeight: 58,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E2E8F0',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
   },
   backBtn: { padding: 6, borderRadius: 10, backgroundColor: '#F1F5F9' },
   headerTitle: { fontSize: 16, fontWeight: '800', color: '#0F172A' },

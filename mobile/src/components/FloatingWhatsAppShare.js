@@ -166,7 +166,13 @@ export default function FloatingWhatsAppShare({ navigationRef }) {
   };
 
   // Calculate bottom offset: sits cleanly above bottom tab bar and screen safe area
-  const bottomOffset = Math.max(insets.bottom, 12) + 75;
+  const bottomOffset = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 12) + 75;
+
+  // Don't render floating button over full-screen booking wizards that have bottom action buttons
+  const activeRouteName = navigationRef?.isReady?.() ? navigationRef?.getCurrentRoute?.()?.name : null;
+  if (activeRouteName === 'DecorationBooking') {
+    return null;
+  }
 
   const pulseScale = pulseAnim.interpolate({
     inputRange: [0, 1],
