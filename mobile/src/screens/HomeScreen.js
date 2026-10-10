@@ -1138,6 +1138,25 @@ export default function HomeScreen({ navigation }) {
                   style={styles.premiumMenuItem}
                   onPress={() => {
                     setIsDrawerOpen(false);
+                    navigation.navigate('Decorations');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={[styles.menuIconBox, { backgroundColor: '#FDF2F8' }]}>
+                      <Ionicons name="balloon-outline" size={16} color="#D82B76" />
+                    </View>
+                    <Text style={styles.menuItemLabel}>Hotel Room & Party Decor</Text>
+                  </View>
+                  <View style={[styles.hotOfferBadge, { backgroundColor: '#D82B76' }]}>
+                    <Text style={styles.hotOfferText}>NEW</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.premiumMenuItem}
+                  onPress={() => {
+                    setIsDrawerOpen(false);
                     navigation.navigate('MyOrders');
                   }}
                   activeOpacity={0.7}

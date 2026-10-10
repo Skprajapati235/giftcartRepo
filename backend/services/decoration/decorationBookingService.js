@@ -67,7 +67,13 @@ class DecorationBookingService {
       customerPhone,
       customerWhatsapp,
       customerEmail,
+      paymentType,
       paymentMethod,
+      advanceAmount,
+      balanceAmount,
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature,
       totalAmount,
     } = data;
 
@@ -102,6 +108,39 @@ class DecorationBookingService {
     const calculatedTotal = packageOfficialPrice + addonsTotal;
     const bookingId = generateBookingId();
 
+    // REAL BUSINESS DOWNPAYMENT LOGIC:
+    const pType = paymentType || (paymentMethod === "COD" ? "Full COD" : "Advance Downpayment");
+    let computedAdvance = 0;
+    let computedBalance = 0;
+    let computedPayStatus = "Pending";
+    let computedDownStatus = "Pending";
+    let computedBalStatus = "Pending";
+    let computedPayMethod = paymentMethod || "Online";
+
+    if (pType === "Full Online") {
+      computedAdvance = calculatedTotal;
+      computedBalance = 0;
+      computedPayStatus = razorpayPaymentId ? "Paid" : "Paid";
+      computedDownStatus = "Paid";
+      computedBalStatus = "Waived";
+      computedPayMethod = "Online";
+    } else if (pType === "Advance Downpayment") {
+      const standardDownpayment = Math.max(299, Math.round((calculatedTotal * 0.20) / 50) * 50);
+      computedAdvance = Number(advanceAmount) > 0 ? Number(advanceAmount) : standardDownpayment;
+      computedBalance = Math.max(0, calculatedTotal - computedAdvance);
+      computedPayStatus = "Advance Paid";
+      computedDownStatus = "Paid";
+      computedBalStatus = "Pending";
+      computedPayMethod = "Online";
+    } else { // Full COD
+      computedAdvance = 0;
+      computedBalance = calculatedTotal;
+      computedPayStatus = "Pending";
+      computedDownStatus = "Pending";
+      computedBalStatus = "Pending";
+      computedPayMethod = "COD";
+    }
+
     const booking = new DecorationBooking({
       bookingId,
       user: userContext.userId || null,
@@ -130,8 +169,17 @@ class DecorationBookingService {
       customerWhatsapp: (customerWhatsapp || customerPhone).trim(),
       customerEmail: (customerEmail || "").trim(),
       totalAmount: calculatedTotal,
-      paymentMethod: paymentMethod || "Online",
-      paymentStatus: paymentMethod === "COD" ? "Pending" : "Paid",
+      paymentType: pType,
+      paymentMethod: computedPayMethod,
+      advanceAmount: computedAdvance,
+      balanceAmount: computedBalance,
+      paymentStatus: computedPayStatus,
+      downpaymentStatus: computedDownStatus,
+      balancePaymentStatus: computedBalStatus,
+      balancePaymentMethod: pType === "Full Online" ? "Unpaid" : "Unpaid",
+      razorpayOrderId: razorpayOrderId || "",
+      razorpayPaymentId: razorpayPaymentId || "",
+      razorpaySignature: razorpaySignature || "",
       status: "Confirmed",
     });
 
@@ -385,6 +433,139 @@ class DecorationBookingService {
     }
 
     booking.status = status;
+    return await booking.save();
+  }
+
+  /**
+   * Create Razorpay Order for Advance Downpayment or Full Payment
+   */
+  async createRazorpayOrder({ packageId, paymentType = "Advance Downpayment", addons = [] }) {
+    const pkg = await DecorationPackage.findById(packageId);
+    if (!pkg) throw new Error("Selected decoration package not found");
+
+    const packageOfficialPrice = Number(pkg.salePrice || pkg.price) || 0;
+    let addonsTotal = 0;
+    if (Array.isArray(addons)) {
+      addons.forEach((item) => {
+        addonsTotal += Math.max(0, Number(item.price) || 0) * Math.max(1, parseInt(item.quantity, 10) || 1);
+      });
+    }
+
+    const totalAmount = packageOfficialPrice + addonsTotal;
+    let amountToCharge = totalAmount;
+    let advanceAmount = 0;
+    let balanceAmount = 0;
+
+    if (paymentType === "Advance Downpayment") {
+      advanceAmount = Math.max(299, Math.round((totalAmount * 0.20) / 50) * 50);
+      balanceAmount = Math.max(0, totalAmount - advanceAmount);
+      amountToCharge = advanceAmount;
+    } else if (paymentType === "Full Online") {
+      advanceAmount = totalAmount;
+      balanceAmount = 0;
+      amountToCharge = totalAmount;
+    }
+
+    const paymentService = require("../paymentService");
+    const razorpayOrder = await paymentService.createRazorpayOrder(amountToCharge);
+
+    return {
+      razorpayOrderId: razorpayOrder.id,
+      amountToCharge,
+      advanceAmount,
+      balanceAmount,
+      totalAmount,
+      currency: "INR",
+      keyId: process.env.RAZORPAY_KEY_ID || null,
+    };
+  }
+
+  /**
+   * Verify Razorpay Payment Signature
+   */
+  async verifyPayment({ bookingId, razorpay_order_id, razorpay_payment_id, razorpay_signature }) {
+    const crypto = require("crypto");
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret) {
+      throw new Error("Razorpay secret not configured on server");
+    }
+
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    const expectedSignature = crypto.createHmac("sha256", secret).update(body).digest("hex");
+
+    if (expectedSignature !== razorpay_signature) {
+      throw new Error("Payment signature verification failed");
+    }
+
+    const booking = await DecorationBooking.findOne({
+      $or: [{ bookingId }, { razorpayOrderId: razorpay_order_id }],
+    });
+
+    if (booking) {
+      booking.razorpayPaymentId = razorpay_payment_id;
+      booking.razorpaySignature = razorpay_signature;
+      if (booking.paymentType === "Full Online") {
+        booking.paymentStatus = "Paid";
+        booking.downpaymentStatus = "Paid";
+        booking.balancePaymentStatus = "Waived";
+      } else {
+        booking.paymentStatus = "Advance Paid";
+        booking.downpaymentStatus = "Paid";
+      }
+      return await booking.save();
+    }
+
+    return null;
+  }
+
+  /**
+   * Record Remaining Balance Collected by Decorator on Site
+   */
+  async recordBalancePayment(bookingId, { balancePaymentMethod = "Cash on Setup", notes = "" }) {
+    const booking = await DecorationBooking.findById(bookingId);
+    if (!booking) throw new Error("Booking not found");
+
+    booking.balancePaymentStatus = "Collected by Decorator";
+    booking.balancePaymentMethod = balancePaymentMethod;
+    booking.balanceCollectedAt = new Date();
+    booking.paymentStatus = "Paid";
+    if (notes) {
+      booking.adminNotes = (booking.adminNotes ? booking.adminNotes + "\n" : "") + `[Balance Collected] ${notes}`;
+    }
+    return await booking.save();
+  }
+
+  /**
+   * Admin General Booking Update (Date, Room, Notes, etc.)
+   */
+  async updateBooking(bookingId, updateData) {
+    const booking = await DecorationBooking.findById(bookingId);
+    if (!booking) throw new Error("Booking not found");
+
+    const allowed = [
+      "hotelName",
+      "roomNumber",
+      "bookingHolderName",
+      "venueAddress",
+      "setupDate",
+      "setupTimeSlot",
+      "surpriseEntryTime",
+      "colorTheme",
+      "customMessage",
+      "specialInstructions",
+      "adminNotes",
+      "status",
+      "decoratorPayout",
+      "paymentStatus",
+      "balancePaymentStatus",
+    ];
+
+    allowed.forEach((field) => {
+      if (updateData[field] !== undefined) {
+        booking[field] = updateData[field];
+      }
+    });
+
     return await booking.save();
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   Sparkles,
   Search,
@@ -17,6 +18,7 @@ import {
   Heart,
   ChevronRight,
   Filter,
+  FileText,
 } from "lucide-react";
 import * as service from "../../services/adminService";
 import { useToast } from "../../../context/ToastContext";
@@ -221,10 +223,20 @@ export default function DecorationBookingsView({
                 {/* Header Strip */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border-theme pb-3">
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs font-black text-pink-500 bg-pink-500/10 px-2.5 py-1 rounded-xl">
+                    <Link
+                      href={`/decoration-panel/bookings/${b._id}`}
+                      className="font-mono text-xs font-black text-pink-500 bg-pink-500/10 px-2.5 py-1 rounded-xl hover:underline"
+                    >
                       {b.bookingId}
-                    </span>
-                    <h3 className="font-bold text-sm text-foreground">{b.packageTitle}</h3>
+                    </Link>
+                    <h3 className="font-bold text-sm text-foreground">
+                      <Link
+                        href={`/decoration-panel/bookings/${b._id}`}
+                        className="hover:text-pink-500 transition"
+                      >
+                        {b.packageTitle}
+                      </Link>
+                    </h3>
                     <span className="text-xs font-black text-emerald-500">₹{b.totalAmount}</span>
                   </div>
 
@@ -329,26 +341,36 @@ export default function DecorationBookingsView({
                     </button>
                   </div>
 
-                  {/* Instant WhatsApp Dispatch Button */}
-                  {targetPhone ? (
-                    <a
-                      href={whatsappDispatchUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-500/20 flex items-center gap-1.5 transition-all"
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/decoration-panel/bookings/${b._id}`}
+                      className="px-4 py-2 rounded-xl bg-pink-600 hover:bg-pink-700 text-white text-xs font-bold shadow-md shadow-pink-500/20 flex items-center gap-1.5 transition-all"
                     >
-                      <MessageCircle size={15} />
-                      <span>Send Order Slip to Decorator on WhatsApp</span>
-                    </a>
-                  ) : (
-                    <button
-                      onClick={() => handleOpenAssign(b)}
-                      className="px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 text-xs font-bold flex items-center gap-1.5"
-                    >
-                      <MessageCircle size={15} />
-                      <span>Assign Partner to Dispatch on WhatsApp</span>
-                    </button>
-                  )}
+                      <FileText size={14} />
+                      <span>Full Details & Timeline</span>
+                    </Link>
+
+                    {/* Instant WhatsApp Dispatch Button */}
+                    {targetPhone ? (
+                      <a
+                        href={whatsappDispatchUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold shadow-md shadow-emerald-500/20 flex items-center gap-1.5 transition-all"
+                      >
+                        <MessageCircle size={15} />
+                        <span>Send Order Slip to Decorator on WhatsApp</span>
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => handleOpenAssign(b)}
+                        className="px-4 py-2 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-500 text-xs font-bold flex items-center gap-1.5"
+                      >
+                        <MessageCircle size={15} />
+                        <span>Assign Partner to Dispatch on WhatsApp</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );

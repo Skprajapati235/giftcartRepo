@@ -174,26 +174,72 @@ const decorationBookingSchema = new mongoose.Schema(
       ],
       default: "Pending",
     },
-    // Commercials
+    // Commercials & Real Business Downpayment
     totalAmount: {
       type: Number,
       required: true,
     },
+    paymentType: {
+      type: String,
+      enum: ["Advance Downpayment", "Full Online", "Full COD"],
+      default: "Advance Downpayment",
+    },
     paymentMethod: {
       type: String,
-      enum: ["Online", "COD"],
+      enum: ["Online", "COD", "UPI", "Card"],
       default: "Online",
+    },
+    advanceAmount: {
+      type: Number,
+      default: 0,
+    },
+    balanceAmount: {
+      type: Number,
+      default: 0,
     },
     paymentStatus: {
       type: String,
-      enum: ["Pending", "Paid", "Failed", "Refunded"],
+      enum: ["Pending", "Advance Paid", "Paid", "Failed", "Refunded"],
       default: "Pending",
+    },
+    downpaymentStatus: {
+      type: String,
+      enum: ["Pending", "Paid", "Refunded"],
+      default: "Pending",
+    },
+    balancePaymentStatus: {
+      type: String,
+      enum: ["Pending", "Collected by Decorator", "Waived"],
+      default: "Pending",
+    },
+    balancePaymentMethod: {
+      type: String,
+      enum: ["Cash on Setup", "UPI to Decorator", "Unpaid"],
+      default: "Unpaid",
+    },
+    balanceCollectedAt: {
+      type: Date,
+      default: null,
     },
     razorpayOrderId: {
       type: String,
+      default: "",
     },
     razorpayPaymentId: {
       type: String,
+      default: "",
+    },
+    razorpaySignature: {
+      type: String,
+      default: "",
+    },
+    cancelledReason: {
+      type: String,
+      default: "",
+    },
+    setupProofImages: {
+      type: [String],
+      default: [],
     },
     adminNotes: {
       type: String,

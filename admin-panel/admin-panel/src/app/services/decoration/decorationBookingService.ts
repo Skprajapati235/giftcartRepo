@@ -38,6 +38,22 @@ export const assignDecorationDecorator = async (
   return response.data;
 };
 
+export const recordDecorationBalancePayment = async (
+  id: string,
+  payload: { balancePaymentMethod?: string; notes?: string }
+) => {
+  const response = await authApi(getAuthToken()).patch(`/decoration/bookings/${id}/balance-collection`, payload);
+  return response.data;
+};
+
+export const updateDecorationBooking = async (
+  id: string,
+  payload: any
+) => {
+  const response = await authApi(getAuthToken()).patch(`/decoration/bookings/${id}`, payload);
+  return response.data;
+};
+
 // Public Customer Tracking Endpoint
 export const trackDecorationBooking = async (bookingId: string, phone?: string) => {
   const response = await api.get(`/decoration/bookings/track/${encodeURIComponent(bookingId)}`, {

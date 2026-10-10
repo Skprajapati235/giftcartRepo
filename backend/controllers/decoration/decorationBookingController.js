@@ -222,6 +222,69 @@ class DecorationBookingController {
       res.status(500).send(error.message || "Failed to update booking status.");
     }
   }
+
+  // POST /api/decoration/bookings/create-razorpay-order
+  async createRazorpayOrder(req, res) {
+    try {
+      const result = await decorationBookingService.createRazorpayOrder(req.body);
+      res.json({
+        success: true,
+        data: result,
+        ...result,
+      });
+    } catch (error) {
+      console.error("Error creating Razorpay order for decoration:", error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  // POST /api/decoration/bookings/verify-payment
+  async verifyPayment(req, res) {
+    try {
+      const updated = await decorationBookingService.verifyPayment(req.body);
+      res.json({
+        success: true,
+        message: "Payment verified successfully!",
+        booking: updated,
+        data: updated,
+      });
+    } catch (error) {
+      console.error("Error verifying payment signature:", error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  // PATCH /api/decoration/bookings/:id/balance-collection (Admin / Decorator records balance received)
+  async recordBalancePayment(req, res) {
+    try {
+      const updated = await decorationBookingService.recordBalancePayment(req.params.id, req.body);
+      res.json({
+        success: true,
+        message: "Balance payment recorded successfully!",
+        booking: updated,
+        data: updated,
+      });
+    } catch (error) {
+      console.error("Error recording balance payment:", error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
+
+  // PUT / PATCH /api/decoration/bookings/:id (Admin edit booking)
+  async updateBooking(req, res) {
+    try {
+      const updated = await decorationBookingService.updateBooking(req.params.id, req.body);
+      res.json({
+        success: true,
+        message: "Booking updated successfully!",
+        booking: updated,
+        data: updated,
+      });
+    } catch (error) {
+      console.error("Error updating booking details:", error);
+      res.status(400).json({ success: false, message: error.message });
+    }
+  }
 }
 
 module.exports = new DecorationBookingController();

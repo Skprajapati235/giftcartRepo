@@ -10,3 +10,4 @@ export { default as DecorationFinancialsView } from "./DecorationFinancialsView"
 export { default as AddEditDecorationPartner } from "./AddEditDecorationPartner";
 export { default as AddEditDecorationPackage } from "./AddEditDecorationPackage";
 export { default as AddEditDecorationSample } from "./AddEditDecorationSample";
+export { default as DecorationBookingDetailModal } from "./DecorationBookingDetailModal";

@@ -8,19 +8,15 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
-  Alert,
-  Modal,
   Dimensions,
   StatusBar,
-  KeyboardAvoidingView,
-  Platform,
+  Linking,
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeScreen } from '../components/layout';
 import {
   fetchDecorationPackages,
   fetchDecorationSamples,
-  createDecorationBooking,
 } from '../services/decorationService';
 
 const { width } = Dimensions.get('window');
@@ -34,52 +30,29 @@ const CATEGORIES = [
   'Marry Me / Proposal',
 ];
 
-const TIME_SLOTS = [
-  '11:00 AM - 1:00 PM',
-  '2:00 PM - 4:00 PM',
-  '4:00 PM - 6:00 PM',
-  '6:00 PM - 8:00 PM',
-  '8:00 PM - 10:00 PM (Late)',
-];
-
-const COLOR_THEMES = ['Red & Gold', 'Rose Gold & White', 'Blue & Silver', 'Black & Gold', 'Pastel Pink'];
-
 export default function DecorationScreen({ navigation }) {
   const [packages, setPackages] = useState([]);
   const [samples, setSamples] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  // Booking Modal State
-  const [selectedPackage, setSelectedPackage] = useState(null);
-  const [bookingModalVisible, setBookingModalVisible] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const HELPLINE_PHONE = '+918400787712';
+  const WHATSAPP_NUMBER = '918400787712';
 
-  // Form Fields (Defaults to Faridabad)
-  const [venueType, setVenueType] = useState('Hotel Room');
-  const [hotelName, setHotelName] = useState('');
-  const [roomNumber, setRoomNumber] = useState('');
-  const [bookingHolderName, setBookingHolderName] = useState('');
-  const [venueAddress, setVenueAddress] = useState('');
-  const [city, setCity] = useState('Faridabad');
-  const [setupDate, setSetupDate] = useState('');
-  const [setupTimeSlot, setSetupTimeSlot] = useState('4:00 PM - 6:00 PM');
-  const [surpriseEntryTime, setSurpriseEntryTime] = useState('');
-  const [customMessage, setCustomMessage] = useState('');
-  const [colorTheme, setColorTheme] = useState('Red & Gold');
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [customerWhatsapp, setCustomerWhatsapp] = useState('');
+  const openWhatsApp = (customText = '') => {
+    const text = encodeURIComponent(
+      customText ||
+        'Hi GiftFestive! I want to inquire about surprise hotel room & party decoration in Faridabad. Please guide me with package details & available time slots.'
+    );
+    Linking.openURL(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`);
+  };
 
-  // Success dialog
-  const [successBookingId, setSuccessBookingId] = useState(null);
+  const callHelpline = () => {
+    Linking.openURL(`tel:${HELPLINE_PHONE}`);
+  };
 
   useEffect(() => {
     loadData();
-    // Default tomorrow's date
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    setSetupDate(d.toISOString().slice(0, 10));
   }, []);
 
   const loadData = async () => {
@@ -98,47 +71,8 @@ export default function DecorationScreen({ navigation }) {
     return p.category === selectedCategory;
   });
 
-  const openBookingModal = (pkg) => {
-    setSelectedPackage(pkg);
-    setBookingModalVisible(true);
-  };
-
-  const handleConfirmBooking = async () => {
-    if (!customerName.trim() || !customerPhone.trim() || !venueAddress.trim()) {
-      Alert.alert('Required Fields', 'Please enter your name, phone, and hotel/venue address.');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const payload = {
-        packageId: selectedPackage._id,
-        venueType,
-        hotelName,
-        roomNumber,
-        bookingHolderName,
-        venueAddress,
-        city: city || 'Faridabad',
-        setupDate,
-        setupTimeSlot,
-        surpriseEntryTime,
-        customMessage,
-        colorTheme,
-        customerName,
-        customerPhone,
-        customerWhatsapp: customerWhatsapp || customerPhone,
-        paymentMethod: 'COD',
-        totalAmount: selectedPackage.salePrice || selectedPackage.price,
-      };
-
-      const res = await createDecorationBooking(payload);
-      setBookingModalVisible(false);
-      setSuccessBookingId(res?.booking?.bookingId || 'DEC-SUCCESS');
-    } catch (err) {
-      Alert.alert('Booking Error', err.message);
-    } finally {
-      setSubmitting(false);
-    }
+  const handleBookPackage = (pkg) => {
+    navigation.navigate('DecorationBooking', { pkg });
   };
 
   return (
@@ -185,6 +119,46 @@ export default function DecorationScreen({ navigation }) {
           <Text style={styles.cityBannerText}>
             Faridabad Hub • NIT, Sec 15/21, Surajkund & Neharpar Setups
           </Text>
+        </View>
+
+        {/* Quick Consultation & Contact Action Bar */}
+        <View style={styles.contactBarContainer}>
+          <TouchableOpacity
+            style={styles.whatsAppCalloutBtn}
+            onPress={() => openWhatsApp()}
+            activeOpacity={0.88}
+          >
+            <View style={styles.whatsAppIconCircle}>
+              <Ionicons name="logo-whatsapp" size={18} color="#FFF" />
+            </View>
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={styles.whatsAppCalloutTitle}>Need Custom Decor or Have Questions?</Text>
+              <Text style={styles.whatsAppCalloutSub}>Chat directly with our Faridabad decoration expert</Text>
+            </View>
+            <View style={styles.chatBadge}>
+              <Text style={styles.chatBadgeText}>Chat Now</Text>
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.quickActionRow}>
+            <TouchableOpacity
+              style={styles.quickCallBtn}
+              onPress={callHelpline}
+              activeOpacity={0.85}
+            >
+              <Feather name="phone-call" size={14} color="#0284C7" />
+              <Text style={styles.quickCallText}>Call Coordinator</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickTrackBtn}
+              onPress={() => navigation.navigate('DecorationTrack')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="location-outline" size={15} color="#D82B76" />
+              <Text style={styles.quickTrackText}>Live Setup Tracker</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Real Setup Showcase Carousel */}
@@ -288,9 +262,9 @@ export default function DecorationScreen({ navigation }) {
                     </View>
                   )}
 
-                  {/* Price and Action Button */}
+                  {/* Price and Action Buttons */}
                   <View style={styles.priceRow}>
-                    <View>
+                    <View style={{ flex: 1 }}>
                       <Text style={styles.priceLabel}>Setup Package Price</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                         <Text style={styles.price}>₹{pkg.salePrice || pkg.price}</Text>
@@ -300,14 +274,30 @@ export default function DecorationScreen({ navigation }) {
                       </View>
                     </View>
 
-                    <TouchableOpacity
-                      style={styles.bookBtn}
-                      onPress={() => openBookingModal(pkg)}
-                      activeOpacity={0.85}
-                    >
-                      <Text style={styles.bookBtnText}>Book Setup</Text>
-                      <Feather name="arrow-right" size={15} color="#FFF" />
-                    </TouchableOpacity>
+                    <View style={styles.cardActionsRow}>
+                      <TouchableOpacity
+                        style={styles.chatCardBtn}
+                        onPress={() =>
+                          openWhatsApp(
+                            `Hi GiftFestive! I want to ask about "${pkg.title}" (₹${
+                              pkg.salePrice || pkg.price
+                            }) setup in Faridabad.`
+                          )
+                        }
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="logo-whatsapp" size={18} color="#10B981" />
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.bookBtn}
+                        onPress={() => handleBookPackage(pkg)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={styles.bookBtnText}>Book</Text>
+                        <Feather name="arrow-right" size={14} color="#FFF" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
               </View>
@@ -315,281 +305,6 @@ export default function DecorationScreen({ navigation }) {
           </View>
         )}
       </ScrollView>
-
-      {/* ==================================================== */}
-      {/* BOOKING MODAL (VENUE & HOTEL DETAILS FORM) */}
-      {/* ==================================================== */}
-      <Modal visible={bookingModalVisible} animationType="slide" transparent>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalContent}>
-            {/* Modal Header */}
-            <View style={styles.modalHeader}>
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text style={styles.modalTitle}>Book Venue / Room Decor</Text>
-                <Text style={styles.modalSub} numberOfLines={1}>{selectedPackage?.title}</Text>
-              </View>
-              <TouchableOpacity
-                onPress={() => setBookingModalVisible(false)}
-                style={styles.closeBtn}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="close" size={22} color="#64748B" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              contentContainerStyle={styles.modalBody}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
-              {/* 1. Venue Type Selector */}
-              <Text style={styles.sectionTitle}>1. Select Venue Type</Text>
-              <View style={styles.venueRow}>
-                {['Hotel Room', 'Home', 'Cafe / Restaurant'].map((vt) => (
-                  <TouchableOpacity
-                    key={vt}
-                    onPress={() => setVenueType(vt)}
-                    style={[styles.venuePill, venueType === vt && styles.venuePillActive]}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.venueText, venueType === vt && styles.venueTextActive]}>{vt}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* 2. Hotel Details (If Hotel) */}
-              {venueType === 'Hotel Room' && (
-                <View style={styles.formGroup}>
-                  <Text style={styles.label}>Hotel Name *</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Lemon Tree Hotel, Radisson Blu, Oyo Townhouse"
-                    placeholderTextColor="#94A3B8"
-                    value={hotelName}
-                    onChangeText={setHotelName}
-                  />
-
-                  <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.label}>Room Number *</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="e.g. Room 304"
-                        placeholderTextColor="#94A3B8"
-                        value={roomNumber}
-                        onChangeText={setRoomNumber}
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.label}>Booking Holder Name</Text>
-                      <TextInput
-                        style={styles.input}
-                        placeholder="Name on hotel ID"
-                        placeholderTextColor="#94A3B8"
-                        value={bookingHolderName}
-                        onChangeText={setBookingHolderName}
-                      />
-                    </View>
-                  </View>
-                </View>
-              )}
-
-              {/* Venue Address */}
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Complete Venue / Hotel Address *</Text>
-                <TextInput
-                  style={[styles.input, { height: 60 }]}
-                  multiline
-                  placeholder="Street address, landmark, Sector (Faridabad)"
-                  placeholderTextColor="#94A3B8"
-                  value={venueAddress}
-                  onChangeText={setVenueAddress}
-                />
-              </View>
-
-              {/* City */}
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>City (Pilot Launch)</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: '#F1F5F9', color: '#64748B' }]}
-                  editable={false}
-                  value="Faridabad (Haryana)"
-                />
-              </View>
-
-              {/* 3. Date & Time Selection */}
-              <Text style={styles.sectionTitle}>2. Date & Time Slots</Text>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Setup Date (YYYY-MM-DD) *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="2026-10-15"
-                  placeholderTextColor="#94A3B8"
-                  value={setupDate}
-                  onChangeText={setSetupDate}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Setup Time Slot (Decorator arrives in this window) *</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                  {TIME_SLOTS.map((slot) => (
-                    <TouchableOpacity
-                      key={slot}
-                      onPress={() => setSetupTimeSlot(slot)}
-                      style={[styles.slotPill, setupTimeSlot === slot && styles.slotPillActive]}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.slotText, setupTimeSlot === slot && styles.slotTextActive]}>
-                        {slot}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Surprise Entry Time (When customer enters)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. 7:30 PM (Cake cutting time)"
-                  placeholderTextColor="#94A3B8"
-                  value={surpriseEntryTime}
-                  onChangeText={setSurpriseEntryTime}
-                />
-              </View>
-
-              {/* 4. Customization */}
-              <Text style={styles.sectionTitle}>3. Customization & Theme</Text>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Choose Balloon Color Theme</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                  {COLOR_THEMES.map((theme) => (
-                    <TouchableOpacity
-                      key={theme}
-                      onPress={() => setColorTheme(theme)}
-                      style={[styles.slotPill, colorTheme === theme && styles.slotPillActive]}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.slotText, colorTheme === theme && styles.slotTextActive]}>
-                        {theme}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Custom Message / Foil Name (Optional)</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g. Happy 25th Priya! or Will You Marry Me?"
-                  placeholderTextColor="#94A3B8"
-                  value={customMessage}
-                  onChangeText={setCustomMessage}
-                />
-              </View>
-
-              {/* 5. Customer Details */}
-              <Text style={styles.sectionTitle}>4. Contact Details for Dispatch</Text>
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Your Name *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Full Name"
-                  placeholderTextColor="#94A3B8"
-                  value={customerName}
-                  onChangeText={setCustomerName}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Calling Phone Number *</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="phone-pad"
-                  placeholder="+91 9876543210"
-                  placeholderTextColor="#94A3B8"
-                  value={customerPhone}
-                  onChangeText={setCustomerPhone}
-                />
-              </View>
-
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>WhatsApp Number</Text>
-                <TextInput
-                  style={styles.input}
-                  keyboardType="phone-pad"
-                  placeholder="+91 9876543210"
-                  placeholderTextColor="#94A3B8"
-                  value={customerWhatsapp}
-                  onChangeText={setCustomerWhatsapp}
-                />
-              </View>
-
-              {/* Submit Button */}
-              <TouchableOpacity
-                style={styles.confirmBtn}
-                onPress={handleConfirmBooking}
-                disabled={submitting}
-                activeOpacity={0.85}
-              >
-                {submitting ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={styles.confirmBtnText}>
-                    Confirm & Book Decor (₹{selectedPackage?.salePrice || selectedPackage?.price})
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ==================================================== */}
-      {/* SUCCESS CONFIRMATION DIALOG */}
-      {/* ==================================================== */}
-      <Modal visible={!!successBookingId} transparent animationType="fade">
-        <View style={styles.successOverlay}>
-          <View style={styles.successCard}>
-            <View style={styles.successIcon}>
-              <Ionicons name="checkmark-done" size={36} color="#FFF" />
-            </View>
-            <Text style={styles.successTitle}>Booking Received!</Text>
-            <Text style={styles.successId}>ID: {successBookingId}</Text>
-            <Text style={styles.successMsg}>
-              Our local Faridabad decoration partner will arrive during your setup slot ({setupTimeSlot}). You will receive live updates on WhatsApp!
-            </Text>
-
-            <TouchableOpacity
-              style={[styles.successDoneBtn, { backgroundColor: '#EC4899', marginBottom: 10 }]}
-              onPress={() => {
-                const id = successBookingId;
-                setSuccessBookingId(null);
-                navigation.navigate('DecorationTrack', { bookingId: id });
-              }}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.successDoneText}>Track Live Setup Status 📍</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.successDoneBtn, { backgroundColor: '#F1F5F9' }]}
-              onPress={() => {
-                setSuccessBookingId(null);
-                navigation.navigate('Home');
-              }}
-              activeOpacity={0.85}
-            >
-              <Text style={[styles.successDoneText, { color: '#475569' }]}>Back to Home</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeScreen>
   );
 }
@@ -846,4 +561,109 @@ const styles = StyleSheet.create({
   successMsg: { fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 19, marginBottom: 20 },
   successDoneBtn: { backgroundColor: '#0F172A', paddingVertical: 12, paddingHorizontal: 30, borderRadius: 16, width: '100%', alignItems: 'center' },
   successDoneText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
+
+  // Contact & Quick Consultation Bar
+  contactBarContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  whatsAppCalloutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
+    borderRadius: 16,
+    padding: 10,
+    marginBottom: 8,
+  },
+  whatsAppIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#10B981',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  whatsAppCalloutTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: '#065F46',
+  },
+  whatsAppCalloutSub: {
+    fontSize: 10.5,
+    color: '#047857',
+    marginTop: 1,
+  },
+  chatBadge: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  chatBadgeText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  quickActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 6,
+  },
+  quickCallBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  quickCallText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#0369A1',
+  },
+  quickTrackBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    backgroundColor: '#FDF2F8',
+    borderWidth: 1,
+    borderColor: '#FBCFE8',
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  quickTrackText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#BE185D',
+  },
+
+  // Card Action Buttons
+  cardActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chatCardBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 14,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
