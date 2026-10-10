@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, AuthContext } from './src/context/AuthContext';
@@ -10,6 +10,9 @@ import { ToastProvider } from './src/context/ToastContext';
 import { LoadingProvider } from './src/context/LoadingContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import Loader from './src/components/loaders/Loader';
+import FloatingWhatsAppShare from './src/components/FloatingWhatsAppShare';
+
+export const navigationRef = createNavigationContainerRef();
 
 function MainApp() {
   const { loading: authLoading } = useContext(AuthContext);
@@ -17,8 +20,9 @@ function MainApp() {
 
   return (
     <View style={styles.container}>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <AppNavigator />
+        <FloatingWhatsAppShare navigationRef={navigationRef} />
         <StatusBar style="dark" />
       </NavigationContainer>
 
