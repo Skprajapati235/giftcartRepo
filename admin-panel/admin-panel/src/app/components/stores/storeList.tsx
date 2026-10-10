@@ -11,11 +11,8 @@ import {
   ExternalLink,
   Edit,
   Trash2,
-  Eye,
-  SlidersHorizontal,
   CheckCircle2,
   XCircle,
-  Clock,
   LayoutGrid,
   List,
   Percent,
@@ -42,7 +39,6 @@ interface StoreListProps {
   onPageChange: (page: number) => void;
   onAddStore: () => void;
   onEditStore: (store: any) => void;
-  onViewDetails: (store: any) => void;
   onDeleteStore: (store: any) => void;
   onToggleStatus: (store: any) => void;
 }
@@ -63,7 +59,6 @@ export default function StoreList({
   onPageChange,
   onAddStore,
   onEditStore,
-  onViewDetails,
   onDeleteStore,
   onToggleStatus,
 }: StoreListProps) {
@@ -152,7 +147,7 @@ export default function StoreList({
           />
         </div>
 
-        {/* Filters */}
+        {/* Filters & Add Button */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Status filter */}
           <select
@@ -261,7 +256,10 @@ export default function StoreList({
                 className="bg-card rounded-3xl border border-border-theme hover:border-amber-500/40 transition-all duration-200 overflow-hidden shadow-sm flex flex-col group"
               >
                 {/* Store Top Banner / Thumbnail */}
-                <div className="relative h-28 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-purple-500/10 p-4 flex items-start justify-between border-b border-border-theme">
+                <div
+                  onClick={() => onEditStore(store)}
+                  className="relative h-28 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-purple-500/10 p-4 flex items-start justify-between border-b border-border-theme cursor-pointer"
+                >
                   {store.image && (
                     <img
                       src={store.image}
@@ -381,16 +379,7 @@ export default function StoreList({
                     </a>
 
                     <div className="flex items-center gap-1">
-                      {/* View Details */}
-                      <button
-                        onClick={() => onViewDetails(store)}
-                        className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-surface transition-colors"
-                        title="View Full Profile"
-                      >
-                        <Eye size={15} />
-                      </button>
-
-                      {/* Edit */}
+                      {/* Edit Button -> Opens single AddEditStore component */}
                       <button
                         onClick={() => onEditStore(store)}
                         className="p-1.5 rounded-xl text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-colors"
@@ -461,7 +450,7 @@ export default function StoreList({
                     <tr
                       key={store._id}
                       className="hover:bg-surface/50 transition-colors group cursor-pointer"
-                      onClick={() => onViewDetails(store)}
+                      onClick={() => onEditStore(store)}
                     >
                       <td className="px-5 py-3.5 font-medium">
                         <div className="flex items-center gap-3">

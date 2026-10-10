@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import StoreList from "./storeList";
 import AddEditStore from "./addEditStore";
-import StoreDetailsModal from "./storeDetailsModal";
 import DeleteModal from "../ui/DeleteModal";
 import * as service from "../../services/adminService";
 import { useToast } from "../../../context/ToastContext";
@@ -28,10 +27,11 @@ export default function PartnerStoreView() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [cityFilter, setCityFilter] = useState("all");
 
-  // Modals state
-  const [showAddEdit, setShowAddEdit] = useState(false);
+  // Single in-page Add/Edit view state (like products)
+  const [showForm, setShowForm] = useState(false);
   const [editingStore, setEditingStore] = useState<any>(null);
-  const [detailsStore, setDetailsStore] = useState<any>(null);
+
+  // Safety delete confirmation
   const [storeToDelete, setStoreToDelete] = useState<any>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -66,7 +66,22 @@ export default function PartnerStoreView() {
     fetchStores();
   }, [fetchStores]);
 
-  // Debounced search reset to page 1
+  const openForm = () => {
+    setEditingStore(null);
+    setShowForm(true);
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingStore(null);
+    fetchStores();
+  };
+
+  const handleEdit = (store: any) => {
+    setEditingStore(store);
+    setShowForm(true);
+  };
+
   const handleSearchChange = (val: string) => {
     setSearch(val);
     setPage(1);
@@ -80,21 +95,6 @@ export default function PartnerStoreView() {
   const handleCityChange = (val: string) => {
     setCityFilter(val);
     setPage(1);
-  };
-
-  const handleOpenAdd = () => {
-    setEditingStore(null);
-    setShowAddEdit(true);
-  };
-
-  const handleOpenEdit = (store: any) => {
-    setEditingStore(store);
-    setDetailsStore(null);
-    setShowAddEdit(true);
-  };
-
-  const handleOpenDetails = (store: any) => {
-    setDetailsStore(store);
   };
 
   const handleConfirmDelete = async () => {
@@ -116,7 +116,7 @@ export default function PartnerStoreView() {
   const handleToggleStatus = async (store: any) => {
     try {
       await service.toggleStoreStatus(store._id);
-      showToast(`Store status updated!`, "success");
+      showToast("Store status updated!", "success");
       fetchStores();
     } catch (err: any) {
       console.error("Error toggling status:", err);
@@ -126,56 +126,38 @@ export default function PartnerStoreView() {
 
   return (
     <div className="space-y-6">
-      <StoreList
-        stores={stores}
-        loading={loading}
-        total={total}
-        totalPages={totalPages}
-        page={page}
-        stats={stats}
-        search={search}
-        statusFilter={statusFilter}
-        cityFilter={cityFilter}
-        onSearchChange={handleSearchChange}
-        onStatusChange={handleStatusChange}
-        onCityChange={handleCityChange}
-        onPageChange={setPage}
-        onAddStore={handleOpenAdd}
-        onEditStore={handleOpenEdit}
-        onViewDetails={handleOpenDetails}
-        onDeleteStore={setStoreToDelete}
-        onToggleStatus={handleToggleStatus}
-      />
-
-      {/* Add / Edit Store Modal */}
-      {showAddEdit && (
-        <AddEditStore
-          store={editingStore}
-          onClose={() => {
-            setShowAddEdit(false);
-            setEditingStore(null);
-          }}
-          onSuccess={fetchStores}
+      {showForm ? (
+        <AddEditStore store={editingStore} onClose={closeForm} />
+      ) : (
+        <StoreList
+          stores={stores}
+          loading={loading}
+          total={total}
+          totalPages={totalPages}
+          page={page}
+          stats={stats}
+          search={search}
+          statusFilter={statusFilter}
+          cityFilter={cityFilter}
+          onSearchChange={handleSearchChange}
+          onStatusChange={handleStatusChange}
+          onCityChange={handleCityChange}
+          onPageChange={setPage}
+          onAddStore={openForm}
+          onEditStore={handleEdit}
+          onDeleteStore={setStoreToDelete}
+          onToggleStatus={handleToggleStatus}
         />
       )}
 
-      {/* Store Profile / Details Modal */}
-      {detailsStore && (
-        <StoreDetailsModal
-          store={detailsStore}
-          onClose={() => setDetailsStore(null)}
-          onEdit={handleOpenEdit}
-        />
-      )}
-
-      {/* Delete Confirmation Modal */}
+      {/* Safety Confirmation Modal for Deletion only */}
       {storeToDelete && (
         <DeleteModal
           isOpen={Boolean(storeToDelete)}
           onClose={() => setStoreToDelete(null)}
           onConfirm={handleConfirmDelete}
           title="Remove Partner Store"
-          description={`Are you sure you want to remove "${storeToDelete.name}" from your partner network? You will no longer be able to route local orders to this store.`}
+          description={`Are you sure you want to remove "${storeToDelete.name}" from your partner network?`}
           itemName={storeToDelete.name}
           isLoading={isDeleting}
         />
