@@ -3,7 +3,10 @@ const router = express.Router();
 const controller = require("../controllers/deliverySlotController");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
-const slotManage = adminMiddleware.requireRole(["super_admin", "admin", "delivery_coordinator"]);
+const slotManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "delivery_coordinator"],
+  ["/delivery-slots", "/delivery-hours"]
+);
 
 router.get("/", controller.getDeliverySlots);
 router.get("/availability", controller.getAvailability);

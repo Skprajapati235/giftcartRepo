@@ -111,7 +111,7 @@ export default function AdminsPage() {
     if (Array.isArray(adm.permissions) && adm.permissions.includes("*")) {
       return AVAILABLE_SCREENS.map((s) => s.route);
     }
-    if (Array.isArray(adm.permissions) && adm.permissions.length > 0) {
+    if (Array.isArray(adm.permissions)) {
       return adm.permissions;
     }
     return getDefaultPermissionsForRole(adm.role);

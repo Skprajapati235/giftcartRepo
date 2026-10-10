@@ -7,8 +7,13 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 router.get("/", controller.getAll);
 
 // Admin-only management endpoints
-router.post("/", adminMiddleware, controller.create);
-router.put("/:id", adminMiddleware, controller.update);
-router.delete("/:id", adminMiddleware, controller.delete);
+const slideManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "seo_specialist"],
+  ["/hero-slides"]
+);
+
+router.post("/", adminMiddleware, slideManage, controller.create);
+router.put("/:id", adminMiddleware, slideManage, controller.update);
+router.delete("/:id", adminMiddleware, slideManage, controller.delete);
 
 module.exports = router;

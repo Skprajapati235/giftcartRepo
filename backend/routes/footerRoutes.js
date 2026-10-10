@@ -8,7 +8,10 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 router.get("/", controller.getPublic);
 
 // Role check for footer management
-const footerManage = adminMiddleware.requireRole(["super_admin", "admin", "seo_specialist"]);
+const footerManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "seo_specialist"],
+  ["/footer"]
+);
 
 // -------------------------------------------------------------
 // Admin Endpoints (Protected by JWT and Role)

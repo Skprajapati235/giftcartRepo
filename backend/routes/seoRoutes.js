@@ -11,7 +11,10 @@ router.get("/sitemap-data", controller.getSitemapData);
 router.get("/robots-data", controller.getRobotsData);
 router.get("/check-redirect", controller.checkRedirect);
 
-const seoManage = adminMiddleware.requireRole(["super_admin", "admin", "seo_specialist"]);
+const seoManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "seo_specialist"],
+  ["/seo"]
+);
 
 // Admin endpoints (protected by adminMiddleware and seoManage)
 router.put("/global", adminMiddleware, seoManage, controller.updateGlobal);

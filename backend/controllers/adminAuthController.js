@@ -25,7 +25,9 @@ exports.register = async (req, res) => {
       }
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const role = (decoded.role || "").toLowerCase();
+        let caller = await Admin.findById(decoded?.id);
+        if (!caller) caller = await User.findById(decoded?.id);
+        const role = (caller?.role || decoded.role || "").toLowerCase();
         if (role !== "super_admin" && role !== "admin") {
           return res.status(403).json({ message: "Access denied. Only Super Admin can register staff accounts" });
         }

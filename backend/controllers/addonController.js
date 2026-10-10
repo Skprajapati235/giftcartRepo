@@ -119,6 +119,7 @@
 
 
 const Addon = require("../models/Addon");
+const { logActivity } = require("../utils/auditLogger");
 
 // GET /api/addons - Public (active only unless ?all=true). No auto-seeded data: admin creates add-ons.
 exports.getAddons = async (req, res) => {
@@ -138,6 +139,14 @@ exports.getAddons = async (req, res) => {
 exports.createAddon = async (req, res) => {
   try {
     const addon = await Addon.create(req.body);
+    await logActivity({
+      req,
+      action: "Created Add-on",
+      module: "Catalog",
+      details: `Added new gifting add-on "${addon?.name || "Addon"}" (₹${addon?.price || 0}).`,
+      severity: "info",
+      metadata: { addonId: addon?._id, name: addon?.name, price: addon?.price },
+    });
     res.status(201).json({ success: true, message: "Add-on created", data: addon });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -152,6 +161,14 @@ exports.updateAddon = async (req, res) => {
       runValidators: true,
     });
     if (!addon) return res.status(404).json({ success: false, message: "Add-on not found" });
+    await logActivity({
+      req,
+      action: "Updated Add-on",
+      module: "Catalog",
+      details: `Updated add-on "${addon?.name || req.params.id}".`,
+      severity: "info",
+      metadata: { addonId: req.params.id, name: addon?.name },
+    });
     res.json({ success: true, message: "Add-on updated", data: addon });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -163,6 +180,14 @@ exports.deleteAddon = async (req, res) => {
   try {
     const addon = await Addon.findByIdAndDelete(req.params.id);
     if (!addon) return res.status(404).json({ success: false, message: "Add-on not found" });
+    await logActivity({
+      req,
+      action: "Deleted Add-on",
+      module: "Catalog",
+      details: `Permanently removed add-on "${addon?.name || req.params.id}".`,
+      severity: "warning",
+      metadata: { addonId: req.params.id, name: addon?.name },
+    });
     res.json({ success: true, message: "Add-on deleted" });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

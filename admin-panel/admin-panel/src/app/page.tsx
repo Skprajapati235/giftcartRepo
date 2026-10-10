@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "./context/AuthContext";
 import { isValidEmail } from "./utils/authValidation";
+import { INACTIVITY_EXPIRED_MESSAGE } from "./utils/sessionConfig";
 import AuthBackground from "./components/auth/authBackground";
 import AuthHeroSection from "./components/auth/authHeroSection";
 
@@ -28,6 +29,7 @@ export default function Home() {
     authenticated,
     loading,
     error,
+    user,
     sessionExpiredNotice,
     clearExpiredNotice,
   } = useAuth();
@@ -47,7 +49,7 @@ export default function Home() {
   const activeNotice =
     sessionExpiredNotice ||
     (urlExpired
-      ? "Session expired due to inactivity. Please sign in again."
+      ? INACTIVITY_EXPIRED_MESSAGE
       : null);
 
   const [form, setForm] = useState({
@@ -58,11 +60,25 @@ export default function Home() {
   const [rememberMe, setRememberMe] = useState(true);
   const [submitError, setSubmitError] = useState("");
 
+  const getDestinationRoute = (usr: any) => {
+    if (!usr) return "/dashboard";
+    const role = (usr.role || "").toLowerCase();
+    if (role === "super_admin" || role === "admin") return "/dashboard";
+    if (Array.isArray(usr.permissions)) {
+      if (usr.permissions.includes("*") || usr.permissions.includes("/dashboard")) {
+        return "/dashboard";
+      }
+      const firstPerm = usr.permissions.find((p: string) => p && p.startsWith("/"));
+      if (firstPerm) return firstPerm;
+    }
+    return "/dashboard";
+  };
+
   useEffect(() => {
     if (!loading && authenticated) {
-      router.replace("/dashboard");
+      router.replace(getDestinationRoute(user));
     }
-  }, [authenticated, loading, router]);
+  }, [authenticated, loading, user, router]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -75,7 +91,7 @@ export default function Home() {
 
     try {
       await login(form);
-      router.push("/dashboard");
+      // Let useEffect handle destination routing based on freshly resolved permissions
     } catch (err: any) {
       setSubmitError(
         err?.response?.data?.message ||

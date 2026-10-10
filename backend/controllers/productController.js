@@ -1,29 +1,22 @@
 const service = require("../services/productService");
+const { logActivity } = require("../utils/auditLogger");
 
 exports.create = async (req, res) => {
   try {
     const data = await service.createProduct(req.body);
+    await logActivity({
+      req,
+      action: "Created Product",
+      module: "Catalog",
+      details: `Created new product "${data?.name || "Product"}" (SKU: ${data?.sku || "N/A"}, MRP: ₹${data?.mrpPrice || data?.price || 0}) in catalog.`,
+      severity: "info",
+      metadata: { productId: data?._id, name: data?.name, price: data?.price },
+    });
     res.json(data);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
-
-// exports.getAll = async (req, res) => {
-//   try {
-//     const { page, limit, search, category } = req.query;
-//     console.log("Fetching products with filters:", { page, limit, search, category });
-//     const data = await service.getProducts({ 
-//       page: parseInt(page) || 1, 
-//       limit: parseInt(limit) || 10, 
-//       search: search || "",
-//       category: category || ""
-//     });
-//     res.json(data);
-//   } catch (error) {
-//     res.status(500).json({ message: error.message });
-//   }
-// };
 
 exports.getAll = async (req, res) => {
   try {
@@ -56,6 +49,14 @@ exports.getOne = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const data = await service.updateProduct(req.params.id, req.body);
+    await logActivity({
+      req,
+      action: "Updated Product",
+      module: "Catalog",
+      details: `Updated product "${data?.name || req.params.id}" (SKU: ${data?.sku || "N/A"}).`,
+      severity: "info",
+      metadata: { productId: req.params.id, name: data?.name },
+    });
     res.json(data);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -64,7 +65,16 @@ exports.update = async (req, res) => {
 
 exports.delete = async (req, res) => {
   try {
+    const productBefore = await service.getProductById(req.params.id).catch(() => null);
     await service.deleteProduct(req.params.id);
+    await logActivity({
+      req,
+      action: "Deleted Product",
+      module: "Catalog",
+      details: `Permanently removed product "${productBefore?.name || req.params.id}" from catalog.`,
+      severity: "warning",
+      metadata: { productId: req.params.id, name: productBefore?.name },
+    });
     res.json({ message: "Deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });

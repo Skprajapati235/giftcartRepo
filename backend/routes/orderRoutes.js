@@ -24,17 +24,30 @@ router.get("/email-action/:id/:status", controller.emailActionPreview);
 router.post("/email-action/:id/:status", controller.emailActionConfirm);
 
 // Admin routes
-router.get("/admin/export/:format", authMiddleware, adminMiddleware, controller.exportOrders);
-router.get("/admin/all", authMiddleware, adminMiddleware, controller.getAllOrders);
-router.get("/admin/unviewed", authMiddleware, adminMiddleware, controller.getUnviewedOrders);
-router.get("/admin/detail/:id", authMiddleware, adminMiddleware, controller.getOrderById);
-router.put("/admin/:id/status", authMiddleware, adminMiddleware, controller.updateOrderStatus);
-router.post("/admin/test-whatsapp", authMiddleware, adminMiddleware, controller.testWhatsApp);
-router.put("/admin/:id/kitchen-status", authMiddleware, adminMiddleware, controller.updateKitchenStatus);
-router.post("/admin/bulk-delete", authMiddleware, adminMiddleware, adminMiddleware.requireRole(["super_admin", "admin"]), controller.deleteMultipleOrders);
-router.delete("/admin/:id", authMiddleware, adminMiddleware, adminMiddleware.requireRole(["super_admin", "admin"]), controller.deleteOrder);
-router.put("/admin/:id/viewed", authMiddleware, adminMiddleware, controller.markOrderAsViewed);
-router.get("/admin/payments", authMiddleware, adminMiddleware, controller.getPaymentHistory);
-router.get("/admin/:id/invoice", authMiddleware, adminMiddleware, controller.downloadInvoice);
+const orderAccess = adminMiddleware.requireRole(
+  ["super_admin", "admin", "kitchen_manager", "delivery_coordinator", "support_agent"],
+  ["/orders", "/orders/board"]
+);
+const orderDelete = adminMiddleware.requireRole(
+  ["super_admin", "admin"],
+  ["/orders"]
+);
+const paymentsAccess = adminMiddleware.requireRole(
+  ["super_admin", "admin"],
+  ["/payments"]
+);
+
+router.get("/admin/export/:format", authMiddleware, adminMiddleware, orderAccess, controller.exportOrders);
+router.get("/admin/all", authMiddleware, adminMiddleware, orderAccess, controller.getAllOrders);
+router.get("/admin/unviewed", authMiddleware, adminMiddleware, orderAccess, controller.getUnviewedOrders);
+router.get("/admin/detail/:id", authMiddleware, adminMiddleware, orderAccess, controller.getOrderById);
+router.put("/admin/:id/status", authMiddleware, adminMiddleware, orderAccess, controller.updateOrderStatus);
+router.post("/admin/test-whatsapp", authMiddleware, adminMiddleware, orderAccess, controller.testWhatsApp);
+router.put("/admin/:id/kitchen-status", authMiddleware, adminMiddleware, orderAccess, controller.updateKitchenStatus);
+router.post("/admin/bulk-delete", authMiddleware, adminMiddleware, orderDelete, controller.deleteMultipleOrders);
+router.delete("/admin/:id", authMiddleware, adminMiddleware, orderDelete, controller.deleteOrder);
+router.put("/admin/:id/viewed", authMiddleware, adminMiddleware, orderAccess, controller.markOrderAsViewed);
+router.get("/admin/payments", authMiddleware, adminMiddleware, paymentsAccess, controller.getPaymentHistory);
+router.get("/admin/:id/invoice", authMiddleware, adminMiddleware, orderAccess, controller.downloadInvoice);
 
 module.exports = router;

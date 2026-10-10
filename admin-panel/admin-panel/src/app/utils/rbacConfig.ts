@@ -430,17 +430,18 @@ export function canAccessPage(
 
   const cleanPath = (pathname || "").toLowerCase().trim();
 
-  // If user has explicit assigned screen permissions array
-  if (Array.isArray(userPermissions) && userPermissions.length > 0) {
-    const isExplicitlyAllowed = userPermissions.some((p) => {
+  // If user has explicit assigned screen permissions array:
+  // This is the strict single source of truth!
+  // ONLY explicitly granted screens can be accessed or visible.
+  if (Array.isArray(userPermissions)) {
+    return userPermissions.some((p) => {
       if (!p) return false;
       const cleanP = p.toLowerCase().trim();
       return cleanPath === cleanP || cleanPath.startsWith(cleanP + "/");
     });
-    if (isExplicitlyAllowed) return true;
   }
 
-  // Fallback to role-based access table
+  // Fallback to role-based access table ONLY for legacy accounts with no permissions array defined at all
   const info = getPageRoleInfo(cleanPath);
   return info.allowedRoles.map((r) => r.toLowerCase()).includes(normalizedRole);
 }

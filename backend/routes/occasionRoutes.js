@@ -9,8 +9,13 @@ router.get("/", controller.getAll);
 router.get("/:id", controller.getOne);
 
 // Admin — create/edit/delete occasions.
-router.post("/", adminMiddleware, controller.create);
-router.put("/:id", adminMiddleware, controller.update);
-router.delete("/:id", adminMiddleware, controller.delete);
+const occasionManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "seo_specialist", "kitchen_manager"],
+  ["/occasions"]
+);
+
+router.post("/", adminMiddleware, occasionManage, controller.create);
+router.put("/:id", adminMiddleware, occasionManage, controller.update);
+router.delete("/:id", adminMiddleware, occasionManage, controller.delete);
 
 module.exports = router;

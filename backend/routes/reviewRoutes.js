@@ -12,12 +12,17 @@ router.put("/:id", authMiddleware, controller.updateReview);
 router.delete("/:id", authMiddleware, controller.deleteReview);
 
 // Admin routes
-router.get("/admin/all", adminMiddleware, controller.getAllReviews);
-router.post("/admin/bulk-delete", adminMiddleware, controller.adminBulkDeleteReviews);
-router.get("/admin/:id", adminMiddleware, controller.getReviewById);
-router.post("/admin/reply/:id", adminMiddleware, controller.adminReplyReview);
-router.put("/admin/status/:id", adminMiddleware, controller.updateReviewStatus);
-router.delete("/admin/:id", adminMiddleware, controller.adminDeleteReview);
+const reviewManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "support_agent"],
+  ["/reviews"]
+);
+
+router.get("/admin/all", adminMiddleware, reviewManage, controller.getAllReviews);
+router.post("/admin/bulk-delete", adminMiddleware, reviewManage, controller.adminBulkDeleteReviews);
+router.get("/admin/:id", adminMiddleware, reviewManage, controller.getReviewById);
+router.post("/admin/reply/:id", adminMiddleware, reviewManage, controller.adminReplyReview);
+router.put("/admin/status/:id", adminMiddleware, reviewManage, controller.updateReviewStatus);
+router.delete("/admin/:id", adminMiddleware, reviewManage, controller.adminDeleteReview);
 
 // Social routes
 router.post("/:id/like", authMiddleware, controller.toggleLike);

@@ -101,6 +101,14 @@ export default function AdminCreatePage() {
     showToast(`Reset to ${ROLES_CONFIG[formData.role]?.name || formData.role} standard defaults`, "info");
   };
 
+  const handleClearAll = () => {
+    setFormData((prev) => ({
+      ...prev,
+      permissions: [],
+    }));
+    showToast("Cleared all screens. Now select only the workstations to assign.", "info");
+  };
+
   const handleToggleCategory = (cat: string, selectAll: boolean) => {
     const catScreens = AVAILABLE_SCREENS.filter((s) => s.category === cat).map((s) => s.route);
     setFormData((prev) => {
@@ -446,6 +454,14 @@ export default function AdminCreatePage() {
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       <span>Role Defaults</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearAll}
+                      className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 transition text-rose-500 cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                      <span>Clear All</span>
                     </button>
                   </>
                 )}

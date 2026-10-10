@@ -3,9 +3,14 @@ const router = express.Router();
 const controller = require("../controllers/addonCategoryController");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
-router.get("/", adminMiddleware, controller.getAll);
-router.post("/", adminMiddleware, controller.create);
-router.put("/:id", adminMiddleware, controller.update);
-router.delete("/:id", adminMiddleware, controller.remove);
+const addonManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "kitchen_manager"],
+  ["/addons"]
+);
+
+router.get("/", adminMiddleware, addonManage, controller.getAll);
+router.post("/", adminMiddleware, addonManage, controller.create);
+router.put("/:id", adminMiddleware, addonManage, controller.update);
+router.delete("/:id", adminMiddleware, addonManage, controller.remove);
 
 module.exports = router;

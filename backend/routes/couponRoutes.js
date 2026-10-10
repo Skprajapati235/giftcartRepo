@@ -8,10 +8,13 @@ router.post("/validate", optionalAuthMiddleware, controller.validate);
 router.get("/active", optionalAuthMiddleware, controller.getActive);
 
 // Admin routes
-const couponManage = adminMiddleware.requireRole(["super_admin", "admin", "seo_specialist"]);
+const couponManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "seo_specialist"],
+  ["/coupons"]
+);
 
 router.post("/", adminMiddleware, couponManage, controller.create);
-router.get("/", adminMiddleware, controller.getAll);
+router.get("/", adminMiddleware, couponManage, controller.getAll);
 router.put("/:id", adminMiddleware, couponManage, controller.update);
 router.delete("/:id", adminMiddleware, couponManage, controller.delete);
 

@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import GlobalLoader from "./GlobalLoaders/GlobalLoader";
 import { canAccessPage, getPageRoleInfo } from "../utils/rbacConfig";
 import { ShieldAlert, ArrowLeft, Lock } from "lucide-react";
+import { INACTIVITY_TIMEOUT_MS } from "../utils/sessionConfig";
 
 export default function ProtectedRoute({
   children,
@@ -32,7 +33,7 @@ export default function ProtectedRoute({
       if (e.persisted) {
         const token = localStorage.getItem("giftcartAdminToken");
         const lastActive = Number(localStorage.getItem("giftcartAdminLastActive") || 0);
-        if (!token || (lastActive && Date.now() - lastActive > 30000)) {
+        if (!token || (lastActive && Date.now() - lastActive > INACTIVITY_TIMEOUT_MS)) {
           window.location.replace("/?expired=true");
         }
       }
@@ -48,28 +49,39 @@ export default function ProtectedRoute({
   // Check RBAC permissions for the current page
   const hasAccess = canAccessPage(user?.role, pathname, user?.permissions);
 
+  const getDefaultRouteForRole = (role: string = "", permissions?: string[]) => {
+    if (Array.isArray(permissions) && permissions.length > 0 && !permissions.includes("*")) {
+      const firstPerm = permissions.find((p) => p && p.startsWith("/"));
+      if (firstPerm) return firstPerm;
+    }
+    switch ((role || "").toLowerCase()) {
+      case "kitchen_manager":
+        return "/orders/board";
+      case "delivery_coordinator":
+        return "/delivery-fleet";
+      case "support_agent":
+        return "/abandoned-carts";
+      case "seo_specialist":
+        return "/seo";
+      default:
+        return "/dashboard";
+    }
+  };
+
+  // If user lands on /dashboard after login but /dashboard was not assigned to them,
+  // automatically redirect to their primary assigned workstation smoothly
+  useEffect(() => {
+    if (!loading && authenticated && !hasAccess && pathname === "/dashboard") {
+      const target = getDefaultRouteForRole(user?.role, user?.permissions);
+      if (target && target !== "/dashboard") {
+        router.replace(target);
+      }
+    }
+  }, [loading, authenticated, hasAccess, pathname, user?.role, user?.permissions, router]);
+
   if (!hasAccess) {
     const pageInfo = getPageRoleInfo(pathname);
     const userRoleDisplay = (user?.role || "Staff Member").replace(/_/g, " ").toUpperCase();
-
-    const getDefaultRouteForRole = (role: string = "", permissions?: string[]) => {
-      if (Array.isArray(permissions) && permissions.length > 0 && !permissions.includes("*")) {
-        const firstPerm = permissions.find((p) => p && p.startsWith("/"));
-        if (firstPerm) return firstPerm;
-      }
-      switch ((role || "").toLowerCase()) {
-        case "kitchen_manager":
-          return "/orders/board";
-        case "delivery_coordinator":
-          return "/delivery-fleet";
-        case "support_agent":
-          return "/abandoned-carts";
-        case "seo_specialist":
-          return "/seo";
-        default:
-          return "/dashboard";
-      }
-    };
 
     return (
       <div className="flex flex-col items-center justify-center min-h-[500px] p-8 text-center bg-card rounded-3xl border border-rose-500/25 shadow-sm m-4">

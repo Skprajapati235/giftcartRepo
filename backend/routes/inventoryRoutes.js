@@ -4,8 +4,13 @@ const inventoryController = require("../controllers/inventoryController");
 const authMiddleware = require("../middleware/authMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
-// All inventory endpoints require admin authentication
-router.use(authMiddleware, adminMiddleware);
+const inventoryManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "kitchen_manager"],
+  ["/inventory"]
+);
+
+// All inventory endpoints require admin authentication and /inventory screen permission
+router.use(authMiddleware, adminMiddleware, inventoryManage);
 
 // High-level summary metrics
 router.get("/summary", inventoryController.getSummary);
@@ -14,15 +19,13 @@ router.get("/summary", inventoryController.getSummary);
 router.get("/export/excel", inventoryController.exportExcel);
 router.get("/export/pdf", inventoryController.exportPdf);
 
-const inventoryManage = adminMiddleware.requireRole(["super_admin", "admin", "kitchen_manager"]);
-
 // Bulk stock update
-router.post("/bulk-stock", inventoryManage, inventoryController.bulkUpdateStock);
+router.post("/bulk-stock", inventoryController.bulkUpdateStock);
 
 // Paginated, searchable, filterable items list
 router.get("/", inventoryController.getItems);
 
 // Quick stock update for a single product
-router.put("/:id/stock", inventoryManage, inventoryController.updateStock);
+router.put("/:id/stock", inventoryController.updateStock);
 
 module.exports = router;

@@ -11,6 +11,13 @@ import React, {
 } from "react";
 import * as service from "../services/adminService";
 import { useToast } from "../../context/ToastContext";
+import {
+  INACTIVITY_TIMEOUT_MS,
+  WARNING_THRESHOLD_MS,
+  WARNING_WINDOW_SECONDS,
+  HEARTBEAT_INTERVAL_MS,
+  INACTIVITY_EXPIRED_MESSAGE,
+} from "../utils/sessionConfig";
 
 export interface AuthState {
   user: any | null;
@@ -34,11 +41,6 @@ export interface AuthState {
 }
 
 const AuthContext = createContext<AuthState | null>(null);
-
-// Security constants: 2 hours of inactivity auto-logout, 60s warning window
-const INACTIVITY_TIMEOUT_MS = 2 * 60 * 60 * 1000;
-const WARNING_THRESHOLD_MS = INACTIVITY_TIMEOUT_MS - 60 * 1000;
-const HEARTBEAT_INTERVAL_MS = 60 * 1000;
 
 function parseJwt(token: string) {
   try {
@@ -72,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Inactivity countdown states
   const [sessionWarning, setSessionWarning] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(10);
+  const [remainingSeconds, setRemainingSeconds] = useState(WARNING_WINDOW_SECONDS);
   const [sessionExpiredNotice, setSessionExpiredNotice] = useState<string | null>(null);
 
   const lastActiveRef = useRef<number>(Date.now());
@@ -90,7 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const msg =
         options?.message ||
         (options?.reason === "inactivity"
-          ? "Session expired due to inactivity. Please sign in again."
+          ? INACTIVITY_EXPIRED_MESSAGE
           : "Session expired. Please sign in again.");
 
       if (typeof window !== "undefined") {
@@ -153,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("giftcartAdminLastActive", String(now));
     }
     setSessionWarning(false);
-    setRemainingSeconds(10);
+    setRemainingSeconds(WARNING_WINDOW_SECONDS);
 
     // Verify session with backend to sync authentic database role & permissions
     service
@@ -241,13 +243,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const lastActiveTime = storedLastActive ? parseInt(storedLastActive, 10) : 0;
     const now = Date.now();
 
-    // Check if token exists, is valid JWT, and has not exceeded 30s inactivity
+    // Check if token exists, is valid JWT, and has not exceeded inactivity timeout
     if (storedToken && parsedUser && isValidToken(storedToken)) {
       if (lastActiveTime && now - lastActiveTime > INACTIVITY_TIMEOUT_MS) {
-        // Was inactive for > 30s while browser was closed or page refreshed
+        // Was inactive while browser was closed or page refreshed
         clearSession({
           reason: "inactivity",
-          message: "Session expired due to inactivity. Please sign in again.",
+          message: INACTIVITY_EXPIRED_MESSAGE,
         });
       } else {
         lastActiveRef.current = lastActiveTime || now;
@@ -306,7 +308,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // If warning modal was displayed, automatically dismiss it upon activity
       setSessionWarning((prev) => {
         if (prev) {
-          setRemainingSeconds(10);
+          setRemainingSeconds(WARNING_WINDOW_SECONDS);
           return false;
         }
         return false;
@@ -351,7 +353,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (idleMs >= INACTIVITY_TIMEOUT_MS) {
         clearSession({
           reason: "inactivity",
-          message: "Session expired due to inactivity. Please sign in again.",
+          message: INACTIVITY_EXPIRED_MESSAGE,
         });
       } else if (idleMs >= WARNING_THRESHOLD_MS) {
         setSessionWarning(true);
@@ -359,7 +361,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setRemainingSeconds(rem);
       } else {
         setSessionWarning(false);
-        setRemainingSeconds(60);
+        setRemainingSeconds(WARNING_WINDOW_SECONDS);
       }
     }, 1000);
 
@@ -403,11 +405,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedLastStr = localStorage.getItem("giftcartAdminLastActive");
       const storedLast = storedLastStr ? parseInt(storedLastStr, 10) : lastActiveRef.current;
 
-      // If user was away for 30s or more, expire session immediately
+      // If user was away longer than inactivity timeout, expire session immediately
       if (now - storedLast >= INACTIVITY_TIMEOUT_MS) {
         clearSession({
           reason: "inactivity",
-          message: "Session expired due to 30 seconds of inactivity. Please sign in again.",
+          message: INACTIVITY_EXPIRED_MESSAGE,
         });
       }
     };

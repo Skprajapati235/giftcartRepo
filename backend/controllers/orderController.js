@@ -759,6 +759,16 @@ exports.updateKitchenStatus = async (req, res) => {
 
     if (!order) return res.status(404).json({ success: false, message: "Order not found" });
 
+    const { logActivity } = require("../utils/auditLogger");
+    await logActivity({
+      req,
+      action: "Updated Kitchen Status",
+      module: "Orders & Kitchen",
+      details: `Kitchen status for Order #${order.orderId || req.params.id} updated to "${kitchenStatus}".`,
+      severity: "info",
+      metadata: { orderId: order._id, kitchenStatus },
+    });
+
     res.json({ success: true, message: `Kitchen status updated to ${order.kitchenStatus}`, order });
   } catch (error) {
     console.error("Update Kitchen Status Error:", error);

@@ -18,7 +18,10 @@ const controller = require("../controllers/deliveryRiderController");
 const authMiddleware = require("../middleware/authMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
-const fleetRoles = adminMiddleware.requireRole(["super_admin", "admin", "delivery_coordinator"]);
+const fleetRoles = adminMiddleware.requireRole(
+  ["super_admin", "admin", "delivery_coordinator"],
+  ["/delivery-fleet"]
+);
 
 router.get("/", authMiddleware, adminMiddleware, fleetRoles, controller.getAllRiders);
 router.get("/dispatch-orders", authMiddleware, adminMiddleware, fleetRoles, controller.getDispatchOrders);

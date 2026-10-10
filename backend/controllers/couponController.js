@@ -1,12 +1,21 @@
 const Coupon = require("../models/Coupon");
 const Order = require("../models/Order");
 const Product = require("../models/Product");
+const { logActivity } = require("../utils/auditLogger");
 
 // Admin: Create Coupon
 exports.create = async (req, res) => {
   try {
     const coupon = new Coupon(req.body);
     await coupon.save();
+    await logActivity({
+      req,
+      action: "Created Coupon",
+      module: "Coupons",
+      details: `Created promo code "${coupon.code}" (${coupon.discountType === "percentage" ? `${coupon.discountValue}% off` : `₹${coupon.discountValue} off`}).`,
+      severity: "info",
+      metadata: { couponId: coupon._id, code: coupon.code, discountValue: coupon.discountValue },
+    });
     res.status(201).json(coupon);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -44,6 +53,16 @@ exports.getAll = async (req, res) => {
 exports.update = async (req, res) => {
   try {
     const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (coupon) {
+      await logActivity({
+        req,
+        action: "Updated Coupon",
+        module: "Coupons",
+        details: `Updated coupon "${coupon.code}".`,
+        severity: "info",
+        metadata: { couponId: coupon._id, code: coupon.code },
+      });
+    }
     res.json(coupon);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -53,7 +72,15 @@ exports.update = async (req, res) => {
 // Admin: Delete Coupon
 exports.delete = async (req, res) => {
   try {
-    await Coupon.findByIdAndDelete(req.params.id);
+    const coupon = await Coupon.findByIdAndDelete(req.params.id);
+    await logActivity({
+      req,
+      action: "Deleted Coupon",
+      module: "Coupons",
+      details: `Permanently removed coupon "${coupon?.code || req.params.id}".`,
+      severity: "warning",
+      metadata: { couponId: req.params.id, code: coupon?.code },
+    });
     res.json({ message: "Coupon deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message });

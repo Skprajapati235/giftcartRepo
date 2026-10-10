@@ -15,6 +15,7 @@ import {
   RotateCcw,
   Sparkles,
   Layers,
+  X,
 } from "lucide-react";
 import { useToast } from "../../../context/ToastContext";
 import {
@@ -47,7 +48,7 @@ export default function AdminEditForm({ adminId, onCancel }: AdminEditFormProps)
     const admin = admins.find((a) => a._id === adminId);
     if (admin) {
       const initialPerms =
-        Array.isArray(admin.permissions) && admin.permissions.length > 0
+        Array.isArray(admin.permissions)
           ? admin.permissions
           : getDefaultPermissionsForRole(admin.role || "kitchen_manager");
 
@@ -104,6 +105,14 @@ export default function AdminEditForm({ adminId, onCancel }: AdminEditFormProps)
       permissions: defaults,
     }));
     showToast(`Reset to ${ROLES_CONFIG[values.role]?.name || values.role} standard defaults`, "info");
+  };
+
+  const handleClearAll = () => {
+    setValues((prev) => ({
+      ...prev,
+      permissions: [],
+    }));
+    showToast("Cleared all screens. Now select only the workstations to assign.", "info");
   };
 
   const handleToggleCategory = (cat: string, selectAll: boolean) => {
@@ -305,6 +314,14 @@ export default function AdminEditForm({ adminId, onCancel }: AdminEditFormProps)
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   <span>Role Defaults</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 transition text-rose-500 cursor-pointer"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span>Clear All</span>
                 </button>
               </>
             )}

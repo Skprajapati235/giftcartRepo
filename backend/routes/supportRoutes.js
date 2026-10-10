@@ -8,11 +8,16 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 router.post("/contact", controller.createTicket);
 
 // Admin-only endpoints
-router.get("/tickets", authMiddleware, adminMiddleware, controller.getTickets);
-router.get("/tickets/:id", authMiddleware, adminMiddleware, controller.getTicketById);
-router.put("/tickets/:id/status", authMiddleware, adminMiddleware, controller.updateTicketStatus);
-router.put("/tickets/:id/reply", authMiddleware, adminMiddleware, controller.replyTicket);
-router.delete("/tickets/:id", authMiddleware, adminMiddleware, controller.deleteTicket);
-router.post("/bulk-delete", authMiddleware, adminMiddleware, controller.bulkDeleteTickets);
+const supportManage = adminMiddleware.requireRole(
+  ["super_admin", "admin", "support_agent"],
+  ["/support"]
+);
+
+router.get("/tickets", authMiddleware, adminMiddleware, supportManage, controller.getTickets);
+router.get("/tickets/:id", authMiddleware, adminMiddleware, supportManage, controller.getTicketById);
+router.put("/tickets/:id/status", authMiddleware, adminMiddleware, supportManage, controller.updateTicketStatus);
+router.put("/tickets/:id/reply", authMiddleware, adminMiddleware, supportManage, controller.replyTicket);
+router.delete("/tickets/:id", authMiddleware, adminMiddleware, supportManage, controller.deleteTicket);
+router.post("/bulk-delete", authMiddleware, adminMiddleware, supportManage, controller.bulkDeleteTickets);
 
 module.exports = router;

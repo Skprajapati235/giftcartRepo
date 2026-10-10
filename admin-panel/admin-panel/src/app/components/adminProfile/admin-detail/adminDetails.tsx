@@ -144,7 +144,7 @@ export default function AdminDetails() {
   const isSuperAdmin = roleKey === "super_admin" || roleKey === "admin";
 
   const effectivePermissions =
-    Array.isArray(admin.permissions) && admin.permissions.length > 0
+    Array.isArray(admin.permissions)
       ? admin.permissions
       : getDefaultPermissionsForRole(admin.role);
 

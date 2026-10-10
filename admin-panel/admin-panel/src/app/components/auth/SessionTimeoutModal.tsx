@@ -3,14 +3,15 @@
 import React from "react";
 import { useAuth } from "../../context/AuthContext";
 import { ShieldAlert, LogOut, CheckCircle2, Clock } from "lucide-react";
+import { WARNING_WINDOW_SECONDS } from "../../utils/sessionConfig";
 
 export default function SessionTimeoutModal() {
   const { sessionWarning, remainingSeconds, stayLoggedIn, logout } = useAuth();
 
   if (!sessionWarning) return null;
 
-  // Percentage for progress bar (remaining out of 60 seconds)
-  const percent = Math.max(0, Math.min(100, (remainingSeconds / 60) * 100));
+  // Percentage for progress bar (remaining out of WARNING_WINDOW_SECONDS)
+  const percent = Math.max(0, Math.min(100, (remainingSeconds / WARNING_WINDOW_SECONDS) * 100));
 
   return (
     <div
