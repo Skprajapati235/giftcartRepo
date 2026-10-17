@@ -10,6 +10,7 @@ import React, {
   useState,
 } from "react";
 import * as service from "../services/adminService";
+import { api, COOKIE_AUTH, COOKIE_SESSION_MARKER } from "../services/apiClient";
 import { useToast } from "../../context/ToastContext";
 import {
   INACTIVITY_TIMEOUT_MS,
@@ -59,8 +60,14 @@ function safeParseJson(value: string | null) {
   }
 }
 
+// Key whose removal in another tab means "logged out there"
+const SESSION_STORAGE_KEY = COOKIE_AUTH ? "giftcartAdminUser" : "giftcartAdminToken";
+
 function isValidToken(token: string | null) {
   if (!token) return false;
+  // cookie-session marker (the real token is an httpOnly cookie JavaScript can't read;
+  // the server decides whether it is still valid — verify-session / any 401)
+  if (COOKIE_AUTH && token === COOKIE_SESSION_MARKER) return true;
   const payload = parseJwt(token);
   return Boolean(payload?.exp && payload.exp * 1000 > Date.now());
 }
@@ -96,6 +103,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           : "Session expired. Please sign in again.");
 
       if (typeof window !== "undefined") {
+        // delete the httpOnly cookie on the server (fire and forget)
+        if (COOKIE_AUTH) api.post("/admin/auth/logout").catch(() => {});
         localStorage.removeItem("giftcartAdminToken");
         localStorage.removeItem("giftcartAdminUser");
         localStorage.removeItem("giftcartAdminLastActive");
@@ -137,12 +146,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       : null;
 
     if (typeof window !== "undefined") {
-      localStorage.setItem("giftcartAdminToken", tokenValue);
+      if (COOKIE_AUTH) {
+        // the server set the httpOnly cookie; no token is ever stored in JavaScript
+        localStorage.removeItem("giftcartAdminToken");
+      } else {
+        localStorage.setItem("giftcartAdminToken", tokenValue);
+      }
       localStorage.setItem("giftcartAdminUser", JSON.stringify(cleanUser));
       localStorage.setItem("giftcartAdminLastActive", String(now));
       sessionStorage.removeItem("giftcartSessionExpiredNotice");
     }
-    setToken(tokenValue);
+    setToken(COOKIE_AUTH ? COOKIE_SESSION_MARKER : tokenValue);
     setUser(cleanUser);
     setSessionWarning(false);
     setSessionExpiredNotice(null);
@@ -235,12 +249,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSessionExpiredNotice(notice);
     }
 
-    const storedToken = localStorage.getItem("giftcartAdminToken");
+    const legacyToken = localStorage.getItem("giftcartAdminToken");
     const storedUser = localStorage.getItem("giftcartAdminUser");
     const storedLastActive = localStorage.getItem("giftcartAdminLastActive");
 
     const parsedUser = safeParseJson(storedUser);
     const lastActiveTime = storedLastActive ? parseInt(storedLastActive, 10) : 0;
+
+    const hydrate = (storedToken: string | null) => {
     const now = Date.now();
 
     // Check if token exists, is valid JWT, and has not exceeded inactivity timeout
@@ -277,7 +293,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               localStorage.setItem("giftcartAdminUser", JSON.stringify(verified));
             }
           })
-          .catch(() => {});
+          .catch((err: any) => {
+            // the server says this session is dead (cookie expired / account removed)
+            if (err?.response?.status === 401) clearSession({ reason: "invalid_token" });
+          });
       }
     } else {
       if (storedToken || storedUser) {
@@ -289,6 +308,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setLoading(false);
+    };
+
+    if (COOKIE_AUTH) {
+      if (legacyToken && parsedUser) {
+        // One-time upgrade: exchange the old localStorage token for the httpOnly cookie
+        // (nobody is logged out), then delete the token from localStorage.
+        api
+          .post("/admin/auth/session", {}, { headers: { Authorization: `Bearer ${legacyToken}` } })
+          .then(() => {
+            localStorage.removeItem("giftcartAdminToken");
+            hydrate(COOKIE_SESSION_MARKER);
+          })
+          .catch(() => {
+            localStorage.removeItem("giftcartAdminToken");
+            hydrate(null);
+          });
+      } else {
+        hydrate(parsedUser ? COOKIE_SESSION_MARKER : null);
+      }
+    } else {
+      hydrate(legacyToken);
+    }
   }, [clearSession]);
 
   // 2. Activity listeners (resets the 30s inactivity timer on user interactions)
@@ -426,7 +467,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // 6. Multi-tab Sync & Global 401 Event Handling
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "giftcartAdminToken" && !e.newValue) {
+      if (e.key === SESSION_STORAGE_KEY && !e.newValue) {
         clearSession({
           reason: "cross-tab",
           message: "Logged out from another tab.",

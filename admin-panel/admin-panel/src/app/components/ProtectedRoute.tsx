@@ -7,6 +7,7 @@ import GlobalLoader from "./GlobalLoaders/GlobalLoader";
 import { canAccessPage, getPageRoleInfo } from "../utils/rbacConfig";
 import { ShieldAlert, ArrowLeft, Lock } from "lucide-react";
 import { INACTIVITY_TIMEOUT_MS } from "../utils/sessionConfig";
+import { getAuthToken } from "../services/apiClient";
 
 export default function ProtectedRoute({
   children,
@@ -31,7 +32,7 @@ export default function ProtectedRoute({
   useEffect(() => {
     const handlePageShow = (e: PageTransitionEvent) => {
       if (e.persisted) {
-        const token = localStorage.getItem("giftcartAdminToken");
+        const token = getAuthToken(); // works for both header-token and cookie-session mode
         const lastActive = Number(localStorage.getItem("giftcartAdminLastActive") || 0);
         if (!token || (lastActive && Date.now() - lastActive > INACTIVITY_TIMEOUT_MS)) {
           window.location.replace("/?expired=true");

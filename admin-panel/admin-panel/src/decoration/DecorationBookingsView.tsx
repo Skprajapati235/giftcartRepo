@@ -351,6 +351,11 @@ _⚠️ Note: Decorator must finish before surprise entry. Zero damage to walls 
                   </p>
                   <p className="text-gray-700 dark:text-gray-300">
                     ⏱️ Setup Slot: {bk.setupTimeSlot}
+                    {bk.isCustomTimeSlot && (
+                      <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300" title="The customer typed this time — confirm the decorator is free">
+                        Custom time
+                      </span>
+                    )}
                   </p>
                   {bk.surpriseEntryTime && (
                     <p className="text-purple-700 dark:text-purple-300 font-bold">

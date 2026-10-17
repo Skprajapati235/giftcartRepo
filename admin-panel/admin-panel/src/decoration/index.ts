@@ -7,6 +7,7 @@ export { default as DecorationPackagesView } from "./DecorationPackagesView";
 export { default as DecorationSamplesView } from "./DecorationSamplesView";
 export { default as DecorationPaymentsView } from "./DecorationPaymentsView";
 export { default as DecorationFinancialsView } from "./DecorationFinancialsView";
+export { default as DecorationBookingSetupView } from "./DecorationBookingSetupView";
 export { default as AddEditDecorationPartner } from "./AddEditDecorationPartner";
 export { default as AddEditDecorationPackage } from "./AddEditDecorationPackage";
 export { default as AddEditDecorationSample } from "./AddEditDecorationSample";

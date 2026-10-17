@@ -1,4 +1,4 @@
-import { authApi, baseURL, getAuthToken } from "./apiClient";
+import { authApi, authHeaders, baseURL, getAuthToken } from "./apiClient";
 
 export interface InventoryItem {
   _id: string;
@@ -124,9 +124,8 @@ export const downloadInventoryExcel = async (params?: InventoryQueryParams) => {
   const url = `${baseURL}/inventory/export/excel?${query.toString()}`;
 
   const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: authHeaders(token),
+    credentials: "same-origin",
   });
 
   if (!response.ok) {
@@ -158,9 +157,8 @@ export const downloadInventoryPdf = async (params?: InventoryQueryParams) => {
   const url = `${baseURL}/inventory/export/pdf?${query.toString()}`;
 
   const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    headers: authHeaders(token),
+    credentials: "same-origin",
   });
 
   if (!response.ok) {

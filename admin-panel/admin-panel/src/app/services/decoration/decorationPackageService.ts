@@ -7,12 +7,13 @@ export const getDecorationPackages = async (params?: {
   page?: number;
   limit?: number;
 }) => {
-  const response = await authApi(getAuthToken()).get("/decoration/packages", { params });
+  // admin panel also needs hidden / inactive packages (the API only returns them to logged-in staff)
+  const response = await authApi(getAuthToken()).get("/decoration/packages", { params: { ...params, includeInactive: 1 } });
   return response.data;
 };
 
 export const getDecorationPackageBySlug = async (slug: string) => {
-  const response = await authApi(getAuthToken()).get(`/decoration/packages/${slug}`);
+  const response = await authApi(getAuthToken()).get(`/decoration/packages/${slug}`, { params: { includeInactive: 1 } });
   return response.data;
 };
 

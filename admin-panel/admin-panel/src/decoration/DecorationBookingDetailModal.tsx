@@ -242,13 +242,12 @@ _⚠️ Note: Decorator must finish before surprise entry. Zero damage to walls 
                     type="button"
                     disabled={updatingStatus}
                     onClick={() => handleUpdateStatus(step.key)}
-                    className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${
-                      isCurrent
+                    className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 ${isCurrent
                         ? "bg-pink-600 text-white border-pink-600 shadow-md scale-105"
                         : isPassed
-                        ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                        : "bg-white dark:bg-slate-900 text-gray-500 border-gray-200 dark:border-slate-800 hover:border-pink-300"
-                    }`}
+                          ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                          : "bg-white dark:bg-slate-900 text-gray-500 border-gray-200 dark:border-slate-800 hover:border-pink-300"
+                      }`}
                   >
                     <StepIcon className="w-3.5 h-3.5" />
                     <span className="text-[10px] font-bold leading-tight">{step.label}</span>
@@ -360,7 +359,7 @@ _⚠️ Note: Decorator must finish before surprise entry. Zero damage to walls 
               </div>
 
               <div className="space-y-3">
-                {currentBooking.venueType === "Hotel Room" ? (
+                {currentBooking.venueType === "Hotel Room" || currentBooking.hotelName || currentBooking.roomNumber ? (
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="text-[10px] font-bold text-gray-400 block mb-1">
@@ -447,6 +446,11 @@ _⚠️ Note: Decorator must finish before surprise entry. Zero damage to walls 
                   <span className="text-gray-500">Decorator Arrival Slot:</span>
                   <span className="font-extrabold text-pink-600 dark:text-pink-400">
                     ⏱️ {currentBooking.setupTimeSlot}
+                    {currentBooking.isCustomTimeSlot && (
+                      <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                        Custom time · confirm availability
+                      </span>
+                    )}
                   </span>
                 </div>
 

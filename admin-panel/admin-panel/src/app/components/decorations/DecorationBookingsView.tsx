@@ -238,6 +238,25 @@ export default function DecorationBookingsView({
                       </Link>
                     </h3>
                     <span className="text-xs font-black text-emerald-500">₹{b.totalAmount}</span>
+                    {/* Payment state — online bookings are saved first and only become Confirmed once paid */}
+                    {b.paymentType === "Full COD" ? (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">
+                        Pay on setup
+                      </span>
+                    ) : b.paymentStatus === "Paid" || b.paymentStatus === "Advance Paid" ? (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        {b.paymentStatus === "Paid" ? "Paid in full" : "Advance paid"}
+                      </span>
+                    ) : b.status !== "Cancelled" ? (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                        Awaiting payment
+                      </span>
+                    ) : null}
+                    {b.status === "Cancelled" && b.cancelledBy && (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                        Cancelled by {b.cancelledBy}
+                      </span>
+                    )}
                   </div>
 
                   {/* Status Dropdown */}
