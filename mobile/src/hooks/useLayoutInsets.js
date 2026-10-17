@@ -5,10 +5,9 @@ import { TAB_BAR_BASE_HEIGHT, STICKY_FOOTER_BASE_PADDING } from '../constants/la
 export function useLayoutInsets() {
   const insets = useSafeAreaInsets();
 
-  // On Android devices with on-screen navigation buttons (Back, Home, Recents)
-  // insets.bottom can be 0 or small, causing tab bar and sticky buttons to overlap with physical/software keys.
-  const safeBottom = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 16);
-  const safeTop = Math.max(insets.top, Platform.OS === 'android' ? 12 : 0);
+  // Use actual safe-area insets from device so tab bar sits cleanly at the bottom
+  const safeBottom = insets?.bottom || 0;
+  const safeTop = Math.max(insets?.top || 0, Platform.OS === 'android' ? 12 : 0);
 
   const tabBarHeight = TAB_BAR_BASE_HEIGHT + safeBottom;
   const stickyFooterPadding = Math.max(safeBottom, STICKY_FOOTER_BASE_PADDING);

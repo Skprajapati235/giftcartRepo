@@ -14,6 +14,7 @@ import {
   Platform,
   Linking,
   StatusBar,
+  BackHandler,
 } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,10 +56,25 @@ export default function DecorationBookingScreen({ route, navigation }) {
   const finalPrice = pkg ? pkg.salePrice || pkg.price : 0;
   const insets = useSafeAreaInsets();
 
-  // Solid safe bottom padding ensuring buttons sit completely above Android on-screen navigation buttons (48dp height)
+  // Generous safe bottom padding ensuring buttons sit completely above Android on-screen navigation buttons (48-56dp)
   const safeBottomPadding = Platform.OS === 'android'
-    ? Math.max(insets.bottom, 36) + 12
-    : Math.max(insets.bottom, 16) + 10;
+    ? Math.max(insets.bottom, 48) + 16
+    : Math.max(insets.bottom, 16) + 12;
+
+  // Handle Android hardware/system back button:
+  // Step 4 -> 3 -> 2 -> 1 -> navigation.goBack()
+  useEffect(() => {
+    const onBackPress = () => {
+      if (currentStep > 1) {
+        handlePrevStep();
+        return true;
+      }
+      return false;
+    };
+
+    const sub = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => sub.remove();
+  }, [currentStep]);
 
   // Step Tracker State
   const [currentStep, setCurrentStep] = useState(1);
@@ -1403,24 +1419,27 @@ export default function DecorationBookingScreen({ route, navigation }) {
             styles.bottomBar,
             {
               paddingBottom: safeBottomPadding,
-              paddingTop: 12,
+              paddingTop: 14,
             },
           ]}
         >
-          <TouchableOpacity
-            style={styles.bottomBackBtn}
-            onPress={handlePrevStep}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="arrow-back" size={18} color="#475569" />
-            <Text style={styles.bottomBackText}>
-              {currentStep === 1 ? 'Cancel' : 'Back'}
-            </Text>
-          </TouchableOpacity>
+          {currentStep > 1 && (
+            <TouchableOpacity
+              style={styles.bottomBackBtn}
+              onPress={handlePrevStep}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="chevron-back" size={18} color="#334155" />
+              <Text style={styles.bottomBackText}>Back</Text>
+            </TouchableOpacity>
+          )}
 
           {currentStep < 4 ? (
             <TouchableOpacity
-              style={styles.bottomNextBtn}
+              style={[
+                styles.bottomNextBtn,
+                currentStep === 1 && { flex: 1 },
+              ]}
               onPress={handleNextStep}
               activeOpacity={0.85}
             >
@@ -1438,9 +1457,9 @@ export default function DecorationBookingScreen({ route, navigation }) {
                 <ActivityIndicator color="#FFF" />
               ) : (
                 <>
-                  <Text style={styles.bottomNextText}>
+                  <Text style={styles.bottomNextText} numberOfLines={1}>
                     {paymentType === 'Advance Downpayment'
-                      ? `Pay ₹${advanceDownpaymentAmount} Advance & Lock Slot`
+                      ? `Pay ₹${advanceDownpaymentAmount} Advance & Confirm`
                       : paymentType === 'Full Online'
                       ? `Pay ₹${finalPrice} Online & Confirm`
                       : `Confirm Booking (₹${finalPrice} on Setup)`}
@@ -2010,27 +2029,34 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
+    borderTopWidth: 1.5,
     borderTopColor: '#E2E8F0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 8,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 12,
   },
   bottomBackBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
+    paddingVertical: 13,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   bottomBackText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: '#334155',
   },
   bottomNextBtn: {
     flex: 1,
@@ -2039,20 +2065,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     backgroundColor: '#D82B76',
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 14,
     shadowColor: '#D82B76',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    elevation: 4,
   },
   bottomConfirmBtn: {
     backgroundColor: '#10B981',
     shadowColor: '#10B981',
   },
   bottomNextText: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '800',
     color: '#FFF',
   },

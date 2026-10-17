@@ -15,10 +15,32 @@ import {
 import { Ionicons, Feather, FontAwesome } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function FloatingWhatsAppShare({ navigationRef }) {
+export default function FloatingWhatsAppShare({ navigationRef, currentRouteName: propRouteName }) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const [modalVisible, setModalVisible] = useState(false);
+  const [internalRouteName, setInternalRouteName] = useState(
+    navigationRef?.isReady?.() ? navigationRef?.getCurrentRoute?.()?.name : 'Home'
+  );
+
+  useEffect(() => {
+    if (!navigationRef) return;
+    const updateRoute = () => {
+      try {
+        const route = navigationRef?.getCurrentRoute?.();
+        if (route?.name) {
+          setInternalRouteName(route.name);
+        }
+      } catch (err) {}
+    };
+
+    updateRoute();
+    const unsubscribe = navigationRef?.addListener?.('state', updateRoute);
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, [navigationRef]);
+
   const [pageInfo, setPageInfo] = useState({
     title: 'GiftFestive — Premier Cakes & Gifts',
     url: 'https://giftfestive.com',
@@ -265,8 +287,8 @@ export default function FloatingWhatsAppShare({ navigationRef }) {
   };
 
   // Don't render floating button over full-screen booking wizards that have bottom action buttons
-  const activeRouteName = navigationRef?.isReady?.() ? navigationRef?.getCurrentRoute?.()?.name : null;
-  if (activeRouteName === 'DecorationBooking') {
+  const activeRouteName = propRouteName || internalRouteName || (navigationRef?.isReady?.() ? navigationRef?.getCurrentRoute?.()?.name : null);
+  if (activeRouteName === 'DecorationBooking' || activeRouteName === 'Checkout') {
     return null;
   }
 

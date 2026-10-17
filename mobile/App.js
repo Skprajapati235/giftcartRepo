@@ -17,12 +17,23 @@ export const navigationRef = createNavigationContainerRef();
 function MainApp() {
   const { loading: authLoading } = useContext(AuthContext);
   const [splashVisible, setSplashVisible] = useState(true);
+  const [currentRouteName, setCurrentRouteName] = useState('Home');
 
   return (
     <View style={styles.container}>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer
+        ref={navigationRef}
+        onStateChange={() => {
+          try {
+            const current = navigationRef?.getCurrentRoute?.();
+            if (current?.name && current.name !== currentRouteName) {
+              setCurrentRouteName(current.name);
+            }
+          } catch (e) {}
+        }}
+      >
         <AppNavigator />
-        <FloatingWhatsAppShare navigationRef={navigationRef} />
+        <FloatingWhatsAppShare navigationRef={navigationRef} currentRouteName={currentRouteName} />
         <StatusBar style="dark" />
       </NavigationContainer>
 
