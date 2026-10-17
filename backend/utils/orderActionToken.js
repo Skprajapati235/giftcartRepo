@@ -4,7 +4,9 @@ const crypto = require("crypto");
 // Falls back to JWT_SECRET so this works even if ORDER_ACTION_SECRET isn't
 // set yet, but setting a dedicated ORDER_ACTION_SECRET in .env is recommended.
 function getSecret() {
-    return process.env.ORDER_ACTION_SECRET || process.env.JWT_SECRET || "giftcart-order-action-secret";
+    const secret = process.env.ORDER_ACTION_SECRET || process.env.JWT_SECRET;
+    if (!secret) throw new Error("ORDER_ACTION_SECRET or JWT_SECRET must be set");
+    return secret;
 }
 
 // Deterministic token for a given order + target status. Not time-limited on

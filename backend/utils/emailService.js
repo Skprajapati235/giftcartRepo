@@ -1,3 +1,507 @@
+
+// const nodemailer = require("nodemailer");
+// const axios = require("axios");
+// const dns = require("dns");
+// const { promisify } = require("util");
+// const { generateActionToken } = require("./orderActionToken");
+
+// const resolve4 = promisify(dns.resolve4);
+// const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "prajapatisonu7897@gmail.com";
+
+// // --- Primary send path: Brevo's HTTPS email API -----------------------
+// // Render's free tier (and several other hosts' free/hobby tiers) blocks ALL
+// // outbound SMTP ports (25, 465, 587) at the network level as of Sept 2025 —
+// // no SMTP config fix can work around that, since it's a platform firewall,
+// // not a DNS/reachability issue. Sending over HTTPS (port 443) via Brevo's
+// // API sidesteps the block entirely. This path is used whenever
+// // BREVO_API_KEY is set; otherwise we fall back to plain SMTP (works fine
+// // locally, or on a paid Render plan / any host that allows SMTP egress).
+// async function sendViaBrevoApi({ to, subject, html, text }) {
+//   const apiKey = process.env.BREVO_API_KEY;
+//   const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_USER;
+//   const senderName = process.env.BREVO_SENDER_NAME || "Giftcart Orders";
+
+//   if (!senderEmail) {
+//     throw new Error("BREVO_SENDER_EMAIL (or EMAIL_USER) must be set to send via the Brevo API.");
+//   }
+
+//   try {
+//     await axios.post(
+//       "https://api.brevo.com/v3/smtp/email",
+//       {
+//         sender: { name: senderName, email: senderEmail },
+//         to: [{ email: to }],
+//         subject,
+//         htmlContent: html,
+//         ...(text ? { textContent: text } : {}),
+//       },
+//       {
+//         headers: {
+//           "api-key": apiKey,
+//           "Content-Type": "application/json",
+//           Accept: "application/json",
+//         },
+//         timeout: 15000,
+//       }
+//     );
+//   } catch (err) {
+//     // Surface Brevo's actual rejection reason (e.g. unverified sender) instead
+//     // of a generic axios error.
+//     const apiMessage = err.response?.data?.message || err.response?.data?.code;
+//     const wrapped = new Error(apiMessage ? `Brevo API error: ${apiMessage}` : err.message);
+//     wrapped.code = err.response?.status || err.code;
+//     throw wrapped;
+//   }
+// }
+
+// function usingBrevoApi() {
+//   return Boolean(process.env.BREVO_API_KEY);
+// }
+
+// // --- Fallback send path: plain SMTP (nodemailer) -----------------------
+// // Some hosts have no outbound IPv6 route, but smtp.gmail.com resolves to an
+// // IPv6 address by default -> "connect ENETUNREACH ...:587". nodemailer's
+// // SMTP transport does NOT support a `family` option to force IPv4 (it's
+// // silently ignored), so we resolve the hostname to an IPv4 address ourselves
+// // and connect to that IP directly. `tls.servername` keeps the original
+// // hostname so the TLS certificate still validates correctly against the IP
+// // connection. This path is only reached when BREVO_API_KEY is not set.
+// let transporterPromise = null;
+
+// async function buildTransporter() {
+//   const hostname = process.env.SMTP_HOST || "smtp.gmail.com";
+//   const port = Number(process.env.SMTP_PORT || 587);
+//   const secure = String(process.env.SMTP_SECURE || "false").toLowerCase() === "true";
+
+//   let connectHost = hostname;
+//   try {
+//     const addresses = await resolve4(hostname);
+//     if (addresses && addresses[0]) {
+//       connectHost = addresses[0];
+//     }
+//   } catch (err) {
+//     console.warn(
+//       `[email] Could not resolve ${hostname} to an IPv4 address (${err.message}) — connecting via hostname, which may hit an IPv6-only route.`
+//     );
+//   }
+
+//   const transporter = nodemailer.createTransport({
+//     host: connectHost,
+//     port,
+//     secure,
+//     requireTLS: !secure,
+//     tls: { servername: hostname },
+//     auth: {
+//       user: process.env.EMAIL_USER,
+//       pass: process.env.EMAIL_PASS,
+//     },
+//     connectionTimeout: 10000,
+//     greetingTimeout: 10000,
+//     socketTimeout: 15000,
+//   });
+
+//   // Fail loudly and specifically instead of every order silently failing to
+//   // notify. Common causes if this logs an error:
+//   //  - EMAIL_USER / EMAIL_PASS missing or unset in the deployed environment
+//   //  - Using a normal Gmail password instead of a 16-char Gmail "App Password"
+//   //  - Outbound port 587 blocked by the hosting provider
+//   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+//     transporter.verify((error) => {
+//       if (error) {
+//         console.error(
+//           "[email] SMTP connection/auth check FAILED — order emails will not send. Reason:",
+//           error.code || error.responseCode || "",
+//           error.message
+//         );
+//       } else {
+//         console.log(`[email] SMTP connection verified (via ${connectHost}) — ready to send order emails.`);
+//       }
+//     });
+//   } else {
+//     console.error(
+//       "[email] EMAIL_USER and/or EMAIL_PASS are not set in the environment — order emails will not send."
+//     );
+//   }
+
+//   return transporter;
+// }
+
+// // Cache the built transporter (and its DNS resolution) for the life of the
+// // process — rebuilt fresh on every deploy/restart, which is exactly when a
+// // changed IP would matter.
+// function getTransporter() {
+//   if (!transporterPromise) {
+//     transporterPromise = buildTransporter();
+//   }
+//   return transporterPromise;
+// }
+
+// function buildActionButton(order, status, label, color) {
+//   const base = (process.env.BASE_URL || process.env.TRACK_BASE_URL || "").replace(/\/$/, "");
+//   const token = generateActionToken(order._id, status);
+//   const url = `${base}/api/order/email-action/${order._id}/${encodeURIComponent(status)}?token=${token}`;
+//   return `<a href="${url}" target="_blank" style="display:inline-block;margin:4px 6px 0 0;padding:10px 16px;background:${color};color:#ffffff;text-decoration:none;border-radius:6px;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:bold;">${label}</a>`;
+// }
+
+// exports.sendOrderNotification = async (order, user) => {
+//   try {
+//     const itemsSubtotal = (order.items || []).reduce(
+//       (sum, item) => sum + (Number(item.itemTotal) || (Number(item.price || 0) * Number(item.quantity || 1))),
+//       0
+//     );
+//     const slotCharge = Number(order.deliverySlot?.extraCharge || 0);
+//     const addonsTotal = (order.addons || []).reduce(
+//       (sum, a) => sum + (Number(a.price || 0) * (Number(a.quantity) || 1)),
+//       0
+//     );
+//     const couponDiscount = Number(order.discountAmount || 0);
+//     const grandTotal = Number(order.totalAmount != null ? order.totalAmount : (itemsSubtotal + slotCharge + addonsTotal - couponDiscount));
+
+//     const itemsRows = (order.items || [])
+//       .map((item) => {
+//         let variantStr = item.selectedVariant ? ` [${item.selectedVariant}]` : '';
+//         let egglessStr = item.isEggless ? ' (Eggless)' : '';
+//         let cakeMsgStr = item.messageOnCake ? `<br/><span style="color:#db2777;font-size:12px;">🎂 Cake text: "${item.messageOnCake}"</span>` : '';
+//         return `
+//           <tr style="border-bottom:1px solid #f1f5f9;">
+//             <td style="padding:10px 12px;color:#1e293b;font-weight:500;">
+//               ${item.name}${variantStr}${egglessStr}${cakeMsgStr}
+//             </td>
+//             <td style="padding:10px 12px;color:#475569;text-align:center;">${item.quantity}</td>
+//             <td style="padding:10px 12px;color:#1e293b;text-align:right;font-weight:600;">₹${Number(item.itemTotal || (item.price * item.quantity)).toFixed(2)}</td>
+//           </tr>
+//         `;
+//       })
+//       .join("");
+
+//     const addonsSection = (order.addons || []).length > 0
+//       ? `
+//         <div style="margin-top:16px;">
+//           <h4 style="margin:0 0 8px;color:#334155;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Celebration Add-ons</h4>
+//           <table style="width:100%;border-collapse:collapse;font-size:13px;">
+//             ${order.addons
+//               .map(
+//                 (a) => `
+//                 <tr style="border-bottom:1px solid #f1f5f9;">
+//                   <td style="padding:6px 12px;color:#475569;">${a.name} (x${a.quantity || 1})</td>
+//                   <td style="padding:6px 12px;color:#db2777;text-align:right;font-weight:600;">+₹${(Number(a.price || 0) * (Number(a.quantity) || 1)).toFixed(2)}</td>
+//                 </tr>`
+//               )
+//               .join("")}
+//           </table>
+//         </div>`
+//       : "";
+
+//     const slotSection = order.deliverySlot?.slotName
+//       ? `
+//         <div style="margin-top:14px;background:#f8fafc;padding:12px 14px;border-radius:8px;font-size:13px;color:#334155;">
+//           <strong>🗓️ Delivery Window:</strong> ${order.deliverySlot.slotName} (${order.deliverySlot.timeRange || ""})
+//           ${order.deliverySlot.deliveryDate ? ` • <strong>Date:</strong> ${order.deliverySlot.deliveryDate}` : ""}
+//           ${slotCharge > 0 ? ` • <span style="color:#db2777;font-weight:600;">+₹${slotCharge.toFixed(2)}</span>` : ""}
+//         </div>`
+//       : "";
+
+//     const cakeAndCardMsg = [
+//       order.messageOnCake ? `<p style="margin:4px 0;"><strong>🎂 Message on Cake:</strong> "${order.messageOnCake}"</p>` : "",
+//       order.cardMessage ? `<p style="margin:4px 0;"><strong>💌 Card Message:</strong> "${order.cardMessage}"</p>` : "",
+//       order.recipientName ? `<p style="margin:4px 0;"><strong>Recipient:</strong> ${order.recipientName}${order.senderName ? ` (From: ${order.senderName})` : ""}</p>` : "",
+//     ].filter(Boolean).join("");
+
+//     const base = (process.env.BASE_URL || process.env.TRACK_BASE_URL || "").replace(/\/$/, "");
+//     let actionButtons = "";
+//     if (base) {
+//       actionButtons = `
+//         <div style="margin-top:20px;padding-top:16px;border-top:1px dashed #cbd5e1;">
+//           <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#475569;">Admin Quick Actions:</p>
+//           <div>
+//             ${buildActionButton(order, "Received", "Received", "#64748B")}
+//             ${buildActionButton(order, "Pending", "Pending", "#6B7280")}
+//             ${buildActionButton(order, "In Kitchen", "In Kitchen", "#0F766E")}
+//             ${buildActionButton(order, "Processing", "Processing", "#2563EB")}
+//             ${buildActionButton(order, "Packed", "Packed", "#7C3AED")}
+//             ${buildActionButton(order, "Out for Delivery", "Out for Delivery", "#D97706")}
+//             ${buildActionButton(order, "Shipping", "Shipping", "#0284C7")}
+//             ${buildActionButton(order, "Delivered", "Delivered", "#16A34A")}
+//             ${buildActionButton(order, "Cancelled", "Cancel Order", "#DC2626")}
+//           </div>
+//           <p style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#94a3b8;margin-top:8px;">
+//             Clicking an action button opens a confirmation page before updating the status.
+//           </p>
+//         </div>`;
+//     }
+
+//     const html = `
+//       <!doctype html>
+//       <html>
+//       <head>
+//         <meta charset="utf-8"/>
+//         <style>
+//           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px 12px; color: #1e293b; }
+//           .container { max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+//           .header { background: linear-gradient(135deg, #db2777 0%, #be185d 100%); color: #ffffff; padding: 24px 28px; }
+//           .content { padding: 24px 28px; }
+//           .price-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+//           .price-row td { padding: 6px 0; font-size: 13px; color: #475569; }
+//           .total-row td { padding: 12px 0 4px; font-size: 16px; font-weight: bold; color: #0f172a; border-top: 2px solid #e2e8f0; }
+//         </style>
+//       </head>
+//       <body>
+//         <div class="container">
+//           <div class="header">
+//             <h1 style="margin:0;font-size:22px;font-weight:800;letter-spacing:-0.5px;">GiftFestive Orders</h1>
+//             <p style="margin:6px 0 0;font-size:14px;opacity:0.95;">Order Confirmation #${String(order._id).slice(-8).toUpperCase()}</p>
+//           </div>
+
+//           <div class="content">
+//             <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13px;line-height:1.6;">
+//               <p style="margin:0;"><strong>Customer:</strong> ${user?.name || order.shippingAddress?.fullName || "Valued Customer"} (${user?.email || "N/A"})</p>
+//               <p style="margin:4px 0 0;"><strong>Phone:</strong> ${order.shippingAddress?.phone || user?.mobileNumber || "N/A"}</p>
+//               <p style="margin:4px 0 0;"><strong>Payment:</strong> <span style="display:inline-block;padding:2px 8px;border-radius:6px;background:#e0f2fe;color:#0369a1;font-weight:bold;font-size:12px;">${order.paymentMethod || "Online"}</span> • Status: <strong>${order.paymentStatus || "Pending"}</strong></p>
+//               <p style="margin:4px 0 0;"><strong>Shipping To:</strong> ${order.shippingAddress?.address || [order.shippingAddress?.houseNo, order.shippingAddress?.street, order.shippingAddress?.landmark].filter(Boolean).join(", ")} - ${order.shippingAddress?.pinCode || ""}</p>
+//             </div>
+
+//             ${cakeAndCardMsg ? `<div style="background:#fdf2f8;border-left:4px solid #db2777;padding:12px 16px;border-radius:6px;margin-bottom:20px;font-size:13px;color:#831843;">${cakeAndCardMsg}</div>` : ""}
+
+//             <h3 style="margin:0 0 10px;font-size:15px;color:#0f172a;">Ordered Items</h3>
+//             <table style="width:100%;border-collapse:collapse;font-size:13px;">
+//               <thead>
+//                 <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;text-align:left;">
+//                   <th style="padding:8px 12px;color:#475569;">Item</th>
+//                   <th style="padding:8px 12px;color:#475569;text-align:center;">Qty</th>
+//                   <th style="padding:8px 12px;color:#475569;text-align:right;">Total</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 ${itemsRows}
+//               </tbody>
+//             </table>
+
+//             ${addonsSection}
+//             ${slotSection}
+
+//             <!-- Price Breakdown -->
+//             <div style="margin-top:22px;border-top:1px solid #e2e8f0;padding-top:14px;">
+//               <table class="price-table">
+//                 <tr class="price-row">
+//                   <td>Items Subtotal:</td>
+//                   <td style="text-align:right;font-weight:600;">₹${itemsSubtotal.toFixed(2)}</td>
+//                 </tr>
+//                 ${slotCharge > 0 ? `
+//                 <tr class="price-row">
+//                   <td>Delivery Window Surcharge:</td>
+//                   <td style="text-align:right;font-weight:600;color:#db2777;">+₹${slotCharge.toFixed(2)}</td>
+//                 </tr>` : ""}
+//                 ${addonsTotal > 0 ? `
+//                 <tr class="price-row">
+//                   <td>Celebration Add-ons:</td>
+//                   <td style="text-align:right;font-weight:600;color:#db2777;">+₹${addonsTotal.toFixed(2)}</td>
+//                 </tr>` : ""}
+//                 ${couponDiscount > 0 ? `
+//                 <tr class="price-row" style="background:#ecfdf5;">
+//                   <td style="color:#059669;font-weight:bold;padding:6px 8px;border-radius:4px;">
+//                     🎉 Coupon Discount (${order.couponCode || "APPLIED"}):
+//                   </td>
+//                   <td style="text-align:right;font-weight:bold;color:#059669;padding:6px 8px;">
+//                     -₹${couponDiscount.toFixed(2)}
+//                   </td>
+//                 </tr>` : ""}
+//                 <tr class="total-row">
+//                   <td>Grand Total:</td>
+//                   <td style="text-align:right;color:#db2777;font-size:18px;">₹${grandTotal.toFixed(2)}</td>
+//                 </tr>
+//               </table>
+//             </div>
+
+//             ${actionButtons}
+//           </div>
+//         </div>
+//       </body>
+//       </html>
+//     `;
+
+//     const subject = `Order #${String(order._id).slice(-8).toUpperCase()} - ₹${grandTotal.toFixed(2)} - ${order.paymentMethod} (${user?.name || "Customer"})`;
+
+//     const recipientEmails = [ADMIN_NOTIFY_EMAIL];
+//     if (user?.email && user.email !== ADMIN_NOTIFY_EMAIL && !recipientEmails.includes(user.email)) {
+//       recipientEmails.push(user.email);
+//     }
+
+//     for (const toEmail of recipientEmails) {
+//       const mailOptions = {
+//         from: `"GiftFestive Orders" <${process.env.EMAIL_USER}>`,
+//         to: toEmail,
+//         subject,
+//         html,
+//       };
+
+//       try {
+//         await (usingBrevoApi()
+//           ? sendViaBrevoApi({ to: toEmail, subject: mailOptions.subject, html: mailOptions.html })
+//           : (await getTransporter()).sendMail(mailOptions));
+//         console.log(`[email] Order notification sent to ${toEmail} for order ${order._id}`);
+//       } catch (sendErr) {
+//         console.error(`[email] Failed sending to ${toEmail}:`, sendErr.message);
+//       }
+//     }
+//   } catch (error) {
+//     console.error(
+//       "[email] Error sending order notification email — order:",
+//       order?._id,
+//       "| code:",
+//       error.code || error.responseCode,
+//       "| message:",
+//       error.message
+//     );
+//     throw error;
+//   }
+// };
+
+// exports.sendPasswordResetOtp = async ({ email, name, otp }) => {
+//   const subject = "Giftcart password reset OTP";
+//   const text = `Hi ${name || "there"}, your Giftcart password reset OTP is ${otp}. It expires in 10 minutes. If you did not request this, you can ignore this email.`;
+//   const html = `<p>Hi ${name || "there"},</p><p>Your Giftcart password reset OTP is:</p><h2>${otp}</h2><p>This OTP expires in 10 minutes. If you did not request this, you can ignore this email.</p>`;
+
+//   try {
+//     if (usingBrevoApi()) {
+//       await sendViaBrevoApi({ to: email, subject, html, text });
+//     } else {
+//       await (await getTransporter()).sendMail({ from: process.env.EMAIL_USER, to: email, subject, text, html });
+//     }
+//   } catch (error) {
+//     console.error("[email] Error sending OTP email:", error.code, error.message);
+//     throw new Error("Unable to send OTP email. Please verify the email service configuration and try again.");
+//   }
+// };
+
+// // ==========================================
+// // DECORATION BOOKING EMAIL NOTIFICATIONS
+// // ==========================================
+// function buildDecorationActionButton(booking, status, label, color) {
+//   const base = (process.env.BASE_URL || process.env.TRACK_BASE_URL || "https://giftcartrepo.onrender.com").replace(/\/$/, "");
+//   const token = generateActionToken(booking._id, status);
+//   const url = `${base}/api/decorations/email-action/${booking._id}/${encodeURIComponent(status)}?token=${token}`;
+//   return `<a href="${url}" target="_blank" style="display:inline-block;margin:4px 6px 4px 0;padding:9px 14px;background:${color};color:#ffffff;text-decoration:none;border-radius:6px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:bold;">${label}</a>`;
+// }
+
+// exports.sendDecorationBookingNotification = async (booking) => {
+//   try {
+//     const base = (process.env.BASE_URL || process.env.TRACK_BASE_URL || "https://giftcartrepo.onrender.com").replace(/\/$/, "");
+
+//     const actionButtons = `
+//       <div style="margin-top:22px;padding-top:16px;border-top:1px dashed #cbd5e1;">
+//         <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#475569;">
+//           ⚡ Admin Quick Status Actions (Update in 1 Click):
+//         </p>
+//         <div>
+//           ${buildDecorationActionButton(booking, "Confirmed", "✓ Confirm", "#16A34A")}
+//           ${buildDecorationActionButton(booking, "Decorator Assigned", "🤝 Assign Decorator", "#4F46E5")}
+//           ${buildDecorationActionButton(booking, "In Setup", "🛠️ In Setup", "#D97706")}
+//           ${buildDecorationActionButton(booking, "Decorated & Ready", "✨ Ready For Entry", "#059669")}
+//           ${buildDecorationActionButton(booking, "Completed", "🎉 Completed", "#0D9488")}
+//           ${buildDecorationActionButton(booking, "Cancelled", "✕ Cancel", "#DC2626")}
+//           ${buildDecorationActionButton(booking, "Pending", "⏳ Mark Pending", "#64748B")}
+//         </div>
+//         <p style="font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#94a3b8;margin-top:8px;">
+//           Clicking an action button opens a secure one-click confirmation screen to prevent accidental clicks.
+//         </p>
+//       </div>`;
+
+//     const html = `
+//       <!doctype html>
+//       <html>
+//       <head>
+//         <meta charset="utf-8"/>
+//         <style>
+//           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px 12px; color: #1e293b; }
+//           .container { max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; }
+//           .header { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); color: #ffffff; padding: 24px 28px; }
+//           .content { padding: 24px 28px; }
+//           .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; }
+//         </style>
+//       </head>
+//       <body>
+//         <div class="container">
+//           <div class="header">
+//             <span style="background:rgba(255,255,255,0.25);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;">
+//               ✨ NEW VENUE DECORATION BOOKING
+//             </span>
+//             <h1 style="margin:8px 0 0;font-size:22px;font-weight:800;letter-spacing:-0.5px;">
+//               ${booking.packageTitle}
+//             </h1>
+//             <p style="margin:4px 0 0;font-size:14px;opacity:0.95;">
+//               Booking ID: <strong>${booking.bookingId}</strong> • Total: <strong>₹${Number(booking.totalAmount).toLocaleString("en-IN")}</strong>
+//             </p>
+//           </div>
+
+//           <div class="content">
+//             <!-- Customer Box -->
+//             <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13px;line-height:1.6;">
+//               <p style="margin:0;"><strong>👤 Customer:</strong> ${booking.customerName} (${booking.customerEmail || "No email"})</p>
+//               <p style="margin:4px 0 0;"><strong>📞 Calling Phone:</strong> <a href="tel:${booking.customerPhone}" style="color:#db2777;font-weight:bold;">${booking.customerPhone}</a></p>
+//               <p style="margin:4px 0 0;"><strong>💬 WhatsApp:</strong> <a href="https://wa.me/91${booking.customerWhatsapp.replace(/\D/g,'')}" style="color:#16a34a;font-weight:bold;">${booking.customerWhatsapp}</a></p>
+//               <p style="margin:4px 0 0;"><strong>💳 Payment:</strong> <span class="badge" style="background:#dbeafe;color:#1e40af;">${booking.paymentMethod}</span> • Status: <strong>${booking.paymentStatus}</strong></p>
+//             </div>
+
+//             <!-- Venue Details Box -->
+//             <div style="background:#fdf2f8;border-left:4px solid #db2777;padding:14px 16px;border-radius:8px;margin-bottom:18px;font-size:13px;line-height:1.6;color:#831843;">
+//               <h4 style="margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;color:#9d174d;">📍 Venue & Hotel Details</h4>
+//               <p style="margin:0;"><strong>Venue Type:</strong> ${booking.venueType}</p>
+//               ${booking.hotelName ? `<p style="margin:2px 0 0;"><strong>Hotel / Resort:</strong> ${booking.hotelName}</p>` : ""}
+//               ${booking.roomNumber ? `<p style="margin:2px 0 0;"><strong>Room Number:</strong> ${booking.roomNumber}</p>` : ""}
+//               ${booking.bookingHolderName ? `<p style="margin:2px 0 0;"><strong>Hotel Booking Name:</strong> ${booking.bookingHolderName}</p>` : ""}
+//               <p style="margin:2px 0 0;"><strong>Address & City:</strong> ${booking.venueAddress}, ${booking.city}</p>
+//             </div>
+
+//             <!-- Timing & Setup Box -->
+//             <div style="background:#faf5ff;border-left:4px solid #9333ea;padding:14px 16px;border-radius:8px;margin-bottom:18px;font-size:13px;line-height:1.6;color:#581c87;">
+//               <h4 style="margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;color:#7e22ce;">⏱️ Setup Schedule & Customization</h4>
+//               <p style="margin:0;"><strong>📅 Setup Date:</strong> ${booking.setupDate}</p>
+//               <p style="margin:2px 0 0;"><strong>⏰ Decorator Slot:</strong> ${booking.setupTimeSlot}</p>
+//               ${booking.surpriseEntryTime ? `<p style="margin:2px 0 0;"><strong>🎉 Surprise Entry Time:</strong> ${booking.surpriseEntryTime}</p>` : ""}
+//               ${booking.customMessage ? `<p style="margin:2px 0 0;"><strong>🎈 Wall Balloon Foil Text:</strong> "${booking.customMessage}"</p>` : ""}
+//               ${booking.colorTheme ? `<p style="margin:2px 0 0;"><strong>🎨 Color Theme:</strong> ${booking.colorTheme}</p>` : ""}
+//               ${booking.specialInstructions ? `<p style="margin:2px 0 0;"><strong>📝 Notes:</strong> ${booking.specialInstructions}</p>` : ""}
+//             </div>
+
+//             ${actionButtons}
+//           </div>
+//         </div>
+//       </body>
+//       </html>
+//     `;
+
+//     const subject = `🎈 New Decoration Booking: ${booking.bookingId} - ${booking.packageTitle} (${booking.city}) - ₹${booking.totalAmount}`;
+
+//     const recipientEmails = [ADMIN_NOTIFY_EMAIL];
+//     if (booking.customerEmail && booking.customerEmail.includes("@") && !recipientEmails.includes(booking.customerEmail)) {
+//       recipientEmails.push(booking.customerEmail);
+//     }
+
+//     for (const toEmail of recipientEmails) {
+//       try {
+//         if (usingBrevoApi()) {
+//           await sendViaBrevoApi({ to: toEmail, subject, html });
+//         } else {
+//           await (await getTransporter()).sendMail({
+//             from: `"GiftCart Decorations" <${process.env.EMAIL_USER}>`,
+//             to: toEmail,
+//             subject,
+//             html,
+//           });
+//         }
+//         console.log(`[email] Decoration booking email sent to ${toEmail} for booking ${booking.bookingId}`);
+//       } catch (err) {
+//         console.error(`[email] Failed sending decoration email to ${toEmail}:`, err.message);
+//       }
+//     }
+//   } catch (err) {
+//     console.error("[email] Error in sendDecorationBookingNotification:", err.message);
+//   }
+// };
+
+
+
+
 // const nodemailer = require("nodemailer");
 // const { generateActionToken } = require("./orderActionToken");
 
@@ -309,14 +813,14 @@ exports.sendOrderNotification = async (order, user) => {
           <h4 style="margin:0 0 8px;color:#334155;font-size:13px;text-transform:uppercase;letter-spacing:0.5px;">Celebration Add-ons</h4>
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             ${order.addons
-              .map(
-                (a) => `
+        .map(
+          (a) => `
                 <tr style="border-bottom:1px solid #f1f5f9;">
                   <td style="padding:6px 12px;color:#475569;">${a.name} (x${a.quantity || 1})</td>
                   <td style="padding:6px 12px;color:#db2777;text-align:right;font-weight:600;">+₹${(Number(a.price || 0) * (Number(a.quantity) || 1)).toFixed(2)}</td>
                 </tr>`
-              )
-              .join("")}
+        )
+        .join("")}
           </table>
         </div>`
       : "";
@@ -359,7 +863,9 @@ exports.sendOrderNotification = async (order, user) => {
         </div>`;
     }
 
-    const html = `
+    // The e-mail goes to the admin AND the customer. The one-click status buttons are ADMIN ONLY —
+    // they used to be sent to customers too, so a customer could mark their own order Delivered/Cancelled.
+    const buildHtml = (forAdmin) => `
       <!doctype html>
       <html>
       <head>
@@ -441,7 +947,7 @@ exports.sendOrderNotification = async (order, user) => {
               </table>
             </div>
 
-            ${actionButtons}
+            ${forAdmin ? actionButtons : ""}
           </div>
         </div>
       </body>
@@ -456,6 +962,7 @@ exports.sendOrderNotification = async (order, user) => {
     }
 
     for (const toEmail of recipientEmails) {
+      const html = buildHtml(toEmail === ADMIN_NOTIFY_EMAIL);
       const mailOptions = {
         from: `"GiftFestive Orders" <${process.env.EMAIL_USER}>`,
         to: toEmail,
@@ -515,7 +1022,7 @@ function buildDecorationActionButton(booking, status, label, color) {
 exports.sendDecorationBookingNotification = async (booking) => {
   try {
     const base = (process.env.BASE_URL || process.env.TRACK_BASE_URL || "https://giftcartrepo.onrender.com").replace(/\/$/, "");
-    
+
     const actionButtons = `
       <div style="margin-top:22px;padding-top:16px;border-top:1px dashed #cbd5e1;">
         <p style="margin:0 0 10px;font-size:13px;font-weight:bold;color:#475569;">
@@ -535,7 +1042,7 @@ exports.sendDecorationBookingNotification = async (booking) => {
         </p>
       </div>`;
 
-    const html = `
+    const buildHtml = (forAdmin) => `
       <!doctype html>
       <html>
       <head>
@@ -567,7 +1074,7 @@ exports.sendDecorationBookingNotification = async (booking) => {
             <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:13px;line-height:1.6;">
               <p style="margin:0;"><strong>👤 Customer:</strong> ${booking.customerName} (${booking.customerEmail || "No email"})</p>
               <p style="margin:4px 0 0;"><strong>📞 Calling Phone:</strong> <a href="tel:${booking.customerPhone}" style="color:#db2777;font-weight:bold;">${booking.customerPhone}</a></p>
-              <p style="margin:4px 0 0;"><strong>💬 WhatsApp:</strong> <a href="https://wa.me/91${booking.customerWhatsapp.replace(/\D/g,'')}" style="color:#16a34a;font-weight:bold;">${booking.customerWhatsapp}</a></p>
+              <p style="margin:4px 0 0;"><strong>💬 WhatsApp:</strong> <a href="https://wa.me/91${booking.customerWhatsapp.replace(/\D/g, '')}" style="color:#16a34a;font-weight:bold;">${booking.customerWhatsapp}</a></p>
               <p style="margin:4px 0 0;"><strong>💳 Payment:</strong> <span class="badge" style="background:#dbeafe;color:#1e40af;">${booking.paymentMethod}</span> • Status: <strong>${booking.paymentStatus}</strong></p>
             </div>
 
@@ -592,7 +1099,7 @@ exports.sendDecorationBookingNotification = async (booking) => {
               ${booking.specialInstructions ? `<p style="margin:2px 0 0;"><strong>📝 Notes:</strong> ${booking.specialInstructions}</p>` : ""}
             </div>
 
-            ${actionButtons}
+            ${forAdmin ? actionButtons : ""}
           </div>
         </div>
       </body>
@@ -607,6 +1114,7 @@ exports.sendDecorationBookingNotification = async (booking) => {
     }
 
     for (const toEmail of recipientEmails) {
+      const html = buildHtml(toEmail === ADMIN_NOTIFY_EMAIL);
       try {
         if (usingBrevoApi()) {
           await sendViaBrevoApi({ to: toEmail, subject, html });
@@ -626,4 +1134,65 @@ exports.sendDecorationBookingNotification = async (booking) => {
   } catch (err) {
     console.error("[email] Error in sendDecorationBookingNotification:", err.message);
   }
-};
+};
+
+// ==========================================
+// DECORATION: customer-facing updates + admin alerts (NO admin action buttons)
+// ==========================================
+async function sendPlainMail({ to, subject, html, fromName }) {
+  if (usingBrevoApi()) {
+    await sendViaBrevoApi({ to, subject, html });
+  } else {
+    await (await getTransporter()).sendMail({ from: `"${fromName}" <${process.env.EMAIL_USER}>`, to, subject, html });
+  }
+}
+
+const escapeHtml = (v) =>
+  String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const decorationMailBody = (booking, headline, message) => `
+  <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:560px;margin:0 auto;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden">
+    <div style="background:linear-gradient(135deg,#ec4899,#be185d);color:#fff;padding:20px 24px">
+      <div style="font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.9">GiftFestive Decorations</div>
+      <h2 style="margin:6px 0 0;font-size:20px">${escapeHtml(headline)}</h2>
+    </div>
+    <div style="padding:20px 24px;font-size:14px;line-height:1.6;color:#1e293b">
+      <p style="margin:0 0 12px">${escapeHtml(message)}</p>
+      <div style="background:#f8fafc;border-radius:10px;padding:12px 14px;font-size:13px">
+        <div><b>Booking ID:</b> ${escapeHtml(booking.bookingId)}</div>
+        <div><b>Package:</b> ${escapeHtml(booking.packageTitle)}</div>
+        <div><b>Setup:</b> ${escapeHtml(booking.setupDate)} · ${escapeHtml(booking.setupTimeSlot)}</div>
+        <div><b>Venue:</b> ${escapeHtml(booking.hotelName || booking.venueAddress)}, ${escapeHtml(booking.city)}</div>
+        <div><b>Total:</b> ₹${Number(booking.totalAmount || 0).toLocaleString("en-IN")} · <b>Payment:</b> ${escapeHtml(booking.paymentStatus)}</div>
+      </div>
+    </div>
+  </div>`;
+
+// Admin heads-up (payment received after cancellation, customer cancelled, ...)
+exports.sendDecorationAdminAlert = async (booking, headline, message) => {
+  try {
+    await sendPlainMail({
+      to: ADMIN_NOTIFY_EMAIL,
+      subject: `🎈 ${headline}: ${booking.bookingId}`,
+      html: decorationMailBody(booking, headline, `${message} — Customer: ${booking.customerName} (${booking.customerPhone}).`),
+      fromName: "GiftCart Decorations",
+    });
+  } catch (err) {
+    console.error("[email] sendDecorationAdminAlert failed:", err.message);
+  }
+};
+
+// Short confirmation to the customer (cancellation, payment received, ...)
+exports.sendDecorationCustomerUpdate = async (booking, headline, message) => {
+  try {
+    if (!booking.customerEmail || !booking.customerEmail.includes("@")) return;
+    await sendPlainMail({
+      to: booking.customerEmail,
+      subject: `${headline} – ${booking.bookingId}`,
+      html: decorationMailBody(booking, headline, message),
+      fromName: "GiftFestive Decorations",
+    });
+  } catch (err) {
+    console.error("[email] sendDecorationCustomerUpdate failed:", err.message);
+  }
+};

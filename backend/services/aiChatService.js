@@ -88,6 +88,15 @@ exports.deleteChat = async (adminId, chatId) => {
 // ---------- Ask the AI ----------
 
 const callPythonAi = async (message, history, token) => {
+    // On Render/production there is no AI service on localhost — fail with a clear
+    // message instead of an opaque "AI service error".
+    if (!process.env.PYTHON_AI_URL && process.env.NODE_ENV === "production") {
+        console.error("AI Chat: PYTHON_AI_URL is not set on this server.");
+        throw new ChatError("AI assistant is not configured on the server (PYTHON_AI_URL missing).", 503);
+    }
+    if (!AI_INTERNAL_KEY) {
+        console.warn("AI Chat: AI_INTERNAL_KEY is empty — the AI service will reject this call if it expects a key.");
+    }
     try {
         const response = await axios.post(
             `${PYTHON_AI_URL}/api/ai/chat`,
@@ -105,7 +114,7 @@ const callPythonAi = async (message, history, token) => {
     } catch (error) {
         let detail = error.response?.data?.detail;
         if (Array.isArray(detail)) detail = detail.map((d) => d?.msg || String(d)).join(", ");
-        console.error("AI Chat Error:", error.message);
+        console.error("AI Chat Error:", error.code || "", error.response?.status || "", error.message);
         // 422 = the AI service rejected the message itself; anything else = AI service problem
         throw new ChatError(
             typeof detail === "string" && detail ? detail : "AI service error",

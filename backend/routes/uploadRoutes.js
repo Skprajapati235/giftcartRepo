@@ -4,6 +4,28 @@ const cloudinary = require("../config/cloudinary");
 const Media = require("../models/Media");
 const MediaFolder = require("../models/MediaFolder");
 const { Readable } = require("stream");
+const adminMiddleware = require("../middleware/adminMiddleware");
+
+// server.js mounts this router behind authMiddleware (any logged-in user).
+// Customers may ONLY upload images (POST /). Everything else — listing, renaming,
+// replacing, deleting, syncing the media library — is staff-only.
+const STAFF_ROLES = ["super_admin", "admin", "kitchen_manager", "delivery_coordinator", "support_agent", "seo_specialist"];
+const isStaff = (req) => STAFF_ROLES.includes(String(req.user?.role || "").toLowerCase());
+const staffOnly = adminMiddleware;
+
+// Picks the right multer profile (customer vs staff) and turns multer errors into clean 400s.
+const pickUploader = (req, res, next) => {
+  const handler = (isStaff(req) ? upload.staff : upload.customer).any();
+  handler(req, res, (err) => {
+    if (!err) return next();
+    const message =
+      err.code === "LIMIT_FILE_SIZE" ? "File is too large." :
+        err.code === "LIMIT_FILE_COUNT" ? "Too many files." :
+          err.code === "UNSUPPORTED_FILE_TYPE" ? err.message :
+            "Upload failed.";
+    return res.status(400).json({ success: false, message });
+  });
+};
 
 // Helper to stream upload buffer to Cloudinary
 const uploadStreamToCloudinary = (buffer, options = {}) => {
@@ -56,7 +78,7 @@ const extractPublicId = (urlOrId) => {
 // ============================
 
 // GET /api/upload/folders - Get all folders
-router.get("/folders", async (req, res) => {
+router.get("/folders", staffOnly, async (req, res) => {
   try {
     const folders = await MediaFolder.find().sort({ createdAt: -1 });
     res.json({ success: true, folders });
@@ -66,7 +88,7 @@ router.get("/folders", async (req, res) => {
 });
 
 // POST /api/upload/folders - Create new folder
-router.post("/folders", async (req, res) => {
+router.post("/folders", staffOnly, async (req, res) => {
   try {
     if (!req.body.name || !req.body.name.trim()) {
       return res.status(400).json({ message: "Folder name is required" });
@@ -82,7 +104,7 @@ router.post("/folders", async (req, res) => {
 });
 
 // PUT /api/upload/folders/:id - Rename folder
-router.put("/folders/:id", async (req, res) => {
+router.put("/folders/:id", staffOnly, async (req, res) => {
   try {
     if (!req.body.name || !req.body.name.trim()) {
       return res.status(400).json({ message: "Folder name is required" });
@@ -100,13 +122,13 @@ router.put("/folders/:id", async (req, res) => {
 });
 
 // DELETE /api/upload/folders/:id - Delete folder
-router.delete("/folders/:id", async (req, res) => {
+router.delete("/folders/:id", staffOnly, async (req, res) => {
   try {
     const folder = await MediaFolder.findById(req.params.id);
     if (!folder) return res.status(404).json({ message: "Folder not found" });
-    
+
     await MediaFolder.findByIdAndDelete(req.params.id);
-    
+
     // Move all associated images to root (uncategorized)
     await Media.updateMany({ folderId: req.params.id }, { $set: { folderId: null } });
 
@@ -122,7 +144,7 @@ router.delete("/folders/:id", async (req, res) => {
 
 
 // GET /api/upload - List all media with pagination and search
-router.get("/", async (req, res) => {
+router.get("/", staffOnly, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 30));
@@ -156,7 +178,7 @@ router.get("/", async (req, res) => {
 });
 
 // POST /api/upload - Upload single or multiple files
-router.post("/", upload.any(), async (req, res) => {
+router.post("/", pickUploader, async (req, res) => {
   try {
     const files = req.files || (req.file ? [req.file] : []);
     if (!files || files.length === 0) {
@@ -186,7 +208,7 @@ router.post("/", upload.any(), async (req, res) => {
         width: result.width || 0,
         height: result.height || 0,
         folder: "giftcart",
-        folderId: req.body.folderId && req.body.folderId !== "null" ? req.body.folderId : null,
+        folderId: isStaff(req) && req.body.folderId && req.body.folderId !== "null" ? req.body.folderId : null,
       });
 
       uploadedMedia.push(mediaDoc);
@@ -213,7 +235,7 @@ router.post("/", upload.any(), async (req, res) => {
 
 // PUT /api/upload/:id - Edit / Replace existing media
 // Automatically deletes the old Cloudinary image when a new file is uploaded
-router.put("/:id", upload.single("file"), async (req, res) => {
+router.put("/:id", staffOnly, upload.staff.single("file"), async (req, res) => {
   try {
     const { id } = req.params;
     const media = await Media.findById(id);
@@ -268,7 +290,7 @@ router.put("/:id", upload.single("file"), async (req, res) => {
 });
 
 // DELETE /api/upload/:id - Delete media item by ID
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", staffOnly, async (req, res) => {
   try {
     const { id } = req.params;
     const media = await Media.findById(id);
@@ -298,7 +320,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // DELETE /api/upload - Legacy delete by URL or public_id
-router.delete("/", async (req, res) => {
+router.delete("/", staffOnly, async (req, res) => {
   try {
     const { url, public_id } = req.body;
     const targetId = public_id || extractPublicId(url);
@@ -325,7 +347,7 @@ router.delete("/", async (req, res) => {
 });
 
 // POST /api/upload/sync - Sync existing Cloudinary assets in "giftcart" folder to MongoDB
-router.post("/sync", async (req, res) => {
+router.post("/sync", staffOnly, async (req, res) => {
   try {
     // Cloudinary Admin API to list resources with prefix 'giftcart/'
     const result = await cloudinary.api.resources({
