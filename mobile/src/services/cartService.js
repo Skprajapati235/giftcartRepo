@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api/apiClient';
+import { getToken } from '../utils/secureToken';
 
 // ─────────────────────────────────────────────────────────────
 // Same contract as the website's cartService: this file never
@@ -9,7 +10,6 @@ import api from '../api/apiClient';
 // ─────────────────────────────────────────────────────────────
 
 const GUEST_CART_KEY = '@giftcart_cart_guest';
-const TOKEN_KEY = '@giftcart_token';
 
 const emptyTotals = () => ({
   subTotal: 0,
@@ -21,7 +21,7 @@ const emptyTotals = () => ({
 });
 
 const isLoggedIn = async () => {
-  const token = await AsyncStorage.getItem(TOKEN_KEY);
+  const token = await getToken();
   return !!token;
 };
 

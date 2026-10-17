@@ -1,0 +1,25 @@
+# PATH: .github/workflows/keep-warm.yml  (repo root of giftcartRepo)
+#
+# Pings the backend every 10 minutes so the Render instance doesn't fall asleep.
+# A sleeping instance needs 30-50 s to wake up, which is slow for customers and can time out
+# the Vercel /backend proxy used for logins. If the backend is down this job turns red and
+# GitHub e-mails you.
+#
+# Optional: Settings → Secrets and variables → Actions → Variables → BACKEND_URL
+#           (default: https://giftcartrepo.onrender.com)
+
+name: Keep backend warm
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /health
+        run: |
+          URL="${{ vars.BACKEND_URL || 'https://giftcartrepo.onrender.com' }}"
+          curl -fsS --max-time 90 --retry 3 --retry-delay 15 "$URL/health"

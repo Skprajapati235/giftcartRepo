@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, RefreshControl, Linking } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeScreen, ScreenHeader } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
@@ -31,26 +31,42 @@ export default function OrderDetailScreen({ route, navigation }) {
     return unsubscribe;
   }, [navigation, route.params?.order?._id]);
 
+  // Live tracking: while the order is still active, re-check every 30 s (only when this screen is in front).
+  useEffect(() => {
+    if (['Delivered', 'Cancelled'].includes(order.status)) return undefined;
+    const timer = setInterval(() => {
+      if (navigation.isFocused()) fetchLiveOrder();
+    }, 30000);
+    return () => clearInterval(timer);
+  }, [order.status, navigation, route.params?.order?._id]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchLiveOrder();
   };
+
+  // Delivery partner (assigned from Admin → Delivery Fleet)
+  const riderName = order.assignedRiderName || order.rider?.name || null;
+  const riderPhone = ['Delivered', 'Cancelled'].includes(order.status)
+    ? ''
+    : String(order.assignedRiderPhone || order.rider?.phone || '').replace(/[^\d+]/g, '');
+  const riderOnTheWay = ['Out for Delivery', 'Shipping', 'OutForDelivery', 'Shipped'].includes(order.status);
 
   const legacyStatusMap = { Preparing: 'In Kitchen', Shipped: 'Shipping', OutForDelivery: 'Out for Delivery' };
   const currentStatus = legacyStatusMap[order.status] || order.status;
 
   const getStatusConfig = (status) => {
     switch (status) {
-      case 'Received':    return { color: '#2563EB', icon: 'bell-outline', bg: '#EFF6FF', border: '#BFDBFE' };
-      case 'Pending':    return { color: '#64748B', icon: 'clock-outline', bg: '#F8FAFC', border: '#E2E8F0' };
+      case 'Received': return { color: '#2563EB', icon: 'bell-outline', bg: '#EFF6FF', border: '#BFDBFE' };
+      case 'Pending': return { color: '#64748B', icon: 'clock-outline', bg: '#F8FAFC', border: '#E2E8F0' };
       case 'In Kitchen': return { color: '#0F766E', icon: 'chef-hat', bg: '#CCFBF1', border: '#99F6E4' };
       case 'Processing': return { color: '#2563EB', icon: 'cog-outline', bg: '#DBEAFE', border: '#BFDBFE' };
-      case 'Delivered':  return { color: '#16A34A', icon: 'check-circle',   bg: '#F0FDF4', border: '#BBF7D0' };
-      case 'Cancelled':  return { color: '#DC2626', icon: 'close-circle',   bg: '#FEF2F2', border: '#FECACA' };
-      case 'Packed':     return { color: '#7E22CE', icon: 'package-variant-closed', bg: '#FAF5FF', border: '#E9D5FF' };
+      case 'Delivered': return { color: '#16A34A', icon: 'check-circle', bg: '#F0FDF4', border: '#BBF7D0' };
+      case 'Cancelled': return { color: '#DC2626', icon: 'close-circle', bg: '#FEF2F2', border: '#FECACA' };
+      case 'Packed': return { color: '#7E22CE', icon: 'package-variant-closed', bg: '#FAF5FF', border: '#E9D5FF' };
       case 'Out for Delivery': return { color: '#D97706', icon: 'truck-delivery', bg: '#FFFBEB', border: '#FDE68A' };
-      case 'Shipping':   return { color: '#0891B2', icon: 'truck-fast', bg: '#ECFEFF', border: '#A5F3FC' };
-      default:           return { color: '#64748B', icon: 'help-circle',    bg: '#F8FAFC', border: '#E2E8F0' };
+      case 'Shipping': return { color: '#0891B2', icon: 'truck-fast', bg: '#ECFEFF', border: '#A5F3FC' };
+      default: return { color: '#64748B', icon: 'help-circle', bg: '#F8FAFC', border: '#E2E8F0' };
     }
   };
 
@@ -86,6 +102,28 @@ export default function OrderDetailScreen({ route, navigation }) {
           </View>
         </View>
 
+        {/* Delivery partner */}
+        {riderName && order.status !== 'Cancelled' && (
+          <View style={styles.riderCard}>
+            <View style={styles.riderAvatar}>
+              <Ionicons name="person" size={22} color={colors.brandBerry} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.riderLabel}>YOUR DELIVERY PARTNER</Text>
+              <Text style={styles.riderName} numberOfLines={1}>{riderName}</Text>
+              <Text style={[styles.riderStatus, order.status === 'Delivered' && { color: '#16A34A' }, riderOnTheWay && { color: '#D97706' }]}>
+                {order.status === 'Delivered' ? 'Delivered your order' : riderOnTheWay ? 'On the way to you' : 'Assigned to your order'}
+              </Text>
+            </View>
+            {!!riderPhone && (
+              <TouchableOpacity style={styles.riderCallBtn} onPress={() => Linking.openURL(`tel:${riderPhone}`)} activeOpacity={0.85}>
+                <Ionicons name="call" size={16} color="#FFF" />
+                <Text style={styles.riderCallText}>Call</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Tracking Timeline */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionHeader}>Tracking Timeline</Text>
@@ -100,13 +138,13 @@ export default function OrderDetailScreen({ route, navigation }) {
               const getStepDate = (s) => {
                 if (isCancelled && s === 'Pending') return order.cancelledAt;
                 const d = s === 'Pending' ? order.pendingAt || order.createdAt
-                        : s === 'Received' ? order.receivedAt
-                        : s === 'In Kitchen' ? order.inKitchenAt
-                        : s === 'Processing' ? order.processingAt
-                        : s === 'Packed'     ? order.packedAt
-                        : s === 'Out for Delivery' ? order.outForDeliveryAt
-                        : s === 'Shipping' ? order.shippingAt || order.shippedAt
-                        : s === 'Delivered'  ? order.deliveredAt : null;
+                  : s === 'Received' ? order.receivedAt
+                    : s === 'In Kitchen' ? order.inKitchenAt
+                      : s === 'Processing' ? order.processingAt
+                        : s === 'Packed' ? order.packedAt
+                          : s === 'Out for Delivery' ? order.outForDeliveryAt
+                            : s === 'Shipping' ? order.shippingAt || order.shippedAt
+                              : s === 'Delivered' ? order.deliveredAt : null;
                 if (!d) return null;
                 const date = new Date(d);
                 return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -343,6 +381,38 @@ export default function OrderDetailScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  riderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F1E4D8',
+    gap: 12,
+  },
+  riderAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#FFF0F5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  riderLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 0.8, color: '#94A3B8' },
+  riderName: { fontSize: 15, fontWeight: '800', color: '#0F172A', marginTop: 2 },
+  riderStatus: { fontSize: 12, fontWeight: '600', color: '#64748B', marginTop: 2 },
+  riderCallBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.brandBerry,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  riderCallText: { color: '#FFF', fontWeight: '800', fontSize: 13 },
   container: {
     flex: 1,
     backgroundColor: colors.backgroundWarm,

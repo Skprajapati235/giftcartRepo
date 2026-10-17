@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -17,22 +17,28 @@ import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/layout';
 import { trackDecorationBooking } from '../../services/decorationService';
+import { AuthContext } from '../../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
 export default function DecorationTrackScreen({ route, navigation }) {
   const insets = useSafeAreaInsets();
   const initialId = route?.params?.bookingId || '';
+  const { user } = useContext(AuthContext);
   const [bookingId, setBookingId] = useState(initialId);
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [trackingData, setTrackingData] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  // A logged-in customer opening their own booking needs no phone number. Guests must type the phone
+  // used while booking (booking ids can be guessed), so we don't auto-search for them.
   useEffect(() => {
-    if (initialId) {
+    if (initialId && user) {
       handleSearch(initialId);
     }
-  }, [initialId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialId, user]);
 
   const handleSearch = async (idToSearch) => {
     const id = (idToSearch || bookingId).trim();
@@ -41,10 +47,15 @@ export default function DecorationTrackScreen({ route, navigation }) {
       return;
     }
 
+    if (!user && phone.replace(/\D/g, '').length < 10) {
+      setErrorMessage('Please enter the 10-digit phone number you used while booking.');
+      return;
+    }
+
     try {
       setLoading(true);
       setErrorMessage('');
-      const data = await trackDecorationBooking(id);
+      const data = await trackDecorationBooking(id, phone);
       if (data) {
         setTrackingData(data);
       } else {
@@ -62,7 +73,7 @@ export default function DecorationTrackScreen({ route, navigation }) {
     const text = encodeURIComponent(
       `Hi GiftCart Support, I need assistance regarding my Decoration Booking #${trackingData?.bookingId || bookingId}`
     );
-    Linking.openURL(`https://wa.me/918400787712?text=${text}`).catch(() => {});
+    Linking.openURL(`https://wa.me/918400787712?text=${text}`).catch(() => { });
   };
 
   return (
@@ -125,6 +136,25 @@ export default function DecorationTrackScreen({ route, navigation }) {
               )}
             </TouchableOpacity>
           </View>
+          {!user && (
+            <TextInput
+              style={styles.phoneInput}
+              placeholder="Phone number used while booking"
+              placeholderTextColor="#94A3B8"
+              value={phone}
+              onChangeText={(t) => {
+                setPhone(t);
+                setErrorMessage('');
+              }}
+              keyboardType="phone-pad"
+              maxLength={14}
+            />
+          )}
+          {user && (
+            <TouchableOpacity onPress={() => navigation.navigate('MyDecorationBookings')} style={{ marginTop: 10 }}>
+              <Text style={{ color: '#D82B76', fontWeight: '800', fontSize: 12 }}>View all my decoration bookings →</Text>
+            </TouchableOpacity>
+          )}
           {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
         </View>
 
@@ -304,6 +334,17 @@ const styles = StyleSheet.create({
   supportBtn: { padding: 8, borderRadius: 12, backgroundColor: '#ECFDF5' },
   scrollBody: { padding: 16, paddingBottom: 40 },
 
+  phoneInput: {
+    marginTop: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: '#0F172A',
+  },
   searchCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,

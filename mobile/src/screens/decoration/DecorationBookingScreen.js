@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,14 @@ import {
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/layout';
-import { createDecorationBooking } from '../../services/decorationService';
+import {
+  createDecorationBooking,
+  createDecorationPaymentOrder,
+  verifyDecorationPayment,
+  getDecorationOptions,
+} from '../../services/decorationService';
+import { AuthContext } from '../../context/AuthContext';
+import RazorpayPaymentModal from '../../components/RazorpayPaymentModal';
 
 const { width } = Dimensions.get('window');
 
@@ -29,50 +36,23 @@ const STEPS = [
   { id: 4, title: 'Review', icon: 'checkmark-circle-outline' },
 ];
 
-const VENUE_OPTIONS = [
-  { type: 'Hotel Room', label: 'Hotel / Resort Room', sub: 'Anniversary, OYO, or luxury suite', icon: 'business' },
-  { type: 'Home / Flat', label: 'Home / Apartment', sub: 'Bedroom, living hall, or balcony', icon: 'home' },
-  { type: 'Cafe / Restaurant', label: 'Cafe / Dining', sub: 'Private table or celebration cabana', icon: 'restaurant' },
-  { type: 'Outdoor / Terrace', label: 'Terrace / Rooftop', sub: 'Open air candle & fairy light setup', icon: 'partly-sunny' },
-];
-
-const POPULAR_HOTELS = [
-  'Radisson Blu, Sec 20',
-  'Lemon Tree Hotel, NIT',
-  'Park Plaza, Sec 21',
-  'Ginger Hotel, Mathura Rd',
-  'OYO Townhouse / Collection O',
-  'Courtyard by Marriott',
-];
-
-const TIME_SLOTS = [
-  '11:00 AM - 1:00 PM',
-  '2:00 PM - 4:00 PM',
-  '4:00 PM - 6:00 PM',
-  '6:00 PM - 8:00 PM',
-  '8:00 PM - 10:00 PM (Late Setup)',
-];
-
-const COLOR_THEMES = [
-  { name: 'Red & Gold', preview: '#DC2626', secondary: '#F59E0B', desc: 'Romantic & Anniversary special' },
-  { name: 'Rose Gold & White', preview: '#E11D48', secondary: '#FCE7F3', desc: 'Aesthetic chic & Birthday' },
-  { name: 'Blue & Silver', preview: '#2563EB', secondary: '#E2E8F0', desc: 'Classy milestone celebration' },
-  { name: 'Black & Gold', preview: '#1E293B', secondary: '#FBBF24', desc: 'Luxury midnight vibe' },
-  { name: 'Pastel Pink & White', preview: '#F472B6', secondary: '#FFFFFF', desc: 'Gentle surprise aesthetic' },
-];
+// HH:MM helpers for the "choose my own time" option
+const toMinutes = (hhmm) => {
+  const [h, m] = String(hhmm).split(':').map(Number);
+  return h * 60 + m;
+};
+const fromMinutes = (mins) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+const fmt12 = (hhmm) => {
+  if (!/^\d{2}:\d{2}$/.test(hhmm || '')) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  return `${String(h % 12 === 0 ? 12 : h % 12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+};
 
 export default function DecorationBookingScreen({ route, navigation }) {
-  const pkg = route?.params?.pkg || {
-    _id: 'default_package',
-    title: 'Surprise Room Decoration',
-    price: 1999,
-    salePrice: 1699,
-    category: 'Hotel Room Decor',
-    coverImage: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=600',
-    estimatedSetupTime: '1.5 - 2 Hours',
-  };
+  // The package always comes from the catalog screen (real data from the backend) — never a built-in sample.
+  const pkg = route?.params?.pkg || null;
 
-  const finalPrice = pkg.salePrice || pkg.price;
+  const finalPrice = pkg ? pkg.salePrice || pkg.price : 0;
   const insets = useSafeAreaInsets();
 
   // Solid safe bottom padding ensuring buttons sit completely above Android on-screen navigation buttons (48dp height)
@@ -89,7 +69,17 @@ export default function DecorationBookingScreen({ route, navigation }) {
   const [paymentType, setPaymentType] = useState('Advance Downpayment');
 
   // Form Fields
-  const [venueType, setVenueType] = useState('Hotel Room');
+  // What the customer can choose comes from the backend — the admin manages it.
+  const [options, setOptions] = useState(null);
+  const [optionsError, setOptionsError] = useState('');
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [venueTypeId, setVenueTypeId] = useState('');
+  const [timeSlotId, setTimeSlotId] = useState('');
+  const [useCustomTime, setUseCustomTime] = useState(false);
+  const [customStart, setCustomStart] = useState('');
+  const [customDuration, setCustomDuration] = useState(0);
+
   const [hotelName, setHotelName] = useState('');
   const [roomNumber, setRoomNumber] = useState('');
   const [bookingHolderName, setBookingHolderName] = useState('');
@@ -97,10 +87,9 @@ export default function DecorationBookingScreen({ route, navigation }) {
   const [city] = useState('Faridabad');
 
   const [setupDate, setSetupDate] = useState('');
-  const [setupTimeSlot, setSetupTimeSlot] = useState('4:00 PM - 6:00 PM');
   const [surpriseEntryTime, setSurpriseEntryTime] = useState('');
 
-  const [colorTheme, setColorTheme] = useState('Red & Gold');
+  const [colorTheme, setColorTheme] = useState(pkg?.colorThemes?.[0] || '');
   const [customMessage, setCustomMessage] = useState('');
   const [specialInstructions, setSpecialInstructions] = useState('');
 
@@ -109,8 +98,34 @@ export default function DecorationBookingScreen({ route, navigation }) {
   const [customerWhatsapp, setCustomerWhatsapp] = useState('');
   const [sameAsPhone, setSameAsPhone] = useState(true);
 
-  // Authoritative downpayment calculations (20% advance token, minimum 299, rounded to 50)
-  const advanceDownpaymentAmount = Math.max(299, Math.round((finalPrice * 0.2) / 50) * 50);
+  // Booking needs a login. Online bookings are saved first, then paid right after.
+  const { user } = useContext(AuthContext);
+  const [payment, setPayment] = useState(null);           // data for the Razorpay modal
+  const [pendingBooking, setPendingBooking] = useState(null); // saved booking that still needs its payment
+
+  useEffect(() => {
+    if (!user) return;
+    setCustomerName((prev) => prev || user.name || '');
+    setCustomerPhone((prev) => prev || user.mobileNumber || user.phone || '');
+  }, [user]);
+
+  // Once a booking has been saved the payment plan is fixed (changing it would not change that booking).
+  const choosePayment = (type) => {
+    if (pendingBooking) {
+      Alert.alert('Payment plan locked', 'Your booking is already saved. Complete its payment, or cancel it from My Bookings to choose a different plan.');
+      return;
+    }
+    setPaymentType(type);
+  };
+
+  // Advance token follows the admin's rule (percent / minimum / rounding); the server recalculates it independently
+  const rules = options?.settings;
+  const advanceDownpaymentAmount = rules
+    ? Math.min(
+        finalPrice,
+        Math.max(rules.minAdvanceAmount, Math.round((finalPrice * (rules.advancePercent / 100)) / rules.advanceRoundTo) * rules.advanceRoundTo)
+      )
+    : 0;
   const balanceDueAmount = Math.max(0, finalPrice - advanceDownpaymentAmount);
 
   const amountToPayNow =
@@ -127,17 +142,90 @@ export default function DecorationBookingScreen({ route, navigation }) {
       ? finalPrice
       : 0;
 
-  const HELPLINE_PHONE = '+918400787712';
-  const WHATSAPP_NUMBER = '918400787712';
+  const HELPLINE_PHONE = options?.settings?.supportPhone || '+918400787712';
+  const WHATSAPP_NUMBER = options?.settings?.supportWhatsapp || '918400787712';
 
   // Quick dates initialization
   const today = new Date();
+
+  // Local calendar date (toISOString() is UTC and shows the previous day before 5:30 AM in India)
+  const fmtDate = (d) => {
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  // Options from the backend — fetched again when the date changes so slots show "Fully booked" / "Too soon".
+  useEffect(() => {
+    let cancelled = false;
+    setSlotsLoading(true);
+    getDecorationOptions(/^\d{4}-\d{2}-\d{2}$/.test(setupDate) ? setupDate : undefined)
+      .then((data) => {
+        if (cancelled) return;
+        setOptions(data);
+        setOptionsError('');
+        setVenueTypeId((prev) => (prev && data.venueTypes.some((v) => v._id === prev) ? prev : data.venueTypes[0]?._id || ''));
+        setTimeSlotId((prev) => {
+          const slot = data.timeSlots.find((t) => t._id === prev);
+          return slot && slot.available !== false ? prev : '';
+        });
+        setColorTheme((prev) => prev || pkg?.colorThemes?.[0] || data.colorThemes[0]?.name || '');
+        setCustomDuration((prev) => prev || data.settings.customSlot.defaultDurationMinutes);
+      })
+      .catch((err) => {
+        if (!cancelled) setOptionsError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setSlotsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setupDate, reloadKey]);
+
+  const selectedVenue = options?.venueTypes.find((v) => v._id === venueTypeId) || null;
+  const venueType = selectedVenue?.name || '';
+  const selectedSlot = options?.timeSlots.find((t) => t._id === timeSlotId) || null;
+
+  // The customer's own time (only when the admin allows it)
+  const customRule = options?.settings.customSlot;
+  const customEnd = customStart && customRule ? fromMinutes(toMinutes(customStart) + (customDuration || customRule.defaultDurationMinutes)) : '';
+  const customTimeError = (() => {
+    if (!useCustomTime || !customRule) return '';
+    if (!customStart) return 'Choose your preferred start time.';
+    const start = toMinutes(customStart);
+    const end = start + (customDuration || customRule.defaultDurationMinutes);
+    if (end > toMinutes(customRule.latest)) return `The setup must finish by ${fmt12(customRule.latest)}. Pick an earlier start or a shorter window.`;
+    return '';
+  })();
+  const setupTimeSlot = useCustomTime
+    ? customStart && !customTimeError
+      ? `${fmt12(customStart)} - ${fmt12(customEnd)} (Custom)`
+      : ''
+    : selectedSlot?.label || '';
+
+  // Start times offered for a custom slot (hides ones too close to now when booking for today)
+  const customStartChoices = (() => {
+    if (!customRule) return [];
+    const out = [];
+    const nowMin = today.getHours() * 60 + today.getMinutes();
+    const isToday = setupDate === fmtDate(today);
+    for (let m = toMinutes(customRule.earliest); m + customRule.minDurationMinutes <= toMinutes(customRule.latest); m += customRule.stepMinutes) {
+      const tooSoon = isToday && m < nowMin + (options?.settings.minLeadHours || 0) * 60;
+      out.push({ value: fromMinutes(m), disabled: tooSoon });
+    }
+    return out;
+  })();
+  const customDurationChoices = (() => {
+    if (!customRule) return [];
+    const base = [customRule.minDurationMinutes, customRule.defaultDurationMinutes, customRule.defaultDurationMinutes + 60, customRule.defaultDurationMinutes + 120];
+    return Array.from(new Set(base)).filter((d) => d % customRule.stepMinutes === 0).sort((x, y) => x - y);
+  })();
   const dTomorrow = new Date(today);
   dTomorrow.setDate(today.getDate() + 1);
   const dAfter = new Date(today);
   dAfter.setDate(today.getDate() + 2);
 
-  const fmtDate = (d) => d.toISOString().slice(0, 10);
   const tomorrowStr = fmtDate(dTomorrow);
   const dayAfterStr = fmtDate(dAfter);
 
@@ -157,7 +245,11 @@ export default function DecorationBookingScreen({ route, navigation }) {
   // Step Navigation & Validation
   const handleNextStep = () => {
     if (currentStep === 1) {
-      if (venueType === 'Hotel Room' && !hotelName.trim()) {
+      if (!options || !selectedVenue) {
+        Alert.alert('Venue Required', 'Please choose where the setup should happen.');
+        return;
+      }
+      if (selectedVenue.askHotelDetails && !hotelName.trim()) {
         Alert.alert('Hotel Name Required', 'Please enter or select the hotel name for the decorator.');
         return;
       }
@@ -171,8 +263,23 @@ export default function DecorationBookingScreen({ route, navigation }) {
         Alert.alert('Setup Date Required', 'Please choose or enter a setup date.');
         return;
       }
+      const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(setupDate.trim());
+      const parsed = dateMatch ? new Date(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3])) : null;
+      if (!parsed || parsed.getMonth() !== Number(dateMatch[2]) - 1) {
+        Alert.alert('Check the date', 'Please enter the date as YYYY-MM-DD, for example 2026-10-18.');
+        return;
+      }
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (parsed < startOfToday) {
+        Alert.alert('Date is in the past', 'Please choose today or a future date for the setup.');
+        return;
+      }
+      if (useCustomTime && customTimeError) {
+        Alert.alert('Check your time', customTimeError);
+        return;
+      }
       if (!setupTimeSlot) {
-        Alert.alert('Time Slot Required', 'Please select a setup time window.');
+        Alert.alert('Time Slot Required', 'Please select a setup time window (or choose your own time).');
         return;
       }
       setCurrentStep(3);
@@ -189,8 +296,114 @@ export default function DecorationBookingScreen({ route, navigation }) {
     }
   };
 
+  // ── Payment (step 2 of an online booking) ─────────────────────────────────
+  const showSuccess = (booking) => {
+    setPendingBooking(null);
+    setPayment(null);
+    setSuccessData({
+      bookingId: booking.bookingId,
+      packageTitle: pkg.title,
+      venueType,
+      hotelName,
+      roomNumber,
+      venueAddress,
+      setupDate,
+      setupTimeSlot,
+      surpriseEntryTime,
+      colorTheme,
+      customMessage,
+      customerName,
+      customerPhone,
+      paymentType: booking.paymentType || paymentType,
+      advanceAmount: booking.paymentType === 'Full COD' ? 0 : booking.advanceAmount ?? amountToPayNow,
+      balanceAmount: booking.balanceAmount ?? balanceToPayOnSetup,
+      totalAmount: booking.totalAmount ?? finalPrice,
+    });
+    setCurrentStep(5);
+  };
+
+  // The amount comes from the server (saved booking); the server verifies the result before confirming.
+  const startPayment = async (bookingId) => {
+    setSubmitting(true);
+    try {
+      const order = await createDecorationPaymentOrder(bookingId);
+      if (!order?.keyId) {
+        throw new Error('Online payment is not available right now. Please try again later or choose Pay on Setup.');
+      }
+      setPayment({
+        bookingId,
+        key: order.keyId,
+        amount: Math.round(order.amountToCharge * 100),
+        orderId: order.razorpayOrderId,
+        name: 'GiftFestive Surprise Decor',
+        description:
+          order.advanceAmount > 0 && order.balanceAmount > 0
+            ? `Advance Token (₹${order.advanceAmount}) for ${order.packageTitle}`
+            : `Full Online Payment for ${order.packageTitle}`,
+        user: {
+          name: customerName || user?.name || '',
+          email: user?.email || '',
+          phone: customerPhone || user?.mobileNumber || user?.phone || '',
+        },
+      });
+    } catch (err) {
+      Alert.alert('Payment', err.message || 'Could not start the payment. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const paymentPendingAlert = (message) => {
+    setPayment(null);
+    Alert.alert('Payment not completed', message, [
+      { text: 'Try again', onPress: () => pendingBooking && startPayment(pendingBooking.bookingId) },
+      { text: 'My Bookings', onPress: () => navigation.navigate('MyDecorationBookings') },
+    ]);
+  };
+
+  const onPaymentSuccess = async (data) => {
+    const bookingId = payment?.bookingId || pendingBooking?.bookingId;
+    setPayment(null);
+    setSubmitting(true);
+    try {
+      const confirmed = await verifyDecorationPayment({
+        bookingId,
+        razorpay_order_id: data.razorpay_order_id,
+        razorpay_payment_id: data.razorpay_payment_id,
+        razorpay_signature: data.razorpay_signature,
+      });
+      showSuccess(confirmed);
+    } catch (err) {
+      // Money may already have left the account. The gateway also informs our server directly, so the
+      // booking gets confirmed automatically — the customer must not pay twice.
+      Alert.alert(
+        'Confirming your payment',
+        `${err.message || 'We could not confirm your payment yet.'}\n\nIf money was deducted, please do not pay again — booking ${bookingId} is confirmed automatically within a few minutes. You can check it in My Bookings.`,
+        [{ text: 'My Bookings', onPress: () => navigation.navigate('MyDecorationBookings') }]
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Final Submit Handler
   const handleFinalSubmit = async () => {
+    if (!user) {
+      navigation.navigate('Login');
+      return;
+    }
+
+    // A booking was already saved and only its payment is missing → just pay it (never create a duplicate)
+    if (pendingBooking) {
+      await startPayment(pendingBooking.bookingId);
+      return;
+    }
+
+    if (!options || !selectedVenue || !setupTimeSlot) {
+      Alert.alert('Almost there', 'Please complete the venue and time slot first.');
+      return;
+    }
+
     if (!customerName.trim()) {
       Alert.alert('Contact Name', 'Please enter your name for booking dispatch.');
       return;
@@ -204,16 +417,20 @@ export default function DecorationBookingScreen({ route, navigation }) {
     setSubmitting(true);
     try {
       const waNumber = sameAsPhone ? customerPhone : (customerWhatsapp || customerPhone);
+      // Prices are only shown on screen; the server recalculates everything from its own catalogue.
       const payload = {
         packageId: pkg._id,
+        venueTypeId,
         venueType,
-        hotelName: venueType === 'Hotel Room' ? hotelName : '',
-        roomNumber: venueType === 'Hotel Room' ? roomNumber : '',
+        hotelName: selectedVenue?.askHotelDetails ? hotelName : '',
+        roomNumber: selectedVenue?.askHotelDetails ? roomNumber : '',
         bookingHolderName,
         venueAddress,
         city: 'Faridabad',
-        setupDate,
-        setupTimeSlot,
+        setupDate: setupDate.trim(),
+        ...(useCustomTime
+          ? { customTime: { startTime: customStart, endTime: customEnd } }
+          : { timeSlotId, setupTimeSlot }),
         surpriseEntryTime,
         colorTheme,
         customMessage,
@@ -221,41 +438,78 @@ export default function DecorationBookingScreen({ route, navigation }) {
         customerName,
         customerPhone,
         customerWhatsapp: waNumber,
+        customerEmail: user?.email || '',
         paymentMethod: paymentType === 'Full COD' ? 'COD' : 'Online',
         paymentType,
-        advanceAmount: amountToPayNow,
-        balanceAmount: balanceToPayOnSetup,
         totalAmount: finalPrice,
       };
 
+      // 1. Save the booking first, so a payment problem can never lose it
       const res = await createDecorationBooking(payload);
-      const bId = res?.booking?.bookingId || res?.bookingId || `DEC-${Date.now().toString().slice(-6)}`;
-      setSuccessData({
-        bookingId: bId,
-        packageTitle: pkg.title,
-        venueType,
-        hotelName,
-        roomNumber,
-        venueAddress,
-        setupDate,
-        setupTimeSlot,
-        surpriseEntryTime,
-        colorTheme,
-        customMessage,
-        customerName,
-        customerPhone,
-        paymentType,
-        advanceAmount: amountToPayNow,
-        balanceAmount: balanceToPayOnSetup,
-        totalAmount: finalPrice,
-      });
-      setCurrentStep(5);
+      const booking = res?.booking || res?.data;
+      if (!booking?.bookingId) throw new Error('The booking could not be created. Please try again.');
+
+      if (paymentType === 'Full COD') {
+        showSuccess(booking);
+        return;
+      }
+
+      // 2. Online: pay for that booking
+      setPendingBooking({ bookingId: booking.bookingId });
+      await startPayment(booking.bookingId);
     } catch (err) {
       Alert.alert('Booking Error', err.message || 'Could not complete booking. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  // ----------------------------------------------------
+  // LOGIN REQUIRED
+  // ----------------------------------------------------
+  if (!user) {
+    return (
+      <SafeScreen edges={['top', 'left', 'right']}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#FFF' }}>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#FFF0F5', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+            <Ionicons name="lock-closed" size={30} color="#D82B76" />
+          </View>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: '#0F172A', textAlign: 'center' }}>Login to book your surprise</Text>
+          <Text style={{ fontSize: 13, color: '#64748B', textAlign: 'center', marginTop: 8, lineHeight: 20 }}>
+            We verify your mobile number with a quick OTP so your booking, payment and live status stay safe and in one place.
+          </Text>
+          <TouchableOpacity
+            style={{ marginTop: 22, backgroundColor: '#D82B76', paddingHorizontal: 30, paddingVertical: 14, borderRadius: 14 }}
+            onPress={() => navigation.navigate('Login')}
+            activeOpacity={0.85}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 15 }}>Login with mobile OTP</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ marginTop: 14 }} onPress={() => navigation.goBack()}>
+            <Text style={{ color: '#64748B', fontWeight: '700' }}>Go back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeScreen>
+    );
+  }
+
+  if (!pkg) {
+    return (
+      <SafeScreen edges={['top', 'left', 'right']}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, backgroundColor: '#FFF' }}>
+          <Text style={{ fontSize: 44 }}>🎈</Text>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: '#0F172A', marginTop: 10, textAlign: 'center' }}>Choose a decoration package first</Text>
+          <TouchableOpacity
+            style={{ marginTop: 18, backgroundColor: '#D82B76', paddingHorizontal: 26, paddingVertical: 13, borderRadius: 14 }}
+            onPress={() => navigation.navigate('Decorations')}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '800' }}>Browse decorations</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeScreen>
+    );
+  }
 
   // ----------------------------------------------------
   // STEP 5: SUCCESS / CONFIRMED SCREEN (NO MODALS!)
@@ -401,6 +655,14 @@ export default function DecorationBookingScreen({ route, navigation }) {
 
             <TouchableOpacity
               style={styles.returnHomeBtn}
+              onPress={() => navigation.navigate('MyDecorationBookings')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.returnHomeText}>My Bookings</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.returnHomeBtn}
               onPress={() => navigation.navigate('Decorations')}
               activeOpacity={0.85}
             >
@@ -418,6 +680,15 @@ export default function DecorationBookingScreen({ route, navigation }) {
   return (
     <SafeScreen edges={['top', 'left', 'right']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <RazorpayPaymentModal
+        visible={!!payment}
+        payment={payment}
+        onSuccess={onPaymentSuccess}
+        onFailed={(msg) => paymentPendingAlert(msg || 'The payment failed. You can try again.')}
+        onCancel={() =>
+          paymentPendingAlert('Your booking is saved. Finish the payment to confirm it — your slot is held for a short time.')
+        }
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
@@ -534,59 +805,77 @@ export default function DecorationBookingScreen({ route, navigation }) {
                 <Text style={styles.sectionSub}>Select hotel room, flat, or cafe in Faridabad</Text>
               </View>
 
-              {/* Venue Type Pills */}
+              {/* Options still loading / failed (never replaced by dummy data) */}
+              {!options && (
+                <View style={styles.optionsState}>
+                  {optionsError ? (
+                    <>
+                      <Text style={styles.optionsStateTitle}>We couldn't load the booking options</Text>
+                      <Text style={styles.optionsStateSub}>{optionsError}</Text>
+                      <TouchableOpacity
+                        style={styles.optionsRetryBtn}
+                        onPress={() => {
+                          setOptionsError('');
+                          setReloadKey((k) => k + 1);
+                        }}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={styles.optionsRetryText}>Try again</Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    <ActivityIndicator color="#D82B76" />
+                  )}
+                </View>
+              )}
+
+              {/* Venue types (managed by the admin) */}
               <View style={styles.venueGrid}>
-                {VENUE_OPTIONS.map((vt) => {
-                  const isSelected = venueType === vt.type;
+                {options?.venueTypes.map((vt) => {
+                  const isSelected = venueTypeId === vt._id;
                   return (
                     <TouchableOpacity
-                      key={vt.type}
-                      onPress={() => setVenueType(vt.type)}
+                      key={vt._id}
+                      onPress={() => setVenueTypeId(vt._id)}
                       style={[styles.venueCard, isSelected && styles.venueCardSelected]}
                       activeOpacity={0.8}
                     >
                       <View style={[styles.venueIconWrap, isSelected && styles.venueIconWrapSelected]}>
-                        <Ionicons
-                          name={vt.icon}
-                          size={22}
-                          color={isSelected ? '#FFF' : '#D82B76'}
-                        />
+                        <Text style={{ fontSize: 22 }}>{vt.icon || '📍'}</Text>
                       </View>
                       <View style={{ flex: 1, paddingLeft: 10 }}>
-                        <Text style={[styles.venueCardTitle, isSelected && styles.venueCardTitleSelected]}>
-                          {vt.label}
-                        </Text>
-                        <Text style={styles.venueCardSub}>{vt.sub}</Text>
+                        <Text style={[styles.venueCardTitle, isSelected && styles.venueCardTitleSelected]}>{vt.name}</Text>
+                        {!!vt.description && <Text style={styles.venueCardSub}>{vt.description}</Text>}
                       </View>
-                      {isSelected && (
-                        <Ionicons name="checkmark-circle" size={18} color="#D82B76" />
-                      )}
+                      {isSelected && <Ionicons name="checkmark-circle" size={18} color="#D82B76" />}
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
-              {/* Hotel-Specific Details */}
-              {venueType === 'Hotel Room' && (
+              {/* Hotel-specific details — only for venue types the admin marked "ask hotel details" */}
+              {selectedVenue?.askHotelDetails && (
                 <View style={styles.hotelBox}>
-                  <Text style={styles.hotelBoxTitle}>Popular Partner Hotels (Quick Tap):</Text>
-                  <View style={styles.hotelChipsRow}>
-                    {POPULAR_HOTELS.map((h) => {
-                      const isHot = hotelName === h;
-                      return (
-                        <TouchableOpacity
-                          key={h}
-                          onPress={() => setHotelName(h)}
-                          style={[styles.hotelChip, isHot && styles.hotelChipSelected]}
-                          activeOpacity={0.8}
-                        >
-                          <Text style={[styles.hotelChipText, isHot && styles.hotelChipTextSelected]}>
-                            {h}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
+                  {(options?.settings.popularHotels.length || 0) > 0 && (
+                    <>
+                      <Text style={styles.hotelBoxTitle}>Popular hotels (quick tap):</Text>
+                      <View style={styles.hotelChipsRow}>
+                        {options.settings.popularHotels.map((h) => {
+                          const isHot = hotelName === h;
+                          return (
+                            <TouchableOpacity
+                              key={h}
+                              onPress={() => setHotelName(h)}
+                              style={[styles.hotelChip, isHot && styles.hotelChipSelected]}
+                              activeOpacity={0.8}
+                            >
+                              <Text style={[styles.hotelChipText, isHot && styles.hotelChipTextSelected]}>{h}</Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </>
+                  )}
 
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Hotel / Resort Name *</Text>
@@ -699,34 +988,105 @@ export default function DecorationBookingScreen({ route, navigation }) {
                 </View>
               </View>
 
-              {/* Time Slots */}
+              {/* Time slots (managed by the admin) + optional custom time */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Setup Arrival Slot (Decorator Work Window) *</Text>
+                <Text style={styles.inputLabel}>
+                  Setup Arrival Slot (Decorator Work Window) *{slotsLoading ? '  · checking availability…' : ''}
+                </Text>
                 <View style={styles.slotsCol}>
-                  {TIME_SLOTS.map((slot) => {
-                    const isSelected = setupTimeSlot === slot;
+                  {options?.timeSlots.map((slot) => {
+                    const isSelected = !useCustomTime && timeSlotId === slot._id;
+                    const unavailable = slot.available === false;
                     return (
                       <TouchableOpacity
-                        key={slot}
-                        onPress={() => setSetupTimeSlot(slot)}
-                        style={[styles.slotCard, isSelected && styles.slotCardSelected]}
+                        key={slot._id}
+                        disabled={unavailable}
+                        onPress={() => {
+                          setUseCustomTime(false);
+                          setTimeSlotId(slot._id);
+                        }}
+                        style={[styles.slotCard, isSelected && styles.slotCardSelected, unavailable && { opacity: 0.5 }]}
                         activeOpacity={0.8}
                       >
-                        <Ionicons
-                          name={isSelected ? 'time' : 'time-outline'}
-                          size={18}
-                          color={isSelected ? '#D82B76' : '#64748B'}
-                        />
-                        <Text style={[styles.slotCardText, isSelected && styles.slotCardTextSelected]}>
-                          {slot}
-                        </Text>
-                        {isSelected && (
-                          <Ionicons name="checkmark-circle" size={18} color="#D82B76" style={{ marginLeft: 'auto' }} />
-                        )}
+                        <Ionicons name={isSelected ? 'time' : 'time-outline'} size={18} color={isSelected ? '#D82B76' : '#64748B'} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.slotCardText, isSelected && styles.slotCardTextSelected]}>{slot.label}</Text>
+                          {(unavailable || slot.tag || (typeof slot.spotsLeft === 'number' && slot.spotsLeft <= 2)) && (
+                            <Text style={[styles.slotSub, unavailable && { color: '#DC2626', fontWeight: '800' }]}>
+                              {unavailable
+                                ? slot.reason || 'Unavailable'
+                                : [slot.tag, typeof slot.spotsLeft === 'number' && slot.spotsLeft <= 2 ? `Only ${slot.spotsLeft} left` : '']
+                                    .filter(Boolean)
+                                    .join(' • ')}
+                            </Text>
+                          )}
+                        </View>
+                        {isSelected && <Ionicons name="checkmark-circle" size={18} color="#D82B76" />}
                       </TouchableOpacity>
                     );
                   })}
+
+                  {options?.settings.allowCustomTimeSlot && (
+                    <TouchableOpacity
+                      onPress={() => setUseCustomTime(true)}
+                      style={[styles.slotCard, styles.slotCardCustom, useCustomTime && styles.slotCardSelected]}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={{ fontSize: 16 }}>⏰</Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.slotCardText, { color: '#741343' }]}>Choose my own time</Text>
+                        <Text style={styles.slotSub}>
+                          Between {fmt12(options.settings.customSlot.earliest)} and {fmt12(options.settings.customSlot.latest)}
+                        </Text>
+                      </View>
+                      {useCustomTime && <Ionicons name="checkmark-circle" size={18} color="#D82B76" />}
+                    </TouchableOpacity>
+                  )}
                 </View>
+
+                {useCustomTime && options && (
+                  <View style={styles.customTimeBox}>
+                    <Text style={styles.customTimeLabel}>Decorator arrives from *</Text>
+                    <View style={styles.timeChipsWrap}>
+                      {customStartChoices.map((c) => {
+                        const on = customStart === c.value;
+                        return (
+                          <TouchableOpacity
+                            key={c.value}
+                            disabled={c.disabled}
+                            onPress={() => setCustomStart(c.value)}
+                            style={[styles.timeChip, on && styles.timeChipSelected, c.disabled && { opacity: 0.35 }]}
+                            activeOpacity={0.8}
+                          >
+                            <Text style={[styles.timeChipText, on && styles.timeChipTextSelected]}>{fmt12(c.value)}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+
+                    <Text style={[styles.customTimeLabel, { marginTop: 12 }]}>Setup window</Text>
+                    <View style={styles.timeChipsWrap}>
+                      {customDurationChoices.map((d) => {
+                        const on = (customDuration || customRule.defaultDurationMinutes) === d;
+                        return (
+                          <TouchableOpacity key={d} onPress={() => setCustomDuration(d)} style={[styles.timeChip, on && styles.timeChipSelected]} activeOpacity={0.8}>
+                            <Text style={[styles.timeChipText, on && styles.timeChipTextSelected]}>
+                              {d % 60 === 0 ? `${d / 60} hr` : `${Math.floor(d / 60)}h ${d % 60}m`}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+
+                    <Text style={[styles.inputHint, { marginTop: 10 }, !!customStart && !!customTimeError && { color: '#DC2626', fontWeight: '700' }]}>
+                      {customStart && customTimeError
+                        ? `⚠️ ${customTimeError}`
+                        : setupTimeSlot
+                        ? `Your window: ${setupTimeSlot}. Our team will confirm it with you on WhatsApp.`
+                        : 'Pick a start time. Our team confirms custom times on WhatsApp.'}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Surprise Entry Time */}
@@ -756,37 +1116,47 @@ export default function DecorationBookingScreen({ route, navigation }) {
                 <Text style={styles.sectionSub}>Choose colors and custom foil balloon messages</Text>
               </View>
 
-              {/* Color Themes */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Choose Balloon Theme *</Text>
-                <View style={styles.themeList}>
-                  {COLOR_THEMES.map((theme) => {
-                    const isSelected = colorTheme === theme.name;
-                    return (
-                      <TouchableOpacity
-                        key={theme.name}
-                        onPress={() => setColorTheme(theme.name)}
-                        style={[styles.themeCard, isSelected && styles.themeCardSelected]}
-                        activeOpacity={0.85}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <View style={[styles.colorDot, { backgroundColor: theme.preview }]} />
-                          <View style={[styles.colorDot, { backgroundColor: theme.secondary, borderWidth: 1, borderColor: '#E2E8F0' }]} />
-                        </View>
-                        <View style={{ flex: 1, paddingLeft: 12 }}>
-                          <Text style={[styles.themeCardName, isSelected && styles.themeCardNameSelected]}>
-                            {theme.name}
-                          </Text>
-                          <Text style={styles.themeCardDesc}>{theme.desc}</Text>
-                        </View>
-                        {isSelected && (
-                          <Ionicons name="checkmark-circle" size={20} color="#D82B76" />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
+              {/* Colour themes: this package's own list, otherwise the admin's global themes */}
+              {(() => {
+                const themes =
+                  pkg.colorThemes && pkg.colorThemes.length > 0
+                    ? pkg.colorThemes.map((name) => {
+                        const g = options?.colorThemes.find((t) => t.name.toLowerCase() === String(name).toLowerCase());
+                        return { name, primary: g?.primaryColor, secondary: g?.secondaryColor, desc: g?.description };
+                      })
+                    : (options?.colorThemes || []).map((t) => ({ name: t.name, primary: t.primaryColor, secondary: t.secondaryColor, desc: t.description }));
+                if (themes.length === 0) return null;
+                return (
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Choose Balloon Theme</Text>
+                    <View style={styles.themeList}>
+                      {themes.map((theme) => {
+                        const isSelected = colorTheme === theme.name;
+                        return (
+                          <TouchableOpacity
+                            key={theme.name}
+                            onPress={() => setColorTheme(theme.name)}
+                            style={[styles.themeCard, isSelected && styles.themeCardSelected]}
+                            activeOpacity={0.85}
+                          >
+                            {theme.primary && theme.secondary ? (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <View style={[styles.colorDot, { backgroundColor: theme.primary }]} />
+                                <View style={[styles.colorDot, { backgroundColor: theme.secondary, borderWidth: 1, borderColor: '#E2E8F0' }]} />
+                              </View>
+                            ) : null}
+                            <View style={{ flex: 1, paddingLeft: theme.primary ? 12 : 0 }}>
+                              <Text style={[styles.themeCardName, isSelected && styles.themeCardNameSelected]}>{theme.name}</Text>
+                              {!!theme.desc && <Text style={styles.themeCardDesc}>{theme.desc}</Text>}
+                            </View>
+                            {isSelected && <Ionicons name="checkmark-circle" size={20} color="#D82B76" />}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              })()}
 
               {/* Foil Message */}
               <View style={styles.inputGroup}>
@@ -933,7 +1303,7 @@ export default function DecorationBookingScreen({ route, navigation }) {
                       styles.paymentCard,
                       paymentType === 'Advance Downpayment' && styles.paymentCardSelected,
                     ]}
-                    onPress={() => setPaymentType('Advance Downpayment')}
+                    onPress={() => choosePayment('Advance Downpayment')}
                     activeOpacity={0.8}
                   >
                     <View style={styles.paymentCardHeader}>
@@ -954,7 +1324,7 @@ export default function DecorationBookingScreen({ route, navigation }) {
                       styles.paymentCard,
                       paymentType === 'Full Online' && styles.paymentCardSelected,
                     ]}
-                    onPress={() => setPaymentType('Full Online')}
+                    onPress={() => choosePayment('Full Online')}
                     activeOpacity={0.8}
                   >
                     <View style={styles.paymentCardHeader}>
@@ -975,7 +1345,7 @@ export default function DecorationBookingScreen({ route, navigation }) {
                       styles.paymentCard,
                       paymentType === 'Full COD' && styles.paymentCardSelected,
                     ]}
-                    onPress={() => setPaymentType('Full COD')}
+                    onPress={() => choosePayment('Full COD')}
                     activeOpacity={0.8}
                   >
                     <View style={styles.paymentCardHeader}>
@@ -1017,7 +1387,7 @@ export default function DecorationBookingScreen({ route, navigation }) {
                 <Ionicons name="shield-checkmark" size={20} color="#059669" />
                 <Text style={styles.codNoticeText}>
                   {paymentType === 'Advance Downpayment'
-                    ? '20% advance token locks your decorator schedule & venue slot with guaranteed on-time arrival.'
+                    ? `${options?.settings.advancePercent ?? ''}% advance token locks your decorator schedule & venue slot with guaranteed on-time arrival.`
                     : paymentType === 'Full Online'
                     ? '100% cashless payment secured with 256-bit encryption. Zero hassle at venue check-in.'
                     : 'Zero Advance Required. Pay comfortably after inspecting room decoration.'}
@@ -1087,6 +1457,20 @@ export default function DecorationBookingScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
+  optionsState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 28, gap: 8 },
+  optionsStateTitle: { fontSize: 15, fontWeight: '800', color: '#0F172A', textAlign: 'center' },
+  optionsStateSub: { fontSize: 12, color: '#64748B', textAlign: 'center', lineHeight: 18 },
+  optionsRetryBtn: { marginTop: 6, backgroundColor: '#D82B76', paddingHorizontal: 22, paddingVertical: 11, borderRadius: 12 },
+  optionsRetryText: { color: '#FFF', fontWeight: '800', fontSize: 13 },
+  slotSub: { fontSize: 11, color: '#64748B', marginTop: 2 },
+  slotCardCustom: { borderStyle: 'dashed', borderColor: '#D82B76' },
+  customTimeBox: { marginTop: 10, backgroundColor: '#FFFAF3', borderRadius: 14, borderWidth: 1, borderColor: '#EAD6C5', padding: 14 },
+  customTimeLabel: { fontSize: 12, fontWeight: '800', color: '#334155', marginBottom: 8 },
+  timeChipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  timeChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0' },
+  timeChipSelected: { backgroundColor: '#D82B76', borderColor: '#D82B76' },
+  timeChipText: { fontSize: 12, fontWeight: '700', color: '#334155' },
+  timeChipTextSelected: { color: '#FFF' },
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',

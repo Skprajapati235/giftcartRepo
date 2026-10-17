@@ -19,18 +19,11 @@ import { SafeScreen } from '../components/layout';
 import {
   fetchDecorationPackages,
   fetchDecorationSamples,
+  getDecorationOptions,
 } from '../services/decorationService';
 
 const { width } = Dimensions.get('window');
 
-const CATEGORIES = [
-  'All',
-  'Hotel Room Decor',
-  'Birthday Party Setup',
-  'Romantic Anniversary',
-  'Canopy & Cabana',
-  'Marry Me / Proposal',
-];
 
 export default function DecorationScreen({ navigation }) {
   const insets = useSafeAreaInsets();
@@ -38,14 +31,20 @@ export default function DecorationScreen({ navigation }) {
   const [samples, setSamples] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [loadError, setLoadError] = useState('');
+  const [support, setSupport] = useState({ phone: '', whatsapp: '' });
 
-  const HELPLINE_PHONE = '+918400787712';
-  const WHATSAPP_NUMBER = '918400787712';
+  // Support numbers are managed by the admin (Booking Setup → Rules); the constants are only a safety net.
+  const HELPLINE_PHONE = support.phone || '+918400787712';
+  const WHATSAPP_NUMBER = support.whatsapp || '918400787712';
+
+  // Category chips come from the packages that really exist
+  const CATEGORIES = ['All', ...Array.from(new Set(packages.map((p) => p.category).filter(Boolean)))];
 
   const openWhatsApp = (customText = '') => {
     const text = encodeURIComponent(
       customText ||
-        'Hi GiftFestive! I want to inquire about surprise hotel room & party decoration in Faridabad. Please guide me with package details & available time slots.'
+      'Hi GiftFestive! I want to inquire about surprise hotel room & party decoration in Faridabad. Please guide me with package details & available time slots.'
     );
     Linking.openURL(`https://wa.me/${WHATSAPP_NUMBER}?text=${text}`);
   };
@@ -60,13 +59,24 @@ export default function DecorationScreen({ navigation }) {
 
   const loadData = async () => {
     setLoading(true);
-    const [pkgs, smpls] = await Promise.all([
-      fetchDecorationPackages({ city: 'Faridabad' }),
-      fetchDecorationSamples(),
-    ]);
-    setPackages(pkgs);
-    setSamples(smpls);
-    setLoading(false);
+    setLoadError('');
+    try {
+      const [pkgs, smpls] = await Promise.all([
+        fetchDecorationPackages({ city: 'Faridabad' }),
+        fetchDecorationSamples(),
+      ]);
+      setPackages(pkgs);
+      setSamples(smpls);
+      if (selectedCategory !== 'All' && !pkgs.some((p) => p.category === selectedCategory)) setSelectedCategory('All');
+    } catch (err) {
+      setLoadError('We could not load the decorations. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
+    // optional: the admin's support numbers
+    getDecorationOptions()
+      .then((o) => setSupport({ phone: o.settings.supportPhone || '', whatsapp: o.settings.supportWhatsapp || '' }))
+      .catch(() => { });
   };
 
   const filteredPackages = packages.filter((p) => {
@@ -108,6 +118,14 @@ export default function DecorationScreen({ navigation }) {
         >
           <Ionicons name="radio" size={13} color="#EC4899" style={{ marginRight: 4 }} />
           <Text style={styles.trackHeaderText}>Track Status</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('MyDecorationBookings')}
+          style={[styles.trackHeaderBtn, { marginLeft: 6 }]}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="calendar" size={13} color="#EC4899" style={{ marginRight: 4 }} />
+          <Text style={styles.trackHeaderText}>My Bookings</Text>
         </TouchableOpacity>
       </View>
 
@@ -163,6 +181,15 @@ export default function DecorationScreen({ navigation }) {
             >
               <Ionicons name="location-outline" size={15} color="#D82B76" />
               <Text style={styles.quickTrackText}>Live Setup Tracker</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickTrackBtn}
+              onPress={() => navigation.navigate('MyDecorationBookings')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="calendar-outline" size={15} color="#D82B76" />
+              <Text style={styles.quickTrackText}>My Bookings</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -224,25 +251,38 @@ export default function DecorationScreen({ navigation }) {
             <ActivityIndicator size="large" color="#EC4899" />
             <Text style={styles.loadingText}>Loading Faridabad decoration packages...</Text>
           </View>
+        ) : loadError ? (
+          <View style={styles.emptyBox}>
+            <Text style={{ fontSize: 36, marginBottom: 8 }}>📡</Text>
+            <Text style={styles.emptyTitle}>Couldn't load decorations</Text>
+            <Text style={styles.emptySub}>{loadError}</Text>
+            <TouchableOpacity
+              onPress={loadData}
+              activeOpacity={0.85}
+              style={{ marginTop: 14, backgroundColor: '#D82B76', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+            >
+              <Text style={{ color: '#FFF', fontWeight: '800' }}>Try again</Text>
+            </TouchableOpacity>
+          </View>
         ) : filteredPackages.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={{ fontSize: 36, marginBottom: 8 }}>🎈</Text>
-            <Text style={styles.emptyTitle}>No Packages in this Category</Text>
-            <Text style={styles.emptySub}>Please choose another category to view setups.</Text>
+            <Text style={styles.emptyTitle}>{packages.length === 0 ? 'New setups are being added' : 'No Packages in this Category'}</Text>
+            <Text style={styles.emptySub}>
+              {packages.length === 0 ? 'Please check back soon, or message us on WhatsApp.' : 'Please choose another category to view setups.'}
+            </Text>
           </View>
         ) : (
           <View style={styles.listContainer}>
             {filteredPackages.map((pkg) => (
               <View key={pkg._id} style={styles.card}>
-                <Image
-                  source={{
-                    uri:
-                      pkg.coverImage ||
-                      (pkg.images && pkg.images[0]) ||
-                      'https://images.unsplash.com/photo-1518199266791-5375a83190b7?auto=format&fit=crop&w=600&q=80',
-                  }}
-                  style={styles.cardImage}
-                />
+                {pkg.coverImage || (pkg.images && pkg.images[0]) ? (
+                  <Image source={{ uri: pkg.coverImage || pkg.images[0] }} style={styles.cardImage} />
+                ) : (
+                  <View style={[styles.cardImage, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF0F5' }]}>
+                    <Text style={{ fontSize: 44 }}>🎈</Text>
+                  </View>
+                )}
                 <View style={styles.badgeWrap}>
                   <Text style={styles.badgeText}>{pkg.category}</Text>
                 </View>
@@ -285,8 +325,7 @@ export default function DecorationScreen({ navigation }) {
                         style={styles.chatCardBtn}
                         onPress={() =>
                           openWhatsApp(
-                            `Hi GiftFestive! I want to ask about "${pkg.title}" (₹${
-                              pkg.salePrice || pkg.price
+                            `Hi GiftFestive! I want to ask about "${pkg.title}" (₹${pkg.salePrice || pkg.price
                             }) setup in Faridabad.`
                           )
                         }
