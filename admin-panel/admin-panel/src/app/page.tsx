@@ -567,12 +567,12 @@ export default function Home() {
                 >
                   Sign In
                 </button>
-                <Link
+                {/* <Link
                   href="/register"
                   className="flex-1 py-2 text-sm font-semibold rounded-lg text-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"
                 >
                   Register
-                </Link>
+                </Link> */}
               </div>
 
               {/* Header */}
