@@ -20,13 +20,10 @@ export const baseURL = COOKIE_AUTH && typeof window !== "undefined" ? "/backend"
 
 export const getAuthToken = (): string => {
   if (typeof window === "undefined") return "";
-  if (COOKIE_AUTH) {
-    // a saved admin profile means a cookie session exists; a leftover legacy token is
-    // only returned until AuthContext has exchanged it for the cookie
-    if (localStorage.getItem("giftcartAdminUser")) return COOKIE_SESSION_MARKER;
-    return localStorage.getItem("giftcartAdminToken") || "";
-  }
-  return localStorage.getItem("giftcartAdminToken") || "";
+  const stored = localStorage.getItem("giftcartAdminToken");
+  if (stored && stored !== COOKIE_SESSION_MARKER) return stored;
+  if (COOKIE_AUTH && localStorage.getItem("giftcartAdminUser")) return COOKIE_SESSION_MARKER;
+  return "";
 };
 
 /** Headers for raw fetch() calls (axios instances add these automatically). */
@@ -58,10 +55,28 @@ const setupInterceptors = (instance: AxiosInstance): AxiosInstance => {
     if (rawBase.endsWith("/api") && config.url && config.url.startsWith("/api/")) {
       config.url = config.url.replace(/^\/api/, "");
     }
+
+    // CRITICAL: When sending FormData, delete Content-Type so Axios/browser automatically sets
+    // "multipart/form-data; boundary=----WebKitFormBoundary..."
+    // If "Content-Type: application/json" is kept, express.json() throws SyntaxError 400 Bad Request!
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      if (config.headers) {
+        delete config.headers["Content-Type"];
+        delete config.headers["content-type"];
+      }
+    }
+
     // Only our own proxy gets the cookie-mode header (other hosts, e.g. Cloudinary, must not).
     if (COOKIE_AUTH && (rawBase.startsWith("/backend") || String(config.url || "").startsWith("/backend"))) {
       config.headers["X-Auth-Mode"] = "cookie";
     }
+
+    // Always attach Bearer token if we have a real JWT token and not already set
+    const token = getAuthToken();
+    if (token && token !== COOKIE_SESSION_MARKER && config.headers && !config.headers["Authorization"]) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+
     return config;
   });
 
@@ -121,6 +136,7 @@ if (typeof window !== "undefined") {
 export const api = setupInterceptors(
   axios.create({
     baseURL,
+    withCredentials: true,
     headers: { "Content-Type": "application/json" },
   })
 );
@@ -129,6 +145,7 @@ export const authApi = (token?: string): AxiosInstance => {
   const effectiveToken = token !== undefined ? token : getAuthToken();
   const instance = axios.create({
     baseURL,
+    withCredentials: true,
     headers: {
       "Content-Type": "application/json",
       // the cookie-session marker is not a real token → no Authorization header, the cookie is used

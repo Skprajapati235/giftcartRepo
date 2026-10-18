@@ -141,7 +141,7 @@ export default function AdminCreatePage() {
   }, [selectedCategory, searchQuery]);
 
   const grantedCount =
-    formData.role === "super_admin" || formData.role === "admin" || formData.permissions.includes("*")
+    formData.role === "super_admin" || formData.permissions.includes("*")
       ? AVAILABLE_SCREENS.length
       : formData.permissions.length;
 

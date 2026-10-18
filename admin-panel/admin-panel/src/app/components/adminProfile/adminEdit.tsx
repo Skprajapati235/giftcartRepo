@@ -168,7 +168,7 @@ export default function AdminEditForm({ adminId, onCancel }: AdminEditFormProps)
   }, [selectedCategory, searchQuery]);
 
   const totalAssignedCount =
-    values.role === "super_admin" || values.role === "admin" || values.permissions.includes("*")
+    values.role === "super_admin" || values.permissions.includes("*")
       ? AVAILABLE_SCREENS.length
       : values.permissions.length;
 

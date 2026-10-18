@@ -354,7 +354,7 @@ exports.registerAdmin = async (data) => {
 
   let assignedPermissions = permissions;
   if (assignedPermissions === undefined || assignedPermissions === null) {
-    if (assignedRole === "super_admin" || assignedRole === "admin") {
+    if (assignedRole === "super_admin") {
       assignedPermissions = ["*"];
     } else if (assignedRole === "kitchen_manager") {
       assignedPermissions = ["/dashboard", "/orders/board", "/orders", "/products", "/category", "/flavors", "/addons", "/inventory"];

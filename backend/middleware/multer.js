@@ -16,19 +16,52 @@ const multer = require("multer");
 
 const storage = multer.memoryStorage();
 
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
-const STAFF_TYPES = [...IMAGE_TYPES, "image/svg+xml", "image/avif", "video/mp4", "video/webm", "application/pdf"];
+const IMAGE_TYPES = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "image/heic",
+    "image/heif",
+    "image/pjpeg",
+    "image/x-png",
+    "image/svg+xml",
+    "image/avif",
+];
+const VIDEO_TYPES = [
+    "video/mp4",
+    "video/webm",
+    "video/ogg",
+    "video/quicktime",
+    "video/x-matroska",
+    "video/x-msvideo",
+    "video/avi",
+    "video/3gpp",
+];
+const STAFF_TYPES = [...IMAGE_TYPES, ...VIDEO_TYPES, "application/pdf"];
 
 const makeFilter = (allowed) => (req, file, cb) => {
-    if (allowed.includes(String(file.mimetype || "").toLowerCase())) return cb(null, true);
-    const err = new Error("This file type is not allowed.");
+    const mime = String(file.mimetype || "").toLowerCase();
+    const ext = String(file.originalname || "").toLowerCase();
+
+    // Direct MIME match
+    if (allowed.includes(mime)) return cb(null, true);
+
+    // Fallback if mimetype starts with image/ or video/
+    if (mime.startsWith("image/") || mime.startsWith("video/")) return cb(null, true);
+    if (/\.(jpe?g|png|webp|gif|svg|avif|heic|heif|pdf|mp4|webm|mov|mkv|avi|ogg|3gp)$/i.test(ext)) {
+        return cb(null, true);
+    }
+
+    const err = new Error(`File type "${file.mimetype || ext}" is not allowed.`);
     err.code = "UNSUPPORTED_FILE_TYPE";
     return cb(err);
 };
 
 const staff = multer({
     storage,
-    limits: { fileSize: 25 * 1024 * 1024, files: 10 },
+    limits: { fileSize: 100 * 1024 * 1024, files: 10 }, // 100MB limit for staff images & videos
     fileFilter: makeFilter(STAFF_TYPES),
 });
 

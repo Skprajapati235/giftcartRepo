@@ -225,18 +225,17 @@ app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { poli
 // CORS: set CORS_ORIGINS="https://giftfestive.com,https://www.giftfestive.com,https://giftcart-repo.vercel.app"
 // to restrict browsers to your own sites. Mobile apps send no Origin header, so they are unaffected.
 // If CORS_ORIGINS is empty everything is allowed (old behaviour) — a warning is logged.
-const { allowedOrigins } = require("./utils/allowedOrigins");
+const { allowedOrigins, isOriginAllowed } = require("./utils/allowedOrigins");
 if (allowedOrigins.length === 0) {
   console.warn("[security] CORS_ORIGINS is not set — allowing requests from any origin.");
 }
 app.use(
   cors({
-    credentials: allowedOrigins.length > 0, // cookie sessions only when origins are explicitly allow-listed
+    credentials: true,
     exposedHeaders: ["X-Renewed-Token"],
     origin(origin, cb) {
-      if (!origin || allowedOrigins.length === 0) return cb(null, true);
-      if (allowedOrigins.includes(origin.replace(/\/+$/, ""))) return cb(null, true);
-      if (/^https?:\/\/localhost(:\d+)?$/.test(origin) && process.env.NODE_ENV !== "production") return cb(null, true);
+      if (!origin) return cb(null, true);
+      if (isOriginAllowed(origin)) return cb(null, true);
       return cb(null, false);
     },
   })

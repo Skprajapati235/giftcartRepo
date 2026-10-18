@@ -18,11 +18,12 @@ const pickUploader = (req, res, next) => {
   const handler = (isStaff(req) ? upload.staff : upload.customer).any();
   handler(req, res, (err) => {
     if (!err) return next();
+    console.error("[uploadRoutes] Multer error:", err);
     const message =
-      err.code === "LIMIT_FILE_SIZE" ? "File is too large." :
-        err.code === "LIMIT_FILE_COUNT" ? "Too many files." :
+      err.code === "LIMIT_FILE_SIZE" ? (isStaff(req) ? "File is too large. Max 100MB allowed for videos and images." : "File is too large. Max 5MB allowed.") :
+        err.code === "LIMIT_FILE_COUNT" ? "Too many files uploaded at once." :
           err.code === "UNSUPPORTED_FILE_TYPE" ? err.message :
-            "Upload failed.";
+            (err.message || "Upload failed.");
     return res.status(400).json({ success: false, message });
   });
 };
@@ -143,13 +144,14 @@ router.delete("/folders/:id", staffOnly, async (req, res) => {
 // ============================
 
 
-// GET /api/upload - List all media with pagination and search
+// GET /api/upload - List all media with pagination, search, and type filter
 router.get("/", staffOnly, async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 30));
     const search = req.query.search ? String(req.query.search).trim() : "";
     const folderId = req.query.folderId;
+    const mediaType = req.query.type ? String(req.query.type).toLowerCase().trim() : "all";
 
     const query = {};
     if (folderId) {
@@ -157,6 +159,20 @@ router.get("/", staffOnly, async (req, res) => {
     }
     if (search) {
       query.name = { $regex: search, $options: "i" };
+    }
+
+    if (mediaType === "video") {
+      query.$or = [
+        { resourceType: "video" },
+        { format: { $in: ["mp4", "webm", "mov", "mkv", "avi", "ogg", "3gp"] } },
+        { url: { $regex: /\.(mp4|webm|mov|mkv|avi|ogg|3gp)(\?.*)?$/i } },
+      ];
+    } else if (mediaType === "image") {
+      query.$and = [
+        { resourceType: { $ne: "video" } },
+        { format: { $nin: ["mp4", "webm", "mov", "mkv", "avi", "ogg", "3gp"] } },
+        { url: { $not: /\.(mp4|webm|mov|mkv|avi|ogg|3gp)(\?.*)?$/i } },
+      ];
     }
 
     const total = await Media.countDocuments(query);
@@ -177,12 +193,12 @@ router.get("/", staffOnly, async (req, res) => {
   }
 });
 
-// POST /api/upload - Upload single or multiple files
+// POST /api/upload - Upload single or multiple files (images or videos)
 router.post("/", pickUploader, async (req, res) => {
   try {
     const files = req.files || (req.file ? [req.file] : []);
     if (!files || files.length === 0) {
-      return res.status(400).json({ message: "No files uploaded" });
+      return res.status(400).json({ success: false, message: "No files uploaded. Please select an image or video file." });
     }
 
     const uploadedMedia = [];
@@ -190,20 +206,27 @@ router.post("/", pickUploader, async (req, res) => {
     for (const file of files) {
       if (!file.buffer) continue;
 
-      const result = await uploadStreamToCloudinary(file.buffer);
+      const isVideo = file.mimetype?.startsWith("video/") || /\.(mp4|webm|mov|mkv|avi|ogg|3gp)$/i.test(file.originalname || "");
+      const result = await uploadStreamToCloudinary(file.buffer, {
+        resource_type: isVideo ? "video" : "auto",
+      });
 
       const name =
         typeof req.body.name === "string" && req.body.name.trim()
           ? req.body.name.trim()
           : file.originalname
             ? file.originalname.replace(/\.[^/.]+$/, "")
-            : "Image-" + Date.now();
+            : (isVideo ? "Video-" : "Image-") + Date.now();
+
+      const detectedType = result.resource_type || (isVideo ? "video" : "image");
+      const ext = file.originalname ? file.originalname.split(".").pop() : "";
 
       const mediaDoc = await Media.create({
         url: result.secure_url,
         public_id: result.public_id,
         name: name,
-        format: result.format || "",
+        resourceType: detectedType,
+        format: result.format || (isVideo ? ext || "mp4" : ""),
         size: result.bytes || file.size || 0,
         width: result.width || 0,
         height: result.height || 0,
@@ -215,7 +238,7 @@ router.post("/", pickUploader, async (req, res) => {
     }
 
     if (uploadedMedia.length === 0) {
-      return res.status(400).json({ message: "File processing failed" });
+      return res.status(400).json({ success: false, message: "File processing failed. Please check file format." });
     }
 
     // Keep backwards compatibility with existing frontend expects { url: ... }
@@ -229,12 +252,13 @@ router.post("/", pickUploader, async (req, res) => {
       count: uploadedMedia.length,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message || "Upload failed" });
+    console.error("[uploadRoutes] Upload error:", err);
+    res.status(500).json({ success: false, message: err.message || "Upload failed" });
   }
 });
 
 // PUT /api/upload/:id - Edit / Replace existing media
-// Automatically deletes the old Cloudinary image when a new file is uploaded
+// Automatically deletes the old Cloudinary file when a new file is uploaded
 router.put("/:id", staffOnly, upload.staff.single("file"), async (req, res) => {
   try {
     const { id } = req.params;
@@ -244,25 +268,31 @@ router.put("/:id", staffOnly, upload.staff.single("file"), async (req, res) => {
       return res.status(404).json({ message: "Media not found" });
     }
 
-    // If new file provided, replace image and delete old one
+    // If new file provided, replace media and delete old one
     if (req.file && req.file.buffer) {
       const oldPublicId = media.public_id;
+      const oldResourceType = media.resourceType || "image";
 
+      const isVideo = req.file.mimetype?.startsWith("video/") || /\.(mp4|webm|mov|mkv|avi|ogg|3gp)$/i.test(req.file.originalname || "");
       // Upload new file to Cloudinary first
-      const newResult = await uploadStreamToCloudinary(req.file.buffer);
+      const newResult = await uploadStreamToCloudinary(req.file.buffer, {
+        resource_type: isVideo ? "video" : "auto",
+      });
 
-      // Successfully uploaded new image -> safely destroy the old image on Cloudinary
+      // Successfully uploaded new media -> safely destroy the old media on Cloudinary
       if (oldPublicId) {
         try {
-          await cloudinary.uploader.destroy(oldPublicId);
+          await cloudinary.uploader.destroy(oldPublicId, { resource_type: oldResourceType });
         } catch (delErr) {
-          console.error("Failed to delete old image from Cloudinary:", delErr.message);
+          console.error("Failed to delete old media from Cloudinary:", delErr.message);
         }
       }
 
+      const ext = req.file.originalname ? req.file.originalname.split(".").pop() : "";
       media.url = newResult.secure_url;
       media.public_id = newResult.public_id;
-      media.format = newResult.format || "";
+      media.resourceType = newResult.resource_type || (isVideo ? "video" : "image");
+      media.format = newResult.format || (isVideo ? ext || "mp4" : "");
       media.size = newResult.bytes || req.file.size || 0;
       media.width = newResult.width || 0;
       media.height = newResult.height || 0;
@@ -280,7 +310,7 @@ router.put("/:id", staffOnly, upload.staff.single("file"), async (req, res) => {
 
     res.json({
       success: true,
-      message: "Media updated successfully. Old image deleted.",
+      message: "Media updated successfully. Old file deleted.",
       media,
       url: media.url,
     });
@@ -301,7 +331,8 @@ router.delete("/:id", staffOnly, async (req, res) => {
 
     if (media.public_id) {
       try {
-        await cloudinary.uploader.destroy(media.public_id);
+        const isVideo = media.resourceType === "video" || ["mp4", "webm", "mov", "mkv", "avi", "ogg", "3gp"].includes(String(media.format).toLowerCase());
+        await cloudinary.uploader.destroy(media.public_id, { resource_type: isVideo ? "video" : "image" });
       } catch (delErr) {
         console.error("Cloudinary delete error:", delErr.message);
       }
@@ -329,8 +360,11 @@ router.delete("/", staffOnly, async (req, res) => {
       return res.status(400).json({ message: "No URL or public_id provided" });
     }
 
+    const existing = await Media.findOne({ $or: [{ public_id: targetId }, { url: url }] });
+    const isVideo = existing?.resourceType === "video" || ["mp4", "webm", "mov", "mkv", "avi", "ogg", "3gp"].includes(String(existing?.format).toLowerCase());
+
     try {
-      await cloudinary.uploader.destroy(targetId);
+      await cloudinary.uploader.destroy(targetId, { resource_type: isVideo ? "video" : "image" });
     } catch (delErr) {
       console.error("Cloudinary destroy error:", delErr.message);
     }
@@ -340,24 +374,38 @@ router.delete("/", staffOnly, async (req, res) => {
       $or: [{ public_id: targetId }, { url: url }],
     });
 
-    res.json({ success: true, message: "Image deleted" });
+    res.json({ success: true, message: "Media deleted" });
   } catch (err) {
     res.status(500).json({ message: err.message || "Delete failed" });
   }
 });
 
-// POST /api/upload/sync - Sync existing Cloudinary assets in "giftcart" folder to MongoDB
+// POST /api/upload/sync - Sync existing Cloudinary assets (images & videos) in "giftcart" folder to MongoDB
 router.post("/sync", staffOnly, async (req, res) => {
   try {
-    // Cloudinary Admin API to list resources with prefix 'giftcart/'
-    const result = await cloudinary.api.resources({
-      type: "upload",
-      prefix: "giftcart",
-      max_results: 100,
-    });
+    // Cloudinary Admin API to list both image and video resources with prefix 'giftcart/'
+    const [imageRes, videoRes] = await Promise.all([
+      cloudinary.api.resources({
+        resource_type: "image",
+        type: "upload",
+        prefix: "giftcart",
+        max_results: 100,
+      }).catch(() => ({ resources: [] })),
+      cloudinary.api.resources({
+        resource_type: "video",
+        type: "upload",
+        prefix: "giftcart",
+        max_results: 100,
+      }).catch(() => ({ resources: [] })),
+    ]);
+
+    const combined = [
+      ...(imageRes.resources || []).map((r) => ({ ...r, detectedType: "image" })),
+      ...(videoRes.resources || []).map((r) => ({ ...r, detectedType: "video" })),
+    ];
 
     let importedCount = 0;
-    for (const resource of result.resources || []) {
+    for (const resource of combined) {
       const exists = await Media.findOne({ public_id: resource.public_id });
       if (!exists) {
         const parts = resource.public_id.split("/");
@@ -367,6 +415,7 @@ router.post("/sync", staffOnly, async (req, res) => {
           url: resource.secure_url,
           public_id: resource.public_id,
           name: baseName,
+          resourceType: resource.detectedType || resource.resource_type || "image",
           format: resource.format || "",
           size: resource.bytes || 0,
           width: resource.width || 0,
@@ -380,7 +429,7 @@ router.post("/sync", staffOnly, async (req, res) => {
 
     res.json({
       success: true,
-      message: `Sync completed. Imported ${importedCount} images from Cloudinary.`,
+      message: `Sync completed. Imported ${importedCount} media items from Cloudinary.`,
       importedCount,
     });
   } catch (err) {

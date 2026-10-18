@@ -178,8 +178,8 @@ const adminSessions = require("../utils/adminSessions");
 // Header mode (old clients)  → { token } in the body exactly like before.
 async function respondWithSession(req, res, admin) {
   if (wantsCookie(req)) {
-    await adminSessions.startSession(req, res, admin);
-    return res.json({ admin: sanitizeAdmin(admin), cookieSession: true });
+    const sessionToken = await adminSessions.startSession(req, res, admin);
+    return res.json({ admin: sanitizeAdmin(admin), cookieSession: true, token: sessionToken });
   }
   return res.json({ admin: sanitizeAdmin(admin), token: generateToken(admin._id, admin.role) });
 }
@@ -207,7 +207,7 @@ exports.register = async (req, res) => {
         let caller = await Admin.findById(decoded?.id);
         if (!caller) caller = await User.findById(decoded?.id);
         const role = (caller?.role || decoded.role || "").toLowerCase();
-        if (role !== "super_admin" && role !== "admin") {
+        if (role !== "super_admin") {
           return res.status(403).json({ message: "Access denied. Only Super Admin can register staff accounts" });
         }
       } catch (tokenErr) {
@@ -381,7 +381,7 @@ exports.verifySession = async (req, res) => {
         email: admin.email,
         role: admin.role,
         department: admin.department || "Executive Management",
-        permissions: admin.permissions || (admin.role === "super_admin" || admin.role === "admin" ? ["*"] : []),
+        permissions: admin.permissions || (admin.role === "super_admin" ? ["*"] : []),
         profilePic: admin.profilePic,
         city: admin.city,
         state: admin.state,

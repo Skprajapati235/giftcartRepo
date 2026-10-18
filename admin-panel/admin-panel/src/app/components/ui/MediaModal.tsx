@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Upload, Search, Image as ImageIcon, Trash2, Edit2, RefreshCw, Check, AlertCircle, Folder, FolderPlus, MoreVertical } from "lucide-react";
+import { X, Upload, Search, Image as ImageIcon, Trash2, Edit2, RefreshCw, Check, AlertCircle, Folder, FolderPlus, Film, Play, Video } from "lucide-react";
 import * as service from "../../services/adminService";
 import { useToast } from "../../../context/ToastContext";
 import DeleteModal from "./DeleteModal";
@@ -12,11 +12,24 @@ interface MediaModalProps {
   multiple?: boolean;
 }
 
+export const isMediaVideo = (item: any): boolean => {
+  if (!item) return false;
+  if (typeof item === "string") {
+    return /\.(mp4|webm|mov|mkv|avi|ogg|3gp)(\?.*)?$/i.test(item) || item.includes("/video/upload/");
+  }
+  if (item.resourceType === "video") return true;
+  const ext = (item.format || "").toLowerCase();
+  if (["mp4", "webm", "mov", "mkv", "avi", "ogg", "3gp"].includes(ext)) return true;
+  const url = (item.url || "").toLowerCase();
+  return /\.(mp4|webm|mov|mkv|avi|ogg|3gp)(\?.*)?$/i.test(url) || url.includes("/video/upload/");
+};
+
 export default function MediaModal({ onClose, onSelect, multiple = false }: MediaModalProps) {
   const [activeTab, setActiveTab] = useState<"library" | "upload">("library");
   const [mediaList, setMediaList] = useState<any[]>([]);
   const [folders, setFolders] = useState<any[]>([]);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<"all" | "image" | "video">("all");
   
   const [loading, setLoading] = useState(false);
   const [loadingFolders, setLoadingFolders] = useState(false);
@@ -60,7 +73,8 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
       const data = await service.getMediaList({ 
         limit: 100, 
         search,
-        folderId: selectedFolderId 
+        folderId: selectedFolderId,
+        type: mediaTypeFilter,
       });
       if (data.success) {
         setMediaList(data.media || []);
@@ -80,7 +94,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
     if (activeTab === "library") {
       fetchMedia();
     }
-  }, [activeTab, search, selectedFolderId]);
+  }, [activeTab, search, selectedFolderId, mediaTypeFilter]);
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return setIsCreatingFolder(false);
@@ -133,7 +147,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
     setLoading(true);
     try {
       const res = await service.syncCloudinaryMedia();
-      showToast(`Synced ${res.importedCount} images from Cloudinary`, "success");
+      showToast(`Synced ${res.importedCount} media items from Cloudinary`, "success");
       fetchMedia();
     } catch (err) {
       showToast("Sync failed", "error");
@@ -156,7 +170,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
 
   const confirmSelection = () => {
     if (selectedUrls.length === 0) {
-      showToast("No image selected", "error");
+      showToast("No media selected", "error");
       return;
     }
     if (multiple) {
@@ -167,7 +181,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
     onClose();
   };
 
-  // Upload New Files
+  // Upload New Files (Images or Videos)
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -177,7 +191,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
       const filesArray = Array.from(files);
       const res = await service.uploadMediaFiles(filesArray, selectedFolderId);
       
-      showToast(`Successfully uploaded ${res.count || 1} images`, "success");
+      showToast(`Successfully uploaded ${res.count || 1} file(s)`, "success");
       if (res.files) {
         const newUrls = res.files.map((f: any) => f.url);
         setSelectedUrls(multiple ? [...selectedUrls, ...newUrls] : [newUrls[0]]);
@@ -187,8 +201,10 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
       
       setActiveTab("library");
       fetchMedia();
-    } catch (err) {
-      showToast("Upload failed", "error");
+    } catch (err: any) {
+      console.error("Upload error in MediaModal:", err);
+      const msg = err?.response?.data?.message || err?.message || "Upload failed";
+      showToast(msg, "error");
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -197,7 +213,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
     }
   };
 
-  // Edit / Replace Image
+  // Edit / Replace Media
   const handleReplaceImage = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -205,10 +221,12 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
     setLoading(true);
     try {
       await service.updateMedia(id, file);
-      showToast("Image replaced successfully! Old image deleted.", "success");
+      showToast("Media replaced successfully! Old file deleted.", "success");
       fetchMedia();
-    } catch (err) {
-      showToast("Failed to replace image", "error");
+    } catch (err: any) {
+      console.error("Replace media error:", err);
+      const msg = err?.response?.data?.message || err?.message || "Failed to replace media";
+      showToast(msg, "error");
     } finally {
       setLoading(false);
       e.target.value = "";
@@ -225,14 +243,14 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
     setIsDeletingImage(true);
     try {
       await service.deleteMediaById(deleteImageTarget._id);
-      showToast("Image deleted permanently", "success");
+      showToast("Media deleted permanently", "success");
       if (selectedUrls.includes(deleteImageTarget.url)) {
         setSelectedUrls((prev) => prev.filter((u) => u !== deleteImageTarget.url));
       }
       fetchMedia();
       setDeleteImageTarget(null);
     } catch (err) {
-      showToast("Failed to delete image", "error");
+      showToast("Failed to delete media", "error");
     } finally {
       setIsDeletingImage(false);
     }
@@ -248,7 +266,10 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
             <div className="p-2 bg-primary/10 text-primary rounded-xl">
               <ImageIcon size={24} />
             </div>
-            <h2 className="text-xl font-bold tracking-tight">Media Library</h2>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight">Media Library</h2>
+              <p className="text-xs text-slate-500 font-medium">Upload, manage, and browse images & videos</p>
+            </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-hover-theme transition text-slate-500">
             <X size={24} />
@@ -279,7 +300,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
                 }`}
               >
                 <Folder size={18} className={selectedFolderId === null ? "fill-primary/20" : ""} />
-                All Images
+                All Media
               </button>
 
               {isCreatingFolder && (
@@ -378,15 +399,45 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
                       type="text"
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search images..."
+                      placeholder="Search images or videos..."
                       className="w-full pl-10 pr-4 py-2 text-sm rounded-xl border border-border-theme bg-card focus:ring-2 focus:ring-primary/20 outline-none transition"
                     />
                   </div>
+
+                  {/* Filter Pills */}
+                  <div className="flex items-center gap-1 bg-card border border-border-theme p-1 rounded-xl">
+                    <button
+                      onClick={() => setMediaTypeFilter("all")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                        mediaTypeFilter === "all" ? "bg-primary text-white shadow-sm" : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      All Media
+                    </button>
+                    <button
+                      onClick={() => setMediaTypeFilter("image")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                        mediaTypeFilter === "image" ? "bg-primary text-white shadow-sm" : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      Images
+                    </button>
+                    <button
+                      onClick={() => setMediaTypeFilter("video")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition ${
+                        mediaTypeFilter === "video" ? "bg-primary text-white shadow-sm" : "text-slate-500 hover:text-slate-800"
+                      }`}
+                    >
+                      <Film size={13} />
+                      Videos
+                    </button>
+                  </div>
+
                   <div className="flex gap-2">
                     <button
                       onClick={handleSync}
                       className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 border border-border-theme rounded-xl hover:bg-hover-theme transition"
-                      title="Import existing Cloudinary images"
+                      title="Import existing Cloudinary images & videos"
                     >
                       <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
                       <span>Sync Cloudinary</span>
@@ -404,15 +455,16 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
                   ) : mediaList.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-slate-400">
                       <ImageIcon size={48} className="mb-4 opacity-50" />
-                      <p className="font-medium">No images found in this folder</p>
+                      <p className="font-medium">No media found</p>
                       <button onClick={() => setActiveTab("upload")} className="mt-4 px-6 py-2 bg-primary/10 text-primary font-bold rounded-xl hover:bg-primary/20 transition">
-                        Upload some images
+                        Upload images or videos
                       </button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                       {mediaList.map((media) => {
                         const isSelected = selectedUrls.includes(media.url);
+                        const isVideo = isMediaVideo(media);
                         return (
                           <div
                             key={media._id}
@@ -421,7 +473,28 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
                               isSelected ? "border-primary shadow-lg shadow-primary/20" : "border-border-theme hover:border-slate-300"
                             }`}
                           >
-                            <img src={media.url} alt={media.name} className="w-full h-full object-cover" />
+                            {isVideo ? (
+                              <div className="w-full h-full bg-slate-900 flex items-center justify-center relative">
+                                <video
+                                  src={media.url}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                />
+                                <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-sm text-white text-[10px] font-bold flex items-center gap-1 shadow">
+                                  <Film size={11} className="text-pink-400" />
+                                  <span>VIDEO</span>
+                                </div>
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div className="w-9 h-9 rounded-full bg-black/50 text-white flex items-center justify-center backdrop-blur-sm group-hover:scale-110 transition">
+                                    <Play size={16} className="fill-white translate-x-0.5" />
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <img src={media.url} alt={media.name} className="w-full h-full object-cover" />
+                            )}
                             
                             {/* Selection Overlay */}
                             <div className={`absolute inset-0 transition-opacity ${isSelected ? "bg-primary/20" : "bg-black/40 opacity-0 group-hover:opacity-100"}`}>
@@ -436,15 +509,20 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
                                 <label
                                   className="flex-1 bg-white text-slate-900 p-2 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-100 shadow-sm"
                                   onClick={(e) => e.stopPropagation()}
-                                  title="Replace Image (Deletes Old)"
+                                  title="Replace File (Deletes Old)"
                                 >
                                   <Edit2 size={16} />
-                                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleReplaceImage(media._id, e)} />
+                                  <input 
+                                    type="file" 
+                                    className="hidden" 
+                                    accept="image/*,video/*,.mp4,.webm,.mov,.mkv,.avi" 
+                                    onChange={(e) => handleReplaceImage(media._id, e)} 
+                                  />
                                 </label>
                                 <button
                                   onClick={(e) => triggerDeleteImage(media, e)}
                                   className="flex-1 bg-red-500 text-white p-2 rounded-lg flex items-center justify-center hover:bg-red-600 shadow-sm"
-                                  title="Delete Image"
+                                  title="Delete Media"
                                 >
                                   <Trash2 size={16} />
                                 </button>
@@ -467,13 +545,13 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
             {activeTab === "upload" && (
               <div className="flex-1 p-8 flex flex-col items-center justify-center relative">
                 <div className="absolute top-6 text-sm font-bold text-slate-400">
-                  Uploading to: <span className="text-primary">{selectedFolderId ? folders.find(f => f._id === selectedFolderId)?.name || 'Folder' : 'All Images (Root)'}</span>
+                  Uploading to: <span className="text-primary">{selectedFolderId ? folders.find(f => f._id === selectedFolderId)?.name || 'Folder' : 'All Media (Root)'}</span>
                 </div>
                 <label className={`w-full max-w-2xl aspect-video rounded-3xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition mt-8 ${uploading ? "border-primary bg-primary/5 pointer-events-none" : "border-border-theme bg-hover-theme/30 hover:border-primary hover:bg-primary/5"}`}>
                   <input
                     type="file"
                     multiple
-                    accept="image/*"
+                    accept="image/*,video/*,.mp4,.webm,.mov,.mkv,.avi"
                     className="hidden"
                     onChange={handleFileUpload}
                     ref={fileInputRef}
@@ -484,22 +562,22 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
                     <div className="flex flex-col items-center text-primary">
                       <RefreshCw size={48} className="animate-spin mb-4" />
                       <h3 className="text-xl font-bold">Uploading...</h3>
-                      <p className="text-sm font-medium mt-2">Please wait while your files are processed</p>
+                      <p className="text-sm font-medium mt-2">Please wait while your files are processed and uploaded to Cloudinary</p>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center text-slate-500">
                       <div className="p-4 bg-primary/10 text-primary rounded-full mb-4">
                         <Upload size={32} />
                       </div>
-                      <h3 className="text-xl font-bold text-slate-700">Click or Drag images here</h3>
-                      <p className="text-sm font-medium mt-2">Supports JPG, PNG, WEBP</p>
+                      <h3 className="text-xl font-bold text-slate-700">Click or Drag images or videos here</h3>
+                      <p className="text-sm font-medium mt-2">Supports JPG, PNG, WEBP, GIF & MP4, WEBM, MOV (Up to 100MB)</p>
                     </div>
                   )}
                 </label>
                 <div className="mt-8 flex items-start gap-3 bg-blue-50 text-blue-800 p-4 rounded-xl max-w-2xl">
                   <AlertCircle size={24} className="shrink-0" />
                   <p className="text-sm font-medium">
-                    Uploading new images will instantly add them to your selected folder. You can upload multiple images at once. To replace an existing image and delete the old one automatically, go to the Library tab and use the Edit button on an image.
+                    Uploading new media will instantly add them to your selected folder. You can upload multiple images and videos simultaneously up to 100MB per file. To replace an existing file and automatically remove the old version from Cloudinary, use the edit icon on the media item in the Library tab.
                   </p>
                 </div>
               </div>
@@ -510,7 +588,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
         {/* Footer */}
         <div className="p-4 border-t border-border-theme bg-background flex items-center justify-between z-10">
           <div className="text-sm font-bold text-slate-500">
-            {selectedUrls.length} image{selectedUrls.length !== 1 && "s"} selected
+            {selectedUrls.length} file{selectedUrls.length !== 1 ? "s" : ""} selected
           </div>
           <div className="flex gap-4">
             <button onClick={onClose} className="px-6 py-3 rounded-xl font-bold text-slate-700 hover:bg-hover-theme transition">
@@ -521,7 +599,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
               disabled={selectedUrls.length === 0}
               className="px-8 py-3 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {multiple ? "Insert Selected" : "Use Image"}
+              {multiple ? "Insert Selected" : (selectedUrls[0] && isMediaVideo(selectedUrls[0]) ? "Use Video" : "Use Media")}
             </button>
           </div>
         </div>
@@ -532,7 +610,7 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
         onClose={() => setDeleteFolderTarget(null)}
         onConfirm={confirmDeleteFolder}
         title="Delete Folder"
-        description="Are you sure you want to delete this folder? Images inside it will be moved to 'All Images' (Root)."
+        description="Are you sure you want to delete this folder? Files inside it will be moved to 'All Media' (Root)."
         itemName={deleteFolderTarget?.name}
         isLoading={isDeletingFolder}
       />
@@ -541,8 +619,8 @@ export default function MediaModal({ onClose, onSelect, multiple = false }: Medi
         isOpen={!!deleteImageTarget}
         onClose={() => setDeleteImageTarget(null)}
         onConfirm={confirmDeleteImage}
-        title="Delete Image Permanently"
-        description="Are you sure you want to permanently delete this image from Cloudinary? This action cannot be undone."
+        title="Delete Media Permanently"
+        description="Are you sure you want to permanently delete this media file from Cloudinary? This action cannot be undone."
         itemName={deleteImageTarget?.name}
         isLoading={isDeletingImage}
       />

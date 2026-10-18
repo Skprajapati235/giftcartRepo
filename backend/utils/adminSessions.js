@@ -71,13 +71,15 @@ async function issue(req, res, admin, { family, familyStartedAt }) {
     ip: String(req.ip || "").slice(0, 80),
   });
 
-  setAuthCookie(res, signAccess(admin, family)); // access cookie (maxAge = 15 min, taken from the JWT exp)
+  const accessToken = signAccess(admin, family);
+  setAuthCookie(res, accessToken); // access cookie (maxAge = 15 min, taken from the JWT exp)
   res.cookie(REFRESH_COOKIE, refreshToken, refreshCookieOptions(expiresAt.getTime() - now));
+  return accessToken;
 }
 
 /** New login → new session family. */
 async function startSession(req, res, admin) {
-  await issue(req, res, admin, { family: crypto.randomUUID(), familyStartedAt: new Date() });
+  return await issue(req, res, admin, { family: crypto.randomUUID(), familyStartedAt: new Date() });
 }
 
 async function revokeFamily(family) {

@@ -283,7 +283,7 @@ function useFilteredNav(user: any): NavSectionConfig[] {
     const permissions = user?.permissions;
 
     // Super Admin has full unrestricted root access to all navigation modules
-    if (role === "super_admin" || role === "admin") {
+    if (role === "super_admin") {
       return linearSidebarNav;
     }
 

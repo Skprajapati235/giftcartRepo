@@ -432,7 +432,7 @@ export function getPageRoleInfo(pathname: string): PageRoleInfo {
 
 export function getDefaultPermissionsForRole(role: string = ""): string[] {
   const norm = role.toLowerCase().trim();
-  if (norm === "super_admin" || norm === "admin") {
+  if (norm === "super_admin") {
     return ["*"];
   }
 
@@ -450,12 +450,7 @@ export function canAccessPage(
   const normalizedRole = userRole.toLowerCase().trim();
 
   // Super admin has full unrestricted root access to everything
-  if (normalizedRole === "super_admin" || normalizedRole === "admin") {
-    return true;
-  }
-
-  // If user has wildcard permissions
-  if (Array.isArray(userPermissions) && userPermissions.includes("*")) {
+  if (normalizedRole === "super_admin") {
     return true;
   }
 
@@ -466,7 +461,7 @@ export function canAccessPage(
   // ONLY explicitly granted screens can be accessed or visible.
   if (Array.isArray(userPermissions)) {
     return userPermissions.some((p) => {
-      if (!p) return false;
+      if (!p || p === "*") return false;
       const cleanP = p.toLowerCase().trim();
       return cleanPath === cleanP || cleanPath.startsWith(cleanP + "/");
     });

@@ -66,7 +66,14 @@ exports.updateUser = async (id, data) => {
   };
   if (data.role) updateFields.role = data.role;
   if (data.department) updateFields.department = data.department;
-  if (data.permissions !== undefined) updateFields.permissions = data.permissions;
+  if (data.permissions !== undefined) {
+    const isSuper = String(data.role || "").toLowerCase() === "super_admin";
+    if (!isSuper && Array.isArray(data.permissions)) {
+      updateFields.permissions = data.permissions.filter((p) => p !== "*");
+    } else {
+      updateFields.permissions = data.permissions;
+    }
+  }
 
   let updated = await Admin.findByIdAndUpdate(id, updateFields, { new: true }).select("name email city profilePic role department permissions createdAt");
   if (updated) return updated;

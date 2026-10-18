@@ -122,14 +122,28 @@ export default function AddEditDecorationPackage({ pkg, onClose }: AddEditDecora
     }));
   };
 
+  const addCitiesFromText = (text: string) => {
+    const parts = text
+      .split(/[,\n\r;]+/)
+      .map((c) => c.trim())
+      .filter(Boolean);
+    if (parts.length === 0) return;
+
+    setFormData((prev) => {
+      const existing = new Set(prev.availableCities.map((c) => c.toLowerCase()));
+      const toAdd = parts.filter((c) => !existing.has(c.toLowerCase()));
+      return {
+        ...prev,
+        availableCities: [...prev.availableCities, ...toAdd],
+      };
+    });
+    setCityInput("");
+  };
+
   const handleAddCity = (e: React.KeyboardEvent | React.MouseEvent) => {
     if ("key" in e && e.key !== "Enter") return;
     e.preventDefault();
-    const city = cityInput.trim();
-    if (city && !formData.availableCities.includes(city)) {
-      setFormData((prev) => ({ ...prev, availableCities: [...prev.availableCities, city] }));
-      setCityInput("");
-    }
+    addCitiesFromText(cityInput);
   };
 
   const handleRemoveCity = (city: string) => {
@@ -441,7 +455,14 @@ export default function AddEditDecorationPackage({ pkg, onClose }: AddEditDecora
                 value={cityInput}
                 onChange={(e) => setCityInput(e.target.value)}
                 onKeyDown={handleAddCity}
-                placeholder="e.g. Delhi, Lucknow, Noida, Mumbai..."
+                onPaste={(e) => {
+                  const pasted = e.clipboardData.getData("text");
+                  if (pasted && (pasted.includes(",") || pasted.includes("\n") || pasted.includes(";"))) {
+                    e.preventDefault();
+                    addCitiesFromText(pasted);
+                  }
+                }}
+                placeholder="e.g. Delhi, Lucknow, Noida, Mumbai (paste comma-separated)..."
                 className="flex-1 px-4 py-2.5 rounded-2xl border border-border-theme bg-surface text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/30"
               />
               <button

@@ -1,4 +1,4 @@
-import { api, authApi, getAuthToken } from "./apiClient";
+import { api, authApi, getAuthToken, COOKIE_SESSION_MARKER } from "./apiClient";
 
 export { getAuthToken, authApi };
 
@@ -162,7 +162,14 @@ export const uploadImage = async (file: File) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await authApi(getAuthToken()).post("/upload", formData, {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+  if (token && token !== COOKIE_SESSION_MARKER) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await authApi(token).post("/upload", formData, {
+    headers,
   });
 
   return response.data;
@@ -173,7 +180,7 @@ export const deleteImage = async (url: string) => {
   return response.data;
 };
 
-export const getMediaList = async (params?: { page?: number; limit?: number; search?: string; folderId?: string | null }) => {
+export const getMediaList = async (params?: { page?: number; limit?: number; search?: string; folderId?: string | null; type?: "all" | "image" | "video" }) => {
   const response = await authApi(getAuthToken()).get("/upload", { params });
   return response.data;
 };
@@ -183,7 +190,14 @@ export const uploadMediaFiles = async (files: File[], folderId?: string | null) 
   files.forEach((file) => formData.append("files", file));
   if (folderId) formData.append("folderId", folderId);
 
-  const response = await authApi(getAuthToken()).post("/upload", formData, {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+  if (token && token !== COOKIE_SESSION_MARKER) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await authApi(token).post("/upload", formData, {
+    headers,
   });
   return response.data;
 };
@@ -193,7 +207,14 @@ export const updateMedia = async (id: string, file?: File, name?: string) => {
   if (file) formData.append("file", file);
   if (name) formData.append("name", name);
 
-  const response = await authApi(getAuthToken()).put(`/upload/${id}`, formData, {
+  const token = getAuthToken();
+  const headers: Record<string, string> = {};
+  if (token && token !== COOKIE_SESSION_MARKER) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await authApi(token).put(`/upload/${id}`, formData, {
+    headers,
   });
   return response.data;
 };

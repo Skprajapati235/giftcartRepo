@@ -29,11 +29,10 @@ const orderAccess = adminMiddleware.requireRole(
   ["/orders", "/orders/board"]
 );
 const orderDelete = adminMiddleware.requireRole(
-  ["super_admin", "admin"],
-  ["/orders"]
+  ["super_admin"]
 );
 const paymentsAccess = adminMiddleware.requireRole(
-  ["super_admin", "admin"],
+  ["super_admin"],
   ["/payments"]
 );
 

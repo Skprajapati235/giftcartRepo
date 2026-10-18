@@ -8,4 +8,15 @@ const allowedOrigins = String(process.env.CORS_ORIGINS || "")
   .map(normalize)
   .filter(Boolean);
 
-module.exports = { allowedOrigins, normalize };
+const isOriginAllowed = (origin) => {
+  if (!origin) return false;
+  const clean = normalize(origin);
+  if (allowedOrigins.length === 0) return true;
+  if (allowedOrigins.includes(clean)) return true;
+  // Always permit local development / test origins on any port (localhost / 127.0.0.1)
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(clean)) return true;
+  return false;
+};
+
+module.exports = { allowedOrigins, normalize, isOriginAllowed };
+

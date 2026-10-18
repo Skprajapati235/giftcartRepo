@@ -18,6 +18,11 @@ const mediaSchema = new mongoose.Schema(
       default: "Untitled",
       trim: true,
     },
+    resourceType: {
+      type: String,
+      default: "image",
+      trim: true,
+    },
     format: {
       type: String,
       default: "",

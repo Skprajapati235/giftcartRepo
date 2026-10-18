@@ -146,17 +146,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       : null;
 
     if (typeof window !== "undefined") {
-      if (COOKIE_AUTH) {
-        // the server set the httpOnly cookie; no token is ever stored in JavaScript
-        localStorage.removeItem("giftcartAdminToken");
-      } else {
+      if (tokenValue && tokenValue !== COOKIE_SESSION_MARKER) {
         localStorage.setItem("giftcartAdminToken", tokenValue);
       }
       localStorage.setItem("giftcartAdminUser", JSON.stringify(cleanUser));
       localStorage.setItem("giftcartAdminLastActive", String(now));
       sessionStorage.removeItem("giftcartSessionExpiredNotice");
     }
-    setToken(COOKIE_AUTH ? COOKIE_SESSION_MARKER : tokenValue);
+    setToken(tokenValue || (COOKIE_AUTH ? COOKIE_SESSION_MARKER : ""));
     setUser(cleanUser);
     setSessionWarning(false);
     setSessionExpiredNotice(null);

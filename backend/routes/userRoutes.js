@@ -2,7 +2,7 @@ const router = require("express").Router();
 const controller = require("../controllers/userController");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
-const superAdminOnly = adminMiddleware.requireRole(["super_admin", "admin"]);
+const superAdminOnly = adminMiddleware.requireRole(["super_admin"]);
 
 router.get("/", superAdminOnly, controller.getAll);
 router.get("/admins", superAdminOnly, controller.getAdmins);
