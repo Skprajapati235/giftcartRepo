@@ -84,7 +84,7 @@ export type NavSectionConfig = {
 
 export const linearSidebarNav: NavSectionConfig[] = [
   {
-    sectionTitle: "Workspace",
+    sectionTitle: "Overview",
     dotColor: "bg-blue-400",
     items: [
       {
@@ -98,7 +98,7 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "Decoration",
         href: "/decoration-panel",
         icon: Sparkles,
-        badge: "Studio",
+        badge: "Decor",
         badgeVariant: "neon-purple",
       },
       {
@@ -106,141 +106,141 @@ export const linearSidebarNav: NavSectionConfig[] = [
         label: "AI Assistant",
         href: "/chat",
         icon: Bot,
-        badge: "AI 2.0",
+        badge: "AI",
         badgeVariant: "neon-purple",
       },
     ],
   },
   {
-    sectionTitle: "Catalog & Store",
+    sectionTitle: "Catalog",
     dotColor: "bg-amber-400",
     items: [
       {
         key: "catalog",
-        label: "Catalog",
+        label: "Products",
         icon: Box,
         children: [
-          { key: "products", label: "Products", href: "/products", icon: Box, description: "Catalog inventory items", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Kitchen" },
-          { key: "category", label: "Categories", href: "/category", icon: Tag, description: "Store taxonomy & groups", color: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
-          { key: "flavors", label: "Flavors", href: "/flavors", icon: Pipette, description: "Taste & cake variants", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Kitchen" },
-          { key: "addons", label: "Gifting Add-ons", href: "/addons", icon: Gift, description: "Candles, cards & celebration upsells", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "New" },
-          { key: "cities", label: "Delivery Cities", href: "/cities", icon: MapPin, description: "Pin-code & zones", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { key: "partner-stores", label: "Partner Stores (Tie-ups)", href: "/stores", icon: StoreIcon, description: "Local bakeries & gift tie-ups", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Tie-Up" },
-          { key: "offers", label: "Offers & Coupons", href: "/coupons", icon: Gift, description: "Promo codes & discounts", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Growth" },
-          { key: "gallery", label: "Media Gallery", href: "/gallery", icon: Images, description: "Image asset storage", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20" },
+          { key: "products", label: "All Products", href: "/products", icon: Box, description: "Cakes, flowers & gifts", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Products" },
+          { key: "category", label: "Categories", href: "/category", icon: Tag, description: "Cakes, Combos & Gifts", color: "text-violet-500 bg-violet-500/10 border-violet-500/20" },
+          { key: "flavors", label: "Flavors", href: "/flavors", icon: Pipette, description: "Chocolate, Vanilla & tastes", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Flavors" },
+          { key: "addons", label: "Add-ons", href: "/addons", icon: Gift, description: "Candles, cards & caps", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "Add-ons" },
+          { key: "cities", label: "Cities", href: "/cities", icon: MapPin, description: "Delivery pin codes", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+          { key: "partner-stores", label: "Partner Stores", href: "/stores", icon: StoreIcon, description: "Bakery & store tie-ups", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Tie-Up" },
+          { key: "offers", label: "Coupons", href: "/coupons", icon: Gift, description: "Discounts & promo codes", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Offers" },
+          { key: "gallery", label: "Gallery", href: "/gallery", icon: Images, description: "Photos & media assets", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20" },
         ],
       },
     ],
   },
   {
-    sectionTitle: "Sales & Orders",
+    sectionTitle: "Orders",
     dotColor: "bg-emerald-400",
     items: [
       {
         key: "order-mgmt",
-        label: "Orders & Reviews",
+        label: "Orders",
         icon: ShoppingCart,
         children: [
-          { key: "orders", label: "Orders Pipeline", href: "/orders", icon: ShoppingCart, description: "Live customer orders", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Sales" },
-          { key: "kitchenBoard", label: "Kitchen Live Board", href: "/orders/board", icon: ChefHat, description: "Real-time kitchen order dispatch", color: "text-orange-500 bg-orange-500/10 border-orange-500/20", badge: "Kitchen" },
-          { key: "abandonedCarts", label: "Abandoned Carts", href: "/abandoned-carts", icon: ShoppingCart, description: "Automated WhatsApp recovery", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "Support" },
-          { key: "deliveryFleet", label: "Delivery Fleet", href: "/delivery-fleet", icon: Truck, description: "Rider dispatch & logistics", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Fleet" },
-          { key: "reviews", label: "Customer Reviews", href: "/reviews", icon: Star, description: "Product feedback & ratings", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
-          { key: "testimonials", label: "Testimonials", href: "/testimonials", icon: MessageSquareQuote, description: "Curated store testimonials", color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20" },
+          { key: "orders", label: "All Orders", href: "/orders", icon: ShoppingCart, description: "Live orders & bills", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Orders" },
+          { key: "kitchenBoard", label: "Kitchen Board", href: "/orders/board", icon: ChefHat, description: "Live baker screen", color: "text-orange-500 bg-orange-500/10 border-orange-500/20", badge: "Kitchen" },
+          { key: "abandonedCarts", label: "Cart Recovery", href: "/abandoned-carts", icon: ShoppingCart, description: "Send WhatsApp message", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "WhatsApp" },
+          { key: "deliveryFleet", label: "Delivery Boys", href: "/delivery-fleet", icon: Truck, description: "Riders & order dispatch", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Riders" },
+          { key: "reviews", label: "Reviews", href: "/reviews", icon: Star, description: "Customer ratings", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+          { key: "testimonials", label: "Testimonials", href: "/testimonials", icon: MessageSquareQuote, description: "Website customer stories", color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20" },
         ],
       },
       {
         key: "inventory-mgmt",
-        label: "Inventory & Billing",
+        label: "Inventory",
         icon: Boxes,
         children: [
-          { key: "inventory", label: "Stock Inventory", href: "/inventory", icon: Boxes, description: "Warehouse quantities", color: "text-sky-500 bg-sky-500/10 border-sky-500/20", badge: "Kitchen" },
-          { key: "payments", label: "Payments & Txns", href: "/payments", icon: CreditCard, description: "Gateway settlements", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Admin" },
+          { key: "inventory", label: "Stock", href: "/inventory", icon: Boxes, description: "In-stock & out-of-stock", color: "text-sky-500 bg-sky-500/10 border-sky-500/20", badge: "Stock" },
+          { key: "payments", label: "Payments", href: "/payments", icon: CreditCard, description: "UPI, Cards & COD cash", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Payments" },
         ],
       },
     ],
   },
   {
-    sectionTitle: "Growth & SEO",
+    sectionTitle: "Growth",
     dotColor: "bg-cyan-400",
     items: [
-      { key: "users", label: "User Directory", href: "/users", icon: Users, badge: "CRM" },
+      { key: "users", label: "Customers", href: "/users", icon: Users, badge: "Users" },
       {
         key: "seo",
-        label: "SEO Suite",
+        label: "Google SEO",
         icon: Globe,
-        badge: "Growth",
+        badge: "SEO",
         badgeVariant: "neon-cyan",
         children: [
-          { key: "seo-global", label: "Global & Schema", href: "/seo/global", icon: Settings, description: "JSON-LD & OpenGraph", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "SEO" },
-          { key: "seo-pages", label: "Page-by-Page SEO", href: "/seo/pages", icon: FileText, description: "On-page metadata", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "SEO" },
-          { key: "seo-redirects", label: "URL Redirects", href: "/seo/redirects", icon: ArrowRightLeft, description: "301 & 302 rules", color: "text-violet-500 bg-violet-500/10 border-violet-500/20", badge: "SEO" },
-          { key: "seo-robots", label: "Robots & Sitemap", href: "/seo/robots-sitemap", icon: Bot, description: "XML sitemap generation", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "SEO" },
-          { key: "seo-audit", label: "SEO Health Audit", href: "/seo/audit", icon: Activity, description: "Score & error checker", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "SEO" },
+          { key: "seo-global", label: "Search Settings", href: "/seo/global", icon: Settings, description: "Website title & Google tags", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "SEO" },
+          { key: "seo-pages", label: "Page Titles", href: "/seo/pages", icon: FileText, description: "Google titles per page", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "SEO" },
+          { key: "seo-redirects", label: "Redirects", href: "/seo/redirects", icon: ArrowRightLeft, description: "Old links to new links", color: "text-violet-500 bg-violet-500/10 border-violet-500/20", badge: "Links" },
+          { key: "seo-robots", label: "Sitemap", href: "/seo/robots-sitemap", icon: Bot, description: "Google search index", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "SEO" },
+          { key: "seo-audit", label: "Health Check", href: "/seo/audit", icon: Activity, description: "Speed & error check", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "Check" },
         ],
       },
       {
         key: "insight",
-        label: "Lead Insights & CRM",
+        label: "Leads & CRM",
         icon: Lightbulb,
         children: [
-          { key: "leads", label: "Leads Funnel", href: "/leads", icon: UserPlus, description: "Captured shopper inquiries", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Support" },
-          { key: "crm", label: "CRM Directory", href: "/crm", icon: Users, description: "Customer relationships", color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20", badge: "Support" },
+          { key: "leads", label: "Leads", href: "/leads", icon: UserPlus, description: "Custom cake & quote inquiries", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Leads" },
+          { key: "crm", label: "Contacts", href: "/crm", icon: Users, description: "Customer phonebook & history", color: "text-indigo-500 bg-indigo-500/10 border-indigo-500/20", badge: "Contacts" },
         ],
       },
       {
         key: "contact",
-        label: "Inquiries & Support",
+        label: "Support",
         icon: Phone,
         children: [
-          { key: "websiteContacts", label: "Website Contacts", href: "/websitecontact", icon: Mail, description: "Contact form leads", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Support" },
-          { key: "customerSupport", label: "Support Tickets", href: "/support", icon: LifeBuoy, description: "Customer issues", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "Support" },
+          { key: "websiteContacts", label: "Messages", href: "/websitecontact", icon: Mail, description: "Website contact form inquiries", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Messages" },
+          { key: "customerSupport", label: "Support Tickets", href: "/support", icon: LifeBuoy, description: "Complaints & help tickets", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "Support" },
         ],
       },
     ],
   },
   {
-    sectionTitle: "Store Setup & System",
+    sectionTitle: "Settings",
     dotColor: "bg-purple-400",
     items: [
       {
         key: "store-setup",
-        label: "Storefront Config",
+        label: "Store Setup",
         icon: SlidersHorizontal,
         children: [
-          { key: "themeStudio", label: "Theme & Branding Studio", href: "/theme-customizer", icon: Palette, description: "Admin panel & storefront themes", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Super Admin" },
-          { key: "deliverySlots", label: "Delivery Slots", href: "/delivery-slots", icon: Clock, description: "Midnight & express slot rules", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "Fleet" },
-          { key: "stories", label: "Story Highlights", href: "/stories", icon: Sparkles, description: "Instagram-style reels & banner stories", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Marketing" },
-          { key: "heroSlides", label: "Hero Slides", href: "/hero-slides", icon: SlidersHorizontal, description: "Banner promotional carousels", color: "text-purple-500 bg-purple-500/10 border-purple-500/20", badge: "Marketing" },
-          { key: "occasions", label: "Occasions", href: "/occasions", icon: PartyPopper, description: "Events & gifting tags", color: "text-pink-500 bg-pink-500/10 border-pink-500/20" },
-          { key: "deliveryHours", label: "Operating Hours", href: "/delivery-hours", icon: Clock, description: "Delivery cutoff slots", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Fleet" },
+          { key: "themeStudio", label: "Theme Colors", href: "/theme-customizer", icon: Palette, description: "Store colors & branding", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Theme" },
+          { key: "deliverySlots", label: "Delivery Slots", href: "/delivery-slots", icon: Clock, description: "Midnight & express timings", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "Slots" },
+          { key: "stories", label: "Stories", href: "/stories", icon: Sparkles, description: "Instagram-style reels", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Stories" },
+          { key: "heroSlides", label: "Banners", href: "/hero-slides", icon: SlidersHorizontal, description: "Homepage offer posters", color: "text-purple-500 bg-purple-500/10 border-purple-500/20", badge: "Banners" },
+          { key: "occasions", label: "Occasions", href: "/occasions", icon: PartyPopper, description: "Birthday, Anniversary, etc.", color: "text-pink-500 bg-pink-500/10 border-pink-500/20", badge: "Events" },
+          { key: "deliveryHours", label: "Shop Timings", href: "/delivery-hours", icon: Clock, description: "Opening & cutoff hours", color: "text-amber-500 bg-amber-500/10 border-amber-500/20", badge: "Timings" },
         ],
       },
       {
         key: "footer-mgmt",
-        label: "Footer Management",
+        label: "Footer",
         icon: PanelBottom,
-        badge: "Live",
+        badge: "Footer",
         badgeVariant: "neon-cyan",
         children: [
-          { key: "footer-overview", label: "Footer Overview", href: "/footer", icon: PanelBottom, description: "Live preview & quick summary", color: "text-pink-500 bg-pink-500/10 border-pink-500/20" },
-          { key: "footer-brand", label: "Brand & Contact", href: "/footer/brand", icon: Phone, description: "Logo, phone, email & address", color: "text-rose-500 bg-rose-500/10 border-rose-500/20" },
-          { key: "footer-badges", label: "Trust Badges", href: "/footer/badges", icon: ShieldCheck, description: "Features strip & delivery perks", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
-          { key: "footer-links", label: "Nav Columns & Links", href: "/footer/links", icon: LinkIcon, description: "Explore, Company & dynamic links", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
-          { key: "footer-newsletter", label: "Club & Newsletter", href: "/footer/newsletter", icon: Mail, description: "Subscription box & disclaimer", color: "text-purple-500 bg-purple-500/10 border-purple-500/20" },
-          { key: "footer-bottom", label: "Bottom Strip & Legal", href: "/footer/bottom", icon: FileText, description: "Copyright & accepted payments", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
-          { key: "footer-seo", label: "Footer SEO & Schema", href: "/footer/seo", icon: Globe, description: "Schema JSON-LD & search ranking", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "SEO" },
+          { key: "footer-overview", label: "Overview", href: "/footer", icon: PanelBottom, description: "Footer summary preview", color: "text-pink-500 bg-pink-500/10 border-pink-500/20" },
+          { key: "footer-brand", label: "Contact Details", href: "/footer/brand", icon: Phone, description: "Phone, WhatsApp & address", color: "text-rose-500 bg-rose-500/10 border-rose-500/20" },
+          { key: "footer-badges", label: "Trust Badges", href: "/footer/badges", icon: ShieldCheck, description: "Freshness & speed badges", color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+          { key: "footer-links", label: "Footer Links", href: "/footer/links", icon: LinkIcon, description: "About us & policy links", color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
+          { key: "footer-newsletter", label: "Newsletter", href: "/footer/newsletter", icon: Mail, description: "Email signup for offers", color: "text-purple-500 bg-purple-500/10 border-purple-500/20" },
+          { key: "footer-bottom", label: "Payment Icons", href: "/footer/bottom", icon: FileText, description: "UPI logos & copyright", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+          { key: "footer-seo", label: "Footer SEO", href: "/footer/seo", icon: Globe, description: "Google tags & schema", color: "text-cyan-500 bg-cyan-500/10 border-cyan-500/20", badge: "SEO" },
         ],
       },
       {
         key: "admin-system",
-        label: "Administration",
+        label: "Admin & Staff",
         icon: Settings,
         children: [
-          { key: "adminProfile", label: "Admin Profiles & RBAC", href: "/admins", icon: Users, description: "Team accounts & roles matrix", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "Super Admin" },
-          { key: "auditLogs", label: "Security & Activity Logs", href: "/audit-logs", icon: ShieldCheck, description: "Immutable activity audit trail, live telemetry & API exports", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Super Admin" },
-          { key: "developer", label: "Developer API & Logs", href: "/developer", icon: Code, description: "Webhooks & server logs", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Dev" },
-          { key: "termsPolicy", label: "Terms & Privacy Policy", href: "/terms", icon: FileText, description: "Legal compliance pages", color: "text-slate-500 bg-slate-500/10 border-slate-500/20" },
+          { key: "adminProfile", label: "Staff Accounts", href: "/admins", icon: Users, description: "Team accounts & roles", color: "text-rose-500 bg-rose-500/10 border-rose-500/20", badge: "Staff" },
+          { key: "auditLogs", label: "Activity Logs", href: "/audit-logs", icon: ShieldCheck, description: "Changes & logins record", color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20", badge: "Logs" },
+          { key: "developer", label: "Developer API", href: "/developer", icon: Code, description: "API keys & technical logs", color: "text-blue-500 bg-blue-500/10 border-blue-500/20", badge: "Dev" },
+          { key: "termsPolicy", label: "Terms & Policy", href: "/terms", icon: FileText, description: "Terms, refund & privacy", color: "text-slate-500 bg-slate-500/10 border-slate-500/20" },
         ],
       },
     ],
@@ -496,7 +496,7 @@ function DesktopSidebar() {
                   </div>
                   <p className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400">
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
-                    Storefront Online (24/7)
+                    Store Live (24/7 Online)
                   </p>
                 </div>
               )}
@@ -529,7 +529,7 @@ function DesktopSidebar() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Jump to page... (⌘K)"
+                  placeholder="Search page, menu or item... (⌘K)"
                   className="cursor-pointer w-full rounded-xl border border-border-theme/80 bg-background/70 pl-8.5 pr-8 py-1.5 text-xs text-foreground placeholder:text-slate-400 focus:border-cyan-500/60 focus:bg-background focus:outline-none focus:ring-1 focus:ring-cyan-500/30 transition-all"
                 />
                 {searchQuery ? (
@@ -813,7 +813,7 @@ function DesktopSidebar() {
                       {flyoutMenu.item.label}
                     </p>
                     <p className="truncate text-[9.5px] text-slate-400 font-medium">
-                      Quick Sub-menu
+                      Sub-Menu Options
                     </p>
                   </div>
                 </div>
@@ -896,7 +896,7 @@ function DesktopSidebar() {
                     <ShieldCheck className="h-3 w-3 text-emerald-400 shrink-0" />
                   </div>
                   <p className="truncate text-[10px] text-slate-400 font-medium">
-                    Super Administrator
+                    Super Admin (Store Owner)
                   </p>
                 </div>
                 <span className="rounded-md bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[8.5px] font-black text-emerald-400 tracking-wider">

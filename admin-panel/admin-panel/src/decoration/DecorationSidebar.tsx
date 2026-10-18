@@ -84,7 +84,7 @@ export default function DecorationSidebar({
             label: "All Bookings",
             icon: CalendarCheck,
             badge: stats?.totalBookings ? stats.totalBookings : undefined,
-            description: "Live setups pipeline",
+            description: "Party & room setups",
           },
           {
             href: "/decoration-panel/payments",
@@ -94,69 +94,69 @@ export default function DecorationSidebar({
             badgeColor: isDark
               ? "bg-amber-500/15 text-amber-400"
               : "bg-amber-50 text-amber-700 border border-amber-200",
-            description: "UPI, COD & recoveries",
+            description: "Advance & cash balance",
           },
         ],
       },
       {
         key: "catalog",
-        label: "Catalog",
-        shortLabel: "Catalog",
+        label: "Packages",
+        shortLabel: "Packages",
         icon: Package,
         children: [
           {
             href: "/decoration-panel/packages",
             label: "Packages",
             icon: Package,
-            description: "Setup packages & pricing",
+            description: "Room decoration packages",
           },
           {
             href: "/decoration-panel/samples",
-            label: "Showcase",
+            label: "Photos",
             icon: Camera,
-            description: "Real hotel setup photos",
+            description: "Real setup photos",
           },
         ],
       },
       {
         key: "setup",
-        label: "Booking Setup",
+        label: "Setup",
         shortLabel: "Setup",
         icon: SlidersHorizontal,
         children: [
           {
             href: "/decoration-panel/booking-setup",
-            label: "Booking Options",
+            label: "Booking Setup",
             icon: SlidersHorizontal,
-            description: "Venue types, time slots, themes & rules",
+            description: "Venues, slots & rules",
           },
         ],
       },
       {
         key: "partners",
-        label: "Partners",
-        shortLabel: "Partners",
+        label: "Team",
+        shortLabel: "Team",
         icon: Store,
         children: [
           {
             href: "/decoration-panel/partners",
-            label: "Decorator Partners",
+            label: "Decorators",
             icon: Store,
-            description: "Verified Faridabad decorators",
+            description: "Assigned decorator boys",
           },
         ],
       },
       {
         key: "ledger",
-        label: "Ledger",
-        shortLabel: "Ledger",
+        label: "Hisab",
+        shortLabel: "Hisab",
         icon: Receipt,
         children: [
           {
             href: "/decoration-panel/financials",
-            label: "Profit & Payouts",
+            label: "Payouts",
             icon: Receipt,
-            description: "Commission & bills ledger",
+            description: "Profits & decorator hisab",
           },
         ],
       },
@@ -362,7 +362,7 @@ export default function DecorationSidebar({
             title="Return to Main Admin Panel"
           >
             <ArrowLeft className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
-            <span className="text-[9px] font-bold mt-0.5">Exit</span>
+            <span className="text-[9px] font-bold mt-0.5">Back</span>
           </Link>
         </div>
       </aside>
@@ -396,7 +396,7 @@ export default function DecorationSidebar({
                   {activeRailItem.label}
                 </h3>
                 <p className="text-[10px] text-slate-400 font-medium">
-                  {activeRailItem.children.length} Pages
+                  {activeRailItem.children.length} Options
                 </p>
               </div>
             </div>
@@ -406,7 +406,7 @@ export default function DecorationSidebar({
               type="button"
               onClick={() => setSubSidebarOpen(false)}
               className="cursor-pointer p-1.5 rounded-lg text-slate-400 hover:text-foreground hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-              title="Close sub-sidebar"
+              title="Close sub-sidebar (<<)"
             >
               <ChevronsLeft className="w-4 h-4" />
             </button>

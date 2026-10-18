@@ -51,20 +51,34 @@ export default function AdminHeader() {
   }, []);
 
   const getPageTitle = (path: string) => {
-    if (path.includes("dashboard")) return "Dashboard Overview";
-    if (path.includes("theme-customizer")) return "Theme & Branding Studio";
-    if (path.includes("abandoned-carts")) return "Abandoned Cart Recovery";
-    if (path.includes("delivery-fleet")) return "Delivery Fleet & Logistics";
-    if (path.includes("audit-logs")) return "Security & Audit Logs";
-    if (path.includes("kitchenBoard") || path.includes("/orders/board")) return "Kitchen Live Dispatch";
-    if (path.includes("orders")) return "Orders Pipeline";
-    if (path.includes("products")) return "Product Catalog";
-    if (path.includes("inventory")) return "Stock & Inventory";
-    if (path.includes("admins")) return "Admin Team & RBAC";
-    if (path.includes("seo")) return "SEO Growth Suite";
-    if (path.includes("crm")) return "Customer Relationships";
-    if (path.includes("leads")) return "Leads & Shopper Funnel";
-    return "GiftFestive Workspace";
+    if (path.includes("dashboard")) return "Dashboard";
+    if (path.includes("theme-customizer")) return "Theme Colors";
+    if (path.includes("abandoned-carts")) return "Cart Recovery";
+    if (path.includes("delivery-fleet")) return "Delivery Boys";
+    if (path.includes("audit-logs")) return "Activity Logs";
+    if (path.includes("kitchenBoard") || path.includes("/orders/board")) return "Kitchen Board";
+    if (path.includes("orders")) return "All Orders";
+    if (path.includes("products")) return "All Products";
+    if (path.includes("category")) return "Categories";
+    if (path.includes("flavors")) return "Flavors";
+    if (path.includes("addons")) return "Add-ons";
+    if (path.includes("cities")) return "Cities";
+    if (path.includes("coupons")) return "Coupons";
+    if (path.includes("inventory")) return "Stock";
+    if (path.includes("payments")) return "Payments";
+    if (path.includes("admins")) return "Staff Accounts";
+    if (path.includes("seo")) return "Google SEO";
+    if (path.includes("crm")) return "Contacts";
+    if (path.includes("leads")) return "Leads";
+    if (path.includes("support")) return "Support Tickets";
+    if (path.includes("websitecontact")) return "Messages";
+    if (path.includes("delivery-slots")) return "Delivery Slots";
+    if (path.includes("delivery-hours")) return "Shop Timings";
+    if (path.includes("hero-slides")) return "Banners";
+    if (path.includes("stories")) return "Stories";
+    if (path.includes("occasions")) return "Occasions";
+    if (path.includes("footer")) return "Footer";
+    return "Admin Panel";
   };
 
   return (
