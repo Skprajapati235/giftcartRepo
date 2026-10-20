@@ -7,8 +7,16 @@ import { TableSkeleton } from "../skeletonLoader/commonSkeleton";
 import { adminTableWrapClass, adminTableClass, adminTableHeadCellClass, adminTableBodyCellClass } from "../ui/adminTable";
 import { useRowActionMenu, rowActionDropdownClass } from "../ui/useRowActionMenu";
 
+interface CityGroup {
+  _id: string;
+  image?: string;
+  state: string;
+  cities: string[];
+  createdAt: string;
+}
+
 interface CityListProps {
-  cities: any[];
+  cities: CityGroup[];
   loading: boolean;
   total: number;
   totalPages: number;
@@ -16,8 +24,8 @@ interface CityListProps {
   searchTerm: string;
   onPageChange: (page: number) => void;
   onSearchChange: (search: string) => void;
-  onEdit: (city: any) => void;
-  onDelete: (id: string) => void;
+  onEdit: (city: CityGroup) => void;
+  onDelete: (city: CityGroup) => void;
 }
 
 export default function CityList({ 
@@ -35,11 +43,9 @@ export default function CityList({
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   useRowActionMenu(openMenuId, setOpenMenuId);
 
-  const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this city group?")) {
-      setOpenMenuId(null);
-      onDelete(id);
-    }
+  const handleDelete = (city: CityGroup) => {
+    setOpenMenuId(null);
+    onDelete(city);
   };
 
   return (
@@ -110,7 +116,7 @@ export default function CityList({
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDelete(city._id)}
+                            onClick={() => handleDelete(city)}
                             className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-bold text-rose-600 hover:bg-rose-50 transition"
                           >
                             <Trash2 size={16} />
