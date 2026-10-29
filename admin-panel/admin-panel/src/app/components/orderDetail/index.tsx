@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { getOrderDetail } from "../../services/adminService";
 import { useTheme } from "../../context/ThemeContext";
 import { RowSkeleton } from "../skeletonLoader/commonSkeleton";
-import { AlertTriangle, CheckCircle2, XCircle, Clock, Truck, Sparkles, Gift, Heart, MessageSquare } from "lucide-react";
+import { AlertTriangle, CheckCircle2, XCircle, Clock, Truck, Sparkles, Gift, Heart, MessageSquare, Eye, Download, X } from "lucide-react";
 import { getRelativeTime, getDetailedElapsedTime, formatOrderDateTime } from "../../utils/timeAgo";
 
 export interface AddonItem {
@@ -36,6 +36,8 @@ interface OrderItem {
   flavor?: string;
   weight?: string;
   flowerCount?: string;
+  customImage?: string;
+  messageOnCake?: string;
 }
 
 interface OrderDetailData {
@@ -94,6 +96,7 @@ export default function OrderDetailView() {
   const { theme } = useTheme();
   const [order, setOrder] = useState<OrderDetailData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrderDetail = async () => {
@@ -135,6 +138,7 @@ export default function OrderDetailView() {
           <RowSkeleton rows={6} />
         </div>
       </div>
+
     </>
   );
 
@@ -318,7 +322,60 @@ export default function OrderDetailView() {
                         )}
                       </div>
 
-                      <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-semibold text-slate-500">
+{item.customImage && (
+                        <div className="mt-3 rounded-2xl border border-pink-500/30 bg-pink-500/5 p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage(item.customImage!)}
+                              className="relative h-14 w-14 rounded-xl overflow-hidden border-2 border-pink-500/40 shrink-0 group cursor-pointer shadow-xs hover:border-pink-500 transition"
+                              title="Click to view full photo"
+                            >
+                              <img src={item.customImage} alt="Custom upload" className="h-full w-full object-cover group-hover:scale-105 transition" />
+                              <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition">
+                                <Eye size={16} />
+                              </div>
+                            </button>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] font-black uppercase tracking-wider text-pink-600 dark:text-pink-400 flex items-center gap-1">
+                                  <span>📷</span> Customer Custom Photo
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                Photo uploaded by customer for cake / phone case printing.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImage(item.customImage!)}
+                              className="px-2.5 py-1.5 rounded-lg border border-border-theme bg-card hover:bg-hover-theme text-foreground text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                            >
+                              <Eye size={12} className="text-primary" /> View Photo
+                            </button>
+                            <a
+                              href={item.customImage}
+                              target="_blank"
+                              rel="noreferrer"
+                              download="customer-photo"
+                              className="px-2.5 py-1.5 rounded-lg bg-pink-500 text-white hover:bg-pink-600 text-xs font-bold transition flex items-center gap-1 shadow-2xs"
+                            >
+                              <Download size={12} /> Download
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {item.messageOnCake && (
+                        <div className="mt-2 text-xs font-bold text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 px-3 py-1.5 rounded-xl border border-pink-200 dark:border-pink-500/20 inline-flex items-center gap-1.5">
+                          <span>🎂 Message:</span>
+                          <span className="font-semibold text-foreground italic">"{item.messageOnCake}"</span>
+                        </div>
+                      )}
+
+                                            <div className="mt-2 flex flex-wrap gap-3 text-[11px] font-semibold text-slate-500">
                         <span>Qty: <strong className="text-slate-700">{item.quantity}</strong></span>
                         <span>Unit Price: <strong className="text-slate-700">₹{b.unitPrice.toFixed(2)}</strong></span>
                         {b.discount > 0 && <span className="text-emerald-600">Discount: {b.discount}%</span>}
@@ -663,6 +720,39 @@ export default function OrderDetailView() {
           </section>
         </div>
       </div>
+      {/* Lightbox Modal for Customer Photo */}
+      {previewImage && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="relative max-w-2xl w-full bg-card rounded-3xl border border-border-theme overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-border-theme flex items-center justify-between bg-card">
+              <div className="flex items-center gap-2 font-bold text-foreground text-sm">
+                <span>📷</span> Customer Uploaded Image
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewImage}
+                  target="_blank"
+                  rel="noreferrer"
+                  download="customer-uploaded-photo"
+                  className="px-3 py-1.5 rounded-xl bg-pink-500 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-pink-600 transition"
+                >
+                  <Download size={14} /> Download Original
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewImage(null)}
+                  className="p-1.5 rounded-xl hover:bg-hover-theme text-slate-400 hover:text-foreground transition cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="p-4 flex-1 overflow-auto flex items-center justify-center bg-black/20 min-h-[300px]">
+              <img src={previewImage} alt="Customer upload preview" className="max-h-[70vh] max-w-full rounded-2xl object-contain shadow-md" />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

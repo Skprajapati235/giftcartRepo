@@ -2,13 +2,15 @@ const Cart = require("../models/Cart");
 const Product = require("../models/Product");
 const { calculateItemPricing, calculateCartTotals, resolveVariantPricing } = require("../utils/priceCalculator");
 
-function buildVariantKey({ productId, weight, flowerCount, flavor, isEggless }) {
+function buildVariantKey({ productId, weight, flowerCount, flavor, isEggless, customImage, messageOnCake }) {
   return [
     String(productId),
     weight || "",
     flowerCount || "",
     flavor ? String(flavor) : "",
     isEggless ? "eggless" : "regular",
+    customImage ? String(customImage).trim() : "",
+    messageOnCake ? String(messageOnCake).trim() : "",
   ].join("|");
 }
 
@@ -46,6 +48,9 @@ async function serializeCart(cartDoc) {
       category: product.category,
       isCodAvailable: product.isCodAvailable,
       hasEgglessOption: product.hasEgglessOption,
+      allowCustomPhoto: product.allowCustomPhoto || false,
+      isCustomPhotoRequired: product.isCustomPhotoRequired || false,
+      customPhotoLabel: product.customPhotoLabel || "Upload Your Photo",
       deliveryTime: product.deliveryTime,
       expectedDeliveryDate: product.expectedDeliveryDate,
       weight: item.weight || product.weight || null,
@@ -56,6 +61,8 @@ async function serializeCart(cartDoc) {
       flavor: product.flavor || null,
       occasions: product.occasions || [],
       isEggless: item.isEggless || false,
+      customImage: item.customImage || "",
+      messageOnCake: item.messageOnCake || "",
       variantKey: item.variantKey,
       quantity: pricing.quantity,
       price: pricing.price,
@@ -88,7 +95,7 @@ exports.getCart = async (userId) => {
 };
 
 exports.addItem = async (userId, payload) => {
-  const { productId, quantity = 1, weight, flowerCount, flavor, isEggless } = payload;
+  const { productId, quantity = 1, weight, flowerCount, flavor, isEggless, customImage, messageOnCake } = payload;
 
   const product = await Product.findById(productId).populate("flavor").populate("occasions");
   if (!product) {
@@ -98,7 +105,7 @@ exports.addItem = async (userId, payload) => {
   }
 
   const cart = await getOrCreateCart(userId);
-  const variantKey = buildVariantKey({ productId, weight, flowerCount, flavor, isEggless });
+  const variantKey = buildVariantKey({ productId, weight, flowerCount, flavor, isEggless, customImage, messageOnCake });
 
   const existing = cart.items.find((item) => item.variantKey === variantKey);
   if (existing) {
@@ -111,6 +118,8 @@ exports.addItem = async (userId, payload) => {
       flowerCount: flowerCount || product.flowerCount || null,
       flavor: flavor || product.flavor || null,
       isEggless: Boolean(isEggless),
+      customImage: customImage || "",
+      messageOnCake: messageOnCake || "",
       variantKey,
     });
   }
@@ -161,9 +170,9 @@ exports.clearCart = async (userId) => {
 
 // Public (no login needed) price quote for a guest cart kept in the
 // browser's local storage. Takes only {productId, quantity, weight,
-// flowerCount, flavor, isEggless} and returns fully backend-calculated
-// line items + totals — nothing about price/discount/tax is trusted from
-// the frontend.
+// flowerCount, flavor, isEggless, customImage, messageOnCake} and returns
+// fully backend-calculated line items + totals — nothing about price/discount/tax
+// is trusted from the frontend.
 exports.getGuestQuote = async (rawItems = []) => {
   const items = [];
 
@@ -190,6 +199,9 @@ exports.getGuestQuote = async (rawItems = []) => {
       category: product.category,
       isCodAvailable: product.isCodAvailable,
       hasEgglessOption: product.hasEgglessOption,
+      allowCustomPhoto: product.allowCustomPhoto || false,
+      isCustomPhotoRequired: product.isCustomPhotoRequired || false,
+      customPhotoLabel: product.customPhotoLabel || "Upload Your Photo",
       deliveryTime: product.deliveryTime,
       expectedDeliveryDate: product.expectedDeliveryDate,
       weight: rawItem.weight || product.weight || null,
@@ -197,12 +209,16 @@ exports.getGuestQuote = async (rawItems = []) => {
       flavor: product.flavor || null,
       occasions: product.occasions || [],
       isEggless: Boolean(rawItem.isEggless),
+      customImage: rawItem.customImage || "",
+      messageOnCake: rawItem.messageOnCake || "",
       variantKey: buildVariantKey({
         productId,
         weight: rawItem.weight,
         flowerCount: rawItem.flowerCount,
         flavor: rawItem.flavor?._id || rawItem.flavor,
         isEggless: rawItem.isEggless,
+        customImage: rawItem.customImage,
+        messageOnCake: rawItem.messageOnCake,
       }),
       quantity: pricing.quantity,
       price: pricing.price,
@@ -238,6 +254,8 @@ exports.mergeGuestCart = async (userId, guestItems = []) => {
       flowerCount: guestItem.flowerCount,
       flavor: guestItem.flavor?._id || guestItem.flavor,
       isEggless: guestItem.isEggless,
+      customImage: guestItem.customImage,
+      messageOnCake: guestItem.messageOnCake,
     });
 
     const existing = cart.items.find((item) => item.variantKey === variantKey);
@@ -251,6 +269,8 @@ exports.mergeGuestCart = async (userId, guestItems = []) => {
         flowerCount: guestItem.flowerCount || product.flowerCount || null,
         flavor: guestItem.flavor?._id || guestItem.flavor || product.flavor || null,
         isEggless: Boolean(guestItem.isEggless),
+        customImage: guestItem.customImage || "",
+        messageOnCake: guestItem.messageOnCake || "",
         variantKey,
       });
     }
@@ -278,6 +298,8 @@ exports.addMultipleItems = async (userId, itemsArray = []) => {
       flowerCount: itemPayload.flowerCount || product.flowerCount || null,
       flavor: itemPayload.flavor?._id || itemPayload.flavor || product.flavor || null,
       isEggless: Boolean(itemPayload.isEggless),
+      customImage: itemPayload.customImage,
+      messageOnCake: itemPayload.messageOnCake,
     });
 
     const existing = cart.items.find((item) => item.variantKey === variantKey);
@@ -291,6 +313,8 @@ exports.addMultipleItems = async (userId, itemsArray = []) => {
         flowerCount: itemPayload.flowerCount || product.flowerCount || null,
         flavor: itemPayload.flavor?._id || itemPayload.flavor || product.flavor || null,
         isEggless: Boolean(itemPayload.isEggless),
+        customImage: itemPayload.customImage || "",
+        messageOnCake: itemPayload.messageOnCake || "",
         variantKey,
       });
     }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, RefreshControl, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, StatusBar, RefreshControl, Linking, Modal, Dimensions } from 'react-native';
 import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeScreen, ScreenHeader } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
@@ -10,6 +10,7 @@ import { colors } from '../constants/theme';
 export default function OrderDetailScreen({ route, navigation }) {
   const [order, setOrder] = useState(route.params.order);
   const [refreshing, setRefreshing] = useState(false);
+  const [previewCustomImage, setPreviewCustomImage] = useState(null);
 
   const fetchLiveOrder = async () => {
     if (!route.params?.order?._id) return;
@@ -231,6 +232,28 @@ export default function OrderDetailScreen({ route, navigation }) {
                     <Text style={styles.productPrice}>₹{displayPrice}</Text>
                   </View>
 
+                  {item.customImage ? (
+                    <TouchableOpacity
+                      style={styles.customPhotoCard}
+                      onPress={() => setPreviewCustomImage(item.customImage)}
+                      activeOpacity={0.85}
+                    >
+                      <Image source={{ uri: item.customImage }} style={styles.customPhotoCardThumb} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.customPhotoCardTitle}>📸 Customer Custom Photo</Text>
+                        <Text style={styles.customPhotoCardDesc}>Tap to view full image</Text>
+                      </View>
+                      <Feather name="maximize-2" size={14} color={colors.primary} />
+                    </TouchableOpacity>
+                  ) : null}
+
+                  {item.messageOnCake ? (
+                    <View style={styles.cakeMessageCard}>
+                      <Text style={styles.cakeMessageCardTitle}>🎂 Message on Cake:</Text>
+                      <Text style={styles.cakeMessageCardText}>"{item.messageOnCake}"</Text>
+                    </View>
+                  ) : null}
+
                   {item.expectedDeliveryDate && (
                     <View style={styles.deliveryBadgeOrder}>
                       <Feather name="truck" size={10} color={colors.primary} />
@@ -376,6 +399,24 @@ export default function OrderDetailScreen({ route, navigation }) {
           <Feather name="chevron-right" size={20} color="#94A3B8" />
         </TouchableOpacity>
       </ScrollView>
+      {/* Full screen modal for customer uploaded photo */}
+      <Modal visible={!!previewCustomImage} transparent animationType="fade" onRequestClose={() => setPreviewCustomImage(null)}>
+        <View style={styles.photoModalWrap}>
+          <TouchableOpacity
+            style={styles.photoModalCloseBtn}
+            onPress={() => setPreviewCustomImage(null)}
+          >
+            <Ionicons name="close" size={26} color="#FFF" />
+          </TouchableOpacity>
+          {previewCustomImage && (
+            <Image
+              source={{ uri: previewCustomImage }}
+              style={styles.photoModalImg}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
     </SafeScreen>
   );
 }

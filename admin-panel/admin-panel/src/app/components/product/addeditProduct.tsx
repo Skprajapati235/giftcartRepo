@@ -48,6 +48,9 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
     category: product?.category?._id || product?.category || "",
     isCodAvailable: product?.isCodAvailable !== undefined ? product.isCodAvailable : true,
     hasEgglessOption: product?.hasEgglessOption || false,
+    allowCustomPhoto: product?.allowCustomPhoto !== undefined ? !!product.allowCustomPhoto : false,
+    isCustomPhotoRequired: product?.isCustomPhotoRequired !== undefined ? !!product.isCustomPhotoRequired : false,
+    customPhotoLabel: product?.customPhotoLabel || "Upload Your Photo",
     deliveryTime: product?.deliveryTime || "3-5",
     expectedDeliveryDate: product?.expectedDeliveryDate || "Monday, 20 Oct",
     flavor: product?.flavor?._id || product?.flavor || "",
@@ -356,6 +359,9 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
         category: form.category,
         isCodAvailable: form.isCodAvailable,
         hasEgglessOption: isCakeCategory ? form.hasEgglessOption : false,
+        allowCustomPhoto: !!form.allowCustomPhoto,
+        isCustomPhotoRequired: form.allowCustomPhoto ? !!form.isCustomPhotoRequired : false,
+        customPhotoLabel: form.allowCustomPhoto ? (form.customPhotoLabel?.trim() || "Upload Your Photo") : "Upload Your Photo",
         flavor: isCakeCategory ? (form.flavor || undefined) : undefined,
         deliveryTime: form.deliveryTime,
         expectedDeliveryDate: form.expectedDeliveryDate,
@@ -728,6 +734,83 @@ export default function AddEditProduct({ product, onClose }: AddEditProductProps
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Customer Photo Upload / Personalization Section */}
+        <div className={`rounded-3xl border transition-all p-6 space-y-4 ${
+          form.allowCustomPhoto 
+            ? "border-pink-500/40 bg-pink-500/5 shadow-xs" 
+            : "border-border-theme bg-card/60"
+        }`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-lg ${
+                form.allowCustomPhoto ? "bg-pink-500 text-white shadow-md shadow-pink-500/25" : "bg-hover-theme text-slate-500"
+              }`}>
+                📷
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <span>Customer Photo Upload Option</span>
+                  {form.allowCustomPhoto && (
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-pink-500 text-white px-2 py-0.5 rounded-full">
+                      Active
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Enable for Photo Cakes, Customized Phone Cases, Mugs, T-shirts & Personalized Gifts.
+                </p>
+              </div>
+            </div>
+
+            {/* Switch Toggle */}
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.allowCustomPhoto}
+                onChange={(e) => setForm({ ...form, allowCustomPhoto: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+              <span className="ml-3 text-xs font-bold text-slate-700 dark:text-slate-300">
+                {form.allowCustomPhoto ? "Enabled (Shown on Product Page)" : "Disabled (Hidden)"}
+              </span>
+            </label>
+          </div>
+
+          {form.allowCustomPhoto && (
+            <div className="pt-4 border-t border-pink-500/20 grid gap-4 sm:grid-cols-2">
+              <div className="flex items-center gap-3 bg-background/80 rounded-2xl p-4 border border-border-theme">
+                <input
+                  type="checkbox"
+                  id="isCustomPhotoRequired"
+                  checked={form.isCustomPhotoRequired}
+                  onChange={(e) => setForm({ ...form, isCustomPhotoRequired: e.target.checked })}
+                  className="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 cursor-pointer"
+                />
+                <label htmlFor="isCustomPhotoRequired" className="text-xs font-bold text-foreground cursor-pointer">
+                  Mandatory Photo Upload
+                  <span className="block text-[11px] font-normal text-slate-400 mt-0.5">
+                    Customer MUST upload a photo before adding to cart / ordering (e.g. Phone Case)
+                  </span>
+                </label>
+              </div>
+
+              <div className="bg-background/80 rounded-2xl p-4 border border-border-theme">
+                <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                  Upload Prompt / Button Label
+                </label>
+                <input
+                  type="text"
+                  value={form.customPhotoLabel}
+                  onChange={(e) => setForm({ ...form, customPhotoLabel: e.target.value })}
+                  placeholder="e.g. Upload Photo for Phone Case / Cake"
+                  className="w-full rounded-xl border border-border-theme bg-card px-3.5 py-2 text-xs font-medium text-foreground outline-none focus:ring-2 focus:ring-pink-500/20"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Section 2: Pricing & Variants (FULL WIDTH - Spans evenly across both columns) */}

@@ -201,6 +201,7 @@ require("dotenv").config();
 const PORT = process.env.PORT || 5000;
 const connectDB = require("./config/db");
 const authMiddleware = require("./middleware/authMiddleware");
+const optionalAuth = require("./middleware/optionalAuth");
 const adminMiddleware = require("./middleware/adminMiddleware");
 
 const helmet = require("helmet");
@@ -376,7 +377,7 @@ app.use("/api/product", require("./routes/productRoutes"));
 app.use("/api/order", require("./routes/orderRoutes"));
 app.use("/api/review", require("./routes/reviewRoutes"));
 app.use("/api/wishlist", require("./routes/wishlistRoutes"));
-app.use("/api/upload", authMiddleware, require("./routes/uploadRoutes"));
+app.use("/api/upload", optionalAuth, require("./routes/uploadRoutes"));
 app.use("/api/admin/users", adminMiddleware, require("./routes/userRoutes"));
 app.use("/api/coupons", require("./routes/couponRoutes"));
 app.use("/api/flavor", require("./routes/flavorRoutes"));

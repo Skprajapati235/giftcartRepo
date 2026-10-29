@@ -121,6 +121,7 @@ exports.exportProducts = async (req, res) => {
       "Sale Price",
       "Stock",
       "Eggless Option",
+      "Custom Photo",
       "Created At",
     ];
 
@@ -132,6 +133,7 @@ exports.exportProducts = async (req, res) => {
       escapeCsv(p.salePrice || p.price || 0),
       escapeCsv(p.stock !== undefined ? p.stock : "In Stock"),
       escapeCsv(p.hasEgglessOption ? "Yes" : "No"),
+      escapeCsv(p.allowCustomPhoto ? "Yes" : "No"),
       escapeCsv(p.createdAt ? new Date(p.createdAt).toISOString() : ""),
     ]);
 

@@ -39,7 +39,15 @@ const saveGuestLines = async (lines) => {
 };
 
 const lineKey = (line) =>
-  [line.productId, line.weight || '', line.flowerCount || '', line.flavor?._id || line.flavor || '', line.isEggless ? 'eggless' : 'regular'].join('|');
+  [
+    line.productId,
+    line.weight || '',
+    line.flowerCount || '',
+    line.flavor?._id || line.flavor || '',
+    line.isEggless ? 'eggless' : 'regular',
+    line.customImage || '',
+    line.messageOnCake || '',
+  ].join('|');
 
 const quoteGuestCart = async () => {
   const lines = await getGuestLines();
@@ -64,6 +72,8 @@ const addToCart = async (product, quantity = 1, selectedVariant = null) => {
     flowerCount: selectedVariant?.flowerCount || product.flowerCount || null,
     flavor: product.flavor?._id || product.flavor || null,
     isEggless: Boolean(selectedVariant?.isEggless),
+    customImage: selectedVariant?.customImage || null,
+    messageOnCake: selectedVariant?.messageOnCake || null,
   };
 
   if (await isLoggedIn()) {
@@ -145,6 +155,8 @@ const addMultipleToCart = async (products) => {
       flowerCount: p?.selectedVariant?.flowerCount || prod?.flowerCount || null,
       flavor: prod?.flavor?._id || prod?.flavor || null,
       isEggless: Boolean(p?.selectedVariant?.isEggless || p?.isEggless),
+      customImage: p?.selectedVariant?.customImage || p?.customImage || null,
+      messageOnCake: p?.selectedVariant?.messageOnCake || p?.messageOnCake || null,
     };
   }).filter((i) => Boolean(i.productId));
 

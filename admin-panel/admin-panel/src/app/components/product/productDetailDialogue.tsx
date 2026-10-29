@@ -114,6 +114,16 @@ export default function ProductDetailDialogue({ product, onClose }: ProductDetai
              )}
 
           </div>
+             {product.allowCustomPhoto && (
+               <div className="flex items-center justify-between border border-pink-500/30 rounded-xl px-5 py-4 bg-pink-500/5">
+                  <span className="flex items-center gap-2 text-xs font-bold text-pink-600 dark:text-pink-400 uppercase tracking-widest">
+                    <span>📷</span> Customer Photo Upload
+                  </span>
+                  <span className="font-bold text-pink-600 dark:text-pink-400 text-xs px-2.5 py-1 rounded-lg bg-pink-500/10 border border-pink-500/20">
+                    {product.isCustomPhotoRequired ? "Enabled (Mandatory)" : "Enabled (Optional)"}
+                  </span>
+               </div>
+             )}
 
           <div className="border-t border-border-theme pt-8 mb-8">
              <h3 className="text-sm font-bold text-foreground flex items-center gap-2 mb-4 uppercase tracking-wider">

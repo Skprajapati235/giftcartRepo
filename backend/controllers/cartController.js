@@ -22,12 +22,12 @@ exports.addItem = async (req, res) => {
       return res.json({ success: true, ...data });
     }
 
-    const { productId, quantity, weight, flowerCount, flavor, isEggless } = req.body;
+    const { productId, quantity, weight, flowerCount, flavor, isEggless, customImage, messageOnCake } = req.body;
     if (!productId) {
       return res.status(400).json({ success: false, message: "productId is required" });
     }
     const data = await service.addItem(getUserId(req), {
-      productId, quantity, weight, flowerCount, flavor, isEggless,
+      productId, quantity, weight, flowerCount, flavor, isEggless, customImage, messageOnCake,
     });
     res.json({ success: true, ...data });
   } catch (error) {

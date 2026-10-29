@@ -45,6 +45,10 @@ const productSchema = new mongoose.Schema({
   summary: { type: String },
   layout: { type: String },
   hasEgglessOption: { type: Boolean, default: false },
+  // Photo upload customization (cakes, phone cases, personalized gifts)
+  allowCustomPhoto: { type: Boolean, default: false },
+  isCustomPhotoRequired: { type: Boolean, default: false },
+  customPhotoLabel: { type: String, default: "Upload Your Photo" },
   shippingCost: { type: Number, default: 0 },
   discount: { type: Number, default: 0 },
   tax: { type: Number, default: 0 },

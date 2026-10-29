@@ -183,6 +183,11 @@ export default function ProductList({
                               🌸 {p.flowerCountOptions.length} Sizes
                             </span>
                           )}
+                          {p.allowCustomPhoto && (
+                            <span className="text-[8px] font-black text-pink-600 bg-pink-50 dark:bg-pink-500/10 px-1.5 py-0.5 rounded border border-pink-200 dark:border-pink-500/20">
+                              📷 Photo Upload
+                            </span>
+                          )}
                           {p.deliveryTime && (
                             <span className="text-[8px] font-black text-primary bg-primary/5 px-1 rounded border border-primary/10">
                               {p.deliveryTime} Hours
@@ -301,6 +306,11 @@ export default function ProductList({
                 <h4 className="font-bold text-foreground truncate">{p.name}</h4>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <p className="text-xs text-slate-400 uppercase font-bold tracking-widest">{p.category?.name || "No Category"}</p>
+                  {p.allowCustomPhoto && (
+                    <span className="text-[9px] font-bold text-pink-600 bg-pink-50 dark:bg-pink-500/10 px-1.5 py-0.5 rounded border border-pink-200 dark:border-pink-500/20">
+                      📷 Photo Upload
+                    </span>
+                  )}
                   {p.flowerCount && (
                     <span className="text-[9px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-500/20">
                       🌸 {p.flowerCount}

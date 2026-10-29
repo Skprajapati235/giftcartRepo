@@ -210,6 +210,11 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
                           <span className="text-[10px] text-slate-500">
                             Weight/Variant: {it.weight || "Standard"} • 100% Eggless
                           </span>
+                          {it.customImage && (
+                            <span className="block text-[10px] font-bold text-pink-600 mt-0.5">
+                              📷 Custom Photo Attached
+                            </span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 text-center font-bold text-slate-800">
                           {it.quantity || 1}
@@ -329,7 +334,20 @@ export default function OrderInvoiceModal({ order, isOpen, onClose }: OrderInvoi
                       <p className="text-sm font-bold text-orange-600 mt-0.5">
                         Weight: {it.weight || "1 Kg"} • 100% Pure Vegetarian / Eggless
                       </p>
-                      <div className="mt-2 rounded-xl bg-white border border-slate-300 p-2.5">
+                      {it.customImage && (
+                        <div className="mt-2 rounded-xl bg-white border border-pink-300 p-2.5 flex items-center gap-3">
+                          <img src={it.customImage} alt="Custom print" className="h-12 w-12 rounded-lg object-cover border border-pink-400 shrink-0" />
+                          <div>
+                            <span className="text-[10px] font-black uppercase tracking-wider text-pink-600 block">
+                              📷 Photo to Print (Cake / Phone Case):
+                            </span>
+                            <a href={it.customImage} target="_blank" rel="noreferrer" className="text-xs font-bold text-pink-700 underline">
+                              View / Print Original Image ↗
+                            </a>
+                          </div>
+                        </div>
+                      )}
+                                            <div className="mt-2 rounded-xl bg-white border border-slate-300 p-2.5">
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
                           Message on Cake Inscription:
                         </span>

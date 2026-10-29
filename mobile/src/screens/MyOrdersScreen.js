@@ -134,6 +134,11 @@ export default function MyOrdersScreen({ navigation }) {
               {items.length} {items.length === 1 ? 'item' : 'items'}
               {items.length > 1 ? ` (+${items.length - 1} more)` : ''}
             </Text>
+            {items.some((it) => it.customImage) && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 }}>
+                <Text style={{ fontSize: 9.5, color: '#DB2777', fontWeight: '800' }}>📸 Customized with Photo</Text>
+              </View>
+            )}
           </View>
         </View>
 

@@ -120,6 +120,17 @@ export default function CartScreen({ navigation }) {
                 <Text style={styles.egglessText}>Eggless</Text>
               </View>
             ) : null}
+            {item.customImage ? (
+              <View style={styles.customPhotoBadge}>
+                <Image source={{ uri: item.customImage }} style={styles.customPhotoThumb} />
+                <Text style={styles.customPhotoBadgeText}>Photo Attached</Text>
+              </View>
+            ) : null}
+            {item.messageOnCake ? (
+              <View style={styles.cakeMessageBadge}>
+                <Text style={styles.cakeMessageText} numberOfLines={1}>🎂 "{item.messageOnCake}"</Text>
+              </View>
+            ) : null}
           </View>
 
           {/* Pricing & Stepper */}

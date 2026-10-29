@@ -111,6 +111,9 @@ export const createProduct = async (payload: {
   images?: string[];
   category: string;
   hasEgglessOption?: boolean;
+  allowCustomPhoto?: boolean;
+  isCustomPhotoRequired?: boolean;
+  customPhotoLabel?: string;
   shippingCost?: number;
   discount?: number;
   tax?: number;
@@ -138,6 +141,9 @@ export const updateProduct = async (
     images?: string[];
     category: string;
     hasEgglessOption?: boolean;
+  allowCustomPhoto?: boolean;
+  isCustomPhotoRequired?: boolean;
+  customPhotoLabel?: string;
     shippingCost?: number;
     discount?: number;
     tax?: number;

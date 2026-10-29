@@ -386,6 +386,8 @@ export default function CheckoutScreen({ navigation, route }) {
           discount: item.discount || 0,
           isCodAvailable: item.isCodAvailable,
           isEggless: item.isEggless || false,
+          customImage: item.customImage || "",
+          messageOnCake: item.messageOnCake || "",
           deliveryTime: item.deliveryTime,
           expectedDeliveryDate: item.expectedDeliveryDate,
           flavor: item.flavor,
@@ -1165,6 +1167,19 @@ export default function CheckoutScreen({ navigation, route }) {
                       {item.flowerCount && (
                         <Text style={{ fontSize: 10, color: '#64748B', fontWeight: '800', backgroundColor: '#F1F5F9', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
                           {item.flowerCount}
+                        </Text>
+                      )}
+                      {item.customImage && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FDF2F8', borderWidth: 1, borderColor: '#FBCFE8', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                          <Image source={{ uri: item.customImage }} style={{ width: 14, height: 14, borderRadius: 3 }} />
+                          <Text style={{ fontSize: 9.5, color: '#DB2777', fontWeight: '800' }}>
+                            Photo Attached
+                          </Text>
+                        </View>
+                      )}
+                      {item.messageOnCake && (
+                        <Text style={{ fontSize: 9.5, color: '#92400E', fontWeight: '700', backgroundColor: '#FEF3C7', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' }}>
+                          🎂 "{item.messageOnCake}"
                         </Text>
                       )}
                     </View>

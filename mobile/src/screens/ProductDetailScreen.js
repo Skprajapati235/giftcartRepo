@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useRef } from 'react';
 import {
   View,
   Text,
+  TextInput,
   Image,
   TouchableOpacity,
   StyleSheet,
@@ -18,6 +19,8 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { getProductReviews, likeReview, dislikeReview } from '../services/reviewService';
 import productService from '../services/productService';
+import * as ImagePicker from 'expo-image-picker';
+import userService from '../services/userService';
 import { useToast } from '../context/ToastContext';
 import { SafeScreen, StickyBottomBar } from '../components/layout';
 import { useLayoutInsets } from '../hooks/useLayoutInsets';
@@ -52,7 +55,23 @@ export default function ProductDetailScreen({ route, navigation }) {
   const [similarProducts, setSimilarProducts] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [wishlistBusy, setWishlistBusy] = useState(false);
+    const [wishlistBusy, setWishlistBusy] = useState(false);
+
+  // Custom photo upload state
+  const [customPhoto, setCustomPhoto] = useState(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoPreviewModal, setPhotoPreviewModal] = useState(false);
+  const [messageOnCake, setMessageOnCake] = useState('');
+
+  const allowCustomPhoto = Boolean(
+    product?.allowCustomPhoto === true ||
+    product?.allowCustomPhoto === 'true'
+  );
+  const isCustomPhotoRequired = Boolean(
+    product?.isCustomPhotoRequired === true ||
+    product?.isCustomPhotoRequired === 'true'
+  );
+  const customPhotoLabel = product?.customPhotoLabel || 'Upload Your Photo';
 
   // Eggless selection
   const hasEgglessOption = productHasEgglessOption(product);
@@ -164,6 +183,59 @@ export default function ProductDetailScreen({ route, navigation }) {
     } catch (e) {}
   };
 
+  const pickAndUploadImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission to access your gallery is required to choose a photo.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.85,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const localUri = result.assets[0].uri;
+        setIsUploadingPhoto(true);
+
+        const filename = localUri.split('/').pop() || `custom-photo-${Date.now()}.jpg`;
+        const match = /\.([a-zA-Z0-9]+)$/.exec(filename);
+        const type = match ? `image/${match[1].toLowerCase()}` : 'image/jpeg';
+
+        const formData = new FormData();
+        formData.append('file', {
+          uri: localUri,
+          name: filename,
+          type: type,
+        });
+
+        const uploadRes = await userService.uploadImage(formData);
+        const uploadedUrl = uploadRes?.url || uploadRes?.secure_url || uploadRes?.data?.url || uploadRes?.media?.url;
+
+        if (uploadedUrl) {
+          setCustomPhoto(uploadedUrl);
+          showToast('Photo uploaded successfully! 📸', 'success');
+        } else {
+          setCustomPhoto(localUri);
+          showToast('Photo selected! 📸', 'success');
+        }
+      }
+    } catch (err) {
+      console.error('Error uploading photo:', err);
+      showToast('Could not upload photo. Please try again.', 'error');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const removeCustomPhoto = () => {
+    setCustomPhoto(null);
+    showToast('Photo removed', 'info');
+  };
+
   const addToCart = async (proceedToCheckout = false) => {
     if (isOrderBlocked) {
       Alert.alert(
@@ -174,9 +246,23 @@ export default function ProductDetailScreen({ route, navigation }) {
       return;
     }
 
+    if (allowCustomPhoto && isCustomPhotoRequired && !customPhoto) {
+      Alert.alert(
+        'Photo Required 📸',
+        'Please upload your photo for this product before proceeding.',
+        [
+          { text: 'Upload Photo', onPress: pickAndUploadImage },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+      return;
+    }
+
     const activeVariant = {
       ...(activeVariantOption ? (typeof activeVariantOption === 'object' ? activeVariantOption : { name: activeVariantOption }) : {}),
       isEggless: hasEgglessOption ? isEggless : false,
+      customImage: customPhoto || null,
+      messageOnCake: messageOnCake ? messageOnCake.trim() : null,
     };
 
     await addToCartContext(product, quantity, activeVariant);
@@ -454,7 +540,116 @@ export default function ProductDetailScreen({ route, navigation }) {
             </View>
           )}
 
-          {/* Quantity Selector */}
+{/* Customer Photo Upload Section (Dynamic based on admin setting) */}
+          {allowCustomPhoto && (
+            <View style={styles.photoUploadSection}>
+              <View style={styles.photoSectionHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  <Text style={styles.photoSectionTitle}>📸 {customPhotoLabel || 'Customize with Photo'}</Text>
+                  {isCustomPhotoRequired ? (
+                    <View style={styles.requiredBadge}>
+                      <Text style={styles.requiredBadgeText}>REQUIRED</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.optionalBadge}>
+                      <Text style={styles.optionalBadgeText}>OPTIONAL</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={styles.photoSectionSubtitle}>
+                  Provide your image to be printed on this product.
+                </Text>
+              </View>
+
+              {!customPhoto ? (
+                <TouchableOpacity
+                  style={[
+                    styles.uploadDottedBox,
+                    isCustomPhotoRequired && styles.uploadDottedBoxRequired,
+                  ]}
+                  onPress={pickAndUploadImage}
+                  disabled={isUploadingPhoto}
+                  activeOpacity={0.8}
+                >
+                  {isUploadingPhoto ? (
+                    <View style={styles.uploadingBox}>
+                      <ActivityIndicator size="small" color={colors.primary} />
+                      <Text style={styles.uploadingText}>Uploading photo...</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.uploadPromptBox}>
+                      <View style={styles.uploadIconCircle}>
+                        <Feather name="camera" size={22} color={colors.primary} />
+                      </View>
+                      <Text style={styles.uploadPromptTitle}>Tap to Choose / Take Photo</Text>
+                      <Text style={styles.uploadPromptDesc}>JPG or PNG from gallery • Max 5MB</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.uploadedPhotoCard}>
+                  <TouchableOpacity
+                    onPress={() => setPhotoPreviewModal(true)}
+                    activeOpacity={0.9}
+                    style={styles.uploadedThumbWrap}
+                  >
+                    <Image source={{ uri: customPhoto }} style={styles.uploadedThumb} />
+                    <View style={styles.zoomIconPill}>
+                      <Feather name="maximize-2" size={10} color="#FFF" />
+                    </View>
+                  </TouchableOpacity>
+
+                  <View style={styles.uploadedDetails}>
+                    <View style={styles.uploadedStatusRow}>
+                      <Ionicons name="checkmark-circle" size={15} color="#16a34a" />
+                      <Text style={styles.uploadedStatusText}>Photo Attached</Text>
+                    </View>
+                    <Text style={styles.uploadedInfoText} numberOfLines={1}>
+                      Ready for printing on order
+                    </Text>
+
+                    <View style={styles.photoActionRow}>
+                      <TouchableOpacity
+                        style={styles.changePhotoBtn}
+                        onPress={pickAndUploadImage}
+                        disabled={isUploadingPhoto}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="refresh-cw" size={11} color={colors.brandBerry} />
+                        <Text style={styles.changePhotoText}>Change</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.removePhotoBtn}
+                        onPress={removeCustomPhoto}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="trash-2" size={11} color="#DC2626" />
+                        <Text style={styles.removePhotoText}>Remove</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              )}
+
+              {/* Optional inscription message for cakes */}
+              {Boolean(product?.category?.name?.toString().toLowerCase().includes('cake') || product?.category?.toString().toLowerCase().includes('cake') || product?.name?.toString().toLowerCase().includes('cake')) && (
+                <View style={styles.cakeMessageWrap}>
+                  <Text style={styles.cakeMessageLabel}>🎂 Inscription on Cake (Optional):</Text>
+                  <TextInput
+                    style={styles.cakeMessageInput}
+                    placeholder="e.g. Happy Birthday Rahul!"
+                    placeholderTextColor="#94A3B8"
+                    value={messageOnCake}
+                    onChangeText={setMessageOnCake}
+                    maxLength={50}
+                  />
+                </View>
+              )}
+            </View>
+          )}
+
+                    {/* Quantity Selector */}
           <View style={styles.qtyCard}>
             <View>
               <Text style={styles.qtyCardTitle}>Quantity</Text>
@@ -613,6 +808,24 @@ export default function ProductDetailScreen({ route, navigation }) {
             <Ionicons name="close" size={28} color="#FFF" />
           </TouchableOpacity>
           <Image source={{ uri: selectedImage }} style={styles.fullscreenImage} resizeMode="contain" />
+        </View>
+      </Modal>
+      {/* Modal for full photo preview */}
+      <Modal visible={photoPreviewModal} transparent animationType="fade" onRequestClose={() => setPhotoPreviewModal(false)}>
+        <View style={styles.fullscreenModal}>
+          <TouchableOpacity
+            style={[styles.modalCloseBtn, { top: top + 14 }]}
+            onPress={() => setPhotoPreviewModal(false)}
+          >
+            <Ionicons name="close" size={28} color="#FFF" />
+          </TouchableOpacity>
+          {customPhoto && (
+            <Image
+              source={{ uri: customPhoto }}
+              style={{ width: width - 32, height: width - 32, borderRadius: 16 }}
+              resizeMode="contain"
+            />
+          )}
         </View>
       </Modal>
     </SafeScreen>
@@ -1131,6 +1344,206 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 12,
     fontWeight: '900',
+  },
+    photoUploadSection: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: '#FFF7FA',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#FBCFE8',
+  },
+  photoSectionHeader: {
+    marginBottom: 12,
+  },
+  photoSectionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#831843',
+  },
+  photoSectionSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 3,
+  },
+  requiredBadge: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  requiredBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#DC2626',
+    letterSpacing: 0.5,
+  },
+  optionalBadge: {
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  optionalBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    letterSpacing: 0.5,
+  },
+  uploadDottedBox: {
+    borderWidth: 1.5,
+    borderColor: '#D82B76',
+    borderStyle: 'dashed',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadDottedBoxRequired: {
+    borderColor: '#E11D48',
+    backgroundColor: '#FFF1F2',
+  },
+  uploadingBox: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  uploadingText: {
+    fontSize: 13,
+    color: '#D82B76',
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  uploadPromptBox: {
+    alignItems: 'center',
+  },
+  uploadIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FDF2F8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  uploadPromptTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  uploadPromptDesc: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 4,
+  },
+  uploadedPhotoCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: '#F3E8FF',
+    alignItems: 'center',
+    gap: 12,
+  },
+  uploadedThumbWrap: {
+    position: 'relative',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  uploadedThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+  },
+  zoomIconPill: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 10,
+    padding: 3,
+  },
+  uploadedDetails: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  uploadedStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  uploadedStatusText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#16A34A',
+  },
+  uploadedInfoText: {
+    fontSize: 11,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  photoActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 8,
+  },
+  changePhotoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#FDF2F8',
+  },
+  changePhotoText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#741343',
+  },
+  removePhotoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#FEF2F2',
+  },
+  removePhotoText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
+  cakeMessageWrap: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#FCE7F3',
+  },
+  cakeMessageLabel: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#831843',
+    marginBottom: 6,
+  },
+  cakeMessageInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 13,
+    color: '#1F2937',
   },
   fullscreenModal: {
     flex: 1,

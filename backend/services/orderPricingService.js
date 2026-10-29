@@ -24,10 +24,10 @@ function httpError(message, statusCode = 400, code) {
 
 const cleanText = (value, max) => (typeof value === "string" ? value.trim().slice(0, max) : "");
 
-// Only allow http(s) URLs for the "custom image" a customer attaches.
+// Allow http(s) URLs, relative upload paths, or data URLs for the "custom image" a customer attaches.
 const cleanUrl = (value) => {
-  const v = cleanText(value, 600);
-  return /^https?:\/\//i.test(v) ? v : "";
+  const v = cleanText(value, 1000);
+  return /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(v) ? v : "";
 };
 
 /**

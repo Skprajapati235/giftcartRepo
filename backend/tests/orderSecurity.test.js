@@ -98,3 +98,16 @@ test("stock enforcement is OFF unless ENFORCE_STOCK=true", async () => {
   assert.equal(stockService.isEnabled(), false);
   assert.deepEqual(await stockService.reserveForOrder({ items: [] }), { skipped: true });
 });
+
+test("custom photo and message are preserved on priced order item", async () => {
+  const p = cake();
+  mockProducts([p]);
+  const [line] = await priceOrderItems([{
+    _id: String(p._id),
+    quantity: 1,
+    customImage: "https://res.cloudinary.com/giftcart/image/upload/custom-phone-case.jpg",
+    messageOnCake: "Happy Birthday Rahul",
+  }]);
+  assert.equal(line.customImage, "https://res.cloudinary.com/giftcart/image/upload/custom-phone-case.jpg");
+  assert.equal(line.messageOnCake, "Happy Birthday Rahul");
+});
